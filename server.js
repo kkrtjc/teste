@@ -36,8 +36,14 @@ const DB_PATH = path.join(__dirname, 'data', 'db.json');
 const HISTORY_PATH = path.join(__dirname, 'data', 'history.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
-if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+// Ensure directories exist
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+    fs.mkdirSync(path.join(__dirname, 'data'));
+}
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR);
+}
+
 if (!fs.existsSync(HISTORY_PATH)) fs.writeFileSync(HISTORY_PATH, '[]');
 
 // Multer Config

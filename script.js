@@ -174,7 +174,7 @@ let cart = {
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? ''
-    : 'https://mura-engine-api.onrender.com'; // TODO: Substituir após deploy inicial
+    : 'https://teste-m1kq.onrender.com';
 
 // Open Checkout Modal
 async function openCheckout(productId) {
@@ -580,6 +580,7 @@ function setupFields() {
     });
 }
 setupFields();
+renderHomeProducts();
 
 // --- DYNAMIC HOME PRODUCTS RENDERING ---
 async function renderHomeProducts() {
