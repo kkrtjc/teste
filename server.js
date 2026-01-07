@@ -11,24 +11,17 @@ dotenv.config();
 
 const app = express();
 
-// Configuração de Segurança CORS
-const whitelist = [
-    process.env.ALLOWED_ORIGIN || 'https://osegredodasdoenças.pages.dev',
-    'https://teste-dl7.pages.dev', // Seu domínio de teste atual
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-];
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Permite se estiver na whitelist ou se for um subdomínio do pages.dev para facilitar testes
-        if (!origin || whitelist.indexOf(origin) !== -1 || origin.endsWith('.pages.dev')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Acesso negado por segurança (CORS)'));
-        }
-    }
-};
-app.use(cors(corsOptions));
+// Configuração de Segurança CORS (Simplificada para Testes e Produção)
+app.use(cors({
+    origin: '*', // Permite qualquer origem durante a fase de testes para evitar CORB
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-password']
+}));
+
+// Rota de Diagnóstico (Health Check)
+app.get('/', (req, res) => {
+    res.send('<h1>Mura Engine V3 Online! 🚀</h1><p>Se você está vendo isso, o servidor no Render está funcionando.</p>');
+});
 app.use(bodyParser.json());
 
 // Paths

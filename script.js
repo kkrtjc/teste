@@ -533,28 +533,157 @@ function detectPaymentMethod(bin) {
     return 'master'; // Fallback to master if unsure (common in test), or could return null to force verify
 }
 
+
 /* 
 ========================================
    SMART INPUT MASKS & VALIDATION
 ========================================
 */
-const masks = {
-    cpf: v => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14),
-    phone: v => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 15),
-    card: v => v.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19),
-    date: v => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 5),
-    cvv: v => v.replace(/\D/g, '').slice(0, 4)
+
+// Utility Functions
+const validateCPF = (cpf) => {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+    let sum = 0, remainder;
+    for (let i = 1; i <= 9; i++) sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++) sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+    return true;
 };
 
-const validate = {
-    email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-    cpf: v => v.replace(/\D/g, '').length === 11,
-    phone: v => v.replace(/\D/g, '').length >= 10,
-    date: v => v.length === 5,
-    cvv: v => v.length >= 3,
-    name: v => v.trim().split(' ').length >= 2,
-    card: v => v.replace(/\D/g, '').length >= 13
+const validateLuhn = (cardNumber) => {
+    cardNumber = cardNumber.replace(/\D/g, '');
+    let sum = 0;
+    let isEven = false;
+
+    for (let i = cardNumber.length - 1; i >= 0; i--) {
+        let digit = parseInt(cardNumber.charAt(i));
+        if (isEven) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+        isEven = !isEven;
+    }
+
+    return sum % 10 === 0;
 };
+
+const validateEmail = (email) => {
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+};
+
+const validateCardExpiry = (expiry) => {
+    if (expiry.length !== 5) return false;
+    const [month, year] = expiry.split('/');
+    const monthNum = parseInt(month);
+    const yearNum = parseInt('20' + year);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (yearNum < currentYear) return false;
+    if (yearNum === currentYear && monthNum < currentMonth) return false;
+
+    return true;
+};
+
+// Input Masks (only allow valid characters)
+const masks = {
+    cpf: v => {
+        v = v.replace(/\D/g, '').slice(0, 11);
+        return v.replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2');
+    },
+    phone: v => {
+        v = v.replace(/\D/g, '').slice(0, 11);
+        return v.replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{5})(\d)/, '$1-$2');
+    },
+    card: v => {
+        v = v.replace(/\D/g, '').slice(0, 16);
+        return v.replace(/(\d{4})(?=\d)/g, '$1 ');
+    },
+    date: v => {
+        v = v.replace(/\D/g, '').slice(0, 4);
+        if (v.length >= 2) {
+            let month = v.slice(0, 2);
+            if (parseInt(month) > 12) month = '12';
+            if (parseInt(month) < 1) month = '01';
+            return month + (v.length > 2 ? '/' + v.slice(2) : '');
+        }
+        return v;
+    },
+    cvv: v => v.replace(/\D/g, '').slice(0, 4),
+    name: v => v.replace(/[^a-zA-ZÀ-ÿ\s]/g, '').slice(0, 100)
+};
+
+// Validation Functions
+const validate = {
+    email: v => validateEmail(v),
+    cpf: v => validateCPF(v),
+    phone: v => v.replace(/\D/g, '').length >= 10,
+    date: v => validateCardExpiry(v),
+    cvv: v => v.length >= 3,
+    name: v => {
+        const parts = v.trim().split(/\s+/);
+        return parts.length >= 2 && parts.every(p => p.length >= 2);
+    },
+    card: v => {
+        const clean = v.replace(/\D/g, '');
+        return clean.length >= 13 && validateLuhn(clean);
+    }
+};
+
+// Error Messages
+const errorMessages = {
+    'payer-name': 'Digite seu nome completo (nome e sobrenome)',
+    'payer-cpf': 'CPF inválido. Verifique os números digitados',
+    'payer-phone': 'Telefone inválido. Use o formato (00) 00000-0000',
+    'payer-email': 'Email inválido. Use o formato: seu@email.com',
+    'card-number': 'Número do cartão inválido',
+    'card-holder': 'Digite o nome como está no cartão',
+    'card-expiration': 'Data inválida ou cartão vencido',
+    'card-cvv': 'CVV deve ter 3 ou 4 dígitos'
+};
+
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    let errorDiv = field.parentElement.querySelector('.field-error');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        field.parentElement.appendChild(errorDiv);
+    }
+
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    field.classList.add('error-shake');
+    setTimeout(() => field.classList.remove('error-shake'), 500);
+}
+
+function hideFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    const errorDiv = field.parentElement.querySelector('.field-error');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
+}
 
 function setupFields() {
     const fields = [
@@ -571,15 +700,38 @@ function setupFields() {
     fields.forEach(f => {
         const el = document.getElementById(f.id);
         if (!el) return;
+
+        // Real-time validation on input
         el.addEventListener('input', e => {
-            if (masks[f.type]) e.target.value = masks[f.type](e.target.value);
+            if (masks[f.type]) {
+                e.target.value = masks[f.type](e.target.value);
+            }
+
             const isValid = validate[f.type] ? validate[f.type](e.target.value) : e.target.value.length > 3;
-            el.classList.toggle('valid', isValid);
-            el.classList.toggle('invalid', !isValid && e.target.value.length > 0);
+
+            el.classList.remove('valid', 'invalid');
+            if (e.target.value.length > 0) {
+                el.classList.add(isValid ? 'valid' : 'invalid');
+            }
+
+            if (isValid) {
+                hideFieldError(f.id);
+            }
+        });
+
+        // Validation on blur
+        el.addEventListener('blur', e => {
+            if (e.target.value.length > 0) {
+                const isValid = validate[f.type] ? validate[f.type](e.target.value) : e.target.value.length > 3;
+                if (!isValid && errorMessages[f.id]) {
+                    showFieldError(f.id, errorMessages[f.id]);
+                }
+            }
         });
     });
 }
 setupFields();
+
 renderHomeProducts();
 
 // --- DYNAMIC HOME PRODUCTS RENDERING ---
@@ -592,12 +744,12 @@ async function renderHomeProducts() {
         const res = await fetch(`${API_URL}/api/config`);
 
         if (!res.ok) {
-            console.error("Servidor respondeu com erro:", res.status);
+            console.error("❌ O servidor respondeu, mas deu erro:", res.status);
             return;
         }
 
         const db = await res.json();
-        console.log("Dados recebidos com sucesso:", db);
+        console.log("✅ Dados carregados com sucesso!");
         const products = db.products;
 
         container.innerHTML = ''; // Clear
