@@ -2,8 +2,8 @@
     "products": {
         "ebook-manejo": {
             "title": "Manejo de Pintinhos",
-            "price": 54,
-            "originalPrice": 54.9,
+            "price":1,
+            "originalPrice": 1,
             "description": "Acesso Vitalício",
             "features": [
                 "Incubação Perfeita",
