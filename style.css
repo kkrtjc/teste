@@ -3045,3 +3045,229 @@ footer {
         transform: translateY(0);
     }
 }
+
+/* ========================================
+   SMART VALIDATION STYLES
+======================================== */
+
+/* Input States */
+.form-group input.valid {
+    border-color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.form-group input.invalid {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.form-group input.valid:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.form-group input.invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Error Messages */
+.field-error {
+    display: none;
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    font-weight: 600;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Shake Animation for Errors */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+.error-shake {
+    animation: shake 0.5s;
+}
+
+/* ========================================
+   iOS RESPONSIVENESS FIXES
+======================================== */
+
+/* Fix Testimonial Carousel for iOS */
+.testimonial-carousel {
+    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+}
+
+.testimonial-track {
+    will-change: auto !important;
+    /* Remove will-change that causes iOS issues */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+}
+
+/* Fix Guarantee Image */
+.guarantee-img {
+    width: 100%;
+    height: auto;
+    max-width: 600px;
+    object-fit: contain;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Fix Ebook Cover Proportions */
+.combo-visual img,
+.price-card img {
+    width: auto !important;
+    max-width: 120px;
+    height: auto;
+    object-fit: contain;
+    aspect-ratio: 3/4;
+    margin: 10px auto;
+}
+
+/* Compact Product Cards on Mobile */
+@media (max-width: 768px) {
+    .price-card {
+        padding: 1rem !important;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+
+    .price-title {
+        font-size: 1.2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .price-amount {
+        font-size: 2rem !important;
+        margin: 0.5rem 0 !important;
+    }
+
+    .price-features {
+        margin: 1rem 0 !important;
+    }
+
+    .price-features li {
+        margin-bottom: 0.5rem !important;
+        font-size: 0.85rem;
+    }
+
+    .combo-visual,
+    .price-card>img {
+        margin: 0.5rem auto !important;
+    }
+}
+
+/* Eliminate Horizontal Overflow */
+html,
+body {
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+* {
+    max-width: 100%;
+}
+
+.container,
+.pricing-wrapper,
+.pricing-grid,
+.comparison-grid-v2,
+.features-grid {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* iOS Safari Specific Fixes */
+@supports (-webkit-touch-callout: none) {
+
+    /* iOS-only styles */
+    .testimonial-track {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    .price-card {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+        /* Prevent zoom on focus */
+    }
+}
+
+/* Compact Comparison Section on Mobile */
+@media (max-width: 768px) {
+    .comparison-item-v2 {
+        padding: 1.5rem 0 !important;
+    }
+
+    .comp-text {
+        padding: 0 1rem;
+    }
+
+    .comp-text h3 {
+        font-size: 1.3rem !important;
+    }
+
+    .comp-text p {
+        font-size: 0.9rem !important;
+    }
+
+    .comp-check-list li {
+        font-size: 0.85rem !important;
+    }
+
+    .img-wrapper,
+    .img-wrapper-split {
+        padding: 1rem 0 !important;
+    }
+
+    .split-side {
+        width: 150px !important;
+        height: 150px !important;
+    }
+}
+
+/* Fix Sticky CTA on iOS */
+.sticky-cta-bar {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}d
