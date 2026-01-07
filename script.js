@@ -588,8 +588,16 @@ async function renderHomeProducts() {
     if (!container) return;
 
     try {
+        console.log("Iniciando carga de ofertas de:", `${API_URL}/api/config`);
         const res = await fetch(`${API_URL}/api/config`);
+
+        if (!res.ok) {
+            console.error("Servidor respondeu com erro:", res.status);
+            return;
+        }
+
         const db = await res.json();
+        console.log("Dados recebidos com sucesso:", db);
         const products = db.products;
 
         container.innerHTML = ''; // Clear
