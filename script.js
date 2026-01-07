@@ -652,7 +652,8 @@ async function renderHomeProducts() {
             container.appendChild(card);
         });
     } catch (e) {
-        console.error("Error rendering home products:", e);
+        console.error("ERRO CRÍTICO NA CARGA DE OFERTAS:", e);
+        console.log("Dica: Verifique se o servidor está online em:", API_URL);
     }
 }
 
