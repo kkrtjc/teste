@@ -3,7 +3,7 @@
         "ebook-manejo": {
             "title": "Manejo de Pintinhos",
             "price":1,
-            "originalPrice": 1,
+            "originalPrice": 0.1,
             "description": "Acesso Vitalício",
             "features": [
                 "Incubação Perfeita",
@@ -17,8 +17,8 @@
         },
         "ebook-doencas": {
             "title": "Doenças Avícolas",
-            "price": 84.9,
-            "originalPrice": 84.9,
+            "price": 0.1,
+            "originalPrice": 0.1,
             "description": "Acesso Vitalício",
             "features": [
                 "11 Doenças Documentadas",
@@ -32,8 +32,8 @@
         },
         "combo-elite": {
             "title": "Protocolo Elite 360º (Combo)",
-            "price": 111.84,
-            "originalPrice": 139.8,
+            "price": 0.1,
+            "originalPrice": 0.1,
             "description": "Combo Completo",
             "isFeatured": true,
             "badge": "MAIS VENDIDO • 20% OFF",
@@ -67,7 +67,7 @@
         "bump-6361": {
             "id": "bump-6361",
             "title": "Tabela de Raçao",
-            "price": 19.9,
+            "price": 0.1,
             "description": "Produza sua propria raçao E economize ate 65% com raçao.\nCom As tabelas de alimentaçao para todas as idades da sua ave.\n",
             "image": ""
         }
