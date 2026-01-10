@@ -124,13 +124,16 @@ app.get('/download/:type', (req, res) => {
     let fileName = '';
 
     if (type === 'manejo') {
-        filePath = path.join(__dirname, 'ebook_manejo.pdf'); // Futuro arquivo exclusivo
+        filePath = path.join(__dirname, 'ebook_manejo.pdf');
         fileName = 'Manual_Manejo_Pintinhos.pdf';
     } else if (type === 'doencas') {
-        filePath = path.join(__dirname, 'ebook_doencas.pdf'); // Futuro arquivo exclusivo
+        filePath = path.join(__dirname, 'ebook_doencas.pdf');
         fileName = 'Guia_Doencas_Avicolas.pdf';
+    } else if (type === 'orderbump' || type === 'bump') {
+        filePath = path.join(__dirname, 'ebook_orderbump.pdf');
+        fileName = 'Tabela_Racao_Completa.pdf';
     } else {
-        filePath = path.join(__dirname, 'ebook.pdf'); // Geral
+        filePath = path.join(__dirname, 'ebook.pdf');
         fileName = 'Ebook_O_Segredo_das_Galinhas.pdf';
     }
 
@@ -145,6 +148,11 @@ app.get('/download/:type', (req, res) => {
             res.status(404).send('Arquivo não encontrado. Entre em contato com o suporte.');
         }
     }
+});
+
+// Downloads Page Route - Serves custom download page with purchased items
+app.get('/downloads', (req, res) => {
+    res.sendFile(path.join(__dirname, 'downloads.html'));
 });
 
 app.post('/api/checkout/pix', async (req, res) => {
@@ -222,20 +230,30 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
             const paymentResult = await payment.get({ id: paymentId });
             if (paymentResult.status === 'approved') {
                 console.log(`✅ Pagamento Aprovado! ID: ${paymentId}`);
-                // Record from metadata if available (for Pix)
+
+                // Enhanced logging with item reconstruction
                 if (paymentResult.metadata && paymentResult.metadata.customer_phone) {
                     const customer = {
                         name: `${paymentResult.payer.first_name} ${paymentResult.payer.last_name}`,
                         email: paymentResult.payer.email,
                         phone: paymentResult.metadata.customer_phone
                     };
-                    // Reconstruct items from description (simple version)
-                    const items = [{ title: paymentResult.description, price: paymentResult.transaction_amount }];
+
+                    // Try to reconstruct items from description
+                    // Description format: "Product 1, Product 2, Product 3"
+                    const itemTitles = paymentResult.description.split(', ');
+                    const items = itemTitles.map(title => ({
+                        title: title,
+                        price: paymentResult.transaction_amount / itemTitles.length // Approximate split
+                    }));
+
                     logSale(customer, items);
+                    console.log(`📦 Venda registrada: ${customer.name} - ${itemTitles.join(', ')}`);
                 }
             }
             res.sendStatus(200);
         } catch (error) {
+            console.error('Webhook error:', error);
             res.sendStatus(500);
         }
     } else {

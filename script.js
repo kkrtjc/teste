@@ -434,7 +434,7 @@ async function handlePayment(method) {
                         if (statusData.status === 'approved') {
                             clearInterval(pollInterval);
                             const productIds = items.map(i => i.id).join(',');
-                            window.location.href = `obrigado.html?product_id=${productIds}`;
+                            window.location.href = `downloads.html?items=${productIds}`;
                         }
                     } catch (err) {
                         console.error("Polling error:", err);
@@ -503,7 +503,7 @@ async function handlePayment(method) {
 
             if (result.status === 'approved') {
                 const productIds = items.map(i => i.id).join(',');
-                window.location.href = `obrigado.html?product_id=${productIds}`;
+                window.location.href = `downloads.html?items=${productIds}`;
             } else {
                 alert('Pagamento Recusado: ' + (result.status_detail || 'Verifique os dados.'));
                 btn.disabled = false;
