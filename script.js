@@ -210,6 +210,24 @@ async function openCheckout(productId) {
         document.getElementById('checkout-product-name').innerText = productData.title;
         document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
 
+        // Add product image
+        const iconContainer = document.getElementById('product-icon-container');
+        if (productData.cover === 'combo') {
+            // Para combo, mostrar ambas as capas lado a lado
+            iconContainer.innerHTML = `
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <img src="capadospintinhos.png" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                    <img src="capadasdoencas.png" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                </div>
+            `;
+        } else {
+            // Para produtos individuais
+            iconContainer.innerHTML = `
+                <img src="${productData.cover}" alt="${productData.title}" 
+                     style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
+            `;
+        }
+
         renderOrderBumps(productData.fullBumps);
         updateTotal();
 

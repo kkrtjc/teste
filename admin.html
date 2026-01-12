@@ -682,7 +682,7 @@
         let masterPass = '';
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? ''
-            : 'https://mura-engine-api.onrender.com';
+            : 'https://teste-m1kq.onrender.com';
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -719,7 +719,9 @@
         }
 
         async function loadHistory() {
-            const res = await fetch(`${API_URL}/api/history`);
+            const res = await fetch(`${API_URL}/api/history`, {
+                headers: { 'x-admin-password': masterPass }
+            });
             history = await res.json();
             renderHistory();
         }
