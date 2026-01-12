@@ -74,11 +74,9 @@ body {
 @media (max-width: 480px) {
     html {
         font-size: 14px;
-        overflow-x: hidden;
     }
 
     body {
-        overflow-x: hidden;
         width: 100vw;
         position: relative;
     }
@@ -562,6 +560,11 @@ ul {
     box-shadow: var(--shadow-md);
     position: relative;
     border: var(--border-gold);
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: fit-content;
+    overflow: visible;
 }
 
 .price-card.featured {
@@ -611,6 +614,7 @@ ul {
     margin: var(--spacing-md) 0;
     color: var(--color-text-main);
     font-weight: 500;
+    flex-grow: 1;
 }
 
 .price-features li {
@@ -815,12 +819,100 @@ footer {
         gap: 10px;
     }
 
+    /* Pricing Grid - Horizontal Scroll on Mobile */
     .pricing-grid {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto !important;
+        /* Força o scroll horizontal */
+        overflow-y: hidden;
+        gap: 1rem;
+        scroll-snap-type: x mandatory;
+
+        /* Melhorias para toque */
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+
+        padding-bottom: 2rem;
+        /* Mais espaço para scrollbar */
+        margin-top: 2rem;
+
+        /* Ensure scrolling is smooth */
+        scroll-behavior: smooth;
+
+        /* Garante largura total */
+        width: 100%;
+        max-width: 100vw;
+        padding-left: 1rem;
+        /* Espaço inicial */
+        padding-right: 1rem;
+        /* Espaço final */
+    }
+
+    .price-card {
+        flex: 0 0 90%;
+        /* Aumentado para ver melhor o próximo card */
+        max-width: 350px;
+        scroll-snap-align: center;
+        height: auto !important;
+        margin-right: 15px;
+        /* Espaço extra explícito */
     }
 
     .price-card.featured {
         transform: scale(1);
+    }
+
+    /* Custom Scrollbar for Pricing Grid - More Visible */
+    .pricing-grid::-webkit-scrollbar {
+        height: 10px;
+    }
+
+    .pricing-grid::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        margin: 0 10px;
+    }
+
+    .pricing-grid::-webkit-scrollbar-thumb {
+        background: var(--color-secondary);
+        border-radius: 10px;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .pricing-grid::-webkit-scrollbar-thumb:hover {
+        background: var(--color-secondary-hover);
+    }
+
+    /* Ensure pricing wrapper doesn't block scroll */
+    .pricing-wrapper {
+        overflow: visible;
+        overflow-x: auto !important;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Ensure pricing section allows horizontal overflow */
+    .pricing {
+        overflow-x: visible !important;
+    }
+
+    /* Mobile scroll hint - only visible on mobile */
+    .mobile-scroll-hint {
+        display: block !important;
+        animation: fadeInPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeInPulse {
+
+        0%,
+        100% {
+            opacity: 0.7;
+        }
+
+        50% {
+            opacity: 1;
+        }
     }
 
 
@@ -3270,4 +3362,4 @@ body {
     transform: translateZ(0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-}d
+}
