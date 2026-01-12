@@ -147,20 +147,19 @@ app.get('/download/:type', (req, res) => {
     } else {
         console.error(`[DOWNLOAD] File NOT found at: ${filePath}`);
 
-        // Fallback para o arquivo genérico se o específico não existir
-        const fallback = path.join(__dirname, 'ebook.pdf');
-        if (fs.existsSync(fallback)) {
-            console.log(`[DOWNLOAD] Using fallback: ${fallback}`);
-            res.download(fallback, fileName);
-        } else {
-            console.error(`[DOWNLOAD] Fallback NOT found at: ${fallback}`);
-            res.status(404).send(`
-                <h1>Erro: Arquivo não encontrado</h1>
-                <p>O servidor procurou por: <code>${path.basename(filePath)}</code></p>
-                <p>E também tentou o fallback: <code>ebook.pdf</code></p>
-                <p>Nenhum dos dois foi encontrado na pasta: <code>${__dirname}</code></p>
-            `);
-        }
+        // Retornar erro 404 direto se o arquivo específico não existir
+        res.status(404).send(`
+            <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1>Ops! Arquivo não encontrado.</h1>
+                <p>Não foi possível localizar o arquivo: <strong>${fileName}</strong></p>
+                <p>Nosso sistema registrou esse erro e já estamos verificando.</p>
+                <p>Enquanto isso, clique abaixo para receber pelo WhatsApp:</p>
+                <a href="https://wa.me/5538999832950?text=Ola,%20tive%20erro%20ao%20baixar%20o%20arquivo%20${encodeURIComponent(fileName)}" 
+                   style="display: inline-block; background: #25d366; color: white; padding: 15px 30px; text-decoration: none; border-radius: 30px; font-weight: bold; margin-top: 20px;">
+                   <i class="fa fa-whatsapp"></i> Receber no WhatsApp
+                </a>
+            </div>
+        `);
     }
 });
 
