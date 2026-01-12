@@ -137,17 +137,44 @@ app.get('/download/:type', (req, res) => {
         fileName = 'Ebook_O_Segredo_das_Galinhas.pdf';
     }
 
+    // Debug logging
+    console.log(`[DOWNLOAD] Request for type: ${type}`);
+    console.log(`[DOWNLOAD] Target path: ${filePath}`);
+
     if (fs.existsSync(filePath)) {
+        console.log(`[DOWNLOAD] File found! Sending: ${fileName}`);
         res.download(filePath, fileName);
     } else {
+        console.error(`[DOWNLOAD] File NOT found at: ${filePath}`);
+
         // Fallback para o arquivo genérico se o específico não existir
         const fallback = path.join(__dirname, 'ebook.pdf');
         if (fs.existsSync(fallback)) {
+            console.log(`[DOWNLOAD] Using fallback: ${fallback}`);
             res.download(fallback, fileName);
         } else {
-            res.status(404).send('Arquivo não encontrado. Entre em contato com o suporte.');
+            console.error(`[DOWNLOAD] Fallback NOT found at: ${fallback}`);
+            res.status(404).send(`
+                <h1>Erro: Arquivo não encontrado</h1>
+                <p>O servidor procurou por: <code>${path.basename(filePath)}</code></p>
+                <p>E também tentou o fallback: <code>ebook.pdf</code></p>
+                <p>Nenhum dos dois foi encontrado na pasta: <code>${__dirname}</code></p>
+            `);
         }
     }
+});
+
+// Rota de Diagóstico (Remover em produção)
+app.get('/debug-files', (req, res) => {
+    fs.readdir(__dirname, (err, files) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const pdfs = files.filter(f => f.endsWith('.pdf'));
+        res.json({
+            currentDir: __dirname,
+            allFiles: files,
+            pdfs: pdfs
+        });
+    });
 });
 
 // Downloads Page Route - Serves custom download page with purchased items
