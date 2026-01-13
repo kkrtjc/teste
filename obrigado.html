@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido Aprovado! | O Segredo das Galinhas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #050505;
+            background-image: radial-gradient(circle at 50% 0, #1a1a1a 0%, #000 70%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow-x: hidden;
+            font-family: var(--font-body);
+        }
+
+        .success-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            padding: 3.5rem 2rem;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            z-index: 10;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Product Preview */
+        .product-preview {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 2.5rem;
+        }
+
+        .product-preview img {
+            width: 100px;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s;
+        }
+
+        .product-preview img:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        /* Buttons */
+        .btn-download {
+            background: var(--color-secondary);
+            color: #000;
+            font-weight: 800;
+            font-size: 1.1rem;
+            padding: 1.2rem;
+            width: 100%;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+            background: #FFD700;
+        }
+
+        .btn-whatsapp {
+            background: rgba(37, 211, 102, 0.1);
+            color: #25D366;
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            font-weight: 600;
+            padding: 1rem;
+            width: 100%;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-whatsapp:hover {
+            background: rgba(37, 211, 102, 0.2);
+            border-color: #25D366;
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            color: #555;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Confetti Container -->
+    <!-- Confetti Removed -->
+
+    <div class="success-card">
+        <!-- Logo -->
+        <img src="logo.png" alt="Galos Mura Brasil" class="logo-transparent"
+            style="height: 60px; margin: 0 auto 1.5rem; display: block;">
+
+        <div class="success-icon-wrapper">
+            <i class="fa-solid fa-check"></i>
+        </div>
+
+        <h1>Pagamento Aprovado!</h1>
+        <p class="subtitle" id="success-msg">Seu acesso foi liberado com sucesso.</p>
+
+        <!-- Product Preview (Covers) -->
+        <div class="product-preview" id="product-covers">
+            <img src="capadospintinhos.png" id="cover-manejo" alt="Manejo de Pintinhos" class="hidden">
+            <img src="capadasdoencas.png" id="cover-doencas" alt="Doenças Avícolas" class="hidden">
+        </div>
+
+        <!-- Main Action: Sequential Download -->
+        <div class="download-section">
+            <button class="btn-download" id="download-btn">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span id="btn-text">Carregando...</span>
+            </button>
+
+            <!-- Lista de arquivos que serão baixados -->
+            <div class="download-list" id="download-list" style="display: none;">
+                <!-- Preenchido dinamicamente -->
+            </div>
+
+            <!-- Progresso do download -->
+            <div class="download-progress" id="download-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p id="progress-text">Baixando arquivo 1 de 2...</p>
+            </div>
+        </div>
+
+        <!-- Backup Action: WhatsApp -->
+        <a href="#" class="btn-whatsapp" id="whatsapp-btn">
+            <i class="fa-brands fa-whatsapp"></i> Receber também no WhatsApp
+        </a>
+
+        <div class="footer-note">
+            <p>Enviamos os dados de acesso para o seu e-mail.<br>Verifique a caixa de entrada e o spam.</p>
+        </div>
+    </div>
+
+    <script>
+        // CSS for hidden elements and progress bar
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .hidden { display: none !important; }
+            .download-progress {
+                margin-top: 1.5rem;
+                text-align: center;
+            }
+            .progress-bar {
+                width: 100%;
+                height: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                overflow: hidden;
+                margin-bottom: 0.5rem;
+            }
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, var(--color-secondary), #FFD700);
+                width: 0%;
+                transition: width 0.5s ease;
+            }
+            #progress-text {
+                font-size: 0.9rem;
+                color: #888;
+            }
+            .btn-download.success {
+                background: #10b981 !important;
+            }
+            .download-list {
+                margin-top: 1rem;
+            }
+            .download-list p {
+                color: #888;
+                font-size: 0.9rem;
+                margin: 1rem 0 0.5rem;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Product Logic
+        const params = new URLSearchParams(window.location.search);
+        const productIdRaw = params.get('product_id') || 'combo-elite';
+        const productIds = productIdRaw.split(',');
+
+        const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? ''
+            : 'https://teste-m1kq.onrender.com';
+
+        // Mapear produtos para arquivos
+        const fileMap = {
+            'ebook-manejo': { url: '/download/manejo', name: 'Manual de Manejo de Pintinhos' },
+            'ebook-doencas': { url: '/download/doencas', name: 'Guia de Doenças Avícolas' },
+            'bump-6361': { url: '/download/bump', name: 'Tabela de Ração Completa' },
+            'combo-elite': null // Será expandido para manejo + doenças
+        };
+
+        // Determinar quais arquivos baixar
+        let filesToDownload = [];
+        productIds.forEach(id => {
+            if (id === 'combo-elite') {
+                filesToDownload.push(fileMap['ebook-manejo']);
+                filesToDownload.push(fileMap['ebook-doencas']);
+            } else if (fileMap[id]) {
+                filesToDownload.push(fileMap[id]);
+            }
+        });
+
+        // Remover duplicatas
+        filesToDownload = filesToDownload.filter((file, index, self) =>
+            index === self.findIndex(f => f.url === file.url)
+        );
+
+        // Update product covers
+        const coverManejo = document.getElementById('cover-manejo');
+        const coverDoencas = document.getElementById('cover-doencas');
+        const successMsg = document.getElementById('success-msg');
+
+        let hasManejo = filesToDownload.some(f => f.url === '/download/manejo');
+        let hasDoencas = filesToDownload.some(f => f.url === '/download/doencas');
+
+        if (hasManejo) coverManejo.classList.remove('hidden');
+        if (hasDoencas) coverDoencas.classList.remove('hidden');
+
+        // Update success message
+        if (hasManejo && hasDoencas) {
+            successMsg.innerText = 'Seu acesso ao Combo Elite 360º foi liberado!';
+        } else if (hasManejo) {
+            successMsg.innerText = 'Seu acesso ao E-book de Pintinhos foi liberado!';
+        } else if (hasDoencas) {
+            successMsg.innerText = 'Seu acesso ao E-book de Doenças foi liberado!';
+        }
+
+        // (Bloco de código antigo removido para evitar duplicidade)
+
+        // Atualizar UI com lista de arquivos
+        const downloadList = document.getElementById('download-list');
+        const btnText = document.getElementById('btn-text');
+        const mainBtn = document.getElementById('download-btn');
+        const progressDiv = document.getElementById('download-progress');
+
+        // Garantir que barra de progresso esteja oculta (não usada nesta versão)
+        progressDiv.style.display = 'none';
+
+        if (filesToDownload.length > 1) {
+            // --- Lógica para Combo (Múltiplos arquivos) ---
+
+            // Texto inicial do botão
+            btnText.innerText = 'Visualizar Arquivos Para Baixar';
+
+            // Estilizar lista oculta
+            downloadList.style.display = 'none';
+            downloadList.innerHTML = '<p style="color: #fff; font-size: 1rem; margin: 1.5rem 0 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">Seus Materiais:</p>';
+
+            // Adicionar itens à lista com botões individuais
+            filesToDownload.forEach(file => {
+                downloadList.innerHTML += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-file-pdf" style="color: var(--color-secondary); font-size: 1.2rem;"></i>
+                            <span style="font-size: 0.95rem; font-weight: 500; color: #fff;">${file.name}</span>
+                        </div>
+                        <a href="${file.url}" target="_blank" class="btn-download-small" style="background: var(--color-secondary); color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; white-space: nowrap; cursor: pointer;">
+                            BAIXAR
+                        </a>
+                    </div>
+                `;
+            });
+
+            // Clique no botão principal revela a lista
+            mainBtn.onclick = function (e) {
+                e.preventDefault();
+                if (downloadList.style.display === 'none') {
+                    // Revelar lista
+                    downloadList.style.display = 'block';
+                    btnText.innerText = 'Selecione abaixo para baixar 👇';
+
+                    // Visualmente desabilitar botão principal para focar na lista
+                    mainBtn.style.opacity = '0.7';
+                    mainBtn.style.cursor = 'default';
+
+                    // Rolar suavemente até a lista
+                    setTimeout(() => {
+                        downloadList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            };
+
+        } else if (filesToDownload.length === 1) {
+            // --- Lógica para Produto Único (Download direto) ---
+            const file = filesToDownload[0];
+            btnText.innerText = `Baixar ${file.name}`;
+
+            mainBtn.onclick = function (e) {
+                e.preventDefault();
+                // Baixar diretamente
+                window.location.href = file.url;
+            };
+        } else {
+            // Caso de erro (nenhum arquivo)
+            btnText.innerText = 'Erro ao carregar arquivos';
+            mainBtn.disabled = true;
+        }
+
+        // WhatsApp Logic
+        const whatsappBtn = document.getElementById('whatsapp-btn');
+        whatsappBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const phone = "5538999832950";
+            const text = encodeURIComponent(`Olá! Acabei de adquirir o Protocolo Elite (${productIdRaw}). Gostaria de receber meu acesso por aqui também.`);
+            window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+        });
+    </script>
+</body>
+
+</html>
