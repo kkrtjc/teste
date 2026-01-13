@@ -336,8 +336,8 @@
                             <i class="fa-solid fa-file-pdf" style="color: var(--color-secondary); font-size: 1.2rem;"></i>
                             <span style="font-size: 0.95rem; font-weight: 500; color: #fff;">${file.name}</span>
                         </div>
-                        <a href="${file.url}" target="_blank" class="btn-download-small" style="background: var(--color-secondary); color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; white-space: nowrap; cursor: pointer;">
-                            BAIXAR
+                        <a href="https://google.com" target="_blank" class="btn-download-small" style="background: var(--color-secondary); color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; white-space: nowrap; cursor: pointer;">
+                            BAIXAR (TESTE)
                         </a>
                     </div>
                 `;
@@ -370,7 +370,8 @@
             mainBtn.onclick = function (e) {
                 e.preventDefault();
                 // Baixar diretamente
-                window.location.href = file.url;
+                // TESTE: Redirecionar para o Google
+                window.location.href = 'https://google.com';
             };
         } else {
             // Caso de erro (nenhum arquivo)
