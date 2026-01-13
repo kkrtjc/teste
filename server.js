@@ -19,7 +19,8 @@ app.use(cors({
 }));
 
 // Rota de Diagnóstico (Health Check)
-app.get('/', (req, res) => {
+// Rota de Diagnóstico (Health Check) - Mudado para /health para não bloquear o index.html
+app.get('/health', (req, res) => {
     res.send('<h1>Mura Engine V3 Online! 🚀</h1><p>Se você está vendo isso, o servidor no Render está funcionando.</p>');
 });
 app.use(bodyParser.json());
