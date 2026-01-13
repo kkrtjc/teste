@@ -255,9 +255,13 @@
         const productIdRaw = params.get('product_id') || 'combo-elite';
         const productIds = productIdRaw.split(',');
 
-        const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? ''
-            : 'https://teste-m1kq.onrender.com';
+        // Base URL do Servidor Backend (Render)
+        // Se estiver local, usa vazio (relativo). Se estiver em produção (Github/Cloudflare), usa o URL do Render.
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const baseUrl = isLocal ? '' : 'https://teste-m1kq.onrender.com';
+
+        console.log('Environment:', isLocal ? 'Local' : 'Production');
+        console.log('Backend URL:', baseUrl);
 
         // Mapear produtos para arquivos
         const fileMap = {
