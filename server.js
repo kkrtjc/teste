@@ -120,15 +120,18 @@ const nodemailer = require('nodemailer');
 
 // Email Transporter (Gmail)
 // Email Transporter (Gmail) - Tentativa V2 (Porta 587 TLS)
-// Email Transporter (Gmail) - Tentativa V3 (Service Mode + Debug)
+// Email Transporter (Gmail) - Tentativa V5 (Porta 587 + IPv4 Explicito)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // O modo automático é mais inteligente para achar porta/SSL
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    debug: true, // Vai mostrar TUDO no log
-    logger: true // Vai mostrar TUDO no log
+    family: 4, // IPV4 Puro (Para evitar timeout de DNS)
+    debug: true,
+    logger: true
 });
 
 
@@ -376,3 +379,4 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`\n🚀 Mura Engine running on port ${PORT}`));
+
