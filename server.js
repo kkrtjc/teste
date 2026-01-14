@@ -175,7 +175,20 @@ async function sendEmail(customer, items) {
     }
 }
 
-// ... (Rest of code)
+// ROTA DE TESTE DE EMAIL (Para verificar se a senha do Gmail está certa)
+app.get('/test-email', async (req, res) => {
+    try {
+        await transporter.sendMail({
+            from: '"Teste do Galo" <galosmurabrasill@gmail.com>',
+            to: process.env.EMAIL_USER, // Manda para você mesmo
+            subject: 'Teste de Configuração - Galo Mura',
+            text: 'Se você recebeu isso, a configuração no Render está 100% correta! 🚀'
+        });
+        res.send('<h1>Sucesso! ✅</h1><p>O email de teste foi enviado. Verifique sua caixa de entrada (ou spam).</p>');
+    } catch (error) {
+        res.status(500).send(`<h1>Erro! ❌</h1><p>Não foi possível enviar.</p><pre>${error.message}</pre>`);
+    }
+});
 
 // Ebook Download Routes
 app.get('/download/:type', (req, res) => {
