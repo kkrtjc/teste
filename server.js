@@ -119,11 +119,17 @@ const nodemailer = require('nodemailer');
 // ... (Previous imports)
 
 // Email Transporter (Gmail)
+// Email Transporter (Gmail) - Configuração Explicita (Porta 465 SSL)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true para porta 465, false para outras
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Ajuda em alguns casos de erro de certificado no Render
     }
 });
 
