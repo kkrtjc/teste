@@ -114,88 +114,79 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ... (Previous imports)
-
-// Email Transporter (Gmail)
-// Email Transporter (Gmail) - Tentativa V2 (Porta 587 TLS)
-// Email Transporter (Gmail) - Tentativa V5 (Porta 587 + IPv4 Explicito)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    family: 4, // IPV4 Puro (Para evitar timeout de DNS)
-    debug: true,
-    logger: true
-});
-
-
-
-// Email Sender Function
+// Email Sender Function (Using Resend API)
 async function sendEmail(customer, items) {
     const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
 
-    const mailOptions = {
-        from: '"O Segredo das Galinhas" <galosmurabrasill@gmail.com>',
-        to: customer.email,
-        subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
-                <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-                    <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
-                </div>
-                
-                <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                    <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
-                    <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
-                    </div>
-                    
-                    <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
-                    <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
-                    
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-                    
-                    <h3 style="color: #333;">Resumo do Pedido:</h3>
-                    <ul style="color: #555;">
-                        ${items.map(i => `<li>${i.title}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
-                    <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
-                </div>
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
+            <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
             </div>
-        `
-    };
+            
+            <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
+                <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+                <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <h3 style="color: #333;">Resumo do Pedido:</h3>
+                <ul style="color: #555;">
+                    ${items.map(i => `<li>${i.title}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+                <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    `;
 
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`📧 Email enviado para ${customer.email}`);
+        const { data, error } = await resend.emails.send({
+            from: 'Protocolo Elite <onboarding@resend.dev>',
+            to: customer.email,
+            subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
+            html: htmlContent,
+        });
+
+        if (error) {
+            console.error('❌ Erro ao enviar email via Resend:', error);
+        } else {
+            console.log(`📧 Email enviado com sucesso via Resend! ID: ${data.id}`);
+        }
     } catch (error) {
-        console.error('❌ Erro ao enviar email:', error);
+        console.error('❌ Erro inesperado no Resend:', error);
     }
 }
 
-// ROTA DE TESTE DE EMAIL (Para verificar se a senha do Gmail está certa)
+// ROTA DE TESTE DE EMAIL (Resend)
 app.get('/test-email', async (req, res) => {
     try {
-        await transporter.sendMail({
-            from: '"Teste do Galo" <galosmurabrasill@gmail.com>',
-            to: process.env.EMAIL_USER, // Manda para você mesmo
-            subject: 'Teste de Configuração - Galo Mura',
-            text: 'Se você recebeu isso, a configuração no Render está 100% correta! 🚀'
+        const { data, error } = await resend.emails.send({
+            from: 'Teste <onboarding@resend.dev>',
+            to: 'galosmurabrasill@gmail.com',
+            subject: 'Teste Resend - Galo Mura',
+            text: 'Se você recebeu isso, o Resend está funcionando 100%! 🚀'
         });
-        res.send('<h1>Sucesso! ✅</h1><p>O email de teste foi enviado. Verifique sua caixa de entrada (ou spam).</p>');
+
+        if (error) {
+            res.status(500).send(`<h1>Erro! ❌</h1><p>${error.message}</p>`);
+        } else {
+            res.send(`<h1>Sucesso! ✅</h1><p>Email enviado via Resend. ID: ${data.id}</p>`);
+        }
     } catch (error) {
-        res.status(500).send(`<h1>Erro! ❌</h1><p>Não foi possível enviar.</p><pre>${error.message}</pre>`);
+        res.status(500).send(`<h1>Erro! ❌</h1><p>${error.message}</p>`);
     }
 });
 
