@@ -67,16 +67,24 @@ function getHistory() {
 function saveHistory(data) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(data, null, 4)); }
 
 function logSale(customer, items) {
-    const history = getHistory();
-    history.push({
-        date: new Date().toISOString(),
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        items: items.map(i => i.title),
-        total: items.reduce((acc, i) => acc + Number(i.price), 0)
-    });
-    saveHistory(history);
+    try {
+        const history = getHistory();
+        const sale = {
+            date: new Date().toISOString(),
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+            items: items.map(i => i.title),
+            total: items.reduce((acc, i) => acc + Number(i.price), 0)
+        };
+        history.push(sale);
+        saveHistory(history);
+        console.log(`✅ [HISTÓRICO] Venda salva com sucesso para: ${customer.email}`);
+        return true;
+    } catch (e) {
+        console.error(`❌ [HISTÓRICO ERROR] Falha ao salvar venda:`, e.message);
+        return false;
+    }
 }
 
 // Mercado Pago
@@ -114,25 +122,20 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-const nodemailer = require('nodemailer');
-
-// Brevo (Nodemailer) Config
-const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: 'galosmurabrasill@gmail.com',
-        pass: process.env.BREVO_API_KEY // A chave será lida do painel do Render
-    }
-});
-
-// Email Sender Function (Using Resend API)
+// Email Sender Function (DISABLED - Manual Delivery Mode)
 async function sendEmail(customer, items) {
-    console.log(`📧 [DEBUG] Iniciando processo de envio de email para: ${customer.email}`);
-    const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
+    console.log(`ℹ️ [EMAIL] Modo manual ativo. E-mail não enviado para: ${customer.email}`);
+    /*
+    // Logic kept for future reference or reactivation
+    try {
+        // ... (Brevo/Nodemailer logic)
+    } catch (e) { ... }
+    */
+}
+console.log(`📧 [DEBUG] Iniciando processo de envio de email para: ${customer.email}`);
+const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
 
-    const htmlContent = `
+const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
             <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
                 <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
@@ -163,22 +166,22 @@ async function sendEmail(customer, items) {
         </div>
     `;
 
-    try {
-        const mailOptions = {
-            from: '"Mura Protocolo" <galosmurabrasill@gmail.com>',
-            to: customer.email,
-            subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
-            html: htmlContent
-        };
+try {
+    const mailOptions = {
+        from: '"Mura Protocolo" <galosmurabrasill@gmail.com>',
+        to: customer.email,
+        subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
+        html: htmlContent
+    };
 
-        console.log(`📡 [SMTP] Tentando enviar e-mail via Brevo para: ${customer.email}...`);
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ [SMTP] Sucesso! ID: ${info.messageId}`);
-        console.log(`📝 [SMTP] Resposta: ${info.response}`);
-    } catch (error) {
-        console.error('❌ [SMTP ERROR] Falha no envio:', error.message);
-        if (error.response) console.error('❌ [SMTP ERROR] Detalhes do Servidor:', error.response);
-    }
+    console.log(`📡 [SMTP] Tentando enviar e-mail via Brevo para: ${customer.email}...`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [SMTP] Sucesso! ID: ${info.messageId}`);
+    console.log(`📝 [SMTP] Resposta: ${info.response}`);
+} catch (error) {
+    console.error('❌ [SMTP ERROR] Falha no envio:', error.message);
+    if (error.response) console.error('❌ [SMTP ERROR] Detalhes do Servidor:', error.response);
+}
 }
 
 // ROTA DE TESTE DE EMAIL (Resend)
@@ -322,19 +325,18 @@ app.post('/api/checkout/card', async (req, res) => {
             metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
         const response = await payment.create({ body });
-        if (response.status === 'approved') {
-            logSale(customer, items); // LOG SUCCESSFUL CARD SALE
+        logSale(customer, items); // LOG SUCCESSFUL CARD SALE
 
-            // EMAIL: Send access link
-            sendEmail(customer, items);
+        // EMAIL: (DISABLED) Manual delivery mode
+        // sendEmail(customer, items);
 
-            res.json({ status: 'approved', id: response.id });
-        } else {
-            res.status(400).json({ status: response.status, status_detail: response.status_detail });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
+        res.json({ status: 'approved', id: response.id });
+    } else {
+        res.status(400).json({ status: response.status, status_detail: response.status_detail });
     }
+} catch (error) {
+    res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
+}
 });
 
 app.get('/api/payment/:id', async (req, res) => {
@@ -382,9 +384,8 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
                 logSale(customer, items);
 
-                // CRUCIAL: Call email sender
-                console.log(`📤 [WEBHOOK] Disparando e-mail para ${customer.email}...`);
-                sendEmail(customer, items);
+                // EMAIL: (DISABLED) Manual delivery mode
+                // sendEmail(customer, items);
 
                 console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
             }
