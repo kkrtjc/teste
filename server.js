@@ -79,7 +79,7 @@ function logSale(customer, items) {
         };
         history.push(sale);
         saveHistory(history);
-        console.log(`✅ [HISTÓRICO] Venda salva com sucesso para: ${customer.email}`);
+        console.log(`✅ [HISTÓRICO] Venda salva para ${customer.email}. Total no log: ${history.length}`);
         return true;
     } catch (e) {
         console.error(`❌ [HISTÓRICO ERROR] Falha ao salvar venda:`, e.message);
@@ -122,17 +122,64 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// Email Sender Function (DISABLED - Manual Delivery Mode)
+// Nodemailer Config (Gmail)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER || 'galosmurabrasill@gmail.com',
+        pass: process.env.EMAIL_PASS // Usando a chave 'wcaisazhfjsoeglr' do Render
+    }
+});
+
+// Email Sender Function
 async function sendEmail(customer, items) {
-    console.log(`ℹ️ [EMAIL] Modo manual ativo. E-mail não enviado para: ${customer.email}`);
-    /*
-    // Logic kept for future reference or reactivation
+    console.log(`📧 [EMAIL] Preparando envio para: ${customer.email}`);
+    const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
+
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
+            <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
+            </div>
+            
+            <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
+                <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+                <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <h3 style="color: #333;">Resumo do Pedido:</h3>
+                <ul style="color: #555;">
+                    ${items.map(i => `<li>${i.title}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+                <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    `;
+
     try {
-        const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
-        const htmlContent = `...`;
-        // nodemailer logic here...
-    } catch (e) { ... }
-    */
+        const mailOptions = {
+            from: `"Protocolo Elite" <${process.env.EMAIL_USER || 'galosmurabrasill@gmail.com'}>`,
+            to: customer.email,
+            subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
+            html: htmlContent
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`✅ [EMAIL SUCCESS] Enviado para ${customer.email}. ID: ${info.messageId}`);
+    } catch (error) {
+        console.error('❌ [EMAIL ERROR] Falha ao enviar via Gmail:', error.message);
+    }
 }
 
 // ROTA DE TESTE DE EMAIL (Resend)
@@ -153,10 +200,9 @@ app.get('/test-email', async (req, res) => {
 
         res.send(`
             <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-                <h1>Teste Brevo Enviado! 🚀</h1>
-                <p>O servidor tentou executar a função <strong>sendEmail</strong> via Brevo.</p>
-                <p>Verifique agora os <strong>Registros (Logs) do Render</strong>.</p>
-                <p>Se você receber o email em <b>galosmurabrasill@gmail.com</b>, a migração foi um sucesso!</p>
+                <h1>Teste Gmail SMTP Enviado! 🚀</h1>
+                <p>O servidor tentou enviar um e-mail para <b>galosmurabrasill@gmail.com</b>.</p>
+                <p>Verifique agora os <b>Registros (Logs) do Render</b> para confirmar o status.</p>
             </div>
         `);
     } catch (error) {
@@ -277,11 +323,9 @@ app.post('/api/checkout/card', async (req, res) => {
         };
         const response = await payment.create({ body });
         if (response.status === 'approved') {
-            logSale(customer, items); // LOG SUCCESSFUL CARD SALE
-
-            // EMAIL: (DISABLED) Manual delivery mode
-            // sendEmail(customer, items);
-
+            console.log(`✅ [CARTÃO] Pagamento Aprovado via Checkout Direto! ID: ${response.id}`);
+            logSale(customer, items);
+            sendEmail(customer, items); // Auto-email re-enabled
             res.json({ status: 'approved', id: response.id });
         } else {
             res.status(400).json({ status: response.status, status_detail: response.status_detail });
@@ -301,10 +345,9 @@ app.get('/api/payment/:id', async (req, res) => {
 });
 
 app.post('/api/webhooks/mercadopago', async (req, res) => {
-    console.log(`📡 [WEBHOOK] Chamada recebida! Query:`, JSON.stringify(req.query), `Body Topic:`, req.body.topic, `Body Type:`, req.body.type);
-
     const topic = req.query.topic || req.query.type || req.body.topic || req.body.type;
     const paymentId = req.query.id || (req.body.data && req.body.data.id) || req.body.id;
+    console.log(`📡 [WEBHOOK] Chamada recebida! Topic: ${topic}, ID: ${paymentId}`);
 
     if (topic === 'payment' || topic === 'payment.updated') {
         try {
@@ -336,8 +379,8 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
                 logSale(customer, items);
 
-                // EMAIL: (DISABLED) Manual delivery mode
-                // sendEmail(customer, items);
+                console.log(`📤 [WEBHOOK] Enviando e-mail automático...`);
+                sendEmail(customer, items);
 
                 console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
             }
