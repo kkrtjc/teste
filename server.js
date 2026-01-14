@@ -128,60 +128,11 @@ async function sendEmail(customer, items) {
     /*
     // Logic kept for future reference or reactivation
     try {
-        // ... (Brevo/Nodemailer logic)
+        const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
+        const htmlContent = `...`;
+        // nodemailer logic here...
     } catch (e) { ... }
     */
-}
-console.log(`📧 [DEBUG] Iniciando processo de envio de email para: ${customer.email}`);
-const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
-
-const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
-            <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
-            </div>
-            
-            <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
-                <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
-                </div>
-                
-                <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
-                <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
-                
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-                
-                <h3 style="color: #333;">Resumo do Pedido:</h3>
-                <ul style="color: #555;">
-                    ${items.map(i => `<li>${i.title}</li>`).join('')}
-                </ul>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
-                <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
-            </div>
-        </div>
-    `;
-
-try {
-    const mailOptions = {
-        from: '"Mura Protocolo" <galosmurabrasill@gmail.com>',
-        to: customer.email,
-        subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
-        html: htmlContent
-    };
-
-    console.log(`📡 [SMTP] Tentando enviar e-mail via Brevo para: ${customer.email}...`);
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [SMTP] Sucesso! ID: ${info.messageId}`);
-    console.log(`📝 [SMTP] Resposta: ${info.response}`);
-} catch (error) {
-    console.error('❌ [SMTP ERROR] Falha no envio:', error.message);
-    if (error.response) console.error('❌ [SMTP ERROR] Detalhes do Servidor:', error.response);
-}
 }
 
 // ROTA DE TESTE DE EMAIL (Resend)
@@ -325,18 +276,19 @@ app.post('/api/checkout/card', async (req, res) => {
             metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
         const response = await payment.create({ body });
-        logSale(customer, items); // LOG SUCCESSFUL CARD SALE
+        if (response.status === 'approved') {
+            logSale(customer, items); // LOG SUCCESSFUL CARD SALE
 
-        // EMAIL: (DISABLED) Manual delivery mode
-        // sendEmail(customer, items);
+            // EMAIL: (DISABLED) Manual delivery mode
+            // sendEmail(customer, items);
 
-        res.json({ status: 'approved', id: response.id });
-    } else {
-        res.status(400).json({ status: response.status, status_detail: response.status_detail });
+            res.json({ status: 'approved', id: response.id });
+        } else {
+            res.status(400).json({ status: response.status, status_detail: response.status_detail });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
     }
-} catch (error) {
-    res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
-}
 });
 
 app.get('/api/payment/:id', async (req, res) => {
