@@ -171,10 +171,13 @@ async function sendEmail(customer, items) {
             html: htmlContent
         };
 
+        console.log(`📡 [SMTP] Tentando enviar e-mail via Brevo para: ${customer.email}...`);
         const info = await transporter.sendMail(mailOptions);
-        console.log(`📧 Email enviado com sucesso via Brevo! ID: ${info.messageId}`);
+        console.log(`✅ [SMTP] Sucesso! ID: ${info.messageId}`);
+        console.log(`📝 [SMTP] Resposta: ${info.response}`);
     } catch (error) {
-        console.error('❌ [DEBUG] Erro catastrófico no sendEmail (Brevo):', error);
+        console.error('❌ [SMTP ERROR] Falha no envio:', error.message);
+        if (error.response) console.error('❌ [SMTP ERROR] Detalhes do Servidor:', error.response);
     }
 }
 
