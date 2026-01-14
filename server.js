@@ -114,9 +114,68 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// Serve Static Files
-app.use(express.static(__dirname));
-app.use('/uploads', express.static(UPLOADS_DIR));
+const nodemailer = require('nodemailer');
+
+// ... (Previous imports)
+
+// Email Transporter (Gmail)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Email Sender Function
+async function sendEmail(customer, items) {
+    const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
+
+    const mailOptions = {
+        from: '"O Segredo das Galinhas" <galosmurabrasill@gmail.com>',
+        to: customer.email,
+        subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
+                <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
+                </div>
+                
+                <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
+                    <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+                    <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
+                    
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                    
+                    <h3 style="color: #333;">Resumo do Pedido:</h3>
+                    <ul style="color: #555;">
+                        ${items.map(i => `<li>${i.title}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+                    <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
+                </div>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 Email enviado para ${customer.email}`);
+    } catch (error) {
+        console.error('❌ Erro ao enviar email:', error);
+    }
+}
+
+// ... (Rest of code)
 
 // Ebook Download Routes
 app.get('/download/:type', (req, res) => {
@@ -231,6 +290,10 @@ app.post('/api/checkout/card', async (req, res) => {
         const response = await payment.create({ body });
         if (response.status === 'approved') {
             logSale(customer, items); // LOG SUCCESSFUL CARD SALE
+
+            // EMAIL: Send access link
+            sendEmail(customer, items);
+
             res.json({ status: 'approved', id: response.id });
         } else {
             res.status(400).json({ status: response.status, status_detail: response.status_detail });
@@ -275,6 +338,10 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     }));
 
                     logSale(customer, items);
+
+                    // EMAIL: Send access link
+                    sendEmail(customer, items);
+
                     console.log(`📦 Venda registrada: ${customer.name} - ${itemTitles.join(', ')}`);
                 }
             }
