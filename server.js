@@ -119,10 +119,11 @@ const nodemailer = require('nodemailer');
 // Brevo (Nodemailer) Config
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
-    port: 587,
+    port: 465,
+    secure: true,
     auth: {
-        user: 'galosmurabrasill@gmail.com', // SEU E-MAIL CADASTRADO NO BREVO
-        pass: process.env.BREVO_API_KEY || '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'
+        user: 'galosmurabrasill@gmail.com',
+        pass: process.env.BREVO_API_KEY // A chave será lida do painel do Render
     }
 });
 
