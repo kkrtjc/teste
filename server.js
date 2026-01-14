@@ -119,6 +119,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Email Sender Function (Using Resend API)
 async function sendEmail(customer, items) {
+    console.log(`📧 [DEBUG] Iniciando processo de envio de email para: ${customer.email}`);
     const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
 
     const htmlContent = `
@@ -166,27 +167,37 @@ async function sendEmail(customer, items) {
             console.log(`📧 Email enviado com sucesso via Resend! ID: ${data.id}`);
         }
     } catch (error) {
-        console.error('❌ Erro inesperado no Resend:', error);
+        console.error('❌ [DEBUG] Erro catastrófico no sendEmail:', error);
     }
 }
 
 // ROTA DE TESTE DE EMAIL (Resend)
 app.get('/test-email', async (req, res) => {
     try {
-        const { data, error } = await resend.emails.send({
-            from: 'Teste <onboarding@resend.dev>',
-            to: 'galosmurabrasill@gmail.com',
-            subject: 'Teste Resend - Galo Mura',
-            text: 'Se você recebeu isso, o Resend está funcionando 100%! 🚀'
-        });
+        console.log("🛠️ [TESTE] Iniciando teste de fluxo completo de email...");
+        const customer = {
+            name: 'Cliente Teste Mura',
+            email: 'galosmurabrasill@gmail.com',
+            phone: '38999832950'
+        };
+        const items = [
+            { id: 'manejo', title: 'Manual de Manejo (Teste)', price: 10 },
+            { id: 'doencas', title: 'Guia de Doenças (Teste)', price: 5 }
+        ];
 
-        if (error) {
-            res.status(500).send(`<h1>Erro! ❌</h1><p>${error.message}</p>`);
-        } else {
-            res.send(`<h1>Sucesso! ✅</h1><p>Email enviado via Resend. ID: ${data.id}</p>`);
-        }
+        await sendEmail(customer, items);
+
+        res.send(`
+            <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1>Comando de Teste Enviado! 🚀</h1>
+                <p>O servidor tentou executar a função <strong>sendEmail</strong> completa.</p>
+                <p>Verifique agora os <strong>Registros (Logs) do Render</strong> para ver se apareceu:</p>
+                <code style="background: #eee; padding: 5px; display: block; margin: 10px 0;">📧 [DEBUG] Iniciando processo de envio...</code>
+                <p>Se você receber o email em <b>galosmurabrasill@gmail.com</b>, o template está OK!</p>
+            </div>
+        `);
     } catch (error) {
-        res.status(500).send(`<h1>Erro! ❌</h1><p>${error.message}</p>`);
+        res.status(500).send(`<h1>Erro no Teste! ❌</h1><p>${error.message}</p>`);
     }
 });
 
@@ -298,7 +309,8 @@ app.post('/api/checkout/card', async (req, res) => {
                 first_name: customer.name.split(' ')[0],
                 last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
                 identification: { type: 'CPF', number: customer.cpf }
-            }
+            },
+            metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
         const response = await payment.create({ body });
         if (response.status === 'approved') {
@@ -331,11 +343,16 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
         const paymentId = req.query.id || req.body.data.id;
         try {
             const paymentResult = await payment.get({ id: paymentId });
-            if (paymentResult.status === 'approved') {
-                console.log(`✅ Pagamento Aprovado! ID: ${paymentId}`);
+            console.log(`🔔 [WEBHOOK] Status do pagamento ${paymentId}: ${paymentResult.status}`);
 
-                // Enhanced logging with item reconstruction
-                if (paymentResult.metadata && paymentResult.metadata.customer_phone) {
+            if (paymentResult.status === 'approved') {
+                console.log(`✅ [WEBHOOK] Pagamento Aprovado! ID: ${paymentId}`);
+
+                // Check metadata - Mercado Pago might return it in different case or nested
+                const metadata = paymentResult.metadata || {};
+                console.log(`📋 [WEBHOOK] Metadata recebida:`, JSON.stringify(metadata));
+
+                if (metadata.customer_phone) {
                     const customer = {
                         name: `${paymentResult.payer.first_name} ${paymentResult.payer.last_name}`,
                         email: paymentResult.payer.email,
@@ -355,7 +372,9 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
                     // EMAIL: Send access link
                     sendEmail(customer, items);
 
-                    console.log(`📦 Venda registrada: ${customer.name} - ${itemTitles.join(', ')}`);
+                    console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
+                } else {
+                    console.warn(`⚠️ [WEBHOOK] Metadados ausentes ou incompletos para o pagamento ${paymentId}. Pulando envio de email.`);
                 }
             }
             res.sendStatus(200);
