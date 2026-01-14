@@ -119,17 +119,26 @@ const nodemailer = require('nodemailer');
 // ... (Previous imports)
 
 // Email Transporter (Gmail)
-// Email Transporter (Gmail) - Configuração Explicita (Porta 465 SSL)
+// Email Transporter (Gmail) - Tentativa V2 (Porta 587 TLS)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true para porta 465, false para outras
+    port: 587,
+    secure: false, // true para 465, false para outras
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false // Ajuda em alguns casos de erro de certificado no Render
+        rejectUnauthorized: false
+    }
+});
+
+// Verificar conexão ao iniciar
+transporter.verify(function (error, success) {
+    if (error) {
+        console.log('❌ Erro na conexão SMTP:', error);
+    } else {
+        console.log('✅ Servidor de Email pronto para enviar mensagens');
     }
 });
 
