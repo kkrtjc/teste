@@ -114,8 +114,17 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const nodemailer = require('nodemailer');
+
+// Brevo (Nodemailer) Config
+const transporter = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    auth: {
+        user: 'galosmurabrasill@gmail.com', // SEU E-MAIL CADASTRADO NO BREVO
+        pass: process.env.BREVO_API_KEY || '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'
+    }
+});
 
 // Email Sender Function (Using Resend API)
 async function sendEmail(customer, items) {
@@ -154,20 +163,17 @@ async function sendEmail(customer, items) {
     `;
 
     try {
-        const { data, error } = await resend.emails.send({
-            from: 'Protocolo Elite <onboarding@resend.dev>',
+        const mailOptions = {
+            from: '"Mura Protocolo" <galosmurabrasill@gmail.com>',
             to: customer.email,
             subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
-            html: htmlContent,
-        });
+            html: htmlContent
+        };
 
-        if (error) {
-            console.error('❌ Erro ao enviar email via Resend:', error);
-        } else {
-            console.log(`📧 Email enviado com sucesso via Resend! ID: ${data.id}`);
-        }
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`📧 Email enviado com sucesso via Brevo! ID: ${info.messageId}`);
     } catch (error) {
-        console.error('❌ [DEBUG] Erro catastrófico no sendEmail:', error);
+        console.error('❌ [DEBUG] Erro catastrófico no sendEmail (Brevo):', error);
     }
 }
 
@@ -189,11 +195,10 @@ app.get('/test-email', async (req, res) => {
 
         res.send(`
             <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-                <h1>Comando de Teste Enviado! 🚀</h1>
-                <p>O servidor tentou executar a função <strong>sendEmail</strong> completa.</p>
-                <p>Verifique agora os <strong>Registros (Logs) do Render</strong> para ver se apareceu:</p>
-                <code style="background: #eee; padding: 5px; display: block; margin: 10px 0;">📧 [DEBUG] Iniciando processo de envio...</code>
-                <p>Se você receber o email em <b>galosmurabrasill@gmail.com</b>, o template está OK!</p>
+                <h1>Teste Brevo Enviado! 🚀</h1>
+                <p>O servidor tentou executar a função <strong>sendEmail</strong> via Brevo.</p>
+                <p>Verifique agora os <strong>Registros (Logs) do Render</strong>.</p>
+                <p>Se você receber o email em <b>galosmurabrasill@gmail.com</b>, a migração foi um sucesso!</p>
             </div>
         `);
     } catch (error) {
@@ -338,9 +343,12 @@ app.get('/api/payment/:id', async (req, res) => {
 });
 
 app.post('/api/webhooks/mercadopago', async (req, res) => {
-    const topic = req.query.topic || req.query.type;
-    if (topic === 'payment') {
-        const paymentId = req.query.id || req.body.data.id;
+    console.log(`📡 [WEBHOOK] Chamada recebida! Query:`, JSON.stringify(req.query), `Body Topic:`, req.body.topic, `Body Type:`, req.body.type);
+
+    const topic = req.query.topic || req.query.type || req.body.topic || req.body.type;
+    const paymentId = req.query.id || (req.body.data && req.body.data.id) || req.body.id;
+
+    if (topic === 'payment' || topic === 'payment.updated') {
         try {
             const paymentResult = await payment.get({ id: paymentId });
             console.log(`🔔 [WEBHOOK] Status do pagamento ${paymentId}: ${paymentResult.status}`);
@@ -348,34 +356,33 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
             if (paymentResult.status === 'approved') {
                 console.log(`✅ [WEBHOOK] Pagamento Aprovado! ID: ${paymentId}`);
 
-                // Check metadata - Mercado Pago might return it in different case or nested
+                // Check metadata
                 const metadata = paymentResult.metadata || {};
-                console.log(`📋 [WEBHOOK] Metadata recebida:`, JSON.stringify(metadata));
+                console.log(`📋 [WEBHOOK] Métadados encontrados:`, JSON.stringify(metadata));
 
-                if (metadata.customer_phone) {
-                    const customer = {
-                        name: `${paymentResult.payer.first_name} ${paymentResult.payer.last_name}`,
-                        email: paymentResult.payer.email,
-                        phone: paymentResult.metadata.customer_phone
-                    };
+                // Reconstruct customer data - Use Payer as fallback if metadata is missing
+                const customer = {
+                    name: (paymentResult.payer && paymentResult.payer.first_name)
+                        ? `${paymentResult.payer.first_name} ${paymentResult.payer.last_name || ''}`.trim()
+                        : 'Cliente',
+                    email: (paymentResult.payer && paymentResult.payer.email) || 'galosmurabrasill@gmail.com',
+                    phone: metadata.customer_phone || (paymentResult.metadata && paymentResult.metadata.customer_phone) || 'Sem Telefone'
+                };
 
-                    // Try to reconstruct items from description
-                    // Description format: "Product 1, Product 2, Product 3"
-                    const itemTitles = paymentResult.description.split(', ');
-                    const items = itemTitles.map(title => ({
-                        title: title,
-                        price: paymentResult.transaction_amount / itemTitles.length // Approximate split
-                    }));
+                // Reconstruct items from description
+                const itemTitles = (paymentResult.description || 'Produto').split(', ');
+                const items = itemTitles.map(title => ({
+                    title: title,
+                    price: paymentResult.transaction_amount / itemTitles.length
+                }));
 
-                    logSale(customer, items);
+                logSale(customer, items);
 
-                    // EMAIL: Send access link
-                    sendEmail(customer, items);
+                // CRUCIAL: Call email sender
+                console.log(`📤 [WEBHOOK] Disparando e-mail para ${customer.email}...`);
+                sendEmail(customer, items);
 
-                    console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
-                } else {
-                    console.warn(`⚠️ [WEBHOOK] Metadados ausentes ou incompletos para o pagamento ${paymentId}. Pulando envio de email.`);
-                }
+                console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
             }
             res.sendStatus(200);
         } catch (error) {
