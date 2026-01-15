@@ -305,6 +305,8 @@ app.post('/api/checkout/pix', async (req, res) => {
 app.post('/api/checkout/card', async (req, res) => {
     try {
         const { items, customer, token, installments, issuer_id, payment_method_id } = req.body;
+        console.log(`💳 [CARTÃO] Iniciando Processamento: ${customer.email} - Token: ${token.substring(0, 10)}...`);
+
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
         const body = {
             transaction_amount: totalAmount,
@@ -321,16 +323,21 @@ app.post('/api/checkout/card', async (req, res) => {
             },
             metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
+
         const response = await payment.create({ body });
+
         if (response.status === 'approved') {
-            console.log(`✅ [CARTÃO] Pagamento Aprovado via Checkout Direto! ID: ${response.id}`);
+            console.log(`✅ [CARTÃO] Pagamento aprovado! ID: ${response.id}`);
             logSale(customer, items);
-            sendEmail(customer, items); // Auto-email re-enabled
+            sendEmail(customer, items);
             res.json({ status: 'approved', id: response.id });
         } else {
+            console.warn(`❌ [CARTÃO] Pagamento Recusado: ${response.status} (${response.status_detail})`);
             res.status(400).json({ status: response.status, status_detail: response.status_detail });
         }
     } catch (error) {
+        console.error('❌ [CARTÃO ERROR] Falha Crítica:', error.message);
+        if (error.cause) console.error('Causa:', JSON.stringify(error.cause));
         res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
     }
 });
@@ -396,3 +403,4 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`\n🚀 Mura Engine running on port ${PORT}`));
+
