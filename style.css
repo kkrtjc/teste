@@ -1502,6 +1502,111 @@ footer {
     font-weight: 700;
 }
 
+/* Checkout Refinement: Natural Authority & Avatar Stack */
+.authority-badge-v2 {
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 12px 18px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #444;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: left;
+    margin: 0 auto;
+    max-width: 90%;
+}
+
+.authority-badge-v2 i {
+    font-size: 1.2rem;
+    color: #D4AF37;
+}
+
+.checkout-social-proof-stack {
+    padding: 1rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.avatar-stack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.avatar-stack img,
+.avatar-more {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    margin-left: -12px;
+    object-fit: cover;
+    background: #eee;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-stack img:first-child {
+    margin-left: 0;
+}
+
+.avatar-more {
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+}
+
+.checkout-social-proof-stack p {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Waiting Payment: Pulsing Logo */
+.logo-pulse-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem 0;
+}
+
+.pulsing-logo-check {
+    height: 80px;
+    animation: pulseLogo 2s infinite ease-in-out;
+    mix-blend-mode: multiply;
+    filter: brightness(0.9) contrast(1.2);
+    /* Remove o branco e deixa o galo como uma 'sombra' no fundo escuro */
+}
+
+@keyframes pulseLogo {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+    }
+}
+
+@media (max-width: 480px) {
+    .authority-badge-v2 {
+        font-size: 0.85rem;
+        padding: 10px 14px;
+    }
+}
+
 .secure-text i {
     color: #2e7d32;
     /* Stronger green */
@@ -1571,6 +1676,25 @@ footer {
     color: var(--color-primary);
     font-size: 2rem;
     font-weight: 800;
+}
+
+.checkout-guarantee-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f0f7f0;
+    border: 1px solid #c8e6c9;
+    padding: 12px 15px;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    color: #1b5e20;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.checkout-guarantee-mini i {
+    font-size: 1.2rem;
+    color: #2e7d32;
 }
 
 /* Mobile Adjust */
@@ -1945,6 +2069,20 @@ footer {
 .trust-badges img:hover {
     filter: none;
     opacity: 1;
+}
+
+/* Global Logo Transparency/Shadow Fix */
+.logo-transparent,
+.logo-footer,
+.logo img {
+    mix-blend-mode: multiply;
+    filter: brightness(1.1) contrast(1.1);
+    transition: var(--transition);
+}
+
+.header .logo img {
+    filter: brightness(1.5) contrast(1.2);
+    /* Garantir visibilidade no header escuro */
 }
 
 .footer-bottom {
@@ -2532,71 +2670,128 @@ footer {
     font-size: 1.1rem;
 }
 
-/* Form Styling */
+/* Forms & Inputs - FIXED CARET POSITION */
+.checkout-step {
+    transition: opacity 0.3s ease;
+}
+
+.checkout-step.hidden {
+    display: none;
+}
+
 .form-group {
-    margin-bottom: 1.2rem;
-    position: relative;
+    margin-bottom: 18px;
 }
 
 .form-group label {
     display: block;
     font-size: 0.8rem;
-    margin-bottom: 0.5rem;
     color: #aaa;
+    margin-bottom: 8px;
     font-weight: 600;
-    margin-left: 4px;
+    margin-left: 2px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 16px;
+    color: #555;
+    font-size: 0.9rem;
+    transition: color 0.3s;
+    pointer-events: none;
 }
 
 .form-group input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 14px 16px;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    padding: 14px 16px 14px 44px;
+    /* Left padding space for icon */
+    border-radius: 14px;
     color: #fff;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-group input::placeholder {
+    color: #444;
 }
 
 .form-group input:focus {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--color-secondary);
-    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
     outline: none;
 }
 
-/* Smart Validation Feedback */
-.form-group input.touched.invalid {
-    border-color: #ef4444;
-    /* Red */
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-    background: rgba(239, 68, 68, 0.05);
+.form-group input:focus+i,
+.input-wrapper:focus-within i {
+    color: var(--color-secondary);
 }
 
-.form-group input.touched.valid {
-    border-color: #10b981;
-    /* Green */
-    background: rgba(16, 185, 129, 0.05);
+/* Step Switching Buttons */
+.btn-next-step,
+.btn-pay-now {
+    width: 100%;
+    background: var(--color-secondary);
+    color: #000;
+    border: none;
+    padding: 18px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.25);
 }
 
-.form-group input.touched.invalid:focus {
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+.btn-next-step:hover,
+.btn-pay-now:hover {
+    transform: translateY(-2px);
+    background: var(--color-secondary-hover);
+    box-shadow: 0 15px 30px rgba(212, 175, 55, 0.4);
 }
 
-.two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+.btn-back-step {
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+    transition: color 0.3s;
 }
 
-/* Method Selector */
+.btn-back-step:hover {
+    color: #fff;
+}
+
+/* Method Selector Redesign */
 .method-selector {
     display: flex;
     gap: 10px;
-    margin-bottom: 2rem;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 4px;
-    border-radius: 12px;
+    margin-bottom: 25px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .method-btn {
@@ -2604,21 +2799,21 @@ footer {
     padding: 12px;
     background: transparent;
     border: none;
-    color: #666;
-    border-radius: 8px;
+    color: #777;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     transition: all 0.3s;
 }
 
 .method-btn.active {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--color-secondary);
+    border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 .method-btn i {
@@ -2630,46 +2825,55 @@ footer {
     /* Brand color for Pix */
 }
 
-/* Pay Button */
-.btn-pay-now {
-    width: 100%;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    /* Green Gradient */
-    color: #fff;
-    border: none;
-    padding: 18px;
+/* Price summary Redesign */
+.price-summary-box {
+    background: rgba(212, 175, 55, 0.05);
     border-radius: 14px;
-    font-weight: 800;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 1.5rem;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    position: relative;
-    overflow: hidden;
+    padding: 15px;
+    margin-top: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
 }
 
-.btn-pay-now::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price-row span {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.price-row strong {
+    color: #fff;
+    font-size: 1.2rem;
+}
+
+.custom-select {
     width: 100%;
-    height: 100%;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transform: skewX(-15deg) translateX(-150%);
-    transition: 0.5s;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 18px;
 }
 
-.btn-pay-now:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.btn-pay-now:hover::after {
-    transform: skewX(-15deg) translateX(150%);
-    transition: 0.7s ease-in-out;
+.secure-badges-mini {
+    margin-top: 20px;
+    text-align: center;
+    color: #555;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 /* Pix Result Area */

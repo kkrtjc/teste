@@ -231,11 +231,13 @@ async function openCheckout(productId) {
         renderOrderBumps(productData.fullBumps);
         updateTotal();
 
-        // 5. Transition to Modal
+        // 5. Initialize Navigation (Single Step)
+        switchMethod('pix');
+
+        // 6. Transition to Modal
         setTimeout(() => {
             if (secureOverlay) secureOverlay.classList.remove('active');
             checkoutModal.classList.add('active');
-            switchMethod('pix');
         }, 2200);
 
     } catch (err) {
@@ -265,9 +267,6 @@ function renderOrderBumps(bumps) {
 
 function toggleBump(bumpId) {
     const chk = document.getElementById(`bump-chk-${bumpId}`);
-    // If called from the container click, 'chk.checked' hasn't changed yet 
-    // BUT we manually set it in toggleBump if we want.
-    // Let's make it simpler:
     const isSelected = cart.bumps.includes(bumpId);
 
     if (isSelected) {
@@ -297,11 +296,13 @@ if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
         checkoutModal.classList.remove('active');
         document.body.style.overflow = '';
-        document.documentElement.style.overflow = ''; // Unlock html
+        document.documentElement.style.overflow = '';
 
         // Reset Views
-        document.getElementById('pix-area').style.display = 'block';
-        document.getElementById('pix-result').classList.add('hidden');
+        const mainView = document.getElementById('checkout-main-view');
+        const pixResult = document.getElementById('pix-result');
+        if (mainView) mainView.classList.remove('hidden');
+        if (pixResult) pixResult.classList.add('hidden');
         document.getElementById('payment-form').reset();
     });
 }
@@ -316,20 +317,23 @@ methodBtns.forEach(btn => {
 });
 
 function switchMethod(method) {
+    if (!method) return;
+
     // Buttons UI
     methodBtns.forEach(b => b.classList.remove('active'));
-    document.querySelector(`.method-btn[data-method="${method}"]`).classList.add('active');
+    const targetBtn = document.querySelector(`.method-btn[data-method="${method}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
 
     // Areas UI
     const pixArea = document.getElementById('pix-area');
     const cardArea = document.getElementById('card-area');
 
     if (method === 'pix') {
-        pixArea.classList.remove('hidden');
-        cardArea.classList.add('hidden');
+        if (pixArea) pixArea.classList.remove('hidden');
+        if (cardArea) cardArea.classList.add('hidden');
     } else {
-        pixArea.classList.add('hidden');
-        cardArea.classList.remove('hidden');
+        if (pixArea) pixArea.classList.add('hidden');
+        if (cardArea) cardArea.classList.remove('hidden');
     }
 }
 
@@ -337,22 +341,17 @@ function updateInstallments(price) {
     const select = document.getElementById('card-installments');
     select.innerHTML = '';
 
-    // Simple logic: up to 12x with 2% interest/mo (Simulation)
     for (let i = 1; i <= 12; i++) {
         let amount;
         let text;
-
         if (i === 1) {
             amount = price;
-            text = `1x de ${amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (Sem juros)`;
+            text = `1x de ${formatBRL(amount)} (Sem juros)`;
         } else {
-            // Simulated simple interest
-            const total = price * (1 + (0.02 * i));
+            const total = price * (1 + (0.015 * i)); // Lowered interest to 1.5%
             const parcel = total / i;
-            amount = total;
-            text = `${i}x de ${parcel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (Total: ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
+            text = `${i}x de ${formatBRL(parcel)} (Total: ${formatBRL(total)})`;
         }
-
         const option = document.createElement('option');
         option.value = i;
         option.innerText = text;
@@ -421,7 +420,7 @@ async function handlePayment(method) {
             const data = await response.json();
 
             if (data.qr_code_base64) {
-                document.getElementById('pix-area').classList.add('hidden');
+                document.getElementById('checkout-main-view').classList.add('hidden');
                 document.getElementById('pix-result').classList.remove('hidden');
 
                 document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
@@ -475,25 +474,44 @@ async function handlePayment(method) {
     } else if (method === 'card') {
         const btn = document.getElementById('btn-pay-card');
         const originalText = btn.innerText;
+
+        // 0. Manual Validation for Card Fields
+        const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
+        const cardHolder = document.getElementById('card-holder').value;
+        const cardExpiry = document.getElementById('card-expiration').value;
+        const cardCVV = document.getElementById('card-cvv').value;
+
+        if (!validate.card(cardNumber)) return showFieldError('card-number', errorMessages['card-number']);
+        if (!validate.name(cardHolder)) return showFieldError('card-holder', errorMessages['card-holder']);
+        if (!validate.date(cardExpiry)) return showFieldError('card-expiration', errorMessages['card-expiration']);
+        if (!validate.cvv(cardCVV)) return showFieldError('card-cvv', errorMessages['card-cvv']);
+
         btn.innerText = 'Processando...';
         btn.disabled = true;
 
         try {
             // 1. Create Card Token
-            const token = await mp.createCardToken({
-                cardNumber: document.getElementById('card-number').value.replace(/\s/g, ''),
-                cardholderName: document.getElementById('card-holder').value,
-                cardExpirationMonth: document.getElementById('card-expiration').value.split('/')[0],
-                cardExpirationYear: '20' + document.getElementById('card-expiration').value.split('/')[1], // Assuming MM/YY format input
-                securityCode: document.getElementById('card-cvv').value,
-                identificationType: 'CPF', // Hardcoded for simplicity as standard in Brazil
-                identificationNumber: document.getElementById('payer-cpf').value.replace(/\D/g, '') // Use the main CPF field
-            });
+            console.log("Gerando token do cartão...");
+            const cardTokenParams = {
+                cardNumber: cardNumber,
+                cardholderName: cardHolder,
+                cardExpirationMonth: cardExpiry.split('/')[0],
+                cardExpirationYear: '20' + cardExpiry.split('/')[1],
+                securityCode: cardCVV,
+                identificationType: 'CPF',
+                identificationNumber: customer.cpf
+            };
 
-            console.log("Token generated:", token.id);
+            const token = await mp.createCardToken(cardTokenParams);
 
-            // 2. Detect Payment Method (Simple Regex Helper)
-            const bin = document.getElementById('card-number').value.replace(/\D/g, '').substring(0, 6);
+            if (!token || !token.id) {
+                throw new Error("Não foi possível gerar o token de segurança do cartão.");
+            }
+
+            console.log("Token gerado com sucesso:", token.id);
+
+            // 2. Detect Payment Method
+            const bin = cardNumber.substring(0, 6);
             const paymentMethodId = detectPaymentMethod(bin);
 
             if (!paymentMethodId) {
@@ -504,6 +522,7 @@ async function handlePayment(method) {
             }
 
             // 3. Send Token to Backend
+            console.log("Enviando para o processamento final...");
             const response = await fetch(`${API_URL}/api/checkout/card`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -520,17 +539,25 @@ async function handlePayment(method) {
             const result = await response.json();
 
             if (result.status === 'approved') {
+                console.log("Pagamento Aprovado!");
                 const productIds = items.map(i => i.id).join(',');
                 window.location.href = `downloads.html?items=${productIds}`;
             } else {
-                alert('Pagamento Recusado: ' + (result.status_detail || 'Verifique os dados.'));
+                console.warn("Pagamento Recusado:", result);
+                let failMsg = 'Ocorreu um problema com seu cartão. Por favor, tente outro ou use o Pix.';
+                if (result.status_detail === 'cc_rejected_bad_filled_card_number') failMsg = 'Número do cartão inválido.';
+                if (result.status_detail === 'cc_rejected_bad_filled_date') failMsg = 'Data de validade incorreta.';
+                if (result.status_detail === 'cc_rejected_bad_filled_security_code') failMsg = 'Código de segurança (CVV) inválido.';
+                if (result.status_detail === 'cc_rejected_insufficient_amount') failMsg = 'Saldo insuficiente.';
+
+                alert('Pagamento Recusado: ' + failMsg);
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
 
         } catch (e) {
-            console.error(e);
-            alert('Erro ao processar cartão: ' + (e.message || 'Verifique os dados.'));
+            console.error("Erro no processamento do cartão:", e);
+            alert('Erro ao processar cartão: ' + (e.message || 'Verifique se os dados estão corretos e tente novamente.'));
             btn.disabled = false;
             btn.innerText = originalText;
         }
@@ -656,7 +683,7 @@ const validate = {
     cvv: v => v.length >= 3,
     name: v => {
         const parts = v.trim().split(/\s+/);
-        return parts.length >= 2 && parts.every(p => p.length >= 2);
+        return parts.length >= 2 && parts.every(p => p.length >= 1);
     },
     card: v => {
         const clean = v.replace(/\D/g, '');
@@ -712,7 +739,7 @@ function setupFields() {
         { id: 'card-number', type: 'card' },
         { id: 'card-expiration', type: 'date' },
         { id: 'card-cvv', type: 'cvv' },
-        { id: 'card-holder', type: 'name' }
+        { id: 'card-holder', type: 'text' }
     ];
 
     fields.forEach(f => {
