@@ -90,7 +90,7 @@ function logSale(customer, items) {
 
 // Mercado Pago
 const client = new mercadopago.MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN || 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5'
+    accessToken: process.env.MP_ACCESS_TOKEN || 'APP_USR-8523040676915858-010416-38801bbcf39a1cf4c2d6e3680e247ab7-3111470347'
 });
 const payment = new mercadopago.Payment(client);
 
