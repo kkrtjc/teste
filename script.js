@@ -162,20 +162,27 @@ async function openCheckout(productId) {
             if (logoOverlay) {
                 logoOverlay.classList.add('active');
 
-                // 3. Wait for slide and pulse, then run left
+                // 3. Wait for slide and pulse
                 setTimeout(() => {
+                    // Start Logo Exit
                     logoOverlay.classList.add('run-left');
 
-                    // Smooth overlap: Show checkout slightly before logo is fully gone
+                    // Show Checkout IMMEDIATELY with overlap
+                    checkoutModal.classList.add('active');
+
+                    // 4. Cleanup Overlay only after it's fully gone (Fade out background)
                     setTimeout(() => {
-                        logoOverlay.classList.remove('active', 'run-left');
-                        checkoutModal.classList.add('active');
-                    }, 400); // overlap timing
-                }, 2600); // total sequence timing
+                        logoOverlay.style.opacity = '0'; // Fade out overlay background smoothly
+                        setTimeout(() => {
+                            logoOverlay.classList.remove('active', 'run-left');
+                            logoOverlay.style.opacity = '1'; // Reset for next time
+                        }, 400);
+                    }, 100);
+                }, 2600); // Sequence duration
             } else {
                 checkoutModal.classList.add('active');
             }
-        }, 1800); // secure lock duration
+        }, 1800); // Secure lock duration
 
     } catch (err) {
         console.error("Error opening checkout:", err);

@@ -842,14 +842,14 @@ footer {
         display: flex;
         flex-direction: row;
         overflow-x: auto !important;
-        /* Força o scroll horizontal */
-        overflow-y: hidden;
+        /* Força o scroll horizontal sem travar o vertical */
+        overflow-y: visible;
         gap: 1rem;
         scroll-snap-type: x mandatory;
 
-        /* Melhorias para toque */
+        /* Melhorias para toque: Permite scroll vertical (pan-y) mesmo sobre os cards */
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
+        touch-action: pan-x pan-y;
 
         padding-bottom: 2rem;
         /* Mais espaço para scrollbar */
@@ -4131,15 +4131,16 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
     background: #000;
     z-index: 9999;
     display: none;
+    opacity: 1;
+    /* Inicia opaco */
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    will-change: opacity;
+    transition: opacity 0.4s ease;
+    /* Transição de saída suave */
 }
 
 .checkout-logo-overlay.active {
@@ -4155,28 +4156,6 @@ body {
     transform: translateX(100vw);
     opacity: 0;
     will-change: transform, opacity;
-}
-
-.curved-text-svg {
-    width: 600px;
-    height: 300px;
-    position: absolute;
-    top: -100px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    pointer-events: none;
-}
-
-.curved-text-svg text {
-    fill: none;
-    stroke: var(--color-secondary);
-    stroke-width: 1.5px;
-    font-family: var(--font-heading);
-    font-weight: 900;
-    font-size: 38px;
-    letter-spacing: 5px;
-    text-transform: uppercase;
 }
 
 .animate-logo {
@@ -4198,6 +4177,11 @@ body {
 }
 
 @keyframes logoSlideIn {
+    from {
+        transform: translateX(100vw);
+        opacity: 0;
+    }
+
     to {
         transform: translateX(0);
         opacity: 1;
