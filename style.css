@@ -584,26 +584,26 @@ ul {
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     position: absolute;
-    top: -25px;
-    /* Ajustado para não cortar */
+    top: 5px;
+    /* Subi um pouco para não bater no título */
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.85rem;
     font-weight: 800;
     white-space: nowrap;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.6);
     z-index: 10;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    border: 1px solid #fff;
+    letter-spacing: 1.5px;
+    border: 2px solid #fff;
 }
 
 .price-card.featured {
     border: 2px solid var(--color-secondary);
     box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
     z-index: 2;
-    padding-top: 3rem;
-    /* Espaço extra para o badge não sobrepor o título */
+    padding-top: 5rem;
+    /* Aumentado para o badge ter respiro total do título */
     /* Extra space for the badge */
 }
 
@@ -1598,8 +1598,8 @@ footer {
 }
 
 .pulsing-logo-check {
-    height: 130px;
-    /* Aumentado conforme solicitado */
+    height: 180px;
+    /* Bem maior agora */
     animation: pulseLogo 2s infinite ease-in-out;
     mix-blend-mode: multiply;
     filter: brightness(0.9) contrast(1.2);
@@ -2529,17 +2529,24 @@ footer {
 
     /* Mobile Hero Adjustment to "Zoom Out" */
     .hero {
-        /* 
-           COMO AJUSTAR O "ZOOM":
-           - 55vh = Mais longe (aparece mais imagem)
-           - 70vh = Mais perto (imagem maior)
-           Mude o valor abaixo para controlar.
-        */
         min-height: 55vh;
-        padding: 100px 0 60px;
     }
 
-    /* Checkout Modal Styles */
+    .section-padding {
+        padding: 60px 0;
+    }
+}
+
+/* Footer Logo Refinement */
+.logo-footer {
+    height: 100px;
+    /* Bem imponente no final */
+    margin-bottom: 15px;
+    transition: transform 0.3s ease;
+}
+
+.logo-footer:hover {
+    transform: scale(1.05);
 }
 
 /* =========================================
@@ -4106,8 +4113,8 @@ body {
 }
 
 .sticky-logo {
-    height: 65px;
-    /* Aumentado conforme solicitado */
+    height: 85px;
+    /* Bem imponente no desktop */
     transition: transform 0.3s ease;
 }
 
@@ -4121,8 +4128,8 @@ body {
     }
 
     .sticky-logo {
-        height: 45px !important;
-        /* Aumentado no mobile */
+        height: 55px !important;
+        /* Ainda maior no mobile */
     }
 }
 
