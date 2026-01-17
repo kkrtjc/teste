@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const testimonialsTrack = document.getElementById('testimonials-track');
     if (testimonialsTrack) {
-        const loopContent = [...testimonials, ...testimonials, ...testimonials];
+        const loopContent = [...testimonials, ...testimonials, ...testimonials, ...testimonials];
         loopContent.forEach(t => {
             const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
             const card = document.createElement('div');
