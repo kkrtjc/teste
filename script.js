@@ -212,6 +212,7 @@ function renderOrderBumps(bumps) {
         if (!imgSrc) {
             if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.png';
             else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.png';
+            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_v2.png';
         }
 
         return `
