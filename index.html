@@ -584,8 +584,7 @@
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
                                     <label for="card-number" style="margin-bottom: 0;">Número do Cartão</label>
-                                    <button type="button" class="btn-scan-card-outer"
-                                        onclick="document.getElementById('card-number').focus()"
+                                    <button type="button" class="btn-scan-card-outer" id="btn-scan-trigger"
                                         title="Escanear Cartão">
                                         <i class="fa-solid fa-camera"></i> Escanear
                                     </button>
@@ -594,6 +593,9 @@
                                     <i class="fa-solid fa-credit-card"></i>
                                     <input type="text" id="card-number" placeholder="0000 0000 0000 0000"
                                         autocomplete="cc-number">
+                                    <!-- Hidden camera input for scanning -->
+                                    <input type="file" id="scan-camera-input" accept="image/*" capture="camera"
+                                        style="display: none;">
                                 </div>
                             </div>
 

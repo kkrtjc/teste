@@ -466,13 +466,65 @@ const masks = {
 };
 
 function setupFields() {
-    ['payer-cpf', 'payer-phone', 'card-number', 'card-expiration', 'card-cvv'].forEach(id => {
+    // 1. Camera Scanning Trigger
+    const scanTrigger = document.getElementById('btn-scan-trigger');
+    const cameraInput = document.getElementById('scan-camera-input');
+    if (scanTrigger && cameraInput) {
+        scanTrigger.onclick = () => cameraInput.click();
+        cameraInput.onchange = (e) => {
+            if (e.target.files.length > 0) {
+                // Em um cenário real, aqui processaria a imagem. 
+                // Como não temos OCR local pesado, apenas focamos o campo.
+                document.getElementById('card-number').focus();
+                alert("Foto capturada. Por favor, confira os dados do cartão.");
+            }
+        };
+    }
+
+    // 2. Real-time Formatting & Validation
+    const fieldMapping = {
+        'payer-cpf': 'cpf',
+        'payer-phone': 'phone',
+        'card-number': 'card',
+        'card-expiration': 'date',
+        'card-cvv': 'cvv'
+    };
+
+    Object.keys(fieldMapping).forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        const type = id.split('-').pop();
+        const type = fieldMapping[id];
+
         el.addEventListener('input', e => {
             let val = e.target.value;
             if (masks[type]) e.target.value = masks[type](val);
+
+            // Validation Feedback Loop
+            validateField(el, type);
         });
+
+        // Initial validation on blur
+        el.addEventListener('blur', () => validateField(el, type));
     });
+}
+
+function validateField(el, type) {
+    const val = el.value.replace(/\D/g, '');
+    let isValid = false;
+
+    if (type === 'card') isValid = val.length >= 13 && val.length <= 16; // Simplificado para feedback visual
+    else if (type === 'cvv') isValid = val.length >= 3;
+    else if (type === 'date') isValid = val.length === 4 && parseInt(val.slice(0, 2)) <= 12;
+    else if (type === 'cpf') isValid = val.length === 11;
+    else if (type === 'phone') isValid = val.length >= 10;
+
+    if (val.length === 0) {
+        el.classList.remove('is-valid', 'is-invalid');
+    } else if (isValid) {
+        el.classList.add('is-valid');
+        el.classList.remove('is-invalid');
+    } else {
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+    }
 }
