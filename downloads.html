@@ -10,6 +10,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@700;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1346740157465853');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1346740157465853&ev=PageView&noscript=1" />
+    </noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- TikTok Pixel Code -->
+    <script>
+        !function (w, d, t) {
+            w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || []; ttq.methods = ["page", "track", "identify", "instances", "load", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"], ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < ttq.methods.length; i++)ttq.setAndDefer(ttq, ttq.methods[i]); ttq.instance = function (t) { for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++)ttq.setAndDefer(e, ttq.methods[n]); return e }, ttq.load = function (e, n) { var i = "https://analytics.tiktok.com/i18n/pixel/events.js"; ttq._i = ttq._i || {}, ttq._i[e] = [], ttq._i[e]._u = i, ttq._t = ttq._t || {}, ttq._t[e] = +new Date, ttq._o = ttq._o || {}, ttq._o[e] = n || {}; var o = d.createElement("script"); o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + t; var a = d.getElementsByTagName("script")[0]; a.parentNode.insertBefore(o, a) };
+            ttq.load('D4VFSO3C77U98L8KBEF0');
+            ttq.page();
+        }(window, document, 'ttq');
+    </script>
+    <!-- End TikTok Pixel Code -->
     <style>
         :root {
             --color-primary: #D4AF37;
@@ -405,6 +436,27 @@
             const text = encodeURIComponent(`Olá! Acabei de adquirir: ${productList.join(', ')}. Gostaria de receber meu acesso por aqui também.`);
             window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
         });
+
+        // --- Marketing Tracking: Purchase ---
+        const total = parseFloat(params.get('total') || '0');
+        if (items.length > 0) {
+            if (typeof fbq === 'function') {
+                fbq('track', 'Purchase', {
+                    value: total,
+                    currency: 'BRL',
+                    content_ids: items,
+                    content_type: 'product'
+                });
+            }
+            if (typeof ttq === 'object') {
+                ttq.track('CompletePayment', {
+                    value: total,
+                    currency: 'BRL',
+                    contents: items.map(id => ({ content_id: id }))
+                });
+            }
+            console.log('✅ Purchase tracked:', { total, items });
+        }
 
         // Fallback: if no items detected, show all (safety measure)
         if (!hasManejo && !hasDoencas && !hasOrderbump) {

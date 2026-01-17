@@ -105,6 +105,17 @@ const checkoutModal = document.getElementById('checkout-modal');
 
 async function openCheckout(productId) {
     console.log("🛒 Iniciando checkout para:", productId);
+
+    // Pixel Tracking: AddToCart & InitiateCheckout
+    if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', { content_ids: [productId], content_type: 'product' });
+        fbq('track', 'InitiateCheckout');
+    }
+    if (typeof ttq === 'object') {
+        ttq.track('AddToCart', { contents: [{ content_id: productId }] });
+        ttq.track('InitiateCheckout');
+    }
+
     if (!checkoutModal) return;
 
     const secureOverlay = document.getElementById('secure-loading');
@@ -387,7 +398,8 @@ async function handlePayment(method) {
                         const sd = await s.json();
                         if (sd.status === 'approved') {
                             clearInterval(poll);
-                            window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}`;
+                            const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+                            window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
                         }
                     } catch (e) { }
                 }, 4000);
@@ -447,7 +459,8 @@ async function handlePayment(method) {
 
             const result = await res.json();
             if (result.status === 'approved') {
-                window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}`;
+                const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+                window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else {
                 alert('Pagamento Recusado. Verifique os dados ou tente Pix.');
                 // Return to form if failed
