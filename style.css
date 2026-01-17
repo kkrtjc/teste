@@ -1213,9 +1213,11 @@ footer {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
+    /* Increased margin to avoid overlap */
     position: relative;
     height: 140px;
+    z-index: 5;
 }
 
 .combo-img {
@@ -1531,7 +1533,8 @@ footer {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #444;
+    color: #ffffff;
+    /* Changed to white */
     font-weight: 700;
     font-size: 0.95rem;
     text-align: left;
@@ -1584,7 +1587,8 @@ footer {
 
 .checkout-social-proof-stack p {
     font-size: 0.85rem;
-    color: #666;
+    color: #ffffff;
+    /* Changed to white */
     font-weight: 700;
     margin: 0;
 }
@@ -1669,7 +1673,8 @@ footer {
 
 .plus-sign {
     position: absolute;
-    background: #fff;
+    background: var(--color-secondary);
+    /* Changed to gold for impact */
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -1677,9 +1682,10 @@ footer {
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    box-shadow: var(--shadow-sm);
-    z-index: 3;
-    color: var(--color-primary);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    color: #000;
+    /* Black plus on gold */
 }
 
 .popup-price {
@@ -1813,6 +1819,12 @@ footer {
     justify-content: center;
     align-items: center;
     margin-bottom: 1.5rem;
+}
+
+.checkout-logo-main {
+    max-height: 50px;
+    filter: brightness(1.5) contrast(1.2);
+    /* Ensure visibility on dark */
 }
 
 .product-img-dual {

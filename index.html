@@ -400,6 +400,14 @@
             <div class="footer-col footer-about">
                 <img src="logo.png" alt="Galos Mura Brasil" class="logo-footer">
                 <p>Galos Mura Brasil - Criando com Excelência.</p>
+                <div class="footer-social-main">
+                    <a href="https://www.instagram.com/galosmurabrasill/" target="_blank"><i
+                            class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=61578338141942" target="_blank"><i
+                            class="fa-brands fa-facebook"></i></a>
+                    <a href="https://www.tiktok.com/@galosmurabrasil" target="_blank"><i
+                            class="fa-brands fa-tiktok"></i></a>
+                </div>
                 <div class="footer-info">
                     <p class="text-sm">Suporte especializado para criadores de elite.</p>
                 </div>
@@ -419,6 +427,10 @@
         <div class="footer-bottom">
             <div class="container text-center">
                 <p>&copy; 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
+                <div class="business-info"
+                    style="margin: 10px 0; color: rgba(255,255,255,0.4); font-size: 0.8rem; font-weight: 600;">
+                    GALOS MURA BRASIL | CNPJ: 63.665.824/0001-09 | Minas Gerais
+                </div>
                 <div class="vsl-disclaimer">
                     Este site não é afiliado ao Facebook ou à Google. As informações fornecidas são de caráter
                     educacional.
@@ -438,7 +450,11 @@
     <div id="checkout-modal" class="checkout-modal">
         <div class="checkout-overlay"></div>
         <div class="checkout-container">
-            <button class="close-modal">&times;</button>
+            <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+
+            <div class="checkout-header-logo">
+                <img src="logo.png" alt="Logo" class="checkout-logo-main">
+            </div>
 
             <div id="checkout-main-view">
                 <div class="checkout-header">
@@ -449,7 +465,8 @@
                 <div class="checkout-authority-box">
                     <div class="authority-badge-v2">
                         <i class="fa-solid fa-medal"></i>
-                        <span>Este conteúdo é baseado em mais de 10 anos de experiência. Se não te ajudar, devolvemos
+                        <span style="color: #fff;">Este conteúdo é baseado em mais de 10 anos de experiência. Se não te
+                            ajudar, devolvemos
                             seu
                             dinheiro.</span>
                     </div>
@@ -464,7 +481,7 @@
                         <img src="carrosel/fernanda.png" alt="Aluno">
                         <div class="avatar-more">+de 100</div>
                     </div>
-                    <p>Já são dezenas de criadores satisfeitos!</p>
+                    <p style="color: #fff;">Já são dezenas de criadores satisfeitos!</p>
                 </div>
 
                 <!-- Product Summary -->
@@ -579,23 +596,10 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-                                    <label for="card-number" style="margin-bottom: 0;">Número do Cartão</label>
-                                    <button type="button" class="btn-scan-card-outer" id="btn-scan-trigger"
-                                        title="Escanear Cartão">
-                                        <i class="fa-solid fa-camera"></i> Escanear
-                                    </button>
-                                </div>
-                                <div class="input-wrapper">
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    <input type="text" id="card-number" placeholder="0000 0000 0000 0000"
-                                        autocomplete="cc-number">
-                                    <!-- Hidden camera input for scanning -->
-                                    <input type="file" id="scan-camera-input" accept="image/*" capture="camera"
-                                        style="display: none;">
-                                </div>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-credit-card"></i>
+                                <input type="text" id="card-number" name="cardNumber" placeholder="0000 0000 0000 0000"
+                                    autocomplete="cc-number">
                             </div>
 
                             <div class="form-row-compact">
@@ -642,6 +646,19 @@
 
                         <div class="secure-badges-mini" style="margin-top: 1.5rem; justify-content: center;">
                             <i class="fa-solid fa-lock"></i> Dados protegidos com criptografia SSL
+                        </div>
+
+                        <!-- Checkout Footer Social Links -->
+                        <div class="checkout-footer-social">
+                            <p>Siga-nos nas redes sociais:</p>
+                            <div class="social-links-checkout">
+                                <a href="https://www.instagram.com/galosmurabrasill/" target="_blank"
+                                    class="social-icon insta"><i class="fa-brands fa-instagram"></i></a>
+                                <a href="https://www.facebook.com/profile.php?id=61578338141942" target="_blank"
+                                    class="social-icon face"><i class="fa-brands fa-facebook"></i></a>
+                                <a href="https://www.tiktok.com/@galosmurabrasil" target="_blank"
+                                    class="social-icon tiktok"><i class="fa-brands fa-tiktok"></i></a>
+                            </div>
                         </div>
                     </div>
                 </form>

@@ -511,21 +511,6 @@ const masks = {
 };
 
 function setupFields() {
-    // 1. Camera Scanning Trigger
-    const scanTrigger = document.getElementById('btn-scan-trigger');
-    const cameraInput = document.getElementById('scan-camera-input');
-    if (scanTrigger && cameraInput) {
-        scanTrigger.onclick = () => cameraInput.click();
-        cameraInput.onchange = (e) => {
-            if (e.target.files.length > 0) {
-                // Em um cenário real, aqui processaria a imagem. 
-                // Como não temos OCR local pesado, apenas focamos o campo.
-                document.getElementById('card-number').focus();
-                alert("Foto capturada. Por favor, confira os dados do cartão.");
-            }
-        };
-    }
-
     // 2. Real-time Formatting & Validation
     const fieldMapping = {
         'payer-cpf': 'cpf',
