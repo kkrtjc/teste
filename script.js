@@ -1,3 +1,13 @@
+// --- 1. GLOBAL CONFIG & STATE ---
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : window.location.origin;
+
+let cart = {
+    mainProduct: null,
+    bumps: [] // IDs of selected bumps
+};
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. FAQ Accordion Logic ---
@@ -167,14 +177,6 @@ const paymentForm = document.getElementById('payment-form');
 const formatBRL = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 // State Management
-let cart = {
-    mainProduct: null,
-    bumps: [] // IDs of selected bumps
-};
-
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000'
-    : window.location.origin;
 
 // Open Checkout Modal
 async function openCheckout(productId) {
@@ -807,9 +809,130 @@ function setupFields() {
 }
 
 
-setupFields();
+// --- 5. GLOBAL CHECKOUT & PRODUCTS LOGIC ---
+// Move these outside so they are accessible via onclick="openCheckout()"
 
-renderHomeProducts();
+async function openCheckout(productId) {
+    if (!checkoutModal) return;
+
+    // 1. Show Secure Loading First
+    const secureOverlay = document.getElementById('secure-loading');
+    const lockScroll = () => {
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = (window.innerWidth - document.documentElement.clientWidth) + 'px';
+    };
+
+    if (secureOverlay) {
+        secureOverlay.style.display = 'flex';
+        lockScroll();
+        setTimeout(async () => {
+            // After 1.2s of "security check", show the actual fields
+            secureOverlay.style.opacity = '0';
+            setTimeout(() => {
+                secureOverlay.style.display = 'none';
+                secureOverlay.style.opacity = '1';
+                checkoutModal.classList.add('active');
+            }, 300);
+        }, 1200);
+    } else {
+        checkoutModal.classList.add('active');
+        lockScroll();
+    }
+
+    try {
+        console.log("🛒 Abrindo checkout para:", productId);
+        const response = await fetch(`${API_URL}/api/products/${productId}`);
+        if (!response.ok) throw new Error('Produto não encontrado');
+
+        const product = await response.json();
+        cart.mainProduct = product;
+        cart.bumps = []; // Reset bumps on new main product
+
+        // Update UI
+        const mainTitle = document.getElementById('main-product-title');
+        const mainPrice = document.getElementById('main-product-price');
+        const mainDesc = document.getElementById('main-product-description');
+        const mainCover = document.getElementById('main-product-cover');
+
+        if (mainTitle) mainTitle.innerText = product.title;
+        if (mainPrice) mainPrice.innerText = formatBRL(product.price);
+        if (mainDesc) mainDesc.innerText = product.description || '';
+        if (mainCover) mainCover.src = product.cover === 'combo' ? 'capadasdoencas.png' : product.cover;
+
+        updateOrderBumps(product.fullBumps);
+        updateTotal();
+        updateInstallments(product.price);
+
+    } catch (e) {
+        console.error("Erro ao carregar checkout:", e);
+    }
+}
+
+function updateOrderBumps(bumps) {
+    const area = document.getElementById('order-bump-area');
+    if (!area) return;
+
+    if (!bumps || bumps.length === 0) {
+        area.innerHTML = '';
+        return;
+    }
+
+    area.innerHTML = bumps.map(bump => {
+        // Fallback para imagem se estiver vazia
+        let displayImg = bump.image;
+        if (!displayImg) {
+            if (bump.id === 'ebook-doencas') displayImg = 'capadasdoencas.png';
+            if (bump.id === 'ebook-manejo') displayImg = 'capadospintinhos.png';
+        }
+
+        return `
+        <div class="order-bump-container" onclick="toggleBump('${bump.id}')">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''}>
+                ${displayImg ? `<img src="${displayImg}" style="width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">` : ''}
+                <div class="order-bump-content">
+                    <span class="order-bump-tag">${bump.tag || 'OFERTA ÚNICA'}</span>
+                    <strong class="order-bump-title" style="display: block; color: #fff;">${bump.title}</strong>
+                    <span class="order-bump-description" style="display: block; font-size: 0.8rem; color: rgba(255,255,255,0.5);">${bump.description}</span>
+                    <span class="order-bump-price" style="color: var(--color-secondary); font-weight: 800; font-size: 1.1rem;">+ ${formatBRL(bump.price)}</span>
+                </div>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function toggleBump(bumpId) {
+    const idx = cart.bumps.indexOf(bumpId);
+    if (idx > -1) {
+        cart.bumps.splice(idx, 1);
+    } else {
+        cart.bumps.push(bumpId);
+    }
+
+    const chk = document.getElementById(`bump-chk-${bumpId}`);
+    if (chk) chk.checked = cart.bumps.includes(bumpId);
+
+    updateTotal();
+}
+
+function updateTotal() {
+    let total = cart.mainProduct.price;
+
+    cart.bumps.forEach(id => {
+        const bump = cart.mainProduct.fullBumps.find(b => b.id === id);
+        if (bump) total += bump.price;
+    });
+
+    document.querySelectorAll('.checkout-total-display').forEach(el => {
+        el.innerText = formatBRL(total);
+    });
+
+    updateInstallments(total);
+}
+
+function formatBRL(val) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
 
 // --- DYNAMIC HOME PRODUCTS RENDERING ---
 async function renderHomeProducts() {
@@ -821,12 +944,17 @@ async function renderHomeProducts() {
         const res = await fetch(`${API_URL}/api/config`);
 
         if (!res.ok) {
+            container.innerHTML = `<p style="color: #fff; grid-column: 1/-1; text-align: center; padding: 20px;">Ops! Não foi possível carregar as ofertas. Verifique se o servidor está rodando.</p>`;
             return;
         }
 
         const db = await res.json();
-        console.log("✅ Dados carregados com sucesso!");
         const products = db.products;
+
+        if (!products || Object.keys(products).length === 0) {
+            container.innerHTML = `<p style="color: #fff; grid-column: 1/-1; text-align: center; padding: 20px;">Nenhuma oferta disponível no momento.</p>`;
+            return;
+        }
 
         container.innerHTML = ''; // Clear
 
@@ -881,7 +1009,6 @@ async function renderHomeProducts() {
         });
     } catch (e) {
         console.error("ERRO CRÍTICO NA CARGA DE OFERTAS:", e);
-        console.log("Dica: Verifique se o servidor está online em:", API_URL);
+        container.innerHTML = `<p style="color: #fff; grid-column: 1/-1; text-align: center; padding: 20px;">Erro de conexão com o servidor. Verifique o link API_URL.</p>`;
     }
 }
-
