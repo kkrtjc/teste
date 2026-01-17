@@ -1008,7 +1008,7 @@ footer {
     width: max-content;
     will-change: transform;
     /* Hint for GPU acceleration */
-    animation: scroll 25s linear infinite;
+    animation: scroll 15s linear infinite;
     padding: 10px 0;
     /* Space for shadows */
     pointer-events: none;
@@ -3404,6 +3404,7 @@ footer {
 .logo-footer {
     filter: invert(1);
     opacity: 0.8;
+    height: 150px;
 }
 
 /* --- Order Bump Component --- */
@@ -4125,7 +4126,7 @@ body {
 }
 
 .sticky-logo {
-    height: 85px;
+    height: 100px;
     /* Bem imponente no desktop */
     transition: transform 0.3s ease;
 }
@@ -4140,7 +4141,7 @@ body {
     }
 
     .sticky-logo {
-        height: 55px !important;
+        height: 70px !important;
         /* Ainda maior no mobile */
     }
 }
