@@ -174,7 +174,7 @@ let cart = {
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
-    : 'https://teste-m1kq.onrender.com';
+    : window.location.origin;
 
 // Open Checkout Modal
 async function openCheckout(productId) {

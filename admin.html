@@ -683,8 +683,8 @@
         let history = [];
         let masterPass = '';
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? ''
-            : 'https://teste-m1kq.onrender.com';
+            ? 'http://localhost:3000'
+            : window.location.origin;
 
         function showToast(msg) {
             const t = document.getElementById('toast');
