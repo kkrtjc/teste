@@ -584,7 +584,8 @@ ul {
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     position: absolute;
-    top: -18px;
+    top: -25px;
+    /* Ajustado para não cortar */
     left: 50%;
     transform: translateX(-50%);
     font-size: 0.85rem;
@@ -601,7 +602,8 @@ ul {
     border: 2px solid var(--color-secondary);
     box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
     z-index: 2;
-    padding-top: 2.5rem;
+    padding-top: 3rem;
+    /* Espaço extra para o badge não sobrepor o título */
     /* Extra space for the badge */
 }
 
@@ -1596,7 +1598,8 @@ footer {
 }
 
 .pulsing-logo-check {
-    height: 80px;
+    height: 130px;
+    /* Aumentado conforme solicitado */
     animation: pulseLogo 2s infinite ease-in-out;
     mix-blend-mode: multiply;
     filter: brightness(0.9) contrast(1.2);
@@ -4103,6 +4106,8 @@ body {
 }
 
 .sticky-logo {
+    height: 65px;
+    /* Aumentado conforme solicitado */
     transition: transform 0.3s ease;
 }
 
@@ -4116,7 +4121,8 @@ body {
     }
 
     .sticky-logo {
-        height: 30px !important;
+        height: 45px !important;
+        /* Aumentado no mobile */
     }
 }
 

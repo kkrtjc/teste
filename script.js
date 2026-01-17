@@ -419,6 +419,21 @@ async function handlePayment(method) {
             const token = await mp.createCardToken(cardTokenParams);
             if (!token || !token.id) throw new Error("Erro ao gerar token do cartão.");
 
+            // Show Processing View (Reusing the pulsing logo UI)
+            document.getElementById('checkout-main-view').classList.add('hidden');
+            const processingView = document.getElementById('pix-result');
+            processingView.classList.remove('hidden');
+
+            // Hide specific PIX elements if any, or just update the text
+            const pixInstructions = processingView.querySelector('.pix-instructions');
+            if (pixInstructions) pixInstructions.innerText = '💳 PROCESSANDO PAGAMENTO SEGURO...';
+
+            const qrContainer = processingView.querySelector('.qr-container');
+            if (qrContainer) qrContainer.style.display = 'none';
+
+            const copyArea = processingView.querySelector('.copy-paste-area');
+            if (copyArea) copyArea.style.display = 'none';
+
             const res = await fetch(`${API_URL}/api/checkout/card`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -435,11 +450,18 @@ async function handlePayment(method) {
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}`;
             } else {
                 alert('Pagamento Recusado. Verifique os dados ou tente Pix.');
+                // Return to form if failed
+                document.getElementById('checkout-main-view').classList.remove('hidden');
+                processingView.classList.add('hidden');
+                if (qrContainer) qrContainer.style.display = 'block';
+                if (copyArea) copyArea.style.display = 'flex';
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
         } catch (e) {
             alert('Erro no cartão: ' + e.message);
+            document.getElementById('checkout-main-view').classList.remove('hidden');
+            document.getElementById('pix-result').classList.add('hidden');
             btn.disabled = false;
             btn.innerText = originalText;
         }
