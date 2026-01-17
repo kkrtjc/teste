@@ -36,19 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 3. Header Transparency ---
-    const header = document.querySelector('.header');
-    if (header) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.style.background = 'rgba(0, 0, 0, 0.98)';
-                header.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
-            } else {
-                header.style.background = 'rgba(0, 0, 0, 0.8)';
-                header.style.boxShadow = 'none';
-            }
-        });
-    }
+
 
     // --- 4. Testimonials (Infinite Carousel) ---
     const testimonials = [
@@ -164,10 +152,28 @@ async function openCheckout(productId) {
         updateTotal();
         switchMethod('pix');
 
+        // --- Premium Animation Sequence ---
         setTimeout(() => {
+            // 1. Fade Out Secure Loading
             if (secureOverlay) secureOverlay.classList.remove('active');
-            checkoutModal.classList.add('active');
-        }, 2200);
+
+            // 2. Start Logo Slide Animation
+            const logoOverlay = document.getElementById('checkout-logo-overlay');
+            if (logoOverlay) {
+                logoOverlay.classList.add('active');
+
+                // 3. Wait for slide and show checkout
+                setTimeout(() => {
+                    logoOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        logoOverlay.classList.remove('active', 'fade-out');
+                        checkoutModal.classList.add('active');
+                    }, 500); // match fade-out dur
+                }, 1800); // slide finish + pause
+            } else {
+                checkoutModal.classList.add('active');
+            }
+        }, 2000); // secure lock duration
 
     } catch (err) {
         console.error("Error opening checkout:", err);

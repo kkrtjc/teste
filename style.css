@@ -306,7 +306,7 @@ ul {
     zoom: -30%;
     background-image: url('optimized_hero_bg.jpg');
     background-size: cover;
-    background-position: 50%;
+    background-position: center top;
     background-repeat: no-repeat;
 }
 
@@ -4064,5 +4064,105 @@ body {
 
     .checkout-header h3 {
         font-size: 1.5rem;
+    }
+}
+
+/* Sticky CTA Bar Base Styles */
+.sticky-cta-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 12px 0;
+    z-index: 1000;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.sticky-cta-bar.visible {
+    transform: translateY(0);
+}
+
+.sticky-logo-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.sticky-logo {
+    transition: transform 0.3s ease;
+}
+
+.sticky-logo:hover {
+    transform: scale(1.05);
+}
+
+@media (max-width: 480px) {
+    .sticky-cta-bar .container {
+        padding: 0 15px;
+    }
+
+    .sticky-logo {
+        height: 30px !important;
+    }
+}
+
+/* Premium Logo Animation */
+.checkout-logo-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 1100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.checkout-logo-overlay.active {
+    display: flex;
+}
+
+.animate-logo {
+    width: 300px;
+    height: auto;
+    max-width: 80%;
+    transform: translateX(100vw);
+    opacity: 0;
+}
+
+.checkout-logo-overlay.active .animate-logo {
+    animation: logoSlideIn 1.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.checkout-logo-overlay.fade-out {
+    animation: logoFadeOut 0.5s ease forwards;
+}
+
+@keyframes logoSlideIn {
+    0% {
+        transform: translateX(100vw);
+        opacity: 0;
+    }
+
+    30% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes logoFadeOut {
+    to {
+        opacity: 0;
+        visibility: hidden;
     }
 }
