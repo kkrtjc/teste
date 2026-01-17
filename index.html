@@ -694,7 +694,18 @@
 
     <!-- Premium Logo Animation Overlay -->
     <div id="checkout-logo-overlay" class="checkout-logo-overlay">
-        <img src="logo.png" alt="Logo" class="animate-logo">
+        <div class="animate-logo-container">
+            <!-- Curve Text SVG -->
+            <svg viewBox="0 0 400 200" class="curved-text-svg">
+                <path id="curve" d="M 50,150 A 150,150 0 0,1 350,150" fill="transparent" />
+                <text>
+                    <textPath xlink:href="#curve" startOffset="50%" text-anchor="middle">
+                        GALOS MURA BRASIL
+                    </textPath>
+                </text>
+            </svg>
+            <img src="logo.png" alt="Logo" class="animate-logo">
+        </div>
     </div>
 
     <!-- Scripts -->

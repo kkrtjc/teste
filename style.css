@@ -4117,7 +4117,7 @@ body {
     width: 100%;
     height: 100%;
     background: #000;
-    z-index: 1100;
+    z-index: 2000;
     display: none;
     align-items: center;
     justify-content: center;
@@ -4128,41 +4128,74 @@ body {
     display: flex;
 }
 
-.animate-logo {
-    width: 300px;
-    height: auto;
-    max-width: 80%;
+.animate-logo-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     transform: translateX(100vw);
     opacity: 0;
 }
 
-.checkout-logo-overlay.active .animate-logo {
-    animation: logoSlideIn 1.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+.curved-text-svg {
+    width: 500px;
+    height: 250px;
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
 }
 
-.checkout-logo-overlay.fade-out {
-    animation: logoFadeOut 0.5s ease forwards;
+.curved-text-svg text {
+    fill: var(--color-secondary);
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.animate-logo {
+    width: 320px;
+    height: auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Animations Trigger */
+.checkout-logo-overlay.active .animate-logo-container {
+    animation:
+        logoSlideIn 1s cubic-bezier(0.23, 1, 0.32, 1) forwards,
+        logoPulse 0.8s ease-in-out 1.2s infinite alternate;
+}
+
+.checkout-logo-overlay.run-left .animate-logo-container {
+    animation: logoRunLeft 0.5s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
 }
 
 @keyframes logoSlideIn {
-    0% {
-        transform: translateX(100vw);
-        opacity: 0;
-    }
-
-    30% {
-        opacity: 1;
-    }
-
-    100% {
+    to {
         transform: translateX(0);
         opacity: 1;
     }
 }
 
-@keyframes logoFadeOut {
+@keyframes logoPulse {
+    from {
+        transform: scale(1);
+    }
+
     to {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+    }
+}
+
+@keyframes logoRunLeft {
+    to {
+        transform: translateX(-110vw);
         opacity: 0;
-        visibility: hidden;
     }
 }
