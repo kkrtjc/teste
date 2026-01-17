@@ -71,14 +71,22 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Helpers
+// In-memory cache for DB
+let cacheDB = null;
+
 function getDB() {
+    if (cacheDB) return cacheDB;
     try {
-        return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+        cacheDB = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+        return cacheDB;
     } catch (e) {
         return { products: {}, orderBumps: {} };
     }
 }
-function saveDB(data) { fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 4)); }
+function saveDB(data) {
+    cacheDB = data;
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 4));
+}
 
 function getHistory() {
     try {
@@ -318,7 +326,7 @@ app.post('/api/checkout/pix', async (req, res) => {
             last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
             identification: { type: 'CPF', number: customer.cpf }
         },
-        notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
+        // notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
         metadata: {
             delivery_method: deliveryMethod,
             customer_name: customer.name,
@@ -328,7 +336,10 @@ app.post('/api/checkout/pix', async (req, res) => {
     };
 
     try {
+        console.time(`⏱️ [MP_PIX] ${customer.email}`);
         const response = await payment.create({ body });
+        console.timeEnd(`⏱️ [MP_PIX] ${customer.email}`);
+
         res.json({
             qr_code: response.point_of_interaction.transaction_data.qr_code,
             qr_code_base64: response.point_of_interaction.transaction_data.qr_code_base64,
@@ -336,6 +347,7 @@ app.post('/api/checkout/pix', async (req, res) => {
             status: response.status
         });
     } catch (error) {
+        console.timeEnd(`⏱️ [MP_PIX] ${customer.email}`);
         res.status(500).json({ error: 'Erro no Pagamento', message: error.message });
     }
 });
