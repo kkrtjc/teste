@@ -4109,19 +4109,37 @@ body {
     }
 }
 
+.checkout-modal.active {
+    display: flex;
+    animation: modalFadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* Premium Logo Animation */
 .checkout-logo-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background: #000;
-    z-index: 2000;
+    z-index: 9999;
     display: none;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    will-change: opacity;
 }
 
 .checkout-logo-overlay.active {
@@ -4136,24 +4154,28 @@ body {
     justify-content: center;
     transform: translateX(100vw);
     opacity: 0;
+    will-change: transform, opacity;
 }
 
 .curved-text-svg {
-    width: 500px;
-    height: 250px;
+    width: 600px;
+    height: 300px;
     position: absolute;
-    top: -120px;
+    top: -100px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
+    pointer-events: none;
 }
 
 .curved-text-svg text {
-    fill: var(--color-secondary);
+    fill: none;
+    stroke: var(--color-secondary);
+    stroke-width: 1.5px;
     font-family: var(--font-heading);
     font-weight: 900;
-    font-size: 28px;
-    letter-spacing: 4px;
+    font-size: 38px;
+    letter-spacing: 5px;
     text-transform: uppercase;
 }
 
@@ -4167,8 +4189,8 @@ body {
 /* Animations Trigger */
 .checkout-logo-overlay.active .animate-logo-container {
     animation:
-        logoSlideIn 1s cubic-bezier(0.23, 1, 0.32, 1) forwards,
-        logoPulse 0.8s ease-in-out 1.2s infinite alternate;
+        logoSlideIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards,
+        logoPulse 1s ease-in-out 0.8s infinite alternate;
 }
 
 .checkout-logo-overlay.run-left .animate-logo-container {
@@ -4188,8 +4210,8 @@ body {
     }
 
     to {
-        transform: scale(1.1);
-        filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.5));
     }
 }
 

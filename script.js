@@ -165,11 +165,13 @@ async function openCheckout(productId) {
                 // 3. Wait for slide and pulse, then run left
                 setTimeout(() => {
                     logoOverlay.classList.add('run-left');
+
+                    // Smooth overlap: Show checkout slightly before logo is fully gone
                     setTimeout(() => {
                         logoOverlay.classList.remove('active', 'run-left');
                         checkoutModal.classList.add('active');
-                    }, 500); // exit dur
-                }, 2800); // 1s slide + 1.8s pulse
+                    }, 400); // overlap timing
+                }, 2600); // total sequence timing
             } else {
                 checkoutModal.classList.add('active');
             }
