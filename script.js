@@ -366,6 +366,27 @@ async function handlePayment(method) {
     if (method === 'pix') {
         const btn = document.getElementById('btn-pay-pix');
         const originalText = btn.innerText;
+
+        // --- 🛡️ PIX PERSISTENCE LOGIC ---
+        const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
+        const itemIds = items.map(i => i.id).sort().join(',');
+        const cached = localStorage.getItem('active_pix_session');
+
+        if (cached) {
+            try {
+                const session = JSON.parse(cached);
+                const isExpired = (Date.now() - session.timestamp) > 10 * 60 * 1000;
+                const sameTotal = Math.abs(session.total - totalAmount) < 0.01;
+                const sameItems = session.itemIds === itemIds;
+
+                if (!isExpired && sameTotal && sameItems) {
+                    console.log("♻️ Reaproveitando Pix ativo de menos de 10 min...");
+                    showPixResult(session.data, items);
+                    return;
+                }
+            } catch (e) { localStorage.removeItem('active_pix_session'); }
+        }
+
         btn.innerText = 'Gerando Pix...';
         btn.disabled = true;
 
@@ -378,33 +399,22 @@ async function handlePayment(method) {
             const data = await res.json();
 
             if (data.qr_code) {
-                document.getElementById('checkout-main-view').classList.add('hidden');
-                document.getElementById('pix-result').classList.remove('hidden');
-                document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
-                document.getElementById('pix-copy-paste').value = data.qr_code;
+                // Save to Persistence
+                localStorage.setItem('active_pix_session', JSON.stringify({
+                    data: data,
+                    total: totalAmount,
+                    itemIds: itemIds,
+                    timestamp: Date.now()
+                }));
 
-                const copyBtn = document.getElementById('btn-copy-pix');
-                if (copyBtn) {
-                    copyBtn.onclick = () => {
-                        navigator.clipboard.writeText(data.qr_code);
-                        copyBtn.innerHTML = 'COPIADO!';
-                        setTimeout(() => copyBtn.innerHTML = 'COPIAR CÓDIGO PIX', 2000);
-                    };
-                }
-
-                const poll = setInterval(async () => {
-                    try {
-                        const s = await fetch(`${API_URL}/api/payment/${data.id}`);
-                        const sd = await s.json();
-                        if (sd.status === 'approved') {
-                            clearInterval(poll);
-                            const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
-                            window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
-                        }
-                    } catch (e) { }
-                }, 4000);
+                showPixResult(data, items);
             }
-        } catch (e) { alert('Erro ao gerar Pix.'); btn.disabled = false; btn.innerText = originalText; }
+        } catch (e) {
+            console.error("Pix Error:", e);
+            alert('Erro ao gerar Pix.');
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     } else {
         // CARD PAYMENT (Restored complex logic)
         const btn = document.getElementById('btn-pay-card');
@@ -562,4 +572,34 @@ function validateField(el, type) {
         el.classList.add('is-invalid');
         el.classList.remove('is-valid');
     }
+}
+
+function showPixResult(data, items) {
+    document.getElementById('checkout-main-view').classList.add('hidden');
+    document.getElementById('pix-result').classList.remove('hidden');
+    document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
+    document.getElementById('pix-copy-paste').value = data.qr_code;
+
+    const copyBtn = document.getElementById('btn-copy-pix');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(data.qr_code);
+            copyBtn.innerHTML = 'COPIADO!';
+            setTimeout(() => copyBtn.innerHTML = 'COPIAR CÓDIGO PIX', 2000);
+        };
+    }
+
+    // Start Polling
+    const poll = setInterval(async () => {
+        try {
+            const s = await fetch(`${API_URL}/api/payment/${data.id}`);
+            const sd = await s.json();
+            if (sd.status === 'approved') {
+                clearInterval(poll);
+                localStorage.removeItem('active_pix_session'); // Clear session on success
+                const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+                window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
+            }
+        } catch (e) { console.warn("Poll error:", e); }
+    }, 4000);
 }
