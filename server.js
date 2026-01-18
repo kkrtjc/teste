@@ -397,8 +397,22 @@ app.post('/api/checkout/card', async (req, res) => {
         }
     } catch (error) {
         console.error('❌ [CARTÃO ERROR] Falha Crítica:', error.message);
-        if (error.cause) console.error('Causa:', JSON.stringify(error.cause));
-        res.status(500).json({ error: 'Erro ao processar pagamento', message: error.message });
+
+        // DEEP DEBUG LOGGING FOR USER
+        if (error.response) {
+            console.error('⚠️ [DEBUG MP RESPONSE] Data:', JSON.stringify(error.response.data || {}, null, 2));
+            console.error('⚠️ [DEBUG MP RESPONSE] Status:', error.response.status);
+        } else if (error.cause) {
+            console.error('⚠️ [DEBUG MP CAUSE] Cause:', JSON.stringify(error.cause, null, 2));
+        } else {
+            console.error('⚠️ [DEBUG ERROR OBJ]', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        }
+
+        res.status(500).json({
+            error: 'Erro ao processar pagamento',
+            message: error.message,
+            details: error.response ? error.response.data : (error.cause || 'No details')
+        });
     }
 });
 

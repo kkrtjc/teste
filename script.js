@@ -496,7 +496,23 @@ async function handlePayment(method) {
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else {
-                alert('Pagamento Recusado. Verifique os dados ou tente Pix.');
+                let msg = 'Pagamento Recusado.';
+                if (result.status_detail) msg += ` Motivo: ${result.status_detail}`;
+                if (result.error) msg += `\nErro: ${result.message || result.error}`;
+
+                // Translate common MP errors for user
+                const map = {
+                    'cc_rejected_bad_filled_other': 'Dados incorretos. Verifique CPF e Titular.',
+                    'cc_rejected_bad_filled_card_number': 'Número do cartão inválido.',
+                    'cc_rejected_bad_filled_date': 'Data de validade incorreta.',
+                    'cc_rejected_bad_filled_security_code': 'CVV incorreto.',
+                    'cc_rejected_insufficient_amount': 'Saldo insuficiente.',
+                    'cc_rejected_high_risk': 'Recusado por segurança (risco de fraude). Tente outro cartão.',
+                    'cc_rejected_other_reason': 'Recusado pelo banco emissor.'
+                };
+                if (map[result.status_detail]) msg = map[result.status_detail];
+
+                alert(msg + '\n\nTente conferir os dados ou pagar via PIX.');
                 // Return to form if failed
                 document.getElementById('checkout-main-view').classList.remove('hidden');
                 processingView.classList.add('hidden');
@@ -624,4 +640,65 @@ function showPixResult(data, items) {
             }
         } catch (e) { console.warn("Poll error:", e); }
     }, 4000);
+}
+
+
+// --- 5. FLOATING TOASTS LOGIC ---
+const toastData = [
+    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpeg' },
+    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.png' },
+    { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.jpg' },
+    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.png' },
+    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.png' },
+    { name: 'Roberto J.', city: 'RS', text: 'Entrega imediata, já estou estudando.', avatar: 'https://ui-avatars.com/api/?name=Roberto+J&background=random' },
+    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.PNG' }
+];
+
+let toastInterval = null;
+
+function startToastLoop() {
+    if (toastInterval) clearInterval(toastInterval);
+
+    // Show first toast quickly
+    setTimeout(showRandomToast, 1500);
+
+    toastInterval = setInterval(showRandomToast, 5000); // New toast every 5s
+}
+
+function stopToastLoop() {
+    if (toastInterval) {
+        clearInterval(toastInterval);
+        toastInterval = null;
+    }
+    const container = document.getElementById('toast-container');
+    if (container) container.innerHTML = ''; // Clear existing
+}
+
+function showRandomToast() {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    if (container.children.length > 0) return; // Only show one at a time for "delicadeza"
+
+    const data = toastData[Math.floor(Math.random() * toastData.length)];
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-card';
+    toast.innerHTML = `
+        <img src="${data.avatar}" class="toast-avatar" alt="${data.name}" onerror="this.src='https://ui-avatars.com/api/?name=${data.name}&background=random&color=fff'">
+        <div class="toast-content">
+            <h4>${data.name} <span>${data.city}</span></h4>
+            <div class="toast-stars">
+                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+            </div>
+            <p>"${data.text}"</p>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // Remove logic handled by CSS animation mainly, but cleanup DOM
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 5500); // wait for animation end (5s) + buffer
 }
