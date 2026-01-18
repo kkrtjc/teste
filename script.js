@@ -200,11 +200,11 @@ async function openCheckout(productId) {
                             logoOverlay.style.opacity = '1'; // Reset for next time
                         }, 400);
                     }, 100);
-                }, 2600); // Sequence duration
+                }, 1200); // Sequence duration
             } else {
                 checkoutModal.classList.add('active');
             }
-        }, 1800); // Secure lock duration
+        }, 700); // Secure lock duration
 
     } catch (err) {
         console.error("Error opening checkout:", err);
