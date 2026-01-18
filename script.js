@@ -104,8 +104,6 @@ const mp = new MercadoPago('APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5');
 const checkoutModal = document.getElementById('checkout-modal');
 
 async function openCheckout(productId) {
-    console.log("🛒 Iniciando checkout para:", productId);
-
     // Pixel Tracking: AddToCart & InitiateCheckout
     if (typeof fbq === 'function') {
         fbq('track', 'AddToCart', { content_ids: [productId], content_type: 'product' });
