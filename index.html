@@ -459,20 +459,17 @@
             <div id="checkout-main-view">
                 <div class="checkout-header">
                     <h3>Finalizar Compra</h3>
-                    <p><i class="fa-solid fa-shield-check"></i> Pagamento 100% Seguro</p>
+                    <p><i class="fa-solid fa-shield-check"></i> Ambiente Seguro</p>
                 </div>
 
-
-                <div class="checkout-social-proof-stack">
-                    <div class="avatar-stack">
-                        <img src="carrosel/ana.png" alt="Aluno">
-                        <img src="carrosel/beatriz.jpeg" alt="Aluno">
-                        <img src="carrosel/camila.jpeg" alt="Aluno">
-                        <img src="carrosel/carlos.png" alt="Aluno">
-                        <img src="carrosel/fernanda.png" alt="Aluno">
-                        <div class="avatar-more">+de 100</div>
-                    </div>
-                    <p style="color: #fff;">Já são dezenas de criadores satisfeitos!</p>
+                <!-- 1. TOP LEVEL TOGGLE -->
+                <div class="method-selector top-toggle">
+                    <button type="button" class="method-btn active" data-method="pix">
+                        <i class="fa-brands fa-pix"></i> PIX (Imediato)
+                    </button>
+                    <button type="button" class="method-btn" data-method="card">
+                        <i class="fa-regular fa-credit-card"></i> Cartão
+                    </button>
                 </div>
 
                 <!-- Product Summary -->
@@ -481,7 +478,7 @@
                         <!-- Dynamic -->
                     </div>
                     <div class="p-main-info">
-                        <span class="p-label">VOCÊ ESTÁ LEVANDO:</span>
+                        <span class="p-label">RESUMO DO PEDIDO:</span>
                         <h4 id="checkout-product-name" class="p-title">Carregando...</h4>
                     </div>
                     <div class="p-price-tag" id="checkout-product-price-display">
@@ -489,94 +486,77 @@
                     </div>
                 </div>
 
+
+                <!-- Order Bump Area [DYNAMIC] -->
+                <div id="order-bump-area"></div>
+
                 <div class="checkout-authority-box" style="margin-bottom: 2rem;">
                     <div class="authority-badge-v2">
                         <i class="fa-solid fa-medal"></i>
-                        <span style="color: #fff;">Este conteúdo é baseado em mais de 10 anos de experiência. Se não te
-                            ajudar, devolvemos
-                            seu
-                            dinheiro.</span>
+                        <span style="color: #fff;">Garantia Incondicional de 7 Dias.</span>
                     </div>
                 </div>
 
                 <form id="payment-form" class="checkout-form">
-                    <!-- PERSONAL DATA -->
+
+                    <!-- 2. COMMON CONTACT FIELDS (Always Visible) -->
                     <div class="checkout-section">
                         <div class="step-title">
-                            <i class="fa-solid fa-user"></i>
-                            <span>Dados Pessoais</span>
+                            <i class="fa-solid fa-address-book"></i>
+                            <span>Onde enviamos seu acesso?</span>
                         </div>
-
                         <div class="form-group">
-                            <label for="payer-name">Nome Completo</label>
-                            <div class="input-wrapper">
-                                <i class="fa-solid fa-user-tag"></i>
-                                <input type="text" id="payer-name" placeholder="Ex: João Silva" autocomplete="name"
-                                    required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="payer-email">E-mail para Receber o Acesso</label>
+                            <label for="payer-email">E-mail Principal</label>
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-envelope"></i>
                                 <input type="email" id="payer-email" placeholder="seu@email.com" autocomplete="email"
                                     required>
                             </div>
                         </div>
-
-                        <div class="form-group two-col">
-                            <div>
-                                <label for="payer-cpf">CPF do Titular</label>
-                                <div class="input-wrapper">
-                                    <i class="fa-solid fa-id-card"></i>
-                                    <input type="text" id="payer-cpf" placeholder="000.000.000-00" maxlength="14"
-                                        required>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="payer-phone">WhatsApp</label>
-                                <div class="input-wrapper">
-                                    <i class="fa-brands fa-whatsapp"></i>
-                                    <input type="tel" id="payer-phone" placeholder="(00) 00000-0000" maxlength="15"
-                                        autocomplete="tel" required>
-                                </div>
+                        <div class="form-group">
+                            <label for="payer-phone">WhatsApp (Para Recuperação)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-brands fa-whatsapp"></i>
+                                <input type="tel" id="payer-phone" placeholder="(00) 00000-0000" maxlength="15"
+                                    autocomplete="tel" required>
                             </div>
                         </div>
-
-                        <!-- Order Bump Area [DYNAMIC] -->
-                        <div id="order-bump-area"></div>
                     </div>
 
-                    <!-- PAYMENT SECTION -->
-                    <div class="checkout-section payment-options-section"
-                        style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
+                    <!-- 3. PIX SPECIFIC IDENTITY (Visible only for PIX) -->
+                    <div id="pix-identity-section" class="checkout-section">
                         <div class="step-title">
-                            <i class="fa-solid fa-credit-card"></i>
-                            <span>Escolha como pagar</span>
+                            <i class="fa-solid fa-user"></i>
+                            <span>Quem está pagando?</span>
                         </div>
-
-                        <div class="method-selector">
-                            <button type="button" class="method-btn active" data-method="pix">
-                                <i class="fa-brands fa-pix"></i> PIX
-                            </button>
-                            <button type="button" class="method-btn" data-method="card">
-                                <i class="fa-regular fa-credit-card"></i> Cartão
-                            </button>
+                        <div class="form-group">
+                            <label for="payer-name">Nome Completo</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-user-tag"></i>
+                                <input type="text" id="payer-name" placeholder="Ex: João Silva" autocomplete="name">
+                            </div>
                         </div>
+                        <div class="form-group">
+                            <label for="payer-cpf">CPF do Pagador</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-id-card"></i>
+                                <input type="text" id="payer-cpf" placeholder="000.000.000-00" maxlength="14">
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- PIX AREA -->
-                        <div id="pix-area" class="payment-area"
-                            style="display: block; opacity: 1; transition: opacity 0.3s ease;">
+
+
+                    <!-- 4. PAYMENT ACTIONS AREA -->
+                    <div class="checkout-section payment-options-section" style="margin-top: 1rem;">
+
+                        <!-- PIX ACTION -->
+                        <div id="pix-area" class="payment-area" style="display: block;">
                             <div class="price-summary-box">
                                 <div class="price-row">
-                                    <span>Total a pagar:</span>
+                                    <span>Total no PIX:</span>
                                     <strong class="checkout-total-display">R$ --,--</strong>
                                 </div>
-                            </div>
-                            <div class="checkout-guarantee-mini">
-                                <i class="fa-solid fa-shield-halved"></i>
-                                <span>Sua compra está segura. <strong>7 dias de garantia total.</strong></span>
                             </div>
                             <button type="submit" class="btn-pay-now" id="btn-pay-pix">
                                 GERAR PIX AGORA <i class="fa-brands fa-pix"></i>
@@ -584,26 +564,37 @@
                         </div>
 
 
-                        <!-- CARD AREA -->
-                        <div id="card-area" class="payment-area"
-                            style="display: none; opacity: 0; transition: opacity 0.3s ease;">
+                        <!-- CARD FORM & ACTION (Visible only for Card) -->
+                        <div id="card-area" class="payment-area" style="display: none;">
+                            <div class="step-title" style="margin-bottom: 1rem;">
+                                <i class="fa-solid fa-credit-card"></i>
+                                <span>Dados do Cartão</span>
+                            </div>
 
                             <div class="form-group">
-                                <label for="card-holder">Nome no Cartão</label>
+                                <label for="card-holder">Nome Impresso no Cartão</label>
                                 <div class="input-wrapper">
                                     <i class="fa-solid fa-user"></i>
-                                    <input type="text" id="card-holder" placeholder="NOME DO TITULAR"
+                                    <input type="text" id="card-holder" placeholder="COMO NO CARTÃO"
                                         autocomplete="cc-name">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="card-cpf">CPF do Titular do Cartão</label>
+                                <div class="input-wrapper">
+                                    <i class="fa-solid fa-id-card"></i>
+                                    <input type="text" id="card-cpf" placeholder="000.000.000-00" maxlength="14">
                                 </div>
                             </div>
 
                             <div class="input-wrapper">
                                 <i class="fa-solid fa-credit-card"></i>
-                                <input type="text" id="card-number" name="cardNumber" placeholder="0000 0000 0000 0000"
+                                <input type="text" id="card-number" name="cardNumber" placeholder="NÚMERO DO CARTÃO"
                                     autocomplete="cc-number">
                             </div>
 
-                            <div class="form-row-compact">
+                            <div class="form-row-compact" style="margin-top: 15px;">
                                 <div class="form-group">
                                     <label for="card-expiration">Validade</label>
                                     <div class="input-wrapper">
@@ -622,7 +613,6 @@
                                 </div>
                             </div>
 
-
                             <div class="form-group">
                                 <label for="card-installments">Parcelamento</label>
                                 <select id="card-installments" class="custom-select">
@@ -632,13 +622,9 @@
 
                             <div class="price-summary-box">
                                 <div class="price-row">
-                                    <span>Total a pagar:</span>
+                                    <span>Total no Cartão:</span>
                                     <strong class="checkout-total-display">R$ --,--</strong>
                                 </div>
-                            </div>
-                            <div class="checkout-guarantee-mini">
-                                <i class="fa-solid fa-shield-halved"></i>
-                                <span>Sua compra está segura. <strong>7 dias de garantia total.</strong></span>
                             </div>
                             <button type="button" class="btn-pay-now" id="btn-pay-card">
                                 FINALIZAR PAGAMENTO <i class="fa-solid fa-check-circle"></i>
@@ -651,7 +637,6 @@
 
                         <!-- Checkout Footer Social Links -->
                         <div class="checkout-footer-social">
-                            <p>Siga-nos nas redes sociais:</p>
                             <div class="social-links-checkout">
                                 <a href="https://www.instagram.com/galosmurabrasill/" target="_blank"
                                     class="social-icon insta"><i class="fa-brands fa-instagram"></i></a>

@@ -344,12 +344,15 @@ function switchMethod(method) {
 
     const pixArea = document.getElementById('pix-area');
     const cardArea = document.getElementById('card-area');
+    const pixIdentity = document.getElementById('pix-identity-section');
 
     if (method === 'pix') {
         if (pixArea) { pixArea.style.display = 'block'; setTimeout(() => pixArea.style.opacity = '1', 50); }
+        if (pixIdentity) { pixIdentity.style.display = 'block'; }
         if (cardArea) { cardArea.style.opacity = '0'; setTimeout(() => cardArea.style.display = 'none', 300); }
     } else {
         if (cardArea) { cardArea.style.display = 'block'; setTimeout(() => cardArea.style.opacity = '1', 50); }
+        if (pixIdentity) { pixIdentity.style.display = 'none'; }
         if (pixArea) { pixArea.style.opacity = '0'; setTimeout(() => pixArea.style.display = 'none', 300); }
     }
 }
@@ -369,15 +372,31 @@ function updateInstallments(price) {
 }
 
 async function handlePayment(method) {
-    const customer = {
-        name: document.getElementById('payer-name').value,
-        cpf: document.getElementById('payer-cpf').value ? document.getElementById('payer-cpf').value.replace(/\D/g, '') : '',
-        phone: document.getElementById('payer-phone').value ? document.getElementById('payer-phone').value.replace(/\D/g, '') : '',
-        email: document.getElementById('payer-email').value
+    // SMART DATA MAPPING
+    const commonData = {
+        email: document.getElementById('payer-email').value,
+        phone: document.getElementById('payer-phone').value ? document.getElementById('payer-phone').value.replace(/\D/g, '') : ''
     };
 
+    let customer = {};
+
+    if (method === 'pix') {
+        customer = {
+            ...commonData,
+            name: document.getElementById('payer-name').value,
+            cpf: document.getElementById('payer-cpf').value ? document.getElementById('payer-cpf').value.replace(/\D/g, '') : ''
+        };
+    } else {
+        // CARD MODE: Use Cardholder Data as Customer Data
+        customer = {
+            ...commonData,
+            name: document.getElementById('card-holder').value,
+            cpf: document.getElementById('card-cpf').value ? document.getElementById('card-cpf').value.replace(/\D/g, '') : ''
+        };
+    }
+
     if (!customer.name || !customer.cpf || !customer.email || customer.cpf.length < 11) {
-        alert('Por favor, preencha corretamente Nome, CPF e Email.');
+        alert('Por favor, preencha todos os campos obrigatórios (Nome, CPF e Email).');
         return;
     }
 
@@ -564,6 +583,7 @@ function setupFields() {
     // 2. Real-time Formatting & Validation
     const fieldMapping = {
         'payer-cpf': 'cpf',
+        'card-cpf': 'cpf', // ADDED
         'payer-phone': 'phone',
         'card-number': 'card',
         'card-expiration': 'date',
