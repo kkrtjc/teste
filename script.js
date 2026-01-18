@@ -118,6 +118,17 @@ async function openCheckout(productId) {
 
     if (!checkoutModal) return;
 
+    // --- RESET CHECKOUT STATE ---
+    // 1. Reset View
+    document.getElementById('checkout-main-view').classList.remove('hidden');
+    document.getElementById('pix-result').classList.add('hidden');
+
+    // 2. Clear any active polling (Global variable needs to be defined at top level)
+    if (window.activePixPoll) {
+        clearInterval(window.activePixPoll);
+        window.activePixPoll = null;
+    }
+
     const secureOverlay = document.getElementById('secure-loading');
     const lockScroll = () => {
         document.body.style.overflow = 'hidden';
@@ -500,6 +511,16 @@ document.querySelector('.close-modal')?.addEventListener('click', () => {
     checkoutModal.classList.remove('active');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+
+    // Reset State logic for next open
+    setTimeout(() => {
+        document.getElementById('checkout-main-view').classList.remove('hidden');
+        document.getElementById('pix-result').classList.add('hidden');
+        if (window.activePixPoll) {
+            clearInterval(window.activePixPoll);
+            window.activePixPoll = null;
+        }
+    }, 300);
 });
 
 // --- 4. MASKS ---
@@ -576,12 +597,15 @@ function showPixResult(data, items) {
     }
 
     // Start Polling
-    const poll = setInterval(async () => {
+    if (window.activePixPoll) clearInterval(window.activePixPoll);
+
+    window.activePixPoll = setInterval(async () => {
         try {
             const s = await fetch(`${API_URL}/api/payment/${data.id}`);
             const sd = await s.json();
             if (sd.status === 'approved') {
-                clearInterval(poll);
+                clearInterval(window.activePixPoll);
+                window.activePixPoll = null;
                 localStorage.removeItem('active_pix_session'); // Clear session on success
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;

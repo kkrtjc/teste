@@ -4255,3 +4255,34 @@ body {
         opacity: 0;
     }
 }
+
+/* Centered Social Icons in Checkout */
+.checkout-footer-social {
+    text-align: center;
+    margin-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1.5rem;
+}
+
+.checkout-footer-social p {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.social-links-checkout {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.social-links-checkout .social-icon i {
+    font-size: 1.8rem;
+    /* Larger icons */
+    transition: transform 0.3s ease;
+}
+
+.social-links-checkout .social-icon:hover i {
+    transform: scale(1.2);
+    color: var(--color-secondary);
+}
