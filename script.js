@@ -49,13 +49,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const testimonialsTrack = document.getElementById('testimonials-track');
     if (testimonialsTrack) {
-        const loopContent = [...testimonials, ...testimonials, ...testimonials, ...testimonials];
+        // 1. Defined dimensions for JS-CSS sync
+        const CARD_WIDTH = 300;
+        const CARD_MARGIN = 20;
+        const SET_WIDTH = testimonials.length * (CARD_WIDTH + CARD_MARGIN); // 5 * 320 = 1600px
+
+        // 2. Set the CSS variable for the animation distance (exactly 1 set width, NEGATIVE)
+        testimonialsTrack.style.setProperty('--scroll-amount', `-${SET_WIDTH}px`);
+
+        // 3. Massive duplication to ensure infinite illusion even on 8K screens
+        // 12 sets * 1600px = 19200px total width.
+        const loopContent = Array(12).fill(testimonials).flat();
+
         loopContent.forEach(t => {
             const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
             const card = document.createElement('div');
             card.className = 'testimonial-card-original';
-            card.style.minWidth = '300px';
-            card.style.maxWidth = '300px';
+            // Enforce strict dimensions matching our calculation
+            card.style.minWidth = `${CARD_WIDTH}px`;
+            card.style.maxWidth = `${CARD_WIDTH}px`;
+            card.style.marginRight = `${CARD_MARGIN}px`; // Inline to guarantee calculation match
+
             card.innerHTML = `
                 <div style="font-size: 1.5rem; color: rgba(255,255,255,0.3); margin-bottom: 0.5rem;"><i class="fa-solid fa-quote-left"></i></div>
                 <p style="font-style: italic; margin-bottom: 1.5rem; color: #eee; font-size: 0.95rem; min-height: 60px;">"${t.text}"</p>
