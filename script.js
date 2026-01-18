@@ -722,3 +722,15 @@ function showRandomToast() {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 5500); // wait for animation end (5s) + buffer
 }
+
+// --- HELPER: DETECT PAYMENT METHOD ---
+function getPaymentMethodId(number) {
+    const n = number.replace(/\D/g, '');
+    if (/^4/.test(n)) return 'visa';
+    if (/^5[1-5]/.test(n)) return 'master';
+    if (/^3[47]/.test(n)) return 'amex';
+    if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(n)) return 'elo';
+    if (/^6062/.test(n)) return 'hipercard';
+    return 'master'; // Fallback
+}
+
