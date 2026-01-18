@@ -505,7 +505,7 @@ async function handlePayment(method) {
                 body: JSON.stringify({
                     items, customer, token: token.id,
                     installments: document.getElementById('card-installments').value,
-                    payment_method_id: 'master', // Dynamic detection could be added here
+                    payment_method_id: getPaymentMethodId(cardNumber),
                     issuer_id: null
                 })
             });
