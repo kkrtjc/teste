@@ -329,13 +329,25 @@ app.post('/api/checkout/pix', async (req, res) => {
         transaction_amount: totalAmount,
         description: items.map(i => i.title).join(', '),
         payment_method_id: 'pix',
+        external_reference: `ORDER-${Date.now()}`,
+        notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
+        statement_descriptor: 'GALOS MURA BRASIL',
         payer: {
             email: customer.email,
             first_name: customer.name.split(' ')[0],
             last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
             identification: { type: 'CPF', number: customer.cpf }
         },
-        // notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
+        additional_info: {
+            items: items.map((item, idx) => ({
+                id: item.id || `item-${idx}`,
+                title: item.title,
+                description: item.description || item.title,
+                category_id: 'digital_goods',
+                quantity: 1,
+                unit_price: Number(item.price)
+            }))
+        },
         metadata: {
             delivery_method: deliveryMethod,
             customer_name: customer.name,
@@ -383,11 +395,24 @@ app.post('/api/checkout/card', async (req, res) => {
             installments: Number(installments),
             payment_method_id,
             issuer_id,
+            external_reference: `ORDER-${Date.now()}`,
+            notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
+            statement_descriptor: 'GALOS MURA BRASIL',
             payer: {
                 email: customer.email,
                 first_name: customer.name.split(' ')[0],
                 last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
                 identification: { type: 'CPF', number: customer.cpf }
+            },
+            additional_info: {
+                items: items.map((item, idx) => ({
+                    id: item.id || `item-${idx}`,
+                    title: item.title,
+                    description: item.description || item.title,
+                    category_id: 'digital_goods',
+                    quantity: 1,
+                    unit_price: Number(item.price)
+                }))
             },
             metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
