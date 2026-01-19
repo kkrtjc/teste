@@ -169,14 +169,14 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER || 'galosmurabrasill@gmail.com',
-        pass: process.env.EMAIL_PASS // Usando a chave 'wcaisazhfjsoeglr' do Render
+        pass: process.env.EMAIL_PASS || 'wcaisazhfjsoeglr' // Fallback to the known App Password
     }
 });
 
 // Email Sender Function
 async function sendEmail(customer, items) {
-    console.log(`📧 [EMAIL] Preparando envio para: ${customer.email}`);
-    const downloadLink = 'https://teste-m1kq.onrender.com/downloads?items=' + items.map(i => i.id || i.title).join(',');
+    console.log(`📧 [EMAIL] Preparando envio via GMAIL para: ${customer.email}`);
+    const downloadLink = 'https://osegredodasgalinhas.onrender.com/downloads.html?items=' + items.map(i => i.id || i.title).join(',');
 
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
@@ -198,29 +198,31 @@ async function sendEmail(customer, items) {
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
                 
                 <h3 style="color: #333;">Resumo do Pedido:</h3>
-                <ul style="color: #555;">
-                    ${items.map(i => `<li>${i.title}</li>`).join('')}
+                <ul style="list-style: none; padding: 0;">
+                    ${items.map(item => `
+                        <li style="padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                            <span>${item.title}</span>
+                            <strong>R$ ${Number(item.price).toFixed(2).replace('.', ',')}</strong>
+                        </li>
+                    `).join('')}
                 </ul>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
-                <p>© 2025 Protocolo Elite 360º. Todos os direitos reservados.</p>
             </div>
         </div>
     `;
 
     try {
-        const mailOptions = {
-            from: `"Protocolo Elite" <${process.env.EMAIL_USER || 'galosmurabrasill@gmail.com'}>`,
+        const info = await transporter.sendMail({
+            from: '"Galos Mura Brasil" <galosmurabrasill@gmail.com>',
             to: customer.email,
-            subject: '🐓 Acesso Liberado: Protocolo Elite 360º',
+            subject: '✅ Seu Acesso Chegou! - O Segredo das Galinhas',
             html: htmlContent
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ [EMAIL SUCCESS] Enviado para ${customer.email}. ID: ${info.messageId}`);
-    } catch (error) {
-        console.error('❌ [EMAIL ERROR] Falha ao enviar via Gmail:', error.message);
+        console.log(`✅ [EMAIL] Enviado com sucesso! ID: ${info.messageId}`);
+        return true;
+    } catch (err) {
+        console.error('❌ [EMAIL ERROR] Falha no envio Gmail:', err.message);
+        return false;
     }
 }
 
