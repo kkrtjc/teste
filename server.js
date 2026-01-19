@@ -97,11 +97,16 @@ function getHistory() {
 }
 function saveHistory(data) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(data, null, 4)); }
 
-function logSale(customer, items, paymentId, method = 'cartão') {
+async function logSale(customer, items, paymentId, method = 'cartão') {
     try {
-        const history = getHistory();
+        // Non-blocking read
+        let history = [];
+        try {
+            const data = await fs.promises.readFile(HISTORY_PATH, 'utf8');
+            history = JSON.parse(data);
+        } catch (e) { history = []; }
 
-        // Prevent duplicate logs if paymentId is provided
+        // Prevent duplicate logs
         if (paymentId && history.some(h => h.paymentId === paymentId)) {
             console.log(`ℹ️ [HISTÓRICO] Venda já registrada para o ID: ${paymentId}`);
             return true;
@@ -113,13 +118,15 @@ function logSale(customer, items, paymentId, method = 'cartão') {
             name: customer.name,
             email: customer.email,
             phone: customer.phone,
-            method: method, // Novo campo
+            method: method,
             items: items.map(i => i.title),
             total: items.reduce((acc, i) => acc + Number(i.price), 0)
         };
         history.push(sale);
-        saveHistory(history);
-        console.log(`✅ [HISTÓRICO] Venda salva [${method}] para ${customer.email}. Total no log: ${history.length}`);
+
+        // Non-blocking write
+        await fs.promises.writeFile(HISTORY_PATH, JSON.stringify(history, null, 4));
+        console.log(`✅ [HISTÓRICO] Venda salva [${method}] para ${customer.email}.`);
         return true;
     } catch (e) {
         console.error(`❌ [HISTÓRICO ERROR] Falha ao salvar venda:`, e.message);

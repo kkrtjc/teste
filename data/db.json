@@ -10,7 +10,7 @@
                 "Ambiente de Elite",
                 "Nutrição Essencial"
             ],
-            "cover": "capadospintinhos.png",
+            "cover": "ebook_pintinhos_3d.png",
             "orderBumps": [
                 "bump-6361"
             ]
@@ -25,7 +25,7 @@
                 "Tabelas de Sintomas",
                 "Protocolos de Tratamento"
             ],
-            "cover": "capadasdoencas.png",
+            "cover": "ebook_doencas_3d.png",
             "orderBumps": [
                 "bump-6361"
             ]

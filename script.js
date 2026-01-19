@@ -304,8 +304,8 @@ async function renderHomeProducts() {
             if (p.cover === 'combo') {
                 coverHTML = `
                     <div class="combo-visual">
-                        <img src="capadospintinhos.png" class="combo-img" alt="Manejo">
-                        <img src="capadasdoencas.png" class="combo-img" alt="Doenças">
+                        <img src="ebook_pintinhos_3d.png" class="combo-img" alt="Manejo">
+                        <img src="ebook_doencas_3d.png" class="combo-img" alt="Doenças">
                     </div>`;
             } else {
                 coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 120px; margin: 10px auto; display: block;">`;
@@ -613,6 +613,32 @@ function setupFields() {
         // Initial validation on blur
         el.addEventListener('blur', () => validateField(el, type));
     });
+
+    // --- 2.1 Dynamic Card Brand Visual ---
+    const cardInput = document.getElementById('card-number');
+    const cardIcon = cardInput?.parentElement?.querySelector('i');
+
+    if (cardInput && cardIcon) {
+        cardInput.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            const brand = getPaymentMethodId(val); // This helper was already defined at bottom
+
+            // Remove old classes
+            cardIcon.className = '';
+
+            // Set new class based on brand
+            if (brand === 'visa') cardIcon.className = 'fa-brands fa-cc-visa';
+            else if (brand === 'master') cardIcon.className = 'fa-brands fa-cc-mastercard';
+            else if (brand === 'amex') cardIcon.className = 'fa-brands fa-cc-amex';
+            else if (brand === 'elo') cardIcon.className = 'fa-solid fa-credit-card'; // Elo doesn't have a reliable FA free icon usually, fallback generic or custom
+            else if (brand === 'hipercard') cardIcon.className = 'fa-solid fa-credit-card';
+            else cardIcon.className = 'fa-solid fa-credit-card'; // Default
+
+            // Add gold color for recognized brands
+            if (brand !== 'master') cardIcon.style.color = (val.length > 4) ? '#FFD700' : '';
+            else cardIcon.style.color = (val.length > 4) ? '#FFD700' : '';
+        });
+    }
 }
 
 function validateField(el, type) {
@@ -651,22 +677,40 @@ function showPixResult(data, items) {
         };
     }
 
-    // Start Polling
+    // Start Adaptive Polling (Burst Mode)
     if (window.activePixPoll) clearInterval(window.activePixPoll);
 
-    window.activePixPoll = setInterval(async () => {
+    let attempts = 0;
+    const fastPollDuration = 30; // 30 ticks of fast polling
+
+    // Function to run poll logic
+    const pollLogic = async () => {
         try {
             const s = await fetch(`${API_URL}/api/payment/${data.id}`);
             const sd = await s.json();
             if (sd.status === 'approved') {
-                clearInterval(window.activePixPoll);
+                if (window.activePixPoll) clearTimeout(window.activePixPoll);
                 window.activePixPoll = null;
-                localStorage.removeItem('active_pix_session'); // Clear session on success
+                localStorage.removeItem('active_pix_session');
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
+            } else {
+                // If not approved yet, schedule next poll
+                attempts++;
+                // First 30 seconds: poll every 1 second (FAST)
+                // After that: poll every 3 seconds (NORMAL)
+                const delay = attempts < fastPollDuration ? 1000 : 3000;
+                window.activePixPoll = setTimeout(pollLogic, delay);
             }
-        } catch (e) { console.warn("Poll error:", e); }
-    }, 4000);
+        } catch (e) {
+            console.warn("Poll error:", e);
+            // Retry on error after normal delay
+            window.activePixPoll = setTimeout(pollLogic, 3000);
+        }
+    };
+
+    // Kick off first poll immediately
+    window.activePixPoll = setTimeout(pollLogic, 1000);
 }
 
 
