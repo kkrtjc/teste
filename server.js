@@ -135,9 +135,9 @@ async function logSale(customer, items, paymentId, method = 'cartão') {
 }
 
 
-// Mercado Pago
+// Mercado Pago - MODO TESTE ATIVO
 const client = new mercadopago.MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN || 'APP_USR-8523040676915858-010416-38801bbcf39a1cf4c2d6e3680e247ab7-3111470347'
+    accessToken: 'TEST-d2467c30-f8cf-49c1-b277-9fc6b736b46c' // TESTE - Trocar de volta para produção depois
 });
 const payment = new mercadopago.Payment(client);
 
