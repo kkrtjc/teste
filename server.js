@@ -369,7 +369,21 @@ app.post('/api/checkout/pix', async (req, res) => {
         });
     } catch (error) {
         console.timeEnd(`⏱️ [MP_PIX] ${customer.email}`);
-        res.status(500).json({ error: 'Erro no Pagamento', message: error.message });
+        console.error(`❌ [PIX ERROR] Falha ao gerar PIX:`, error.message);
+
+        // Deep debug logging
+        if (error.response) {
+            console.error('⚠️ [DEBUG MP PIX] Response Data:', JSON.stringify(error.response.data || {}, null, 2));
+            console.error('⚠️ [DEBUG MP PIX] Status:', error.response.status);
+        } else if (error.cause) {
+            console.error('⚠️ [DEBUG MP PIX] Cause:', JSON.stringify(error.cause, null, 2));
+        }
+
+        res.status(500).json({
+            error: 'Erro ao gerar PIX',
+            message: error.message,
+            details: error.response ? error.response.data : (error.cause || 'Sem detalhes')
+        });
     }
 });
 

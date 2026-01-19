@@ -433,6 +433,7 @@ async function handlePayment(method) {
         btn.innerText = 'Gerando Pix...';
         btn.disabled = true;
 
+
         try {
             const res = await fetch(`${API_URL}/api/checkout/pix`, {
                 method: 'POST',
@@ -451,10 +452,17 @@ async function handlePayment(method) {
                 }));
 
                 showPixResult(data, items);
+            } else {
+                // Error from server
+                console.error("Pix Error Response:", data);
+                const errorMsg = data.message || data.error || 'Erro desconhecido ao gerar PIX';
+                alert(`Erro ao gerar PIX: ${errorMsg}\n\nDetalhes: ${JSON.stringify(data.details || {})}`);
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
         } catch (e) {
             console.error("Pix Error:", e);
-            alert('Erro ao gerar Pix.');
+            alert('Erro ao gerar Pix: ' + e.message);
             btn.disabled = false;
             btn.innerText = originalText;
         }
