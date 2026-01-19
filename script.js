@@ -520,178 +520,198 @@ async function handlePayment(method) {
                 if (result.error) msg += `\nErro: ${result.message || result.error}`;
 
                 // Translate common MP errors for user
+                // Translate common MP errors for user
                 const map = {
-                    processingView.classList.add('hidden');
-                    if(qrContainer) qrContainer.style.display = 'block';
-                    if(copyArea) copyArea.style.display = 'flex';
-                    btn.disabled = false;
-                    btn.innerText = originalText;
-                }
-            } catch (e) {
-                alert('Erro no cartão: ' + e.message);
+                    'cc_rejected_bad_filled_other': 'Dados incorretos. Verifique CPF e Titular.',
+                    'cc_rejected_bad_filled_card_number': 'Número do cartão inválido.',
+                    'cc_rejected_bad_filled_date': 'Data de validade incorreta.',
+                    'cc_rejected_bad_filled_security_code': 'CVV incorreto.',
+                    'cc_rejected_insufficient_amount': 'Saldo insuficiente.',
+                    'cc_rejected_high_risk': 'Recusado por segurança (risco de fraude). Tente outro cartão.',
+                    'cc_rejected_other_reason': 'Recusado pelo banco emissor.',
+                    'pending_review_manual': 'Pagamento em análise de segurança. Aguarde a confirmação por e-mail.'
+                };
+
+                if (map[result.status_detail]) msg = map[result.status_detail];
+                else if (result.error) msg += `\nErro: ${result.message || result.error}`;
+
+                alert(msg + '\n\nTente conferir os dados ou pagar via PIX.');
+
+                // Return to form if failed
                 document.getElementById('checkout-main-view').classList.remove('hidden');
-                document.getElementById('pix-result').classList.add('hidden');
+                processingView.classList.add('hidden');
+
+                if (qrContainer) qrContainer.style.display = 'block';
+                if (copyArea) copyArea.style.display = 'flex';
+
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
-        }
-}
-
-    // Event Listeners
-    document.getElementById('btn-pay-pix')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('pix'); });
-    document.getElementById('btn-pay-card')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('card'); });
-    document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => switchMethod(b.dataset.method)));
-    document.querySelector('.close-modal')?.addEventListener('click', () => {
-        checkoutModal.classList.remove('active');
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-
-        // Reset State logic for next open
-        setTimeout(() => {
+        } catch (e) {
+            alert('Erro no cartão: ' + e.message);
             document.getElementById('checkout-main-view').classList.remove('hidden');
             document.getElementById('pix-result').classList.add('hidden');
-            if (window.activePixPoll) {
-                clearInterval(window.activePixPoll);
-                window.activePixPoll = null;
-            }
-        }, 300);
-    });
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+}
 
-    // --- 4. MASKS ---
-    const masks = {
-        cpf: v => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'),
-        phone: v => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'),
-        card: v => v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})/g, '$1 ').trim(),
-        date: v => v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d{2})/, '$1/$2'),
-        cvv: v => v.replace(/\D/g, '').slice(0, 4)
+// Event Listeners
+document.getElementById('btn-pay-pix')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('pix'); });
+document.getElementById('btn-pay-card')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('card'); });
+document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => switchMethod(b.dataset.method)));
+document.querySelector('.close-modal')?.addEventListener('click', () => {
+    checkoutModal.classList.remove('active');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+
+    // Reset State logic for next open
+    setTimeout(() => {
+        document.getElementById('checkout-main-view').classList.remove('hidden');
+        document.getElementById('pix-result').classList.add('hidden');
+        if (window.activePixPoll) {
+            clearInterval(window.activePixPoll);
+            window.activePixPoll = null;
+        }
+    }, 300);
+});
+
+// --- 4. MASKS ---
+const masks = {
+    cpf: v => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'),
+    phone: v => v.replace(/\D/g, '').slice(0, 11).replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'),
+    card: v => v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})/g, '$1 ').trim(),
+    date: v => v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d{2})/, '$1/$2'),
+    cvv: v => v.replace(/\D/g, '').slice(0, 4)
+};
+
+function setupFields() {
+    // 2. Real-time Formatting & Validation
+    const fieldMapping = {
+        'payer-cpf': 'cpf',
+        'card-cpf': 'cpf', // ADDED
+        'payer-phone': 'phone',
+        'card-number': 'card',
+        'card-expiration': 'date',
+        'card-cvv': 'cvv'
     };
 
-    function setupFields() {
-        // 2. Real-time Formatting & Validation
-        const fieldMapping = {
-            'payer-cpf': 'cpf',
-            'card-cpf': 'cpf', // ADDED
-            'payer-phone': 'phone',
-            'card-number': 'card',
-            'card-expiration': 'date',
-            'card-cvv': 'cvv'
-        };
+    Object.keys(fieldMapping).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const type = fieldMapping[id];
 
-        Object.keys(fieldMapping).forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const type = fieldMapping[id];
+        el.addEventListener('input', e => {
+            let val = e.target.value;
+            if (masks[type]) e.target.value = masks[type](val);
 
-            el.addEventListener('input', e => {
-                let val = e.target.value;
-                if (masks[type]) e.target.value = masks[type](val);
-
-                // Validation Feedback Loop
-                validateField(el, type);
-            });
-
-            // Initial validation on blur
-            el.addEventListener('blur', () => validateField(el, type));
+            // Validation Feedback Loop
+            validateField(el, type);
         });
+
+        // Initial validation on blur
+        el.addEventListener('blur', () => validateField(el, type));
+    });
+}
+
+function validateField(el, type) {
+    const val = el.value.replace(/\D/g, '');
+    let isValid = false;
+
+    if (type === 'card') isValid = val.length >= 13 && val.length <= 16; // Simplificado para feedback visual
+    else if (type === 'cvv') isValid = val.length >= 3;
+    else if (type === 'date') isValid = val.length === 4 && parseInt(val.slice(0, 2)) <= 12;
+    else if (type === 'cpf') isValid = val.length === 11;
+    else if (type === 'phone') isValid = val.length >= 10;
+
+    if (val.length === 0) {
+        el.classList.remove('is-valid', 'is-invalid');
+    } else if (isValid) {
+        el.classList.add('is-valid');
+        el.classList.remove('is-invalid');
+    } else {
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+    }
+}
+
+function showPixResult(data, items) {
+    document.getElementById('checkout-main-view').classList.add('hidden');
+    document.getElementById('pix-result').classList.remove('hidden');
+    document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
+    document.getElementById('pix-copy-paste').value = data.qr_code;
+
+    const copyBtn = document.getElementById('btn-copy-pix');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(data.qr_code);
+            copyBtn.innerHTML = 'COPIADO!';
+            setTimeout(() => copyBtn.innerHTML = 'COPIAR CÓDIGO PIX', 2000);
+        };
     }
 
-    function validateField(el, type) {
-        const val = el.value.replace(/\D/g, '');
-        let isValid = false;
+    // Start Polling
+    if (window.activePixPoll) clearInterval(window.activePixPoll);
 
-        if (type === 'card') isValid = val.length >= 13 && val.length <= 16; // Simplificado para feedback visual
-        else if (type === 'cvv') isValid = val.length >= 3;
-        else if (type === 'date') isValid = val.length === 4 && parseInt(val.slice(0, 2)) <= 12;
-        else if (type === 'cpf') isValid = val.length === 11;
-        else if (type === 'phone') isValid = val.length >= 10;
+    window.activePixPoll = setInterval(async () => {
+        try {
+            const s = await fetch(`${API_URL}/api/payment/${data.id}`);
+            const sd = await s.json();
+            if (sd.status === 'approved') {
+                clearInterval(window.activePixPoll);
+                window.activePixPoll = null;
+                localStorage.removeItem('active_pix_session'); // Clear session on success
+                const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+                window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
+            }
+        } catch (e) { console.warn("Poll error:", e); }
+    }, 4000);
+}
 
-        if (val.length === 0) {
-            el.classList.remove('is-valid', 'is-invalid');
-        } else if (isValid) {
-            el.classList.add('is-valid');
-            el.classList.remove('is-invalid');
-        } else {
-            el.classList.add('is-invalid');
-            el.classList.remove('is-valid');
-        }
+
+// --- 5. FLOATING TOASTS LOGIC ---
+const toastData = [
+    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpeg' },
+    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.png' },
+    { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.jpg' },
+    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.png' },
+    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.png' },
+    { name: 'Roberto J.', city: 'RS', text: 'Entrega imediata, já estou estudando.', avatar: 'https://ui-avatars.com/api/?name=Roberto+J&background=random' },
+    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.PNG' }
+];
+
+let toastInterval = null;
+
+function startToastLoop() {
+    if (toastInterval) clearInterval(toastInterval);
+
+    // Show first toast quickly
+    setTimeout(showRandomToast, 1500);
+
+    toastInterval = setInterval(showRandomToast, 5000); // New toast every 5s
+}
+
+function stopToastLoop() {
+    if (toastInterval) {
+        clearInterval(toastInterval);
+        toastInterval = null;
     }
+    const container = document.getElementById('toast-container');
+    if (container) container.innerHTML = ''; // Clear existing
+}
 
-    function showPixResult(data, items) {
-        document.getElementById('checkout-main-view').classList.add('hidden');
-        document.getElementById('pix-result').classList.remove('hidden');
-        document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
-        document.getElementById('pix-copy-paste').value = data.qr_code;
+function showRandomToast() {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
 
-        const copyBtn = document.getElementById('btn-copy-pix');
-        if (copyBtn) {
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(data.qr_code);
-                copyBtn.innerHTML = 'COPIADO!';
-                setTimeout(() => copyBtn.innerHTML = 'COPIAR CÓDIGO PIX', 2000);
-            };
-        }
+    if (container.children.length > 0) return; // Only show one at a time for "delicadeza"
 
-        // Start Polling
-        if (window.activePixPoll) clearInterval(window.activePixPoll);
+    const data = toastData[Math.floor(Math.random() * toastData.length)];
 
-        window.activePixPoll = setInterval(async () => {
-            try {
-                const s = await fetch(`${API_URL}/api/payment/${data.id}`);
-                const sd = await s.json();
-                if (sd.status === 'approved') {
-                    clearInterval(window.activePixPoll);
-                    window.activePixPoll = null;
-                    localStorage.removeItem('active_pix_session'); // Clear session on success
-                    const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
-                    window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
-                }
-            } catch (e) { console.warn("Poll error:", e); }
-        }, 4000);
-    }
-
-
-    // --- 5. FLOATING TOASTS LOGIC ---
-    const toastData = [
-        { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpeg' },
-        { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.png' },
-        { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.jpg' },
-        { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.png' },
-        { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.png' },
-        { name: 'Roberto J.', city: 'RS', text: 'Entrega imediata, já estou estudando.', avatar: 'https://ui-avatars.com/api/?name=Roberto+J&background=random' },
-        { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.PNG' }
-    ];
-
-    let toastInterval = null;
-
-    function startToastLoop() {
-        if (toastInterval) clearInterval(toastInterval);
-
-        // Show first toast quickly
-        setTimeout(showRandomToast, 1500);
-
-        toastInterval = setInterval(showRandomToast, 5000); // New toast every 5s
-    }
-
-    function stopToastLoop() {
-        if (toastInterval) {
-            clearInterval(toastInterval);
-            toastInterval = null;
-        }
-        const container = document.getElementById('toast-container');
-        if (container) container.innerHTML = ''; // Clear existing
-    }
-
-    function showRandomToast() {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-
-        if (container.children.length > 0) return; // Only show one at a time for "delicadeza"
-
-        const data = toastData[Math.floor(Math.random() * toastData.length)];
-
-        const toast = document.createElement('div');
-        toast.className = 'toast-card';
-        toast.innerHTML = `
+    const toast = document.createElement('div');
+    toast.className = 'toast-card';
+    toast.innerHTML = `
         <img src="${data.avatar}" class="toast-avatar" alt="${data.name}" onerror="this.src='https://ui-avatars.com/api/?name=${data.name}&background=random&color=fff'">
         <div class="toast-content">
             <h4>${data.name} <span>${data.city}</span></h4>
@@ -702,22 +722,22 @@ async function handlePayment(method) {
         </div>
     `;
 
-        container.appendChild(toast);
+    container.appendChild(toast);
 
-        // Remove logic handled by CSS animation mainly, but cleanup DOM
-        setTimeout(() => {
-            if (toast.parentNode) toast.parentNode.removeChild(toast);
-        }, 5500); // wait for animation end (5s) + buffer
-    }
+    // Remove logic handled by CSS animation mainly, but cleanup DOM
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 5500); // wait for animation end (5s) + buffer
+}
 
-    // --- HELPER: DETECT PAYMENT METHOD ---
-    function getPaymentMethodId(number) {
-        const n = number.replace(/\D/g, '');
-        if (/^4/.test(n)) return 'visa';
-        if (/^5[1-5]/.test(n)) return 'master';
-        if (/^3[47]/.test(n)) return 'amex';
-        if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(n)) return 'elo';
-        if (/^6062/.test(n)) return 'hipercard';
-        return 'master'; // Fallback
-    }
+// --- HELPER: DETECT PAYMENT METHOD ---
+function getPaymentMethodId(number) {
+    const n = number.replace(/\D/g, '');
+    if (/^4/.test(n)) return 'visa';
+    if (/^5[1-5]/.test(n)) return 'master';
+    if (/^3[47]/.test(n)) return 'amex';
+    if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(n)) return 'elo';
+    if (/^6062/.test(n)) return 'hipercard';
+    return 'master'; // Fallback
+}
 
