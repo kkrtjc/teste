@@ -24,6 +24,7 @@
 
     <!-- CSS -->
     <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="order_bump_modal.css">
 
     <!-- Meta Pixel Code -->
     <script>
@@ -486,8 +487,7 @@
                 </div>
 
 
-                <!-- Order Bump Area [DYNAMIC] -->
-                <div id="order-bump-area"></div>
+                <!-- REMOVED: Order Bump Area - Now using slide-in modal -->
 
                 <div class="checkout-authority-box" style="margin-bottom: 2rem;">
                     <div class="authority-badge-v2">
@@ -674,6 +674,43 @@
         </div>
     </div>
 
+    <!-- Order Bump Slide-in Modal -->
+    <div id="order-bump-modal" class="order-bump-slide-modal">
+        <div class="order-bump-slide-content">
+            <button class="order-bump-close" onclick="closeOrderBumpModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="order-bump-header">
+                <i class="fa-solid fa-gift" style="font-size: 2rem; color: var(--color-secondary);"></i>
+                <h3>Olha só, uma oferta pra você criador!</h3>
+            </div>
+
+            <div class="order-bump-body">
+                <img src="tabela_racao_v2.png" alt="Tabela de Ração" class="order-bump-image">
+                <p class="order-bump-text">
+                    <strong>Economize até 65% na sua ração</strong>, produzindo sua própria ração com nossa
+                    <span style="color: var(--color-secondary);">tabela de alimentação do nascimento ao
+                        crescimento</span>.
+                </p>
+                <div class="order-bump-price-tag">
+                    <span class="old-price">De R$ 47,00</span>
+                    <span class="new-price">Por apenas R$ 1,00</span>
+                </div>
+                <span class="order-bump-badge">OFERTA ÚNICA</span>
+            </div>
+
+            <div class="order-bump-actions">
+                <button class="btn-accept-bump" onclick="acceptOrderBump()">
+                    <i class="fa-solid fa-check"></i> SIM, QUERO ECONOMIZAR!
+                </button>
+                <button class="btn-decline-bump" onclick="closeOrderBumpModal()">
+                    Não, obrigado
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Secure Loading Overlay -->
     <div id="secure-loading" class="secure-loading">
         <div class="secure-content">
@@ -704,6 +741,7 @@
 
     <!-- Scripts -->
     <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <script src="order_bump_modal.js"></script>
     <script src="script.js"></script>
 </body>
 
