@@ -565,9 +565,18 @@ async function handlePayment(method) {
     }
 }
 
-// Event Listeners
-document.getElementById('btn-pay-pix')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('pix'); });
-document.getElementById('btn-pay-card')?.addEventListener('click', (e) => { e.preventDefault(); handlePayment('card'); });
+// Event Listeners with Order Bump Interception
+document.getElementById('btn-pay-pix')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const intercepted = interceptPaymentButton(() => handlePayment('pix'));
+    if (!intercepted) handlePayment('pix');
+});
+
+document.getElementById('btn-pay-card')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const intercepted = interceptPaymentButton(() => handlePayment('card'));
+    if (!intercepted) handlePayment('card');
+});
 document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => switchMethod(b.dataset.method)));
 document.querySelector('.close-modal')?.addEventListener('click', () => {
     checkoutModal.classList.remove('active');
