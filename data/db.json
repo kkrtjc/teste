@@ -2,8 +2,8 @@
     "products": {
         "ebook-manejo": {
             "title": "Manejo de Pintinhos",
-            "price": 1,
-            "originalPrice": 1,
+            "price": 69.90,
+            "originalPrice": 69.90,
             "description": "Acesso Vitalício",
             "features": [
                 "Incubação Perfeita",
@@ -17,8 +17,8 @@
         },
         "ebook-doencas": {
             "title": "Doenças Avícolas",
-            "price": 84.9,
-            "originalPrice": 84.9,
+            "price": 89.90,
+            "originalPrice": 89.90,
             "description": "Acesso Vitalício",
             "features": [
                 "11 Doenças Documentadas",
@@ -32,8 +32,8 @@
         },
         "combo-elite": {
             "title": "Protocolo Elite 360º (Combo)",
-            "price": 111.84,
-            "originalPrice": 139.8,
+            "price": 127.84,
+            "originalPrice": 159.80,
             "description": "Combo Completo",
             "isFeatured": true,
             "badge": "MAIS VENDIDO • 20% OFF",

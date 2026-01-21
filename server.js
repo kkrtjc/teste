@@ -99,11 +99,14 @@ function saveHistory(data) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(data,
 
 async function logSale(customer, items, paymentId, method = 'cartão') {
     try {
-        // Non-blocking read
+        // SYNCHRONOUS LOCK (Blocking) - Prevents Race Conditions/Data Loss
+        // For this scale, blocking for 2ms is better than losing a sale record.
         let history = [];
         try {
-            const data = await fs.promises.readFile(HISTORY_PATH, 'utf8');
-            history = JSON.parse(data);
+            if (fs.existsSync(HISTORY_PATH)) {
+                const data = fs.readFileSync(HISTORY_PATH, 'utf8');
+                history = JSON.parse(data);
+            }
         } catch (e) { history = []; }
 
         // Prevent duplicate logs
@@ -124,8 +127,7 @@ async function logSale(customer, items, paymentId, method = 'cartão') {
         };
         history.push(sale);
 
-        // Non-blocking write
-        await fs.promises.writeFile(HISTORY_PATH, JSON.stringify(history, null, 4));
+        fs.writeFileSync(HISTORY_PATH, JSON.stringify(history, null, 4));
         console.log(`✅ [HISTÓRICO] Venda salva [${method}] para ${customer.email}.`);
         return true;
     } catch (e) {
@@ -183,7 +185,7 @@ const transporter = nodemailer.createTransport({
 // Email Sender Function
 async function sendEmail(customer, items) {
     console.log(`📧 [EMAIL] Preparando envio via GMAIL para: ${customer.email}`);
-    const downloadLink = 'https://osegredodasgalinhas.onrender.com/downloads.html?items=' + items.map(i => i.id || i.title).join(',');
+    const downloadLink = 'https://osegredodasgalinhas.pages.dev/downloads.html?items=' + items.map(i => i.id || i.title).join(',');
 
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
