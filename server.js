@@ -432,9 +432,6 @@ app.post('/api/checkout/card', async (req, res) => {
             payment_method_id,
             issuer_id,
             binary_mode: true,
-            order: {
-                type: 'mercadopago'
-            },
             external_reference: `ORDER-${Date.now()}`,
             notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
             statement_descriptor: 'GALOS MURA BRASIL',
