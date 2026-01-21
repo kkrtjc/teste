@@ -1235,22 +1235,51 @@ footer {
 }
 
 /* Combo Visual for Offers */
+/* Combo Visual for Offers */
 .combo-visual {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 2rem;
-    /* Increased margin to avoid overlap */
+    margin-bottom: 2.5rem;
     position: relative;
-    height: 140px;
+    height: 220px;
+    /* Aumentado para caber as imagens maiores */
     z-index: 5;
+    transform: scale(1.1);
+    /* Um leve zoom extra no container todo */
 }
 
 .combo-img {
-    height: 120px;
-    border-radius: 4px;
-    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+    height: 190px;
+    /* Aumentado de 120px para 190px (zoom in) */
+    border-radius: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
     position: relative;
+}
+
+/* Efeito de sobreposição estilosa */
+.combo-img:first-child {
+    transform: rotate(-5deg) translateX(10px);
+    z-index: 1;
+}
+
+.combo-img:last-child {
+    transform: rotate(5deg) translateX(-10px);
+    z-index: 2;
+}
+
+.combo-visual:hover .combo-img:first-child {
+    transform: rotate(-10deg) translateX(-5px) scale(1.05);
+}
+
+.combo-visual:hover .combo-img:last-child {
+    transform: rotate(10deg) translateX(5px) scale(1.05);
+}
+
+border-radius: 4px;
+box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+position: relative;
 }
 
 .combo-img:first-child {
@@ -70628,4 +70657,88 @@ body {
     width: 95px !important;
     border-radius: 4px;
     filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+}
+
+/* Guarantee Section - Horizontal Layout */
+.guarantee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.guarantee-Visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.guarantee-img {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.guarantee-img:hover {
+    transform: scale(1.05);
+}
+
+.guarantee-content {
+    text-align: left;
+}
+
+.guarantee-badge-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--color-secondary), #FFD700);
+    border-radius: 50%;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+}
+
+.guarantee-badge-icon i {
+    font-size: 2rem;
+    color: #000;
+}
+
+.guarantee-content h2 {
+    font-size: 2.5rem;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.guarantee-content p {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 1rem;
+    line-height: 1.8;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+    .guarantee-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+    }
+
+    .guarantee-content {
+        text-align: center;
+    }
+
+    .guarantee-img {
+        max-width: 350px;
+    }
+
+    .guarantee-content h2 {
+        font-size: 2rem;
+    }
 }
