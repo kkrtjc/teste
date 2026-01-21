@@ -304,8 +304,8 @@ async function renderHomeProducts() {
             if (p.cover === 'combo') {
                 coverHTML = `
                     <div class="combo-visual">
-                        <img src="ebook_pintinhos_3d.png" class="combo-img" alt="Manejo">
-                        <img src="ebook_doencas_3d.png" class="combo-img" alt="Doenças">
+                        <img src="capadospintinhos.png" class="combo-img" alt="Manejo">
+                        <img src="capadasdoencas.png" class="combo-img" alt="Doenças">
                     </div>`;
             } else {
                 coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 120px; margin: 10px auto; display: block;">`;
