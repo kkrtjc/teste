@@ -524,7 +524,8 @@ async function handlePayment(method) {
                     items, customer, token: token.id,
                     installments: document.getElementById('card-installments').value,
                     payment_method_id: getPaymentMethodId(cardNumber),
-                    issuer_id: null
+                    issuer_id: null,
+                    deviceId: (mp && typeof mp.getDeviceId === 'function') ? mp.getDeviceId() : null
                 })
             });
 

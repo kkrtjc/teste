@@ -431,6 +431,10 @@ app.post('/api/checkout/card', async (req, res) => {
             installments: Number(installments),
             payment_method_id,
             issuer_id,
+            binary_mode: true,
+            order: {
+                type: 'mercadopago'
+            },
             external_reference: `ORDER-${Date.now()}`,
             notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
             statement_descriptor: 'GALOS MURA BRASIL',
@@ -441,6 +445,7 @@ app.post('/api/checkout/card', async (req, res) => {
                 identification: { type: 'CPF', number: cleanCPF }
             },
             additional_info: {
+                ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
                 items: items.map((item, idx) => ({
                     id: item.id || `item-${idx}`,
                     title: item.title,
@@ -452,6 +457,17 @@ app.post('/api/checkout/card', async (req, res) => {
             },
             metadata: { delivery_method: 'email', customer_phone: customer.phone }
         };
+
+        // Add Device ID if provided (CRITICAL for Anti-Fraud)
+        if (req.body.deviceId) {
+            console.log(`📱 [CARTÃO] Device ID recebido: ${req.body.deviceId}`);
+            // Note: Mercado Pago SDK v2 usually handles device_id automatically in the token if configured, 
+            // but explicitly passing it in aditional_info or at root level depends on specific API version.
+            // For /v1/payments, 'metadata' or 'additional_info' is safer if top-level property is restricted.
+            // However, the standard way often involves 'device_id' at the root of the body object if the SDK generated it.
+            // Let's try adding it to top level as 'device_id' is standard in MP API.
+            body.additional_info.device_id = req.body.deviceId;
+        }
 
         const response = await payment.create({ body });
 
