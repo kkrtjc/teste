@@ -325,6 +325,17 @@ app.post('/api/checkout/pix', async (req, res) => {
         return res.status(400).json({ error: 'Erro no valor do pedido', message: 'O valor total deve ser maior que zero.' });
     }
 
+    // CRITICAL: Ensure CPF is clean (only numbers, no formatting)
+    const cleanCPF = (customer.cpf || '').replace(/\D/g, '');
+
+    if (cleanCPF.length !== 11) {
+        console.error(`❌ [PIX ERROR] CPF inválido: ${customer.cpf} (limpo: ${cleanCPF})`);
+        return res.status(400).json({
+            error: 'CPF inválido',
+            message: 'O CPF deve conter exatamente 11 dígitos.'
+        });
+    }
+
     const body = {
         transaction_amount: totalAmount,
         description: items.map(i => i.title).join(', '),
@@ -336,7 +347,7 @@ app.post('/api/checkout/pix', async (req, res) => {
             email: customer.email,
             first_name: customer.name.split(' ')[0],
             last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
-            identification: { type: 'CPF', number: customer.cpf }
+            identification: { type: 'CPF', number: cleanCPF }
         },
         additional_info: {
             items: items.map((item, idx) => ({
@@ -402,6 +413,17 @@ app.post('/api/checkout/card', async (req, res) => {
             return res.status(400).json({ error: 'Erro no valor do pedido', message: 'O valor total deve ser maior que zero.' });
         }
 
+        // CRITICAL: Ensure CPF is clean (only numbers, no formatting)
+        const cleanCPF = (customer.cpf || '').replace(/\D/g, '');
+
+        if (cleanCPF.length !== 11) {
+            console.error(`❌ [CARTÃO ERROR] CPF inválido: ${customer.cpf} (limpo: ${cleanCPF})`);
+            return res.status(400).json({
+                error: 'CPF inválido',
+                message: 'O CPF deve conter exatamente 11 dígitos.'
+            });
+        }
+
         const body = {
             transaction_amount: totalAmount,
             token: token,
@@ -416,7 +438,7 @@ app.post('/api/checkout/card', async (req, res) => {
                 email: customer.email,
                 first_name: customer.name.split(' ')[0],
                 last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
-                identification: { type: 'CPF', number: customer.cpf }
+                identification: { type: 'CPF', number: cleanCPF }
             },
             additional_info: {
                 items: items.map((item, idx) => ({

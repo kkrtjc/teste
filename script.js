@@ -479,6 +479,16 @@ async function handlePayment(method) {
         btn.disabled = true;
 
         try {
+            // CRITICAL FIX: Ensure CPF is clean and valid (exactly 11 digits)
+            const cleanCPF = customer.cpf.replace(/\D/g, '');
+
+            if (cleanCPF.length !== 11) {
+                alert('CPF inválido. Por favor, verifique o CPF digitado (deve ter 11 dígitos).');
+                btn.disabled = false;
+                btn.innerText = originalText;
+                return;
+            }
+
             const cardTokenParams = {
                 cardNumber,
                 cardholderName: cardHolder,
@@ -486,7 +496,7 @@ async function handlePayment(method) {
                 cardExpirationYear: '20' + cardExpiry.split('/')[1],
                 securityCode: cardCVV,
                 identificationType: 'CPF',
-                identificationNumber: customer.cpf
+                identificationNumber: cleanCPF  // Use cleaned CPF
             };
 
             const token = await mp.createCardToken(cardTokenParams);
@@ -527,17 +537,25 @@ async function handlePayment(method) {
                 if (result.status_detail) msg += ` Motivo: ${result.status_detail}`;
                 if (result.error) msg += `\nErro: ${result.message || result.error}`;
 
-                // Translate common MP errors for user
-                // Translate common MP errors for user
+                // Mensagens simplificadas para o cliente
                 const map = {
-                    'cc_rejected_bad_filled_other': 'Dados incorretos. Verifique CPF e Titular.',
+                    'cc_rejected_bad_filled_other': 'CPF inválido. Verifique os dados e tente novamente.',
                     'cc_rejected_bad_filled_card_number': 'Número do cartão inválido.',
                     'cc_rejected_bad_filled_date': 'Data de validade incorreta.',
-                    'cc_rejected_bad_filled_security_code': 'CVV incorreto.',
-                    'cc_rejected_insufficient_amount': 'Saldo insuficiente.',
-                    'cc_rejected_high_risk': 'Recusado por segurança (risco de fraude). Tente outro cartão.',
-                    'cc_rejected_other_reason': 'Recusado pelo banco emissor.',
-                    'pending_review_manual': 'Pagamento em análise de segurança. Aguarde a confirmação por e-mail.'
+                    'cc_rejected_bad_filled_security_code': 'Código CVV incorreto.',
+                    'cc_rejected_insufficient_amount': 'Saldo insuficiente no cartão.',
+                    'cc_rejected_high_risk': 'Cartão recusado por segurança. Tente outro cartão.',
+                    'cc_rejected_other_reason': 'Cartão recusado pelo banco.',
+                    'cc_rejected_call_for_authorize': 'Entre em contato com seu banco para autorizar.',
+                    'cc_rejected_card_disabled': 'Cartão bloqueado. Entre em contato com seu banco.',
+                    'cc_rejected_duplicated_payment': 'Pagamento duplicado detectado.',
+                    'cc_rejected_max_attempts': 'Limite de tentativas excedido. Tente novamente mais tarde.',
+                    'cc_rejected_blacklist': 'Cartão não autorizado.',
+                    'cc_rejected_invalid_installments': 'Número de parcelas inválido.',
+                    'pending_review_manual': 'Pagamento em análise. Você receberá confirmação por e-mail.',
+                    'pending_contingency': 'Processando pagamento. Aguarde a confirmação.',
+                    'rejected': 'Pagamento recusado.',
+                    'cc_rejected_bad_filled_security_code': 'Código de segurança incorreto.'
                 };
 
                 if (map[result.status_detail]) msg = map[result.status_detail];
