@@ -1,12 +1,43 @@
 // --- 1. GLOBAL CONFIG & STATE ---
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000'
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
+    ? 'http://localhost:10000'
     : 'https://teste-m1kq.onrender.com';
 
 let cart = {
     mainProduct: null,
     bumps: [] // IDs of selected bumps
 };
+
+// --- INIT: CHECK PENDING PIX (Recover Logic) ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const cached = localStorage.getItem('active_pix_session');
+    if (cached) {
+        try {
+            const session = JSON.parse(cached);
+            // Only check if recent (< 1 hour) to avoid zombie checks
+            if ((Date.now() - session.timestamp) < 60 * 60 * 1000) {
+                console.log("🔍 Verificando pagamento pendente em background...");
+                try {
+                    const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
+                    const sd = await s.json();
+                    if (sd.status === 'approved') {
+                        // User paid! Redirect immediately.
+                        console.log("✅ Pagamento confirmado em background! Redirecionando...");
+                        localStorage.removeItem('active_pix_session');
+                        window.location.href = `downloads.html?items=RECOVERED_SESSION`; // Simplified for recovery
+                    } else {
+                        // Not paid. User reloaded -> They probably want a fresh start.
+                        // Clear storage so the modal starts clean.
+                        console.log("ℹ️ Pagamento não identificado. Limpando sessão antiga.");
+                        localStorage.removeItem('active_pix_session');
+                    }
+                } catch (e) { console.warn("Background check failed", e); }
+            } else {
+                localStorage.removeItem('active_pix_session');
+            }
+        } catch (e) { localStorage.removeItem('active_pix_session'); }
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -103,6 +134,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 7. NEW: Mobile-First Tracking ---
+    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+
+    // Defer session start until we are sure it's a new session
+    if (!sessionStorage.getItem('session_tracked')) {
+        trackEvent('session_start', isMobile);
+        sessionStorage.setItem('session_tracked', 'true');
+    }
+
+    // Track Slow Load
+    window.addEventListener('load', () => {
+        const perf = window.performance.timing;
+        const loadTime = (perf.loadEventEnd - perf.navigationStart) / 1000;
+        if (loadTime > 5) trackEvent('slow_load', isMobile);
+    });
+
+    // Track Trust Clicks (Seals, Guarantee)
+    document.querySelectorAll('.trust-seal, .guarantee-section, .secure-info').forEach(el => {
+        el.addEventListener('click', () => trackEvent('trust_click', isMobile));
+    });
+
+    // Track Specific CTA Clicks
+    document.querySelectorAll('[data-cta]').forEach(el => {
+        el.addEventListener('click', () => {
+            const ctaId = el.getAttribute('data-cta');
+            trackEvent('cta_click', isMobile, ctaId);
+        });
+    });
+
     // Pixels tracking
     setTimeout(() => {
         if (typeof fbq === 'function') {
@@ -117,7 +177,21 @@ document.addEventListener('DOMContentLoaded', () => {
 const mp = new MercadoPago('APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5');
 const checkoutModal = document.getElementById('checkout-modal');
 
+async function trackEvent(type, isMobileManual = null, ctaId = null) {
+    const isMobile = isMobileManual !== null ? isMobileManual : (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window));
+    try {
+        fetch(`${API_URL}/api/track`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, isMobile, ctaId })
+        }).catch(e => console.warn("Track sync failed", e));
+    } catch (e) { }
+}
+
 async function openCheckout(productId) {
+    trackEvent('checkout_open');
+    trackEvent('click');
+    sessionStorage.setItem('mura_modal_open', 'true');
     // Pixel Tracking: AddToCart & InitiateCheckout
     if (typeof fbq === 'function') {
         fbq('track', 'AddToCart', { content_ids: [productId], content_type: 'product' });
@@ -139,6 +213,11 @@ async function openCheckout(productId) {
     if (window.activePixPoll) {
         clearInterval(window.activePixPoll);
         window.activePixPoll = null;
+    }
+
+    // RESET Order Bump state for new attempt (if not accepted yet)
+    if (typeof orderBumpAccepted !== 'undefined' && !orderBumpAccepted) {
+        orderBumpShown = false;
     }
 
     const secureOverlay = document.getElementById('secure-loading');
@@ -235,7 +314,7 @@ function renderOrderBumps(bumps) {
         if (!imgSrc) {
             if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.png';
             else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.png';
-            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_v2.png';
+            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.png';
         }
 
         return `
@@ -395,10 +474,8 @@ async function handlePayment(method) {
         };
     }
 
-    if (!customer.name || !customer.cpf || !customer.email || customer.cpf.length < 11) {
-        alert('Por favor, preencha todos os campos obrigatórios (Nome, CPF e Email).');
-        return;
-    }
+    const isValid = validateCheckoutInputs(method);
+    if (!isValid) return;
 
     const items = [{ id: cart.mainProduct.id, title: cart.mainProduct.title, price: cart.mainProduct.price }];
     cart.bumps.forEach(id => {
@@ -410,36 +487,32 @@ async function handlePayment(method) {
         const btn = document.getElementById('btn-pay-pix');
         const originalText = btn.innerText;
 
-        // --- 🛡️ PIX PERSISTENCE LOGIC ---
+        // --- 🛡️ PIX LOGIC (ALWAYS NEW) ---
+        // We removed the "Reuse Only" logic to fix the "Stuck" issue.
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
         const itemIds = items.map(i => i.id).sort().join(',');
-        const cached = localStorage.getItem('active_pix_session');
 
-        if (cached) {
-            try {
-                const session = JSON.parse(cached);
-                const isExpired = (Date.now() - session.timestamp) > 10 * 60 * 1000;
-                const sameTotal = Math.abs(session.total - totalAmount) < 0.01;
-                const sameItems = session.itemIds === itemIds;
-
-                if (!isExpired && sameTotal && sameItems) {
-                    console.log("♻️ Reaproveitando Pix ativo de menos de 10 min...");
-                    showPixResult(session.data, items);
-                    return;
-                }
-            } catch (e) { localStorage.removeItem('active_pix_session'); }
-        }
-
-        btn.innerText = 'Gerando Pix...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> GERANDO SEU PIX...';
         btn.disabled = true;
-
+        btn.style.opacity = '0.7';
 
         try {
+            // SET A HEARTBEAT / TIMEOUT for UI safety
+            const timeout = setTimeout(() => {
+                if (btn.innerText === 'Gerando Pix...') {
+                    btn.disabled = false;
+                    btn.innerText = 'Tentar Novamente';
+                    alert('O servidor está demorando para responder. Tente clicar novamente ou verifique se sua internet está estável.');
+                }
+            }, 15000);
+
             const res = await fetch(`${API_URL}/api/checkout/pix`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items, customer })
             });
+
+            clearTimeout(timeout);
             const data = await res.json();
 
             if (data.qr_code) {
@@ -587,12 +660,16 @@ async function handlePayment(method) {
 // Event Listeners with Order Bump Interception
 document.getElementById('btn-pay-pix')?.addEventListener('click', (e) => {
     e.preventDefault();
+    if (!validateCheckoutInputs('pix')) return;
+
     const intercepted = interceptPaymentButton(() => handlePayment('pix'));
     if (!intercepted) handlePayment('pix');
 });
 
 document.getElementById('btn-pay-card')?.addEventListener('click', (e) => {
     e.preventDefault();
+    if (!validateCheckoutInputs('card')) return;
+
     const intercepted = interceptPaymentButton(() => handlePayment('card'));
     if (!intercepted) handlePayment('card');
 });
@@ -601,6 +678,18 @@ document.querySelector('.close-modal')?.addEventListener('click', () => {
     checkoutModal.classList.remove('active');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+
+    // RESET BUTTONS STATE (Critical Fix)
+    const btnPix = document.getElementById('btn-pay-pix');
+    if (btnPix) {
+        btnPix.disabled = false;
+        btnPix.innerText = 'GERAR PIX AGORA'; // Or original text
+    }
+    const btnCard = document.getElementById('btn-pay-card');
+    if (btnCard) {
+        btnCard.disabled = false;
+        btnCard.innerText = 'PAGAR COM CARTÃO';
+    }
 
     // Reset State logic for next open
     setTimeout(() => {
@@ -623,6 +712,16 @@ const masks = {
 };
 
 function setupFields() {
+    // Track Checkout Start
+    const inputs = document.querySelectorAll('#checkout-modal input');
+    inputs.forEach(input => {
+        input.addEventListener('blur', () => {
+            if (input.value.trim().length > 2 && !sessionStorage.getItem('checkout_started')) {
+                sessionStorage.setItem('checkout_started', 'true');
+                trackEvent('checkout_start');
+            }
+        });
+    });
     // 2. Real-time Formatting & Validation
     const fieldMapping = {
         'payer-cpf': 'cpf',
@@ -693,6 +792,9 @@ function validateField(el, type) {
         el.classList.add('is-valid');
         el.classList.remove('is-invalid');
     } else {
+        if (!el.classList.contains('is-invalid')) {
+            trackEvent('ui_error'); // Only track first time per blur
+        }
         el.classList.add('is-invalid');
         el.classList.remove('is-valid');
     }
@@ -706,10 +808,48 @@ function showPixResult(data, items) {
 
     const copyBtn = document.getElementById('btn-copy-pix');
     if (copyBtn) {
+        // Tenta copiar automaticamente
+        try {
+            navigator.clipboard.writeText(data.qr_code).then(() => {
+                // Feedback Discreto (Toast)
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast-card';
+                toast.style.borderColor = '#2ecc71'; // Green border for success
+                toast.innerHTML = `
+                    <div style="width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="toast-content">
+                        <h4>Código PIX Copiado!</h4>
+                        <p>Cole no app do seu banco para pagar.</p>
+                    </div>
+                `;
+                container.appendChild(toast);
+                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+            }).catch(() => {
+                console.log("Auto-copy blocked");
+            });
+        } catch (err) { console.warn(err); }
+
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(data.qr_code);
-            copyBtn.innerHTML = 'COPIADO!';
-            setTimeout(() => copyBtn.innerHTML = 'COPIAR CÓDIGO PIX', 2000);
+            // Feedback Discreto (Toast)
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-card';
+            toast.style.borderColor = '#2ecc71';
+            toast.innerHTML = `
+                <div style="width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="toast-content">
+                    <h4>Código PIX Copiado!</h4>
+                    <p>Cole no app do seu banco para pagar.</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
         };
     }
 
@@ -809,6 +949,121 @@ function showRandomToast() {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 5500); // wait for animation end (5s) + buffer
 }
+
+// --- 4. CHECKOUT COMPACTION & UX UTILS ---
+
+function validateCheckoutInputs(method) {
+    const email = document.getElementById('payer-email');
+    const phone = document.getElementById('payer-phone');
+    const name = (method === 'pix') ? document.getElementById('payer-name') : document.getElementById('card-holder');
+    const cpf = (method === 'pix') ? document.getElementById('payer-cpf') : document.getElementById('card-cpf');
+
+    let isValid = true;
+
+    // Reset visual states
+    [email, phone, name, cpf].forEach(el => el.classList.remove('is-invalid'));
+
+    if (!email.value || !email.value.includes('@')) { email.classList.add('is-invalid'); isValid = false; }
+    if (!phone.value || phone.value.replace(/\D/g, '').length < 10) { phone.classList.add('is-invalid'); isValid = false; }
+    if (!name.value || name.value.trim().length < 3) { name.classList.add('is-invalid'); isValid = false; }
+    if (!cpf.value || cpf.value.replace(/\D/g, '').length < 11) { cpf.classList.add('is-invalid'); isValid = false; }
+
+    if (!isValid) {
+        // Find which one is invalid and show a quick shake or similar could be added here
+        const firstError = document.querySelector('.is-invalid');
+        if (firstError) firstError.focus();
+    }
+
+    return isValid;
+}
+
+// ⏳ Tooltip / Help Bubble Logic (5s Idle)
+let helpTimer = null;
+const HELP_MESSAGES = {
+    'payer-email': 'Insira seu melhor e-mail para receber o acesso.',
+    'payer-phone': 'Precisamos do seu WhatsApp para suporte técnico.',
+    'payer-name': 'Digite seu nome completo conforme documento.',
+    'payer-cpf': 'O CPF é necessário para emissão da sua nota fiscal.',
+    'card-holder': 'Nome exatamente como está escrito no seu cartão.',
+    'card-number': 'Digite os 16 números da frente do seu cartão.',
+    'card-cpf': 'CPF do titular do cartão para validação bancária.'
+};
+
+function initHelpBubbles() {
+    const inputs = document.querySelectorAll('.checkout-form input');
+
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            clearTimeout(helpTimer);
+            if (!input.value) {
+                helpTimer = setTimeout(() => showHelpBubble(input), 5000);
+            }
+        });
+
+        input.addEventListener('input', () => {
+            clearTimeout(helpTimer);
+            removeHelpBubbles();
+        });
+
+        input.addEventListener('blur', () => {
+            clearTimeout(helpTimer);
+            removeHelpBubbles();
+            validateField(input);
+        });
+    });
+}
+
+function validateField(input) {
+    const id = input.id;
+    const val = input.value.trim();
+    let isValid = true;
+
+    if (id === 'payer-email') isValid = val.includes('@') && val.length > 5;
+    else if (id === 'payer-phone') isValid = val.replace(/\D/g, '').length >= 10;
+    else if (id === 'payer-name' || id === 'card-holder') isValid = val.length >= 3;
+    else if (id === 'payer-cpf' || id === 'card-cpf') isValid = val.replace(/\D/g, '').length === 11;
+    else if (id === 'card-number') isValid = val.replace(/\D/g, '').length >= 15;
+    else if (id === 'card-expiration') isValid = /^\d{2}\/\d{2}$/.test(val);
+    else if (id === 'card-cvv') isValid = val.length >= 3;
+
+    if (!isValid && val.length > 0) {
+        input.classList.add('is-invalid');
+    } else {
+        input.classList.remove('is-invalid');
+    }
+}
+
+function showHelpBubble(input) {
+    removeHelpBubbles();
+    const msg = HELP_MESSAGES[input.id] || 'Preencha este campo para continuar.';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'mura-help-bubble';
+    bubble.innerText = msg;
+
+    // Append to the input wrapper
+    input.parentElement.appendChild(bubble);
+}
+
+function removeHelpBubbles() {
+    document.querySelectorAll('.mura-help-bubble').forEach(b => b.remove());
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    initHelpBubbles();
+
+    // Global click to blur inputs (hide mobile keyboard)
+    document.addEventListener('click', (e) => {
+        if (typeof checkoutModal !== 'undefined' && checkoutModal.classList.contains('active')) {
+            if (!e.target.closest('input') && !e.target.closest('select') && !e.target.closest('button') && !e.target.closest('.method-btn')) {
+                if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                    document.activeElement.blur();
+                }
+            }
+        }
+    });
+});
 
 // --- HELPER: DETECT PAYMENT METHOD ---
 function getPaymentMethodId(number) {

@@ -8,9 +8,11 @@ const fs = require('fs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 
+
 dotenv.config();
 
 const app = express();
+
 
 // Configuração de Segurança CORS (Simplificada para Testes e Produção)
 app.use(cors({
@@ -32,6 +34,7 @@ const DATA_DIR = fs.existsSync(MOUNTED_DISK_PATH) ? MOUNTED_DISK_PATH : path.joi
 
 const DB_PATH = path.join(DATA_DIR, 'db.json');
 const HISTORY_PATH = path.join(DATA_DIR, 'history.json');
+const ANALYTICS_PATH = path.join(DATA_DIR, 'analytics.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads'); // Move uploads to disk too!
 
 // Ensure directories exist
@@ -58,6 +61,14 @@ if (DATA_DIR === MOUNTED_DISK_PATH) {
 }
 
 if (!fs.existsSync(HISTORY_PATH)) fs.writeFileSync(HISTORY_PATH, '[]');
+if (!fs.existsSync(ANALYTICS_PATH)) fs.writeFileSync(ANALYTICS_PATH, JSON.stringify({
+    totals: {
+        clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
+        uiErrors: 0, trustClicks: 0, mobileSessions: 0,
+        desktopSessions: 0, slowLoads: 0, pageViews: 0
+    },
+    daily: {}
+}, null, 4));
 
 // Serve static files
 app.use(express.static(__dirname));
@@ -96,6 +107,64 @@ function getHistory() {
     }
 }
 function saveHistory(data) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(data, null, 4)); }
+
+function getAnalytics() {
+    try {
+        let analytics = {
+            totals: {
+                clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
+                uiErrors: 0, trustClicks: 0, mobileSessions: 0,
+                desktopSessions: 0, slowLoads: 0, pageViews: 0
+            },
+            daily: {}
+        };
+
+        if (fs.existsSync(ANALYTICS_PATH)) {
+            const fileData = JSON.parse(fs.readFileSync(ANALYTICS_PATH, 'utf8'));
+
+            // Migration for old flat structure
+            if (!fileData.totals && fileData.pageViews !== undefined) {
+                analytics.totals = { ...analytics.totals, ...fileData };
+            } else {
+                analytics = { ...analytics, ...fileData };
+            }
+        }
+
+        const history = getHistory();
+        const approvedSales = history.filter(h => h && h.total > 0);
+        const totalRevenue = approvedSales.reduce((acc, s) => acc + (Number(s.total) || 0), 0);
+
+        return {
+            ...analytics,
+            totalRevenue: totalRevenue,
+            approvedCount: approvedSales.length,
+            historyCount: history.length
+        };
+    } catch (e) {
+        console.error("❌ [ANALYTICS ERROR]", e.message);
+        return {
+            totals: {
+                clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
+                uiErrors: 0, trustClicks: 0, mobileSessions: 0,
+                desktopSessions: 0, slowLoads: 0, pageViews: 0
+            },
+            daily: {},
+            totalRevenue: 0, approvedCount: 0, historyCount: 0
+        };
+    }
+}
+
+function saveAnalytics(data) {
+    try {
+        const toSave = {
+            totals: data.totals,
+            daily: data.daily
+        };
+        fs.writeFileSync(ANALYTICS_PATH, JSON.stringify(toSave, null, 4));
+    } catch (e) {
+        console.error("❌ [SAVE ANALYTICS ERROR]", e.message);
+    }
+}
 
 async function logSale(customer, items, paymentId, method = 'cartão') {
     try {
@@ -157,7 +226,88 @@ app.post('/api/config/update', (req, res) => {
 app.get('/api/history', (req, res) => {
     const password = req.headers['x-admin-password'];
     if (password !== 'mura2026') return res.status(401).json({ error: 'Acesso Negado' });
+    res.set('Cache-Control', 'no-store');
     res.json(getHistory());
+});
+
+app.get('/api/analytics', (req, res) => {
+    const password = req.headers['x-admin-password'];
+    if (password !== 'mura2026') return res.status(401).json({ error: 'Acesso Negado' });
+    res.set('Cache-Control', 'no-store');
+    res.json(getAnalytics());
+});
+
+app.post('/api/history/clear', (req, res) => {
+    const password = req.headers['x-admin-password'];
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+
+    try {
+        console.log(`🧹 [ADMIN] Iniciando limpeza de dados...`);
+        fs.writeFileSync(HISTORY_PATH, '[]');
+        fs.writeFileSync(ANALYTICS_PATH, JSON.stringify({
+            clicks: 0,
+            checkoutOpens: 0,
+            checkoutStarts: 0,
+            uiErrors: 0,
+            trustClicks: 0,
+            mobileSessions: 0,
+            desktopSessions: 0,
+            slowLoads: 0,
+            pageViews: 0
+        }, null, 4));
+
+        console.log(`✅ [ADMIN] HISTORY_PATH: ${HISTORY_PATH} resetado.`);
+        console.log(`✅ [ADMIN] ANALYTICS_PATH: ${ANALYTICS_PATH} resetado.`);
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error("❌ [ADMIN ERROR] Falha ao limpar arquivos:", e.message);
+        res.status(500).json({ error: 'Erro ao limpar dados no servidor', details: e.message });
+    }
+});
+
+app.post('/api/track', (req, res) => {
+    const { type, isMobile, ctaId } = req.body;
+    console.log(`📈 [TRACK] Evento: ${type}, Mobile: ${isMobile}, CTA: ${ctaId}`);
+    const analytics = getAnalytics();
+    const today = new Date().toISOString().split('T')[0];
+
+    // Ensure today's bucket exists
+    if (!analytics.daily[today]) {
+        analytics.daily[today] = {
+            clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
+            uiErrors: 0, trustClicks: 0, mobileSessions: 0,
+            desktopSessions: 0, slowLoads: 0, pageViews: 0,
+            ctaClicks: {}
+        };
+    }
+
+    const t = analytics.totals;
+    const d = analytics.daily[today];
+
+    const increment = (key) => {
+        if (t[key] !== undefined) t[key]++;
+        if (d[key] !== undefined) d[key]++;
+    };
+
+    if (type === 'click') increment('clicks');
+    else if (type === 'checkout_start') increment('checkoutStarts');
+    else if (type === 'checkout_open') increment('checkoutOpens');
+    else if (type === 'ui_error') increment('uiErrors');
+    else if (type === 'trust_click') increment('trustClicks');
+    else if (type === 'slow_load') increment('slowLoads');
+    else if (type === 'session_start') {
+        increment('pageViews');
+        if (isMobile) increment('mobileSessions');
+        else increment('desktopSessions');
+    } else if (type === 'cta_click' && ctaId) {
+        d.ctaClicks[ctaId] = (d.ctaClicks[ctaId] || 0) + 1;
+        // Optionally increment click total too if not already tracked
+        increment('clicks');
+    }
+
+    saveAnalytics(analytics);
+    res.json({ success: true });
 });
 
 app.get('/api/products/:id', (req, res) => {
@@ -182,6 +332,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Email Sender Function
 // Email Sender Function
 async function sendEmail(customer, items) {
     console.log(`📧 [EMAIL] Preparando envio via GMAIL para: ${customer.email}`);
@@ -319,7 +470,7 @@ app.post('/api/checkout/pix', async (req, res) => {
     console.log(`🆕 [PIX] Nova solicitação: ${customer.email}`);
     console.log(`📦 Itens:`, JSON.stringify(items));
 
-    const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
+    const totalAmount = Number(items.reduce((acc, item) => acc + Number(item.price), 0).toFixed(2));
     console.log(`💰 Total Calculado: ${totalAmount}`);
 
     if (totalAmount <= 0) {
@@ -373,6 +524,13 @@ app.post('/api/checkout/pix', async (req, res) => {
         console.time(`⏱️ [MP_PIX] ${customer.email}`);
         const response = await payment.create({ body });
         console.timeEnd(`⏱️ [MP_PIX] ${customer.email}`);
+
+        // DEEP DEBUG LOGGING
+        console.log(`✅ [PIX SUCCESS] Response for ${customer.email}:`, JSON.stringify({
+            id: response.id,
+            status: response.status,
+            has_qr: !!(response.point_of_interaction && response.point_of_interaction.transaction_data && response.point_of_interaction.transaction_data.qr_code)
+        }));
 
         res.json({
             qr_code: response.point_of_interaction.transaction_data.qr_code,
@@ -582,6 +740,16 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`\n🚀 Mura Engine running on port ${PORT}`));
+const PORT = process.env.PORT || 10000;
+const HOST = '0.0.0.0';
+
+console.log('⏳ Starting Mura Engine Server...');
+app.listen(PORT, HOST, () => {
+    console.log('\n' + '='.repeat(40));
+    console.log(`🚀 Mura Engine Online!`);
+    console.log(`📡 Port: ${PORT}`);
+    console.log(`🌐 Host: ${HOST}`);
+    console.log(`📅 Time: ${new Date().toLocaleString()}`);
+    console.log('='.repeat(40) + '\n');
+});
 
