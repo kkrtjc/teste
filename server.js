@@ -19,8 +19,8 @@ const transporter = nodemailer.createTransport({
     port: process.env.SMTP_PORT || 587,
     secure: false, // true para 465, false para outros
     auth: {
-        user: process.env.SMTP_USER || 'seu-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'sua-senha-de-app'
+        user: process.env.SMTP_USER || process.env.EMAIL_USER || 'galosmurabrasill@gmail.com',
+        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || 'sua-senha-de-app'
     }
 });
 
@@ -347,14 +347,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// Nodemailer Config (Gmail)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER || 'galosmurabrasill@gmail.com',
-        pass: process.env.EMAIL_PASS || 'wcaisazhfjsoeglr' // Fallback to the known App Password
-    }
-});
+
 
 // --- 3. SECURITY: Expiring Download Tokens ---
 const crypto = require('crypto');
@@ -371,8 +364,9 @@ function generateDownloadToken(email, items, paymentId = null) {
 async function sendEmail(customer, items, paymentId = null) {
     console.log(`📧 [EMAIL] Preparando envio PREMIUM para: ${customer.email}`);
 
-    const token = generateDownloadToken(customer.email, items, paymentId);
-    const downloadLink = `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/access/${token}`;
+    // Simplified Link Logic (User Request)
+    const itemIds = items.map(i => i.id || i.title).join(',');
+    const downloadLink = `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/downloads.html?items=${itemIds}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -384,7 +378,6 @@ async function sendEmail(customer, items, paymentId = null) {
                 .content { padding: 40px 30px; background: #fff; border: 1px solid #eee; border-top: none; borderRadius: 0 0 12px 12px; }
                 .btn { display: inline-block; background: #D4AF37; background: linear-gradient(to bottom, #FFD700, #D4AF37); color: #000 !important; padding: 18px 35px; text-decoration: none; font-weight: 900; border-radius: 50px; font-size: 18px; text-transform: uppercase; box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3); margin: 20px 0; }
                 .item-card { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #D4AF37; }
-                .security-note { font-size: 12px; color: #999; margin-top: 30px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
                 .badge { background: #2ecc71; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
             </style>
         </head>
@@ -400,7 +393,7 @@ async function sendEmail(customer, items, paymentId = null) {
                 
                 <div style="text-align: center; margin: 40px 0;">
                     <a href="${downloadLink}" class="btn">ACESSAR MEUS MATERIAIS ➔</a>
-                    <p style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 15px;">⚠️ LINK EXCLUSIVO E EXPIRÁVEL (12H)</p>
+                    <p style="color: #666; font-size: 13px; margin-top: 15px;">O acesso é vitalício. Guarde este e-mail.</p>
                 </div>
                 
                 <h3 style="color: #000; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">ITENS DO SEU PEDIDO:</h3>
@@ -687,7 +680,10 @@ app.post('/api/checkout/card', async (req, res) => {
             console.log(`✅ [CARTÃO] Pagamento aprovado! ID: ${response.id}`);
             logSale(customer, items, response.id, 'cartão');
             sendEmail(customer, items, response.id);
-            res.json({ status: 'approved', id: response.id });
+
+            // Generate Secure Token
+            const token = generateDownloadToken(customer.email, items, response.id);
+            res.json({ status: 'approved', id: response.id, redirectToken: token });
 
         } else {
             console.warn(`❌ [CARTÃO] Pagamento Recusado: ${response.status} (${response.status_detail})`);
@@ -735,6 +731,15 @@ app.get('/api/payment/:id', async (req, res) => {
             }));
 
             logSale(customer, items, result.id, result.payment_method_id === 'pix' ? 'pix' : 'cartão');
+
+            // Generate Secure Token for Redirect
+            const token = generateDownloadToken(customer.email, items, result.id);
+            return res.json({
+                id: result.id,
+                status: result.status,
+                status_detail: result.status_detail,
+                redirectToken: token
+            });
         }
 
 

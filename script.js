@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (sd.status === 'approved') {
                         // User paid! Redirect immediately.
                         localStorage.removeItem('active_pix_session');
-                        window.location.href = `downloads.html?items=RECOVERED_SESSION`; // Simplified for recovery
+                        window.location.href = `downloads.html?items=${session.itemIds}&total=${session.total.toFixed(2)}`;
                     } else {
                         // Not paid. User reloaded -> They probably want a fresh start.
                         // Clear storage so the modal starts clean.
@@ -882,6 +882,7 @@ function showPixResult(data, items) {
                 if (window.activePixPoll) clearTimeout(window.activePixPoll);
                 window.activePixPoll = null;
                 localStorage.removeItem('active_pix_session');
+
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else {
