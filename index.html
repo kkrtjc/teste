@@ -464,6 +464,37 @@
             </div>
 
             <div id="checkout-main-view">
+                <div class="checkout-authority-box"
+                    style="margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1.2rem;">
+                    <div class="authority-badge-v2"
+                        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;">
+
+                        <div class="alumni-avatars"
+                            style="margin-left: 12px; scale: 0.9; display: flex !important; flex-direction: row !important; align-items: center; justify-content: center;">
+                            <img src="carrosel/ana.png" alt="Aluna" loading="lazy">
+                            <img src="carrosel/beatriz.jpeg" alt="Aluna" loading="lazy">
+                            <img src="carrosel/carlos.png" alt="Aluno" loading="lazy">
+                            <img src="carrosel/fernanda.png" alt="Aluna" loading="lazy">
+                            <img src="carrosel/joao_new.jpg" alt="Aluno" loading="lazy">
+                        </div>
+
+                        <div style="width: 100%;">
+                            <div
+                                style="color: #fff; font-size: 0.9rem; font-weight: 800; line-height: 1.2; margin-bottom: 4px;">
+                                Junte-se a +1.500 alunos satisfeitos</div>
+                            <div
+                                style="display: flex; align-items: center; justify-content: center; gap: 8px; color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                                <span>Garantia de 7 dias</span>
+                                <span style="opacity: 0.3;">•</span>
+                                <span>Ambiente Seguro</span>
+                                <span style="opacity: 0.3;">•</span>
+                                <img src="mercadopago_official.png" title="Mercado Pago" alt="Mercado Pago"
+                                    style="height: 14px; opacity: 0.7; vertical-align: middle;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="checkout-header">
                     <h3>Finalizar Compra</h3>
                     <p>Ambiente Seguro</p>
@@ -496,26 +527,7 @@
 
                 <!-- REMOVED: Order Bump Area - Now using slide-in modal -->
 
-                <div class="checkout-authority-box" style="margin-bottom: 1.2rem;">
-                    <div class="authority-badge-v2"
-                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 15px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
-                        <div class="alumni-avatars" style="margin-left: 0; scale: 0.8; margin-right: -10px;">
-                            <img src="carrosel/ana.png" alt="Aluna" loading="lazy">
-                            <img src="carrosel/beatriz.jpeg" alt="Aluna" loading="lazy">
-                            <img src="carrosel/carlos.png" alt="Aluno" loading="lazy">
-                            <img src="carrosel/fernanda.png" alt="Aluna" loading="lazy">
-                            <img src="carrosel/joao_new.jpg" alt="Aluno" loading="lazy">
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="color: #fff; font-size: 0.85rem; font-weight: 800; line-height: 1.2;">Junte-se a
-                                +1.500 alunos satisfeitos</div>
-                            <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">Garantia de 7 dias • Ambiente
-                                Seguro</div>
-                        </div>
-                        <img src="mercadopago_official.png" title="Mercado Pago" alt="Mercado Pago"
-                            style="height: 20px; opacity: 0.8;">
-                    </div>
-                </div>
+
 
                 <form id="payment-form" class="checkout-form">
 
@@ -639,6 +651,17 @@
                             <button type="button" class="btn-pay-now" id="btn-pay-card">
                                 FINALIZAR PAGAMENTO <i class="fa-solid fa-check-circle"></i>
                             </button>
+                        </div>
+
+                        <!-- Premium Guarantee Badge -->
+                        <div class="checkout-premium-guarantee">
+                            <div class="guarantee-icon-box">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div class="guarantee-text-box">
+                                <strong>Se não gostar te devolvo seu dinheiro</strong>
+                                <p>Sua satisfação é nossa prioridade. Você tem 7 dias de garantia total.</p>
+                            </div>
                         </div>
 
                         <div class="delivery-highlight-box"

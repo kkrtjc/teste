@@ -16,19 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const session = JSON.parse(cached);
             // Only check if recent (< 1 hour) to avoid zombie checks
             if ((Date.now() - session.timestamp) < 60 * 60 * 1000) {
-                console.log("🔍 Verificando pagamento pendente em background...");
                 try {
                     const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
                     const sd = await s.json();
                     if (sd.status === 'approved') {
                         // User paid! Redirect immediately.
-                        console.log("✅ Pagamento confirmado em background! Redirecionando...");
                         localStorage.removeItem('active_pix_session');
                         window.location.href = `downloads.html?items=RECOVERED_SESSION`; // Simplified for recovery
                     } else {
                         // Not paid. User reloaded -> They probably want a fresh start.
                         // Clear storage so the modal starts clean.
-                        console.log("ℹ️ Pagamento não identificado. Limpando sessão antiga.");
                         localStorage.removeItem('active_pix_session');
                     }
                 } catch (e) { console.warn("Background check failed", e); }
@@ -134,33 +131,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 7. NEW: Mobile-First Tracking ---
-    const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+    // --- 7. Lazy Loading & Layout Stability ---
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.classList.add('loaded');
+                        imageObserver.unobserve(img);
+                    }
+                }
+            });
+        }, { rootMargin: '50px' });
 
-    // Defer session start until we are sure it's a new session
-    if (!sessionStorage.getItem('session_tracked')) {
-        trackEvent('session_start', isMobile);
-        sessionStorage.setItem('session_tracked', 'true');
+        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+            if (img.src) {
+                // If it already has src, just mark as loaded
+                img.classList.add('loaded');
+            } else {
+                imageObserver.observe(img);
+            }
+        });
     }
 
-    // Track Slow Load
-    window.addEventListener('load', () => {
-        const perf = window.performance.timing;
-        const loadTime = (perf.loadEventEnd - perf.navigationStart) / 1000;
-        if (loadTime > 5) trackEvent('slow_load', isMobile);
+    // --- 8. Smooth Image Transitions ---
+    document.querySelectorAll('img').forEach(img => {
+        img.style.transition = 'opacity 0.4s ease-in-out';
+        img.onload = () => img.style.opacity = '1';
+        if (!img.complete) img.style.opacity = '0';
     });
 
-    // Track Trust Clicks (Seals, Guarantee)
-    document.querySelectorAll('.trust-seal, .guarantee-section, .secure-info').forEach(el => {
-        el.addEventListener('click', () => trackEvent('trust_click', isMobile));
-    });
-
-    // Track Specific CTA Clicks
-    document.querySelectorAll('[data-cta]').forEach(el => {
-        el.addEventListener('click', () => {
-            const ctaId = el.getAttribute('data-cta');
-            trackEvent('cta_click', isMobile, ctaId);
-        });
+    // --- 9. Mobile Vh Fix ---
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    window.addEventListener('resize', () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
     });
 
     // Pixels tracking
@@ -231,8 +239,7 @@ async function openCheckout(productId) {
         lockScroll();
         const secureText = document.getElementById('secure-text');
         if (secureText) {
-            setTimeout(() => secureText.innerText = "Criptografando dados...", 1000);
-            setTimeout(() => secureText.innerText = "Conexão Segura Estabelecida.", 2000);
+            secureText.innerText = "Estabelecendo conexão segura...";
         }
     }
 
@@ -265,37 +272,24 @@ async function openCheckout(productId) {
         updateTotal();
         switchMethod('pix');
 
-        // --- Premium Animation Sequence ---
+        // --- Quick Animation Sequence ---
         setTimeout(() => {
-            // 1. Fade Out Secure Loading
             if (secureOverlay) secureOverlay.classList.remove('active');
 
-            // 2. Start Logo Slide Animation
             const logoOverlay = document.getElementById('checkout-logo-overlay');
             if (logoOverlay) {
                 logoOverlay.classList.add('active');
-
-                // 3. Wait for slide and pulse
                 setTimeout(() => {
-                    // Start Logo Exit
                     logoOverlay.classList.add('run-left');
-
-                    // Show Checkout IMMEDIATELY with overlap
                     checkoutModal.classList.add('active');
-
-                    // 4. Cleanup Overlay only after it's fully gone (Fade out background)
                     setTimeout(() => {
-                        logoOverlay.style.opacity = '0'; // Fade out overlay background smoothly
-                        setTimeout(() => {
-                            logoOverlay.classList.remove('active', 'run-left');
-                            logoOverlay.style.opacity = '1'; // Reset for next time
-                        }, 400);
-                    }, 100);
-                }, 1200); // Sequence duration
+                        logoOverlay.classList.remove('active', 'run-left');
+                    }, 400);
+                }, 400); // Super fast splash
             } else {
                 checkoutModal.classList.add('active');
             }
-        }, 700); // Secure lock duration
+        }, 300); // Minimal initial delay
 
     } catch (err) {
         console.error("Error opening checkout:", err);
@@ -362,8 +356,10 @@ async function renderHomeProducts() {
     const container = document.getElementById('home-products-container');
     if (!container) return;
 
+    // Show skeletons immediately
+    showSkeletons(container);
+
     try {
-        console.log("Iniciando carga de ofertas de:", `${API_URL}/api/config`);
         const res = await fetch(`${API_URL}/api/config`);
         if (!res.ok) throw new Error("Fetch failed");
 
@@ -413,6 +409,21 @@ async function renderHomeProducts() {
         container.innerHTML = `<p style="color: #fff; text-align: center; grid-column: 1/-1; padding: 20px;">Não foi possível carregar as ofertas. <br><small>Verifique se o servidor no Render está online.</small></p>`;
     }
 }
+
+// --- Skeleton Loader Helper ---
+function showSkeletons(container, count = 3) {
+    if (!container) return;
+    container.innerHTML = Array(count).fill(0).map(() => `
+        <div class="price-card skeleton-card">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-price"></div>
+            <div class="skeleton skeleton-btn"></div>
+        </div>
+    `).join('');
+}
+
 
 // --- 3. PAYMENT HANDLING ---
 
@@ -805,9 +816,10 @@ function showPixResult(data, items) {
                 container.appendChild(toast);
                 setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
             }).catch(() => {
-                console.log("Auto-copy blocked");
+                // Silently ignore or log internally
             });
         } catch (err) { console.warn(err); }
+
 
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(data.qr_code);

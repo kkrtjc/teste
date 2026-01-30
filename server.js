@@ -332,42 +332,68 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Email Sender Function
-// Email Sender Function
+// --- 3. SECURITY: Expiring Download Tokens ---
+const crypto = require('crypto');
+const SECRET_KEY = process.env.JWT_SECRET || 'mura-galinhas-secret-2026';
+
+function generateDownloadToken(email, items) {
+    const expires = Date.now() + (48 * 60 * 60 * 1000); // 48 hours
+    const data = `${email}|${items.map(i => i.id || i.title).join(',')}|${expires}`;
+    const hash = crypto.createHmac('sha256', SECRET_KEY).update(data).digest('hex');
+    return Buffer.from(`${data}|${hash}`).toString('base64');
+}
+
+// Email Sender Function con Design Premium y Seguridad
 async function sendEmail(customer, items) {
-    console.log(`📧 [EMAIL] Preparando envio via GMAIL para: ${customer.email}`);
-    const downloadLink = 'https://osegredodasgalinhas.pages.dev/downloads.html?items=' + items.map(i => i.id || i.title).join(',');
+    console.log(`📧 [EMAIL] Preparando envio PREMIUM para: ${customer.email}`);
+
+    const token = generateDownloadToken(customer.email, items);
+    const downloadLink = `https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`;
 
     const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 10px;">
-            <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: #FFD700; margin: 0;">Pagamento Aprovado!</h1>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                .email-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; background: #fdfdfd; }
+                .header { background: linear-gradient(135deg, #000 0%, #1a1a1a 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0; border-bottom: 3px solid #D4AF37; }
+                .content { padding: 40px 30px; background: #fff; border: 1px solid #eee; border-top: none; borderRadius: 0 0 12px 12px; }
+                .btn { display: inline-block; background: #D4AF37; background: linear-gradient(to bottom, #FFD700, #D4AF37); color: #000 !important; padding: 18px 35px; text-decoration: none; font-weight: 900; border-radius: 50px; font-size: 18px; text-transform: uppercase; box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3); margin: 20px 0; }
+                .item-card { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #D4AF37; }
+                .security-note { font-size: 12px; color: #999; margin-top: 30px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+                .badge { background: #2ecc71; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+            </style>
+        </head>
+        <body class="email-body">
+            <div class="header">
+                <img src="https://osegredodasgalinhas.pages.dev/logo.png" alt="Logo" style="height: 50px; margin-bottom: 15px;">
+                <h1 style="color: #FFD700; margin: 0; font-size: 26px;">ACESSO LIBERADO! 🚀</h1>
             </div>
             
-            <div style="background-color: #fff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                <p style="font-size: 16px; color: #333;">Olá, <strong>${customer.name}</strong>!</p>
-                <p style="font-size: 16px; color: #333;">Seu pagamento foi confirmado com sucesso. Abaixo está o link para acessar seus materiais agora mesmo:</p>
+            <div class="content">
+                <p style="font-size: 18px;">Olá, <strong>${customer.name}</strong>!</p>
+                <p>Parabéns pela sua decisão. Seu pagamento foi confirmado e seus materiais já estão prontos para você começar hoje mesmo.</p>
                 
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="${downloadLink}" style="background-color: #FFD700; color: #000; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 30px; font-size: 18px; display: inline-block;">BAIXAR AGORA ➔</a>
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="${downloadLink}" class="btn">ACESSAR MEUS MATERIAIS ➔</a>
+                    <p style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 15px;">⚠️ LINK EXCLUSIVO E EXPIRÁVEL (48H)</p>
                 </div>
                 
-                <p style="font-size: 14px; color: #666;">Se o botão não funcionar, copie e cole este link no navegador:</p>
-                <p style="font-size: 12px; color: #888; word-break: break-all;">${downloadLink}</p>
+                <h3 style="color: #000; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">ITENS DO SEU PEDIDO:</h3>
+                ${items.map(item => `
+                    <div class="item-card">
+                        <span class="badge">APROVADO</span>
+                        <div style="margin-top: 5px; font-weight: bold; color: #1a1a1a;">${item.title}</div>
+                    </div>
+                `).join('')}
                 
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-                
-                <h3 style="color: #333;">Resumo do Pedido:</h3>
-                <ul style="list-style: none; padding: 0;">
-                    ${items.map(item => `
-                        <li style="padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
-                            <span>${item.title}</span>
-                            <strong>R$ ${Number(item.price).toFixed(2).replace('.', ',')}</strong>
-                        </li>
-                    `).join('')}
-                </ul>
+                <div class="security-note">
+                    <p><strong>DICA DE SEGURANÇA:</strong> Por proteção ao seu conteúdo, este link é rastreável. Caso precise de ajuda, chame no suporte via WhatsApp pelo e-mail original da compra.</p>
+                    <p>© 2026 Galos Mura Brasil - Todos os direitos reservados.</p>
+                </div>
             </div>
-        </div>
+        </body>
+        </html>
     `;
 
     try {
