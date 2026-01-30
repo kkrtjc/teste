@@ -1,7 +1,7 @@
 {
     "totals": {
-        "clicks": 90,
-        "checkoutOpens": 75,
+        "clicks": 96,
+        "checkoutOpens": 81,
         "checkoutStarts": 18,
         "uiErrors": 8,
         "trustClicks": 3,
@@ -12,8 +12,8 @@
     },
     "daily": {
         "2026-01-30": {
-            "clicks": 31,
-            "checkoutOpens": 16,
+            "clicks": 37,
+            "checkoutOpens": 22,
             "checkoutStarts": 3,
             "uiErrors": 0,
             "trustClicks": 0,

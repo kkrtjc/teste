@@ -57,8 +57,6 @@
 html {
     scroll-behavior: smooth;
     font-size: 16px;
-    overflow-x: hidden;
-    width: 100%;
 }
 
 body {
@@ -66,32 +64,28 @@ body {
     color: var(--color-text-main);
     line-height: 1.6;
     background-color: var(--color-bg-light);
-    overscroll-behavior-y: none;
-    overflow-x: hidden;
     width: 100%;
     position: relative;
-    /* Ocultar scrollbar mas manter funcionalidade */
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE e Edge */
 }
 
-
-/* Ocultar scrollbar no Chrome, Safari e Opera */
-body::-webkit-scrollbar {
-    display: none;
+/* 1. Elegant Custom Scrollbar (Global Restore) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
 }
 
-html {
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE e Edge */
+::-webkit-scrollbar-track {
+    background: #050505;
 }
 
-html::-webkit-scrollbar {
-    display: none;
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #d4af37, #8a6d1d);
+    border-radius: 5px;
+    border: 2px solid #050505;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #FFD700;
 }
 
 @media (max-width: 480px) {
@@ -4325,7 +4319,7 @@ body {
 
 .checkout-modal.active {
     display: flex;
-    animation: modalFadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation: modalFadeIn 0.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 @keyframes modalFadeIn {
@@ -4582,20 +4576,31 @@ img.checkout-logo-main {
 
 /* --- RESTORED PREMIUM CHECKOUT & SCROLLBAR FIXES --- */
 
-/* 1. Aggressive Scrollbar Hide */
-* {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+/* 1. Elegant Custom Scrollbar (Restored) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-*::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
 }
 
+::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.5);
+}
+
+/* Ensure pricing grid has its own visible toggle if needed, or follows global */
 .pricing-grid::-webkit-scrollbar {
-    display: none !important;
+    display: block !important;
+    height: 6px !important;
 }
 
 /* 2. Premium Checkout Modal Styles */
@@ -4914,9 +4919,10 @@ img.checkout-logo-main {
     padding: 15px;
     margin: 1.5rem 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px;
-    text-align: left;
+    gap: 12px;
+    text-align: center;
     position: relative;
     overflow: hidden;
 }

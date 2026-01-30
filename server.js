@@ -65,7 +65,8 @@ if (!fs.existsSync(ANALYTICS_PATH)) fs.writeFileSync(ANALYTICS_PATH, JSON.string
     totals: {
         clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
         uiErrors: 0, trustClicks: 0, mobileSessions: 0,
-        desktopSessions: 0, slowLoads: 0, pageViews: 0
+        desktopSessions: 0, slowLoads: 0, pageViews: 0,
+        emailClicks: 0
     },
     daily: {}
 }, null, 4));
@@ -114,7 +115,8 @@ function getAnalytics() {
             totals: {
                 clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
                 uiErrors: 0, trustClicks: 0, mobileSessions: 0,
-                desktopSessions: 0, slowLoads: 0, pageViews: 0
+                desktopSessions: 0, slowLoads: 0, pageViews: 0,
+                emailClicks: 0
             },
             daily: {}
         };
@@ -146,7 +148,8 @@ function getAnalytics() {
             totals: {
                 clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
                 uiErrors: 0, trustClicks: 0, mobileSessions: 0,
-                desktopSessions: 0, slowLoads: 0, pageViews: 0
+                desktopSessions: 0, slowLoads: 0, pageViews: 0,
+                emailClicks: 0
             },
             daily: {},
             totalRevenue: 0, approvedCount: 0, historyCount: 0
@@ -336,19 +339,19 @@ const transporter = nodemailer.createTransport({
 const crypto = require('crypto');
 const SECRET_KEY = process.env.JWT_SECRET || 'mura-galinhas-secret-2026';
 
-function generateDownloadToken(email, items) {
+function generateDownloadToken(email, items, paymentId = null) {
     const expires = Date.now() + (48 * 60 * 60 * 1000); // 48 hours
-    const data = `${email}|${items.map(i => i.id || i.title).join(',')}|${expires}`;
+    const data = `${email}|${items.map(i => i.id || i.title).join(',')}|${expires}${paymentId ? `|${paymentId}` : ''}`;
     const hash = crypto.createHmac('sha256', SECRET_KEY).update(data).digest('hex');
     return Buffer.from(`${data}|${hash}`).toString('base64');
 }
 
 // Email Sender Function con Design Premium y Seguridad
-async function sendEmail(customer, items) {
+async function sendEmail(customer, items, paymentId = null) {
     console.log(`📧 [EMAIL] Preparando envio PREMIUM para: ${customer.email}`);
 
-    const token = generateDownloadToken(customer.email, items);
-    const downloadLink = `https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`;
+    const token = generateDownloadToken(customer.email, items, paymentId);
+    const downloadLink = `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/access/${token}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -657,7 +660,7 @@ app.post('/api/checkout/card', async (req, res) => {
         if (response.status === 'approved') {
             console.log(`✅ [CARTÃO] Pagamento aprovado! ID: ${response.id}`);
             logSale(customer, items, response.id, 'cartão');
-            sendEmail(customer, items);
+            sendEmail(customer, items, response.id);
             res.json({ status: 'approved', id: response.id });
 
         } else {
@@ -752,7 +755,7 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
 
 
                 console.log(`📤 [WEBHOOK] Enviando e-mail automático...`);
-                sendEmail(customer, items);
+                sendEmail(customer, items, paymentId);
 
                 console.log(`📦 Venda registrada via Webhook: ${customer.name} - ${itemTitles.join(', ')}`);
             }
@@ -763,6 +766,77 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
         }
     } else {
         res.sendStatus(200);
+    }
+});
+
+// --- 4. ADMIN: Resend & Tracking ---
+
+app.post('/api/history/resend-email', (req, res) => {
+    const { paymentId, password } = req.body;
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+
+    const history = getHistory();
+    const sale = history.find(h => h.paymentId === paymentId);
+
+    if (!sale) return res.status(404).json({ error: 'Venda não encontrada' });
+
+    const customer = {
+        name: sale.name,
+        email: sale.email,
+        phone: sale.phone
+    };
+
+    // Note: sale.items is currently just titles in the history log. 
+    // sendEmail uses them for display and token generation.
+    const items = (sale.items || []).map(title => ({ title: title }));
+
+    sendEmail(customer, items, paymentId)
+        .then(success => {
+            if (success) res.json({ success: true });
+            else res.status(500).json({ error: 'Falha ao enviar e-mail' });
+        })
+        .catch(err => res.status(500).json({ error: err.message }));
+});
+
+// Click Tracking Redirect
+app.get('/api/access/:token', (req, res) => {
+    const token = req.params.token;
+    try {
+        const decoded = Buffer.from(token, 'base64').toString();
+        const parts = decoded.split('|');
+        // Parts: email, items, expires, [paymentId], hash
+        // The length depends on if paymentId was included (old vs new tokens)
+
+        const analytics = getAnalytics();
+        const today = new Date().toISOString().split('T')[0];
+        if (!analytics.daily[today]) analytics.daily[today] = { clicks: 0, checkoutOpens: 0, checkoutStarts: 0, uiErrors: 0, trustClicks: 0, mobileSessions: 0, desktopSessions: 0, slowLoads: 0, pageViews: 0, emailClicks: 0, ctaClicks: {} };
+
+        analytics.totals.emailClicks = (analytics.totals.emailClicks || 0) + 1;
+        if (analytics.daily[today]) analytics.daily[today].emailClicks = (analytics.daily[today].emailClicks || 0) + 1;
+        saveAnalytics(analytics);
+
+        // Update history if paymentId is present
+        let paymentId = null;
+        if (parts.length === 5) { // email|items|expires|paymentId|hash
+            paymentId = parts[3];
+        }
+
+        if (paymentId) {
+            const history = getHistory();
+            const saleIdx = history.findIndex(h => h.paymentId === paymentId);
+            if (saleIdx > -1) {
+                history[saleIdx].clickedEmail = true;
+                history[saleIdx].clickDate = new Date().toISOString();
+                saveHistory(history);
+                console.log(`🕵️ [TRACK] Cliente ${history[saleIdx].email} clicou no e-mail.`);
+            }
+        }
+
+        // Redirect to actual downloads page
+        res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);
+    } catch (e) {
+        console.error("Tracking error:", e);
+        res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);
     }
 });
 

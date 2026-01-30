@@ -52,14 +52,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. Smooth Scroll ---
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            e.preventDefault();
             const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+
+            e.preventDefault();
             const targetElement = document.querySelector(targetId);
+
             if (targetElement) {
+                // Se o alvo for a seção de ofertas, tenta focar no Combo Elite
+                if (targetId === '#offer-focus' || targetId === '#offers') {
+                    const comboCard = document.querySelector('.price-card.featured');
+                    if (comboCard) {
+                        comboCard.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'center'
+                        });
+                        return;
+                    }
+                }
+
                 window.scrollTo({
                     top: targetElement.offsetTop - 80,
                     behavior: 'smooth'
                 });
+            } else if (targetId === '#offer-focus') {
+                // Fallback for when current card isn't loaded yet
+                const pricingSection = document.getElementById('offers');
+                if (pricingSection) {
+                    window.scrollTo({
+                        top: pricingSection.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
             }
         });
     });
@@ -272,7 +297,7 @@ async function openCheckout(productId) {
         updateTotal();
         switchMethod('pix');
 
-        // --- Quick Animation Sequence ---
+        // --- Guided Animation Sequence ---
         setTimeout(() => {
             if (secureOverlay) secureOverlay.classList.remove('active');
 
@@ -284,12 +309,12 @@ async function openCheckout(productId) {
                     checkoutModal.classList.add('active');
                     setTimeout(() => {
                         logoOverlay.classList.remove('active', 'run-left');
-                    }, 400);
-                }, 400); // Super fast splash
+                    }, 800); // Logo transition time
+                }, 800); // Time for the logo to stay visible (Reduced from 1500)
             } else {
                 checkoutModal.classList.add('active');
             }
-        }, 300); // Minimal initial delay
+        }, 800); // Time for the Secure Lock to stay visible (Reduced from 1500)
 
     } catch (err) {
         console.error("Error opening checkout:", err);
