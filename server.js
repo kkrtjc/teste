@@ -13,6 +13,27 @@ dotenv.config();
 
 const app = express();
 
+// Configuração do Nodemailer
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT || 587,
+    secure: false, // true para 465, false para outros
+    auth: {
+        user: process.env.SMTP_USER || 'seu-email@gmail.com',
+        pass: process.env.SMTP_PASS || 'sua-senha-de-app'
+    }
+});
+
+// Verificar conexão do e-mail
+transporter.verify((error, success) => {
+    if (error) {
+        console.log('❌ [EMAIL] Erro na configuração:', error.message);
+        console.log('⚠️ Configure as variáveis SMTP_USER e SMTP_PASS no .env');
+    } else {
+        console.log('✅ [EMAIL] Servidor de e-mail pronto para enviar mensagens');
+    }
+});
+
 
 // Configuração de Segurança CORS (Simplificada para Testes e Produção)
 app.use(cors({
@@ -379,7 +400,7 @@ async function sendEmail(customer, items, paymentId = null) {
                 
                 <div style="text-align: center; margin: 40px 0;">
                     <a href="${downloadLink}" class="btn">ACESSAR MEUS MATERIAIS ➔</a>
-                    <p style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 15px;">⚠️ LINK EXCLUSIVO E EXPIRÁVEL (48H)</p>
+                    <p style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 15px;">⚠️ LINK EXCLUSIVO E EXPIRÁVEL (12H)</p>
                 </div>
                 
                 <h3 style="color: #000; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">ITENS DO SEU PEDIDO:</h3>
