@@ -775,30 +775,7 @@ function setupFields() {
         });
     }
 }
-
-function validateField(el, type) {
-    const val = el.value.replace(/\D/g, '');
-    let isValid = false;
-
-    if (type === 'card') isValid = val.length >= 13 && val.length <= 16; // Simplificado para feedback visual
-    else if (type === 'cvv') isValid = val.length >= 3;
-    else if (type === 'date') isValid = val.length === 4 && parseInt(val.slice(0, 2)) <= 12;
-    else if (type === 'cpf') isValid = val.length === 11;
-    else if (type === 'phone') isValid = val.length >= 10;
-
-    if (val.length === 0) {
-        el.classList.remove('is-valid', 'is-invalid');
-    } else if (isValid) {
-        el.classList.add('is-valid');
-        el.classList.remove('is-invalid');
-    } else {
-        if (!el.classList.contains('is-invalid')) {
-            trackEvent('ui_error'); // Only track first time per blur
-        }
-        el.classList.add('is-invalid');
-        el.classList.remove('is-valid');
-    }
-}
+// function validateField was moved and consolidated below.
 
 function showPixResult(data, items) {
     document.getElementById('checkout-main-view').classList.add('hidden');
@@ -970,6 +947,7 @@ function validateCheckoutInputs(method) {
 
     if (!isValid) {
         // Find which one is invalid and show a quick shake or similar could be added here
+        [email, phone, name, cpf].forEach(el => validateField(el, null, true));
         const firstError = document.querySelector('.is-invalid');
         if (firstError) firstError.focus();
     }
@@ -996,7 +974,8 @@ function initHelpBubbles() {
         input.addEventListener('focus', () => {
             clearTimeout(helpTimer);
             if (!input.value) {
-                helpTimer = setTimeout(() => showHelpBubble(input), 5000);
+                // Diminuído para 3 segundos conforme solicitado
+                helpTimer = setTimeout(() => showHelpBubble(input), 3000);
             }
         });
 
@@ -1008,28 +987,43 @@ function initHelpBubbles() {
         input.addEventListener('blur', () => {
             clearTimeout(helpTimer);
             removeHelpBubbles();
-            validateField(input);
+            // Show error if empty OR invalid on blur
+            validateField(input, null, true);
         });
     });
 }
 
-function validateField(input) {
+/**
+ * Consolidated Validation Logic
+ * Only shows error if field is not empty or if submission attempted.
+ */
+function validateField(input, type = null, forceShowError = false) {
     const id = input.id;
     const val = input.value.trim();
+    const cleanVal = val.replace(/\D/g, '');
     let isValid = true;
 
-    if (id === 'payer-email') isValid = val.includes('@') && val.length > 5;
-    else if (id === 'payer-phone') isValid = val.replace(/\D/g, '').length >= 10;
-    else if (id === 'payer-name' || id === 'card-holder') isValid = val.length >= 3;
-    else if (id === 'payer-cpf' || id === 'card-cpf') isValid = val.replace(/\D/g, '').length === 11;
-    else if (id === 'card-number') isValid = val.replace(/\D/g, '').length >= 15;
-    else if (id === 'card-expiration') isValid = /^\d{2}\/\d{2}$/.test(val);
-    else if (id === 'card-cvv') isValid = val.length >= 3;
+    // Use explicit type if provided, otherwise infer from ID
+    const validationType = type || (id.includes('cpf') ? 'cpf' : id.includes('phone') ? 'phone' : id.includes('email') ? 'email' : id.includes('number') ? 'card' : id.includes('expiration') ? 'date' : id.includes('cvv') ? 'cvv' : 'name');
 
-    if (!isValid && val.length > 0) {
-        input.classList.add('is-invalid');
-    } else {
+    if (validationType === 'email') isValid = val.includes('@') && val.length > 5;
+    else if (validationType === 'phone') isValid = cleanVal.length >= 10;
+    else if (validationType === 'cpf') isValid = cleanVal.length === 11;
+    else if (validationType === 'card') isValid = cleanVal.length >= 13 && cleanVal.length <= 16;
+    else if (validationType === 'date') isValid = /^\d{2}\/\d{2}$/.test(val);
+    else if (validationType === 'cvv') isValid = cleanVal.length >= 3;
+    else if (validationType === 'name' || id === 'card-holder') isValid = val.length >= 3;
+
+    // UI Feedback logic
+    if (val.length === 0 && !forceShowError) {
+        input.classList.remove('is-valid', 'is-invalid');
+    } else if (isValid) {
+        input.classList.add('is-valid');
         input.classList.remove('is-invalid');
+    } else if (forceShowError || val.length > 0) {
+        // Only show invalid if there is content OR forceShowError (blur/submit)
+        input.classList.add('is-invalid');
+        input.classList.remove('is-valid');
     }
 }
 
@@ -1053,6 +1047,14 @@ function removeHelpBubbles() {
 document.addEventListener('DOMContentLoaded', () => {
     initHelpBubbles();
 
+    // Hide help bubbles on scroll to prevent "floating" issue
+    window.addEventListener('scroll', removeHelpBubbles, true);
+    // Also scroll on modal container if it's the one scrolling
+    const modalContent = document.querySelector('#checkout-modal .modal-content');
+    if (modalContent) {
+        modalContent.addEventListener('scroll', removeHelpBubbles);
+    }
+
     // Global click to blur inputs (hide mobile keyboard)
     document.addEventListener('click', (e) => {
         if (typeof checkoutModal !== 'undefined' && checkoutModal.classList.contains('active')) {
@@ -1066,13 +1068,117 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- HELPER: DETECT PAYMENT METHOD ---
-function getPaymentMethodId(number) {
-    const n = number.replace(/\D/g, '');
-    if (/^4/.test(n)) return 'visa';
-    if (/^5[1-5]/.test(n)) return 'master';
-    if (/^3[47]/.test(n)) return 'amex';
-    if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(n)) return 'elo';
-    if (/^6062/.test(n)) return 'hipercard';
-    return 'master'; // Fallback
+// --- 5. VALIDATION HELPERS ---
+function isValidCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf == '') return false;
+    // Elimina CPFs invalidos conhecidos
+    if (cpf.length != 11 ||
+        cpf == "00000000000" ||
+        cpf == "11111111111" ||
+        cpf == "22222222222" ||
+        cpf == "33333333333" ||
+        cpf == "44444444444" ||
+        cpf == "55555555555" ||
+        cpf == "66666666666" ||
+        cpf == "77777777777" ||
+        cpf == "88888888888" ||
+        cpf == "99999999999")
+        return false;
+    // Valida 1o digito
+    let add = 0;
+    for (let i = 0; i < 9; i++)
+        add += parseInt(cpf.charAt(i)) * (10 - i);
+    let rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11)
+        rev = 0;
+    if (rev != parseInt(cpf.charAt(9)))
+        return false;
+    // Valida 2o digito
+    add = 0;
+    for (let i = 0; i < 10; i++)
+        add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11)
+        rev = 0;
+    if (rev != parseInt(cpf.charAt(10)))
+        return false;
+    return true;
 }
 
+function validateField(el, type) {
+    if (!el) return true;
+    const val = el.value.trim();
+    let isValid = true;
+
+    if (type === 'email') isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    else if (type === 'phone') isValid = val.replace(/\D/g, '').length >= 10;
+    else if (type === 'cpf') isValid = isValidCPF(val);
+    else if (type === 'card') isValid = val.replace(/\D/g, '').length >= 15;
+    else if (type === 'date') isValid = /^\d{2}\/\d{2}$/.test(val);
+    else if (type === 'cvv') isValid = val.length >= 3;
+    else if (val.length < 3) isValid = false;
+
+    const errorId = `error-${el.id}`;
+    const errorEl = document.getElementById(errorId);
+
+    if (!isValid && val.length > 0) {
+        el.classList.add('input-error');
+        if (errorEl) errorEl.style.display = 'block';
+    } else {
+        el.classList.remove('input-error');
+        if (errorEl) errorEl.style.display = 'none';
+    }
+
+    return isValid;
+}
+
+function validateCheckoutInputs(method) {
+    let allValid = true;
+    const fields = ['payer-email', 'payer-phone'];
+
+    if (method === 'pix') {
+        fields.push('payer-name', 'payer-cpf');
+    } else {
+        fields.push('card-holder', 'card-cpf', 'card-number', 'card-expiration', 'card-cvv');
+    }
+
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        const type = id.includes('email') ? 'email' : (id.includes('phone') ? 'phone' : (id.includes('cpf') ? 'cpf' : (id.includes('number') ? 'card' : (id.includes('expiration') ? 'date' : (id.includes('cvv') ? 'cvv' : 'text')))));
+        if (!validateField(el, type)) allValid = false;
+    });
+
+    if (!allValid) {
+        const container = document.getElementById('toast-container');
+        if (container) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-card';
+            toast.style.borderColor = '#e74c3c';
+            toast.innerHTML = `
+                <div style="width: 40px; height: 40px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="toast-content">
+                    <strong>Ops! Quase lá...</strong>
+                    <p>Por favor, preencha corretamente todos os campos destacados em vermelho.</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
+        }
+    }
+
+    return allValid;
+}
+
+function getPaymentMethodId(number) {
+    if (!number) return null;
+    const n = number.replace(/\D/g, '');
+    if (/^4/.test(n)) return 'visa';
+    if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return 'master';
+    if (/^3[47]/.test(n)) return 'amex';
+    if (/^(4011|4389|4514|4576|5041|5066|5090|6277|6362|6363)/.test(n)) return 'elo';
+    if (/^(38|60)/.test(n)) return 'hipercard';
+    return 'other';
+}

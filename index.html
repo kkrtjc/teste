@@ -79,8 +79,9 @@
                     forma
                     profissional e sustentável.</p>
                 <div class="hero-actions" style="margin-top: 2rem;">
-                    <a href="#offers" class="btn btn-primary btn-lg btn-pulse" data-cta="hero-primary">
-                        QUERO TRIPLICAR MINHA PRODUÇÃO <i class="fa-solid fa-arrow-right" style="margin-left: 10px;"></i>
+                    <a href="#offer-focus" class="btn btn-primary btn-lg btn-pulse" data-cta="hero-primary">
+                        QUERO TRIPLICAR MINHA PRODUÇÃO <i class="fa-solid fa-arrow-right"
+                            style="margin-left: 10px;"></i>
                     </a>
                 </div>
             </div>
@@ -211,7 +212,7 @@
             </div>
 
             <div class="text-center" style="margin-top: 4rem;">
-                <a href="#offers" class="btn btn-primary btn-lg btn-pulse">QUERO ESSA TRANSFORMAÇÃO</a>
+                <a href="#offer-focus" class="btn btn-primary btn-lg btn-pulse">QUERO ESSA TRANSFORMAÇÃO</a>
             </div>
         </div>
     </section>
@@ -348,7 +349,7 @@
                         costas.</p>
                     <p>Você tem <strong>7 dias</strong> para aplicar o método. Se não ver resultado no seu manejo, eu
                         devolvo 100% do seu dinheiro. Sem perguntas.</p>
-                    <a href="#offers" class="btn btn-primary" style="margin-top: 1rem;">QUERO TESTAR SEM RISCO</a>
+                    <a href="#offer-focus" class="btn btn-primary" style="margin-top: 1rem;">QUERO TESTAR SEM RISCO</a>
                 </div>
 
             </div>
@@ -393,7 +394,7 @@
     <div class="sticky-cta-bar">
         <div class="container"
             style="position: relative; display: flex; justify-content: center; align-items: center; height: 100%;">
-            <a href="#offers" class="btn btn-primary btn-sm btn-pulse"
+            <a href="#offer-focus" class="btn btn-primary btn-sm btn-pulse"
                 style="padding: 0.8rem 2.5rem; font-size: 1rem; text-decoration: none; z-index: 2; min-width: 250px; text-align: center;">
                 GARANTIR ACESSO AGORA
             </a>
@@ -465,16 +466,16 @@
             <div id="checkout-main-view">
                 <div class="checkout-header">
                     <h3>Finalizar Compra</h3>
-                    <p><i class="fa-solid fa-shield-check"></i> Ambiente Seguro</p>
+                    <p>Ambiente Seguro</p>
                 </div>
 
                 <!-- 1. TOP LEVEL TOGGLE -->
                 <div class="method-selector top-toggle">
                     <button type="button" class="method-btn active" data-method="pix">
-                        <i class="fa-brands fa-pix"></i> PIX (Imediato)
+                        PIX
                     </button>
                     <button type="button" class="method-btn" data-method="card">
-                        <i class="fa-regular fa-credit-card"></i> Cartão
+                        Cartão
                     </button>
                 </div>
 
@@ -495,13 +496,24 @@
 
                 <!-- REMOVED: Order Bump Area - Now using slide-in modal -->
 
-                <div class="checkout-authority-box" style="margin-bottom: 2rem;">
-                    <div class="authority-badge-v2">
-                        <i class="fa-solid fa-medal"></i>
-                        <span style="color: #fff; display: flex; align-items: center; gap: 6px;">Garantia de 7 dias, se
-                            não gostar, devolvemos seu dinheiro.
-                            <img src="mercadopago_official.png" title="Mercado Pago" alt="Mercado Pago"
-                                style="height: 24px; margin-left: 8px;"></span>
+                <div class="checkout-authority-box" style="margin-bottom: 1.2rem;">
+                    <div class="authority-badge-v2"
+                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 15px; border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+                        <div class="alumni-avatars" style="margin-left: 0; scale: 0.8; margin-right: -10px;">
+                            <img src="carrosel/ana.png" alt="Aluna" loading="lazy">
+                            <img src="carrosel/beatriz.jpeg" alt="Aluna" loading="lazy">
+                            <img src="carrosel/carlos.png" alt="Aluno" loading="lazy">
+                            <img src="carrosel/fernanda.png" alt="Aluna" loading="lazy">
+                            <img src="carrosel/joao_new.jpg" alt="Aluno" loading="lazy">
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="color: #fff; font-size: 0.85rem; font-weight: 800; line-height: 1.2;">Junte-se a
+                                +1.500 alunos satisfeitos</div>
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">Garantia de 7 dias • Ambiente
+                                Seguro</div>
+                        </div>
+                        <img src="mercadopago_official.png" title="Mercado Pago" alt="Mercado Pago"
+                            style="height: 20px; opacity: 0.8;">
                     </div>
                 </div>
 
@@ -512,20 +524,19 @@
                         <div class="checkout-section-compact">
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-envelope"></i>
-                                    <input type="email" id="payer-email" placeholder="Digite seu melhor E-mail"
-                                        autocomplete="email" required>
+                                    <input type="email" id="payer-email" placeholder="E-mail" autocomplete="email"
+                                        required>
                                 </div>
-                                <span class="mura-error" id="error-payer-email">Opa! Isso não parece um e-mail
-                                    válido.</span>
+                                <span class="mura-error" id="error-payer-email">O formato do e-mail não está
+                                    correto.</span>
                             </div>
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-brands fa-whatsapp"></i>
-                                    <input type="tel" id="payer-phone" placeholder="Seu WhatsApp (Somente números)"
-                                        maxlength="15" autocomplete="tel" required>
+                                    <input type="tel" id="payer-phone" placeholder="WhatsApp" maxlength="15"
+                                        autocomplete="tel" required>
                                 </div>
-                                <span class="mura-error" id="error-payer-phone">Opa! WhatsApp incompleto.</span>
+                                <span class="mura-error" id="error-payer-phone">Por favor, insira o WhatsApp
+                                    completo.</span>
                             </div>
                         </div>
 
@@ -533,20 +544,16 @@
                         <div id="pix-identity-section" class="checkout-section-compact">
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-user-tag"></i>
-                                    <input type="text" id="payer-name" placeholder="Seu Nome Completo"
-                                        autocomplete="name">
+                                    <input type="text" id="payer-name" placeholder="Nome Completo" autocomplete="name">
                                 </div>
                                 <span class="mura-error" id="error-payer-name">Nome completo é obrigatório.</span>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="input-wrapper">
-                                <i class="fa-solid fa-id-card"></i>
-                                <input type="text" id="payer-cpf" placeholder="Seu CPF (Para emissão da nota)"
-                                    maxlength="14">
+                                <input type="text" id="payer-cpf" placeholder="CPF" maxlength="14">
                             </div>
-                            <span class="mura-error" id="error-payer-cpf">Opa! Esse CPF parece incompleto.</span>
+                            <span class="mura-error" id="error-payer-cpf">Por favor, verifique o CPF digitado.</span>
                         </div>
                     </div>
 
@@ -564,7 +571,7 @@
                                 </div>
                             </div>
                             <button type="submit" class="btn-pay-now" id="btn-pay-pix">
-                                GERAR PIX AGORA <i class="fa-brands fa-pix"></i>
+                                GERAR PIX AGORA
                             </button>
                         </div>
 
@@ -578,8 +585,7 @@
 
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-user"></i>
-                                    <input type="text" id="card-holder" placeholder="Nome impresso no Cartão"
+                                    <input type="text" id="card-holder" placeholder="Nome no Cartão"
                                         autocomplete="cc-name">
                                 </div>
                                 <span class="mura-error" id="error-card-holder">Nome exatamente como no cartão.</span>
@@ -587,18 +593,15 @@
 
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-id-card"></i>
-                                    <input type="text" id="card-cpf" placeholder="CPF do Titular do Cartão"
-                                        maxlength="14">
+                                    <input type="text" id="card-cpf" placeholder="CPF do Titular" maxlength="14">
                                 </div>
                                 <span class="mura-error" id="error-card-cpf">Opa! CPF do titular incorreto.</span>
                             </div>
 
                             <div class="form-group">
                                 <div class="input-wrapper">
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    <input type="text" id="card-number" name="cardNumber"
-                                        placeholder="Número do Cartão (16 dígitos)" autocomplete="cc-number">
+                                    <input type="text" id="card-number" name="cardNumber" placeholder="Número do Cartão"
+                                        autocomplete="cc-number">
                                 </div>
                                 <span class="mura-error" id="error-card-number">Opa! Número do cartão
                                     inválido.</span>
@@ -607,15 +610,13 @@
                             <div class="form-row-compact" style="margin-top: 15px;">
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <i class="fa-solid fa-calendar"></i>
-                                        <input type="text" id="card-expiration" placeholder="MM/AA"
+                                        <input type="text" id="card-expiration" placeholder="Validade (MM/AA)"
                                             autocomplete="cc-exp">
                                     </div>
                                     <span class="mura-error" id="error-card-expiration">Opa! Data errada.</span>
                                 </div>
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <i class="fa-solid fa-lock"></i>
                                         <input type="text" id="card-cvv" placeholder="CVV" maxlength="4"
                                             autocomplete="cc-csc">
                                     </div>
@@ -640,10 +641,10 @@
                             </button>
                         </div>
 
-                        <div class="delivery-highlight-box">
-                            <div>
-                                <strong>LIBERAÇÃO INSTANTÂNEA</strong>
-                                <span>Baixe o material nesta tela logo após pagar.</span>
+                        <div class="delivery-highlight-box"
+                            style="text-align: center; display: flex; justify-content: center; width: 100%;">
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">
+                                Baixe o material imediatamente após pagamento
                             </div>
                         </div>
 
