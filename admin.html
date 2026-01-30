@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Mura Engine | Ultra Admin</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1228,6 +1229,17 @@
             </div>
         </nav>
 
+        <!-- Botão Flutuante de Salvar -->
+        <div class="actions hidden"
+            style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; gap: 12px; background: rgba(5, 5, 5, 0.95); padding: 15px 20px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+            <button class="btn btn-secondary" onclick="discardChanges()" style="padding: 12px 20px;">
+                <i class="fa-solid fa-xmark"></i> DESCARTAR
+            </button>
+            <button class="btn btn-primary" onclick="saveData()" style="padding: 12px 25px;">
+                <i class="fa-solid fa-floppy-disk"></i> SALVAR ALTERAÇÕES
+            </button>
+        </div>
+
         <div id="tab-dashboard" class="tab-content active">
             <div class="header-actions"
                 style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
@@ -1687,6 +1699,32 @@
             }
         }
 
+        async function saveData() {
+            try {
+                const res = await fetch(`${API_URL}/api/config/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: masterPass,
+                        data: db
+                    })
+                });
+
+                if (res.ok) {
+                    originalDb = JSON.parse(JSON.stringify(db));
+                    checkChanges();
+                    showToast('✅ Alterações salvas com sucesso!');
+                } else {
+                    throw new Error('Erro ao salvar');
+                }
+            } catch (e) {
+                alert('Erro ao salvar alterações. Verifique sua conexão.');
+                console.error(e);
+            }
+        }
+
         async function loadHistory() {
             const res = await fetch(`${API_URL}/api/history?t=${Date.now()}`, {
                 headers: { 'x-admin-password': masterPass }
@@ -2076,9 +2114,9 @@
                     </div>
                     <div class="collapsible-content">
                         <div class="input-group">
-                            <div class="control"><label>Título</label><input type="text" value="${p.title}" onchange="db.products['${id}'].title=this.value; checkChanges()"></div>
-                            <div class="control"><label>Preço (R$)</label><input type="number" step="0.01" value="${p.price}" onchange="db.products['${id}'].price=parseFloat(this.value); checkChanges()"></div>
-                            <div class="control"><label>Original (R$)</label><input type="number" step="0.01" value="${p.originalPrice || 0}" onchange="db.products['${id}'].originalPrice=parseFloat(this.value); checkChanges()"></div>
+                            <div class="control"><label>Título</label><input type="text" value="${p.title}" onchange="db.products['${id}'].title=this.value; renderAdmin(); checkChanges()"></div>
+                            <div class="control"><label>Preço (R$)</label><input type="number" step="0.01" value="${p.price}" oninput="db.products['${id}'].price=parseFloat(this.value)||0; checkChanges()" onchange="renderAdmin()"></div>
+                            <div class="control"><label>Original (R$)</label><input type="number" step="0.01" value="${p.originalPrice || 0}" oninput="db.products['${id}'].originalPrice=parseFloat(this.value)||0; checkChanges()" onchange="renderAdmin()"></div>
                         </div>
                         <div class="control" style="margin-top:15px"><label>Descrição curta</label><input type="text" value="${p.description || ''}" onchange="db.products['${id}'].description=this.value; checkChanges()"></div>
                     </div>
