@@ -943,8 +943,229 @@
             z-index: 100;
         }
 
+
         .hidden {
             display: none !important;
+        }
+
+        /* === LOGIN ELITE FULL-SCREEN === */
+        .login-elite-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            overflow: hidden;
+        }
+
+        .login-background-animated {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 50%, rgba(212, 175, 55, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #000 0%, #0a0a0a 100%);
+            animation: loginBgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes loginBgPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        .login-glass-card {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 50px 40px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6),
+                0 0 60px rgba(212, 175, 55, 0.1);
+            animation: loginCardIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes loginCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-icon-elite {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent), #FFE55C);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.4);
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .login-icon-elite i {
+            font-size: 2.2rem;
+            color: #000;
+        }
+
+        .login-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        .login-input-group {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .login-input-group i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-size: 1.1rem;
+            z-index: 2;
+        }
+
+        .login-input-group input {
+            width: 100%;
+            padding: 18px 18px 18px 55px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .login-input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(212, 175, 55, 0.05);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
+
+        .login-input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-login-elite {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--accent), #FFE55C);
+            border: none;
+            border-radius: 16px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+            margin-bottom: 25px;
+        }
+
+        .btn-login-elite:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.5);
+        }
+
+        .btn-login-elite:active {
+            transform: translateY(0);
+        }
+
+        .login-footer {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            .login-glass-card {
+                padding: 40px 30px;
+                width: 95%;
+                border-radius: 24px;
+            }
+
+            .login-title {
+                font-size: 1.6rem;
+            }
+
+            .login-icon-elite {
+                width: 70px;
+                height: 70px;
+            }
+
+            .login-icon-elite i {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
@@ -953,21 +1174,30 @@
 
     <div id="toast" class="toast">Ação Realizada!</div>
 
-    <!-- Login -->
-    <div id="login-screen" class="modal">
-        <div class="modal-body" style="text-align: center; max-width: 400px; border-radius: 32px;">
-            <div
-                style="background: var(--accent); width: 60px; height: 60px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; box-shadow: 0 10px 30px var(--accent-glow);">
-                <i class="fa-solid fa-bolt" style="color:#000; font-size: 1.8rem;"></i>
+    <!-- Login Elite Full-Screen -->
+    <div id="login-screen" class="login-elite-screen">
+        <div class="login-background-animated"></div>
+        <div class="login-glass-card">
+            <div class="login-icon-elite">
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 10px;">Mura Engine <span
-                    style="color: var(--accent);">V4</span></h2>
-            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 30px;">Painel Administrativo de Elite
-            </p>
-            <input type="password" id="admin-pass" placeholder="Senha Mestra"
-                style="width: 100%; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 14px; background: #151515;">
-            <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="checkAuth()">ENTRAR NO
-                SISTEMA</button>
+            <h1 class="login-title">MURA ENGINE</h1>
+            <p class="login-subtitle">Painel Administrativo Elite</p>
+
+            <div class="login-input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="admin-pass" placeholder="Senha Mestra" autocomplete="current-password">
+            </div>
+
+            <button class="btn-login-elite" onclick="checkAuth()">
+                <span>ACESSAR SISTEMA</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+
+            <div class="login-footer">
+                <i class="fa-solid fa-bolt" style="color: var(--accent); font-size: 0.9rem;"></i>
+                <span>Segurança de Nível Empresarial</span>
+            </div>
         </div>
     </div>
 

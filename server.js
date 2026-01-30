@@ -340,7 +340,7 @@ const crypto = require('crypto');
 const SECRET_KEY = process.env.JWT_SECRET || 'mura-galinhas-secret-2026';
 
 function generateDownloadToken(email, items, paymentId = null) {
-    const expires = Date.now() + (48 * 60 * 60 * 1000); // 48 hours
+    const expires = Date.now() + (12 * 60 * 60 * 1000); // 12 horas (Segurança Estrita)
     const data = `${email}|${items.map(i => i.id || i.title).join(',')}|${expires}${paymentId ? `|${paymentId}` : ''}`;
     const hash = crypto.createHmac('sha256', SECRET_KEY).update(data).digest('hex');
     return Buffer.from(`${data}|${hash}`).toString('base64');
@@ -391,7 +391,12 @@ async function sendEmail(customer, items, paymentId = null) {
                 `).join('')}
                 
                 <div class="security-note">
-                    <p><strong>DICA DE SEGURANÇA:</strong> Por proteção ao seu conteúdo, este link é rastreável. Caso precise de ajuda, chame no suporte via WhatsApp pelo e-mail original da compra.</p>
+                    <p><strong>PRECISA DE AJUDA?</strong></p>
+                    <a href="https://wa.me/5538999832950?text=Olá,%20preciso%20de%20ajuda%20com%20meu%20acesso" 
+                       style="display: inline-block; background: #25D366; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 0;">
+                        📱 Falar no WhatsApp
+                    </a>
+                    <p style="margin-top: 20px;"><strong>DICA DE SEGURANÇA:</strong> Por proteção ao seu conteúdo, este link é rastreável e expira em 12 horas. Caso precise de ajuda, chame no suporte via WhatsApp.</p>
                     <p>© 2026 Galos Mura Brasil - Todos os direitos reservados.</p>
                 </div>
             </div>
@@ -833,7 +838,7 @@ app.get('/api/access/:token', (req, res) => {
         }
 
         // Redirect to actual downloads page
-        res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);
+        res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${encodeURIComponent(token)}`);
     } catch (e) {
         console.error("Tracking error:", e);
         res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);
