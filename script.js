@@ -387,6 +387,10 @@ function updateTotal() {
     // CARD = Full Price (cart.mainProduct.originalPrice)
 
     let basePrice = cart.mainProduct.price; // Default to discounted
+    const hasDiscount = cart.mainProduct.originalPrice && (cart.mainProduct.originalPrice > cart.mainProduct.price);
+
+    // Default UI Reset
+    document.querySelectorAll('.pix-discount-badge').forEach(b => b.remove());
 
     if (currentPaymentMethod === 'card') {
         // If has originalPrice, use it. Otherwise keep price.
@@ -402,7 +406,19 @@ function updateTotal() {
         if (b) total += b.price;
     });
 
-    document.querySelectorAll('.checkout-total-display').forEach(el => el.innerText = formatBRL(total));
+    document.querySelectorAll('.checkout-total-display').forEach(el => {
+        el.innerText = formatBRL(total);
+
+        // Add Discount Badge for PIX
+        if (currentPaymentMethod === 'pix' && hasDiscount) {
+            const badge = document.createElement('span');
+            badge.className = 'pix-discount-badge';
+            badge.style.cssText = 'font-size: 0.75rem; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2);';
+            badge.innerText = '20% OFF';
+            el.appendChild(badge);
+        }
+    });
+
     updateInstallments(total);
 }
 
@@ -444,15 +460,22 @@ async function renderHomeProducts() {
                 coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 120px; margin: 10px auto; display: block;">`;
             }
 
+            const isDiscounted = p.originalPrice && (p.originalPrice > p.price);
+
             card.innerHTML = `
                 ${p.isFeatured ? `<span class="badge-featured">${p.badge || 'MAIS VENDIDO'}</span>` : ''}
                 <h3 class="price-title">${p.title}</h3>
                 <p>${p.description || ''}</p>
                 ${coverHTML}
                 ${p.originalPrice ? `<div style="text-decoration: line-through; color: #999; margin-top: 10px;">De R$ ${p.originalPrice.toFixed(2).replace('.', ',')}</div>` : ''}
-                <span class="price-amount" ${p.isFeatured ? 'style="color: var(--color-secondary);"' : ''}>
-                    R$ ${Math.floor(p.price)}<small>,${(p.price % 1).toFixed(2).split('.')[1]}</small>
-                </span>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; line-height: 1.1; margin-bottom: 5px;">
+                    <span class="price-amount" ${p.isFeatured ? 'style="color: var(--color-secondary);"' : ''}>
+                        R$ ${Math.floor(p.price)}<small>,${(p.price % 1).toFixed(2).split('.')[1]}</small>
+                    </span>
+                    ${isDiscounted ? '<span style="font-size: 0.8rem; color: var(--success); font-weight: 700; margin-top: 2px;">NO PIX</span>' : ''}
+                </div>
+
                 <ul class="price-features" ${p.isFeatured ? 'style="margin-top: 1.5rem;"' : ''}>
                     ${featuresHTML}
                 </ul>

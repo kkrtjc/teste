@@ -9,7 +9,7 @@
         "desktopSessions": 48,
         "slowLoads": 0,
         "pageViews": 48,
-        "ctaClicks": 4,
+        "ctaClicks": 5,
         "uniqueVisits": 1
     },
     "daily": {
@@ -39,11 +39,11 @@
             "pageViews": 0,
             "emailClicks": 0,
             "uniqueVisits": 1,
-            "ctaClicks": 4,
+            "ctaClicks": 5,
             "checkoutAbandons": 0,
             "ctaBreakdown": {
                 "generic_cta": 2,
-                "hero-primary": 2
+                "hero-primary": 3
             }
         }
     }
