@@ -8,8 +8,27 @@ let cart = {
     bumps: [] // IDs of selected bumps
 };
 
+// GLOBAL PAYMENT STATE
+let currentPaymentMethod = 'pix'; // Default
+
 // --- INIT: CHECK PENDING PIX (Recover Logic) ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. UNIQUE VISITOR TRACKING
+    const today = new Date().toISOString().split('T')[0];
+    const lastVisit = localStorage.getItem('mura_visita_hoje');
+    if (lastVisit !== today) {
+        trackEvent('unique_visit');
+        localStorage.setItem('mura_visita_hoje', today);
+    }
+
+    // 2. CTA CLICK TRACKING
+    document.querySelectorAll('a[href^="#offer"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ctaId = btn.getAttribute('data-cta') || 'generic_cta';
+            trackEvent('cta_click', null, ctaId);
+        });
+    });
+
     const cached = localStorage.getItem('active_pix_session');
     if (cached) {
         try {
@@ -363,7 +382,21 @@ function toggleBump(bumpId) {
 }
 
 function updateTotal() {
-    let total = cart.mainProduct.price;
+    // PRICING LOGIC: 
+    // PIX = Discounted Price (cart.mainProduct.price)
+    // CARD = Full Price (cart.mainProduct.originalPrice)
+
+    let basePrice = cart.mainProduct.price; // Default to discounted
+
+    if (currentPaymentMethod === 'card') {
+        // If has originalPrice, use it. Otherwise keep price.
+        if (cart.mainProduct.originalPrice) {
+            basePrice = cart.mainProduct.originalPrice;
+        }
+    }
+
+    let total = basePrice;
+
     cart.bumps.forEach(id => {
         const b = cart.mainProduct.fullBumps.find(x => x.id === id);
         if (b) total += b.price;
@@ -453,6 +486,8 @@ function showSkeletons(container, count = 3) {
 // --- 3. PAYMENT HANDLING ---
 
 function switchMethod(method) {
+    currentPaymentMethod = method; // UPDATE STATE
+
     const btns = document.querySelectorAll('.method-btn');
     btns.forEach(b => b.classList.remove('active'));
     document.querySelector(`.method-btn[data-method="${method}"]`)?.classList.add('active');
@@ -469,6 +504,11 @@ function switchMethod(method) {
         if (cardArea) { cardArea.style.display = 'block'; setTimeout(() => cardArea.style.opacity = '1', 50); }
         if (pixIdentity) { pixIdentity.style.display = 'none'; }
         if (pixArea) { pixArea.style.opacity = '0'; setTimeout(() => pixArea.style.display = 'none', 300); }
+    }
+
+    // RECALCULATE TOTAL WHEN SWITCHING
+    if (cart.mainProduct) {
+        updateTotal();
     }
 }
 
@@ -513,7 +553,13 @@ async function handlePayment(method) {
     const isValid = validateCheckoutInputs(method);
     if (!isValid) return;
 
-    const items = [{ id: cart.mainProduct.id, title: cart.mainProduct.title, price: cart.mainProduct.price }];
+    // PRICING LOGIC FOR API PAYLOAD
+    let mainPrice = cart.mainProduct.price;
+    if (method === 'card' && cart.mainProduct.originalPrice) {
+        mainPrice = cart.mainProduct.originalPrice;
+    }
+
+    const items = [{ id: cart.mainProduct.id, title: cart.mainProduct.title, price: mainPrice }];
     cart.bumps.forEach(id => {
         const b = cart.mainProduct.fullBumps.find(x => x.id === id);
         if (b) items.push({ id: b.id, title: b.title, price: b.price });
@@ -525,7 +571,17 @@ async function handlePayment(method) {
 
         // --- 🛡️ PIX LOGIC (ALWAYS NEW) ---
         // We removed the "Reuse Only" logic to fix the "Stuck" issue.
-        const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
+        // Logic fix: Calculate total again or rely on updateTotal? 
+        // Ideally rely on the calculated values, but for safety lets reclac logic briefly
+
+        let finalPrice = cart.mainProduct.price; // PIX = Discount Price
+
+        const totalAmount = items.reduce((acc, item) => {
+            // If item is main product, ensure we use correct price, but for PIX it IS the base price
+            // Actually items array was built using cart.mainProduct.price which IS the discounted one
+            // So this reduce is correct for PIX.
+            return acc + Number(item.price);
+        }, 0);
         const itemIds = items.map(i => i.id).sort().join(',');
 
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> GERANDO SEU PIX...';
@@ -711,6 +767,13 @@ document.getElementById('btn-pay-card')?.addEventListener('click', (e) => {
 });
 document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => switchMethod(b.dataset.method)));
 document.querySelector('.close-modal')?.addEventListener('click', () => {
+    // TRACK ABANDON
+    if (sessionStorage.getItem('mura_modal_open') === 'true') {
+        trackEvent('checkout_abandon');
+        sessionStorage.removeItem('mura_modal_open');
+        sessionStorage.removeItem('checkout_started');
+    }
+
     checkoutModal.classList.remove('active');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
