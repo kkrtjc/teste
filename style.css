@@ -5038,7 +5038,8 @@ img.checkout-logo-main {
     padding: 12px 15px;
     padding-right: 40px;
     /* Space for arrow */
-    color: #fff;
+    color: #ffffff !important;
+    /* FORCE WHITE TEXT */
     font-size: 0.95rem;
     appearance: none;
     /* Remove default arrow */
@@ -5051,11 +5052,16 @@ img.checkout-logo-main {
 .custom-select:focus {
     border-color: var(--color-secondary);
     outline: none;
+    background-color: #000;
+    /* Ensure dark background on focus */
+    color: #fff !important;
     box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
 }
 
 .custom-select option {
-    background: #1a1a1a;
-    color: #fff;
+    background-color: #1a1a1a !important;
+    /* Dark background for options */
+    color: #ffffff !important;
+    /* White text for options */
     padding: 10px;
 }
