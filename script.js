@@ -229,13 +229,13 @@ document.addEventListener('DOMContentLoaded', () => {
 const mp = new MercadoPago('APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5');
 const checkoutModal = document.getElementById('checkout-modal');
 
-async function trackEvent(type, isMobileManual = null, ctaId = null) {
+async function trackEvent(type, isMobileManual = null, ctaId = null, details = null) {
     const isMobile = isMobileManual !== null ? isMobileManual : (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window));
     try {
         fetch(`${API_URL}/api/track`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, isMobile, ctaId })
+            body: JSON.stringify({ type, isMobile, ctaId, details })
         }).catch(e => console.warn("Track sync failed", e));
     } catch (e) { }
 }
@@ -509,6 +509,10 @@ function showSkeletons(container, count = 3) {
 // --- 3. PAYMENT HANDLING ---
 
 function switchMethod(method) {
+    // TRACK CHANGE FOR RENDER LOGS
+    if (currentPaymentMethod !== method) {
+        trackEvent('payment_method_selected', null, null, method);
+    }
     currentPaymentMethod = method; // UPDATE STATE
 
     const btns = document.querySelectorAll('.method-btn');
@@ -763,6 +767,7 @@ async function handlePayment(method) {
                 btn.innerText = originalText;
             }
         } catch (e) {
+            trackEvent('checkout_error', null, null, `Erro Cartão (JS): ${e.message}`);
             alert('Erro no cartão: ' + e.message);
             document.getElementById('checkout-main-view').classList.remove('hidden');
             document.getElementById('pix-result').classList.add('hidden');
@@ -1070,6 +1075,15 @@ function validateCheckoutInputs(method) {
     if (!cpf.value || cpf.value.replace(/\D/g, '').length < 11) { cpf.classList.add('is-invalid'); isValid = false; }
 
     if (!isValid) {
+        // Log which fields failed validation
+        const invalidFields = [];
+        if (email.classList.contains('is-invalid')) invalidFields.push('email');
+        if (phone.classList.contains('is-invalid')) invalidFields.push('phone');
+        if (name.classList.contains('is-invalid')) invalidFields.push('name');
+        if (cpf.classList.contains('is-invalid')) invalidFields.push('cpf');
+
+        trackEvent('ui_error', null, null, `Erro Validação Frontend: ${invalidFields.join(', ')}`);
+
         // Find which one is invalid and show a quick shake or similar could be added here
         [email, phone, name, cpf].forEach(el => validateField(el, null, true));
         const firstError = document.querySelector('.is-invalid');
