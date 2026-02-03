@@ -615,7 +615,7 @@ app.post('/api/checkout/card', async (req, res) => {
         console.log(`📦 Itens: ${items.length}`);
         console.log(`🔢 Parcelas: ${installments}, Method: ${payment_method_id}`);
 
-        const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
+        const totalAmount = Number(items.reduce((acc, item) => acc + Number(item.price), 0).toFixed(2));
         console.log(`💰 Total Calculado: ${totalAmount}`);
 
         if (totalAmount <= 0) {
@@ -634,58 +634,94 @@ app.post('/api/checkout/card', async (req, res) => {
             });
         }
 
+        // Clean and format phone for Mercado Pago (country code + area code + number)
+        const cleanPhone = (customer.phone || '').replace(/\D/g, '');
+        const phoneAreaCode = cleanPhone.slice(0, 2);
+        const phoneNumber = cleanPhone.slice(2);
+
+        // Get client IP properly
+        const clientIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+            || req.headers['x-real-ip']
+            || req.socket.remoteAddress
+            || '127.0.0.1';
+
         const body = {
             transaction_amount: totalAmount,
             token: token,
-            description: items.map(i => i.title).join(', '),
+            description: items.map(i => i.title).join(', ').slice(0, 256), // MP limit
             installments: Number(installments),
             payment_method_id,
-            issuer_id,
-            binary_mode: true,
+            issuer_id: issuer_id || null,
+            binary_mode: false, // OTIMIZAÇÃO: Permite pagamentos pendentes de revisão (aumenta aprovação)
+            capture: true, // Captura imediata
             external_reference: `ORDER-${Date.now()}`,
             notification_url: `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/webhooks/mercadopago`,
-            statement_descriptor: 'GALOS MURA BRASIL',
+            statement_descriptor: 'GALOSMURA', // Máximo 13 caracteres sem espaços
             payer: {
                 email: customer.email,
                 first_name: customer.name.split(' ')[0],
-                last_name: customer.name.split(' ').slice(1).join(' ') || 'User',
-                identification: { type: 'CPF', number: cleanCPF }
+                last_name: customer.name.split(' ').slice(1).join(' ') || 'Cliente',
+                identification: { type: 'CPF', number: cleanCPF },
+                phone: {
+                    area_code: phoneAreaCode || '11',
+                    number: phoneNumber || '999999999'
+                }
             },
             additional_info: {
-                ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+                ip_address: clientIP,
                 items: items.map((item, idx) => ({
                     id: item.id || `item-${idx}`,
-                    title: item.title,
-                    description: item.description || item.title,
-                    category_id: 'digital_goods',
+                    title: item.title.slice(0, 256),
+                    description: (item.description || item.title).slice(0, 256),
+                    category_id: 'others', // Categoria mais genérica para evitar restrições
                     quantity: 1,
                     unit_price: Number(item.price)
-                }))
+                })),
+                payer: {
+                    first_name: customer.name.split(' ')[0],
+                    last_name: customer.name.split(' ').slice(1).join(' ') || 'Cliente',
+                    phone: {
+                        area_code: phoneAreaCode || '11',
+                        number: phoneNumber || '999999999'
+                    },
+                    registration_date: new Date().toISOString()
+                }
             },
-            metadata: { delivery_method: 'email', customer_phone: customer.phone }
+            metadata: {
+                delivery_method: 'email',
+                customer_phone: customer.phone,
+                customer_name: customer.name,
+                customer_email: customer.email
+            }
         };
 
-        // Add Device ID if provided (CRITICAL for Anti-Fraud)
+        // Add Device ID if provided (CRITICAL for Anti-Fraud - aumenta aprovação)
         if (req.body.deviceId) {
             console.log(`📱 [CARTÃO] Device ID recebido: ${req.body.deviceId}`);
-            // Note: Mercado Pago SDK v2 usually handles device_id automatically in the token if configured, 
-            // but explicitly passing it in aditional_info or at root level depends on specific API version.
-            // For /v1/payments, 'metadata' or 'additional_info' is safer if top-level property is restricted.
-            // However, the standard way often involves 'device_id' at the root of the body object if the SDK generated it.
-            // Let's try adding it to top level as 'device_id' is standard in MP API.
-            body.additional_info.device_id = req.body.deviceId;
+            body.additional_info.payer.device_id = req.body.deviceId;
         }
 
+        console.log(`🚀 [CARTÃO] Enviando para Mercado Pago...`);
         const response = await payment.create({ body });
+        console.log(`📩 [CARTÃO] Resposta MP: status=${response.status}, detail=${response.status_detail}`);
 
         if (response.status === 'approved') {
             console.log(`✅ [CARTÃO] Pagamento aprovado! ID: ${response.id}`);
             logSale(customer, items, response.id, 'cartão');
             sendEmail(customer, items, response.id);
 
-            // Generate Secure Token
-            const token = generateDownloadToken(customer.email, items, response.id);
-            res.json({ status: 'approved', id: response.id, redirectToken: token });
+            const downloadToken = generateDownloadToken(customer.email, items, response.id);
+            res.json({ status: 'approved', id: response.id, redirectToken: downloadToken });
+
+        } else if (response.status === 'in_process' || response.status === 'pending') {
+            // OTIMIZAÇÃO: Aceita pagamentos em análise/pendente (comum em primeiras compras)
+            console.log(`⏳ [CARTÃO] Pagamento em análise! ID: ${response.id}`);
+            res.json({
+                status: response.status,
+                status_detail: response.status_detail,
+                id: response.id,
+                message: 'Pagamento em análise. Você receberá a confirmação por e-mail em até 2 dias úteis.'
+            });
 
         } else {
             console.warn(`❌ [CARTÃO] Pagamento Recusado: ${response.status} (${response.status_detail})`);
