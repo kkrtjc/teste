@@ -419,6 +419,12 @@ function updateTotal() {
         }
     });
 
+    // CORREÇÃO: Atualizar também o preço no resumo do topo (perto da capa)
+    const topPriceDisplay = document.getElementById('checkout-product-price-display');
+    if (topPriceDisplay) {
+        topPriceDisplay.innerText = formatBRL(total);
+    }
+
     updateInstallments(total);
 }
 
