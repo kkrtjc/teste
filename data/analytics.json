@@ -10,7 +10,7 @@
         "slowLoads": 0,
         "pageViews": 48,
         "ctaClicks": 24,
-        "uniqueVisits": 6,
+        "uniqueVisits": 8,
         "checkoutAbandons": 5
     },
     "daily": {
@@ -112,7 +112,7 @@
             "slowLoads": 0,
             "pageViews": 0,
             "emailClicks": 0,
-            "uniqueVisits": 1,
+            "uniqueVisits": 3,
             "ctaClicks": 1,
             "checkoutAbandons": 0,
             "ctaBreakdown": {

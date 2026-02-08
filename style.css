@@ -250,8 +250,10 @@ ul {
 }
 
 .vsl-wrapper {
-    max-width: 900px;
+    max-width: 700px;
+    /* Reduzi de 900px para 700px para ficar mais elegante */
     margin: 0 auto;
+    padding: 0 var(--spacing-md);
 }
 
 /* Header */
