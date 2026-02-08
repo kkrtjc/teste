@@ -55,6 +55,7 @@ const DATA_DIR = fs.existsSync(MOUNTED_DISK_PATH) ? MOUNTED_DISK_PATH : path.joi
 
 const DB_PATH = path.join(DATA_DIR, 'db.json');
 const HISTORY_PATH = path.join(DATA_DIR, 'history.json');
+const LEADS_PATH = path.join(DATA_DIR, 'leads.json');
 const ANALYTICS_PATH = path.join(DATA_DIR, 'analytics.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads'); // Move uploads to disk too!
 
@@ -82,6 +83,7 @@ if (DATA_DIR === MOUNTED_DISK_PATH) {
 }
 
 if (!fs.existsSync(HISTORY_PATH)) fs.writeFileSync(HISTORY_PATH, '[]');
+if (!fs.existsSync(LEADS_PATH)) fs.writeFileSync(LEADS_PATH, '[]');
 if (!fs.existsSync(ANALYTICS_PATH)) fs.writeFileSync(ANALYTICS_PATH, JSON.stringify({
     totals: {
         clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
@@ -129,6 +131,15 @@ function getHistory() {
     }
 }
 function saveHistory(data) { fs.writeFileSync(HISTORY_PATH, JSON.stringify(data, null, 4)); }
+
+function getLeads() {
+    try {
+        return JSON.parse(fs.readFileSync(LEADS_PATH, 'utf8'));
+    } catch (e) {
+        return [];
+    }
+}
+function saveLeads(data) { fs.writeFileSync(LEADS_PATH, JSON.stringify(data, null, 4)); }
 
 function getAnalytics() {
     try {
@@ -219,6 +230,7 @@ function logSale(customer, items, paymentId, method) {
 
 // 3. API Config (Required for Frontend Products)
 app.get('/api/config', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     // Return the cached DB which contains products and bumps
     res.json(getDB());
 });
@@ -228,6 +240,28 @@ app.post('/api/config/update', (req, res) => {
     if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
     saveDB(data);
     res.json({ success: true });
+});
+
+app.post('/api/config/reset', (req, res) => {
+    const { password } = req.body;
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+
+    // FACTORY RESET LOGIC
+    try {
+        if (fs.existsSync(LOCAL_DB)) {
+            // Overwrite persistence with source code DB
+            fs.copyFileSync(LOCAL_DB, DB_PATH);
+            cacheDB = null; // Clear RAM cache
+
+            console.log('🚨 [RESET] Sistema restaurado para padrão de fábrica pelo Admin.');
+            res.json({ success: true });
+        } else {
+            res.status(500).json({ error: 'Arquivo original de fábrica não encontrado.' });
+        }
+    } catch (e) {
+        console.error("Reset Error:", e);
+        res.status(500).json({ error: 'Falha ao restaurar sistema.' });
+    }
 });
 
 // 4. Admin History & Analytics API
@@ -241,6 +275,45 @@ app.post('/api/history/clear', (req, res) => {
     const { password } = req.body;
     if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
     saveHistory([]);
+    res.json({ success: true });
+});
+
+// 4.1 Leads API
+app.get('/api/leads', (req, res) => {
+    const password = req.params.password || req.query.password || req.headers['x-admin-password'];
+    // Allow basic access for now or strictly enforce password
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    res.json(getLeads());
+});
+
+app.post('/api/leads', (req, res) => {
+    const { name, phone, source } = req.body;
+
+    // Simple Validation
+    if (!phone) return res.status(400).json({ error: 'WhatsApp é obrigatório' });
+
+    const leads = getLeads();
+
+    // Deduplication (by Phone)
+    const existing = leads.find(l => l.phone === phone);
+
+    if (existing) {
+        console.log(`♻️ [LEAD] Lead retornou: ${phone}`);
+        return res.json({ success: true, message: 'Lead já cadastrado' });
+    }
+
+    const newLead = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        name: name || 'Sem Nome',
+        phone: phone,
+        source: source || 'unknown'
+    };
+
+    leads.push(newLead);
+    saveLeads(leads);
+
+    console.log(`🎯 [LEAD] Novo lead capturado: ${name} (${phone})`);
     res.json({ success: true });
 });
 
@@ -316,6 +389,7 @@ app.post('/api/track', (req, res) => {
 });
 
 app.get('/api/products/:id', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     const db = getDB();
     const product = db.products[req.params.id];
     if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
@@ -345,9 +419,9 @@ function generateDownloadToken(email, items, paymentId = null) {
 async function sendEmail(customer, items, paymentId = null) {
     console.log(`📧 [EMAIL] Preparando envio PREMIUM para: ${customer.email}`);
 
-    // Simplified Link Logic (User Request)
-    const itemIds = items.map(i => i.id || i.title).join(',');
-    const downloadLink = `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/downloads.html?items=${itemIds}`;
+    // Simplified Link Logic with Tracking Token (User Request)
+    const downloadToken = generateDownloadToken(customer.email, items, paymentId);
+    const downloadLink = `${process.env.BASE_URL || 'https://teste-m1kq.onrender.com'}/api/access/${downloadToken}`;
 
     const htmlContent = `
         <!DOCTYPE html>
@@ -446,8 +520,31 @@ app.get('/test-email', async (req, res) => {
 // Ebook Download Routes
 app.get('/download/:type', (req, res) => {
     const type = req.params.type;
+    const token = req.query.t;
     let filePath = '';
     let fileName = '';
+
+    // TRACKING LOGIC
+    if (token) {
+        try {
+            const decoded = Buffer.from(token, 'base64').toString();
+            const parts = decoded.split('|');
+            // email|items|expires|paymentId|hash
+            if (parts.length >= 4) {
+                const paymentId = parts[3];
+                const history = getHistory();
+                const saleIdx = history.findIndex(h => h.paymentId === paymentId);
+                if (saleIdx > -1) {
+                    history[saleIdx].downloaded = true;
+                    history[saleIdx].downloadDate = new Date().toISOString();
+                    saveHistory(history);
+                    console.log(`📥 [TRACK] Cliente ${history[saleIdx].email} baixou o arquivo: ${type}`);
+                }
+            }
+        } catch (err) {
+            console.error("Download tracking error:", err);
+        }
+    }
 
     if (type === 'manejo') {
         filePath = path.join(__dirname, 'ebook_manejo.pdf');
@@ -893,7 +990,8 @@ app.get('/api/access/:token', (req, res) => {
         }
 
         // Redirect to actual downloads page
-        res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${encodeURIComponent(token)}`);
+        const redirectUrl = `https://osegredodasgalinhas.pages.dev/downloads.html?t=${encodeURIComponent(token)}`;
+        res.redirect(redirectUrl);
     } catch (e) {
         console.error("Tracking error:", e);
         res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);

@@ -286,6 +286,20 @@
             </div>
             <h1>Pagamento Aprovado!</h1>
             <p class="subtitle" id="success-msg">Seus materiais estão prontos para download.</p>
+
+            <!-- Video de Instrução -->
+            <div style="margin: 2rem 0; width: 100%;">
+                <div class="video-responsive"
+                    style="border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); background: #000;">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0"
+                        title="VEJA COMO BAIXAR SEUS PRODUTOS" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <p style="font-size: 0.85rem; color: #888; margin-top: 1rem; text-align: center;">👇 Veja no vídeo acima
+                    como acessar seus materiais.</p>
+            </div>
         </div>
 
         <div class="downloads-section">
@@ -407,6 +421,17 @@
                 }
 
                 // WhatsApp
+                const token = params.get('t') || '';
+
+                // Propagar token para os links de download para rastreio
+                if (token) {
+                    document.querySelectorAll('.btn-download').forEach(btn => {
+                        const url = new URL(btn.href);
+                        url.searchParams.set('t', token);
+                        btn.href = url.toString();
+                    });
+                }
+
                 if (whatsappBtn) {
                     whatsappBtn.onclick = (e) => {
                         e.preventDefault();

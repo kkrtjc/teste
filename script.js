@@ -288,7 +288,7 @@ async function openCheckout(productId) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/products/${productId}`);
+        const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`);
         const productData = await response.json();
 
         if (productData.error) throw new Error(productData.error);
@@ -440,7 +440,7 @@ async function renderHomeProducts() {
     showSkeletons(container);
 
     try {
-        const res = await fetch(`${API_URL}/api/config`);
+        const res = await fetch(`${API_URL}/api/config?t=${Date.now()}`);
         if (!res.ok) throw new Error("Fetch failed");
 
         const db = await res.json();
@@ -533,10 +533,19 @@ function switchMethod(method) {
         if (pixArea) { pixArea.style.display = 'block'; setTimeout(() => pixArea.style.opacity = '1', 50); }
         if (pixIdentity) { pixIdentity.style.display = 'block'; }
         if (cardArea) { cardArea.style.opacity = '0'; setTimeout(() => cardArea.style.display = 'none', 300); }
+
+        // CORREÇÃO: Placeholder do CPF para PIX
+        const cpfInput = document.getElementById('payer-cpf');
+        if (cpfInput) cpfInput.placeholder = 'Seu CPF';
+
     } else {
         if (cardArea) { cardArea.style.display = 'block'; setTimeout(() => cardArea.style.opacity = '1', 50); }
         if (pixIdentity) { pixIdentity.style.display = 'none'; }
         if (pixArea) { pixArea.style.opacity = '0'; setTimeout(() => pixArea.style.display = 'none', 300); }
+
+        // CORREÇÃO: Placeholder do CPF para Cartão
+        const cpfInput = document.getElementById('payer-cpf');
+        if (cpfInput) cpfInput.placeholder = 'CPF do Titular do Cartão';
     }
 
     // RECALCULATE TOTAL WHEN SWITCHING
