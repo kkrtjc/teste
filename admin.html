@@ -54,28 +54,11 @@
 
         .main-content {
             flex: 1;
-            padding: 20px;
-            margin-left: var(--sidebar-width);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 30px;
+            margin: 0 auto;
             max-width: 1400px;
             width: 100%;
-        }
-
-        /* --- GLASS SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: var(--bg-sidebar);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            padding: 30px 15px;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-sizing: border-box;
         }
 
         .sidebar-logo {
@@ -188,44 +171,9 @@
             gap: 15px;
         }
 
-        /* Mobile Adjustments */
-        .mobile-toggle {
-            display: none;
-            width: 40px;
-            height: 40px;
-            background: var(--accent-dim);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            color: var(--accent);
-            font-size: 1rem;
-            z-index: 1001;
-            transition: transform 0.3s ease;
-        }
-
-        .mobile-toggle.active i {
-            transform: rotate(180deg);
-        }
-
+        /* Removed sidebar mobile adjustments */
         @media (max-width: 768px) {
-            .mobile-toggle {
-                display: flex;
-            }
-
-            .sidebar {
-                left: -100%;
-                width: 280px;
-                box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
             .main-content {
-                margin-left: 0;
                 padding: 15px;
             }
 
@@ -237,73 +185,13 @@
                 padding: 20px;
             }
 
-            .glass-header {
-                padding: 10px 0;
-            }
+            /* ... rest of the media query ... */
 
-            .header-content {
-                padding: 0 15px;
-            }
-
-            .metric-group-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
-                z-index: 999;
-            }
-
-            .sidebar-overlay.active {
-                display: block;
-            }
-
-            /* Prevent content overflow */
-            .main-content {
-                overflow-x: hidden;
-                width: 100vw;
-                box-sizing: border-box;
-            }
-
-            .content-card {
-                padding: 15px;
-                overflow-x: auto;
-            }
-
-            /* Responsive Tables */
             .table-responsive {
                 width: 100%;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 margin-bottom: 1rem;
-            }
-
-            table {
-                min-width: 600px;
-                /* Force minimum width to enable scroll */
-            }
-
-            .metric-group-content {
-                padding: 0 15px 20px 15px;
-            }
-
-            .dashboard-grid {
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .tab-content {
-                width: 100%;
-                overflow-x: hidden;
             }
         }
 
@@ -1799,17 +1687,21 @@
     </div>
 
     <!-- Shell Elite -->
-    <div id="admin-panel" class="admin-shell hidden">
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
-        <!-- Modern Glass Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <img src="logo.png" alt="Logo"
-                    style="width: 40px; height: auto; filter: drop-shadow(0 0 10px var(--accent-glow));">
-                <h1 style="font-size: 1rem;">GALOS MURA BRASIL</h1>
-            </div>
+    <div id="admin-panel" class="admin-shell hidden" style="flex-direction: column;">
 
-            <nav class="nav-list">
+        <!-- Branding Top Bar -->
+        <header style="padding: 40px 20px 20px; text-align: center;">
+            <img src="logo.png" alt="Logo"
+                style="width: 120px; height: auto; margin-bottom: 15px; filter: drop-shadow(0 0 20px var(--accent-glow));">
+            <h1
+                style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; color: #fff; margin: 0;">
+                GALOS MURA BRASIL</h1>
+            <p style="color: var(--text-dim); margin-top: 5px;">Painel Administrativo Profissional</p>
+        </header>
+
+        <!-- Horizontal Navigation -->
+        <div style="display: flex; justify-content: center; margin-bottom: 40px;">
+            <nav class="admin-nav" style="flex-wrap: wrap; justify-content: center;">
                 <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard', this)">
                     <i class="fa-solid fa-chart-pie"></i>
                     <span>Dashboard</span>
@@ -1820,7 +1712,7 @@
                 </div>
                 <div class="nav-item" data-tab="bumps" onclick="switchTab('bumps', this)">
                     <i class="fa-solid fa-layer-group"></i>
-                    <span>Order Bumps</span>
+                    <span>Bumps</span>
                 </div>
                 <div class="nav-item" data-tab="history" onclick="switchTab('history', this)">
                     <i class="fa-solid fa-receipt"></i>
@@ -1828,42 +1720,22 @@
                 </div>
                 <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
                     <i class="fa-solid fa-bullseye"></i>
-                    <span>Funil de Vendas</span>
+                    <span>Funil</span>
                 </div>
                 <div class="nav-item" data-tab="leads" onclick="switchTab('leads', this)">
                     <i class="fa-solid fa-users"></i>
-                    <span>Leads (Isca)</span>
+                    <span>Leads</span>
+                </div>
+                <div class="nav-item" onclick="location.reload()" style="color: #ef4444;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Sair</span>
                 </div>
             </nav>
-
-            <div class="sidebar-footer">
-                <button class="btn btn-secondary" style="width: 100%; border-radius: 12px; font-size: 0.8rem;"
-                    onclick="location.reload()">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i> SAIR
-                </button>
-                <div
-                    style="font-size: 0.65rem; color: var(--text-dim); text-align: center; margin-top: 10px; opacity: 0.5;">
-                    PRO PANEL V2.0 • 2026
-                </div>
-            </div>
-        </aside>
+        </div>
 
         <!-- Main Workspace -->
         <main class="main-content">
-            <header class="glass-header">
-                <div class="header-content">
-                    <div style="display: flex; flex-direction: column;">
-                        <h2 id="page-title"
-                            style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin: 0; color: #fff;">
-                            Dashboard de Performance</h2>
-                        <p style="color: var(--text-dim); margin-top: 5px;" id="page-subtitle">Bem-vindo de volta,
-                            Comandante.</p>
-                    </div>
-                    <div class="mobile-toggle" id="mobile-toggle">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
-                </div>
-            </header>
+            <!-- Removed mobile glass-header -->
 
             <!-- Botão Flutuante de Salvar -->
             <div class="actions hidden"
@@ -3145,37 +3017,6 @@
                 alert('Erro de conexão. Verifique se o servidor está online.');
             }
         }
-    </script>
-    <script>
-        // Mobile sidebar toggle
-        const mobileToggle = document.getElementById('mobile-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-        function toggleSidebar() {
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-            if (mobileToggle) {
-                mobileToggle.classList.toggle('active');
-            }
-        }
-
-        if (mobileToggle) {
-            mobileToggle.addEventListener('click', toggleSidebar);
-        }
-
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-        }
-
-        // Close sidebar on nav item click (mobile)
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-                    toggleSidebar();
-                }
-            });
-        });
     </script>
 </body>
 
