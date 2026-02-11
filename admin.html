@@ -200,8 +200,13 @@
             align-items: center;
             cursor: pointer;
             color: var(--accent);
-            font-size: 1.2rem;
+            font-size: 1rem;
             z-index: 1001;
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-toggle.active i {
+            transform: rotate(180deg);
         }
 
         @media (max-width: 768px) {
@@ -260,6 +265,45 @@
 
             .sidebar-overlay.active {
                 display: block;
+            }
+
+            /* Prevent content overflow */
+            .main-content {
+                overflow-x: hidden;
+                width: 100vw;
+                box-sizing: border-box;
+            }
+
+            .content-card {
+                padding: 15px;
+                overflow-x: auto;
+            }
+
+            /* Responsive Tables */
+            .table-responsive {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 1rem;
+            }
+
+            table {
+                min-width: 600px;
+                /* Force minimum width to enable scroll */
+            }
+
+            .metric-group-content {
+                padding: 0 15px 20px 15px;
+            }
+
+            .dashboard-grid {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .tab-content {
+                width: 100%;
+                overflow-x: hidden;
             }
         }
 
@@ -1816,7 +1860,7 @@
                             Comandante.</p>
                     </div>
                     <div class="mobile-toggle" id="mobile-toggle">
-                        <i class="fa-solid fa-bars"></i>
+                        <i class="fa-solid fa-chevron-right"></i>
                     </div>
                 </div>
             </header>
@@ -2036,30 +2080,51 @@
                             style="background: #111; border: 1px solid #333; padding: 8px 12px; font-size: 0.8rem;"
                             onclick="factoryReset()"><i class="fa-solid fa-rotate-left"></i> RESETAR FÁBRICA</button>
                     </div>
-        </main>
-    </div>
-    </div>
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>DATA/HORA</th>
-                    <th>CLIENTE</th>
-                    <th>PRODUTO(S)</th>
-                    <th>EMAIL/CONTATO</th>
-                    <th>VALOR/MÉTODO</th>
-                    <th>LINK ACESSO</th>
-                    <th>STATUS</th>
-                    <th>AÇÕES</th>
-                </tr>
-            </thead>
-            <tbody id="history-list"></tbody>
-        </table>
-    </div>
-    </div>
+                    <br>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>DATA/HORA</th>
+                                    <th>CLIENTE</th>
+                                    <th>PRODUTO(S)</th>
+                                    <th>EMAIL/CONTATO</th>
+                                    <th>VALOR/MÉTODO</th>
+                                    <th>LINK ACESSO</th>
+                                    <th>STATUS</th>
+                                    <th>AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
     </div>
 
-
+    <!-- Leads Tab -->
+    <div id="tab-leads" class="tab-content">
+        <div class="header-row">
+            <h3>Leads Capturados (Isca Digital)</h3>
+        </div>
+        <div class="content-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DATA</th>
+                            <th>NOME</th>
+                            <th>WHATSAPP</th>
+                            <th>EMAIL</th>
+                            <th>ORIGEM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </main>
     </div>
 
     <!-- New Bump Modal -->
@@ -3090,6 +3155,9 @@
         function toggleSidebar() {
             sidebar.classList.toggle('active');
             sidebarOverlay.classList.toggle('active');
+            if (mobileToggle) {
+                mobileToggle.classList.toggle('active');
+            }
         }
 
         if (mobileToggle) {
