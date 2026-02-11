@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Mura Engine | Ultra Admin</title>
+    <title>GALOS MURA BRASIL | Ultra Admin</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -54,10 +54,11 @@
 
         .main-content {
             flex: 1;
-            padding: 40px;
+            padding: 20px;
             margin-left: var(--sidebar-width);
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             max-width: 1400px;
+            width: 100%;
         }
 
         /* --- GLASS SIDEBAR --- */
@@ -184,6 +185,82 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 15px;
+        }
+
+        /* Mobile Adjustments */
+        .mobile-toggle {
+            display: none;
+            width: 40px;
+            height: 40px;
+            background: var(--accent-dim);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: var(--accent);
+            font-size: 1.2rem;
+            z-index: 1001;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: flex;
+            }
+
+            .sidebar {
+                left: -100%;
+                width: 280px;
+                box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .glass-header {
+                padding: 10px 0;
+            }
+
+            .header-content {
+                padding: 0 15px;
+            }
+
+            .metric-group-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
         }
 
         .logo-area h1 {
@@ -1653,11 +1730,12 @@
     <div id="login-screen" class="login-elite-screen">
         <div class="login-background-animated"></div>
         <div class="login-glass-card">
-            <div class="login-icon-elite">
-                <i class="fa-solid fa-shield-halved"></i>
+            <div class="login-icon-elite" style="background: transparent; box-shadow: none;">
+                <img src="logo.png" alt="Logo"
+                    style="width: 100%; height: auto; filter: drop-shadow(0 0 20px var(--accent-glow));">
             </div>
-            <h1 class="login-title">MURA ENGINE</h1>
-            <p class="login-subtitle">Painel Administrativo Elite</p>
+            <h1 class="login-title">GALOS MURA BRASIL</h1>
+            <p class="login-subtitle">Painel Administrativo Profissional</p>
 
             <div class="login-input-group">
                 <i class="fa-solid fa-lock"></i>
@@ -1678,11 +1756,13 @@
 
     <!-- Shell Elite -->
     <div id="admin-panel" class="admin-shell hidden">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <!-- Modern Glass Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <i class="fa-solid fa-bolt"></i>
-                <h1>MURA ENGINE</h1>
+                <img src="logo.png" alt="Logo"
+                    style="width: 40px; height: auto; filter: drop-shadow(0 0 10px var(--accent-glow));">
+                <h1 style="font-size: 1rem;">GALOS MURA BRASIL</h1>
             </div>
 
             <nav class="nav-list">
@@ -1726,14 +1806,18 @@
 
         <!-- Main Workspace -->
         <main class="main-content">
-            <header class="glass-header"
-                style="background: transparent; backdrop-filter: none; border: none; position: relative; margin-bottom: 40px; padding: 0;">
-                <div style="display: flex; flex-direction: column;">
-                    <h2 id="page-title"
-                        style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin: 0; color: #fff;">
-                        Dashboard de Performance</h2>
-                    <p style="color: var(--text-dim); margin-top: 5px;" id="page-subtitle">Bem-vindo de volta,
-                        Comandante.</p>
+            <header class="glass-header">
+                <div class="header-content">
+                    <div style="display: flex; flex-direction: column;">
+                        <h2 id="page-title"
+                            style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin: 0; color: #fff;">
+                            Dashboard de Performance</h2>
+                        <p style="color: var(--text-dim); margin-top: 5px;" id="page-subtitle">Bem-vindo de volta,
+                            Comandante.</p>
+                    </div>
+                    <div class="mobile-toggle" id="mobile-toggle">
+                        <i class="fa-solid fa-bars"></i>
+                    </div>
                 </div>
             </header>
 
@@ -2996,6 +3080,34 @@
                 alert('Erro de conexão. Verifique se o servidor está online.');
             }
         }
+    </script>
+    <script>
+        // Mobile sidebar toggle
+        const mobileToggle = document.getElementById('mobile-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', toggleSidebar);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+
+        // Close sidebar on nav item click (mobile)
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    toggleSidebar();
+                }
+            });
+        });
     </script>
 </body>
 
