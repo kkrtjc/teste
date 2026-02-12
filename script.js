@@ -746,6 +746,12 @@ async function handlePayment(method) {
 
     let customer = {};
 
+    // FIX: Define commonData here to avoid undefined error
+    const commonData = {
+        email: document.getElementById('payer-email').value,
+        phone: document.getElementById('payer-phone').value ? document.getElementById('payer-phone').value.replace(/\D/g, '') : ''
+    };
+
     if (method === 'pix') {
         customer = {
             ...commonData,
