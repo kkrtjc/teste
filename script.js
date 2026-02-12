@@ -128,58 +128,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- 4. Testimonials (Infinite Carousel) ---
+    // UPDATED: More impactful testimonials & +1600 students proof
     const testimonials = [
-        { text: '"Salvou minhas galinhas! Perdi 20 galinhas antes de ler esse guia."', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
-        { text: '"Muito bom, consegui identificar a doença da minha galinha na mesma hora."', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
-        { text: '"Vale cada centavo. Aprendi mais aqui do que em 2 anos criando galinhas."', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-        { text: '"O manejo correto mudou tudo aqui no sítio. Recomendo demais!"', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' },
-        { text: '"Simples e direto. Parei de gastar com remédio errado."', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpeg' },
-        { text: '"O Protocolo de Manejo mudou minha visão sobre a criação. Resultados nítidos em 15 dias."', author: 'Pedro Almeida', location: 'Bahia', stars: 5, avatar: 'carrosel/pedro.png' },
-        { text: '"Recuperei minhas matrizes que estavam quase perdidas. O guia de doenças é indispensável."', author: 'Camila Rocha', location: 'Espirito Santo', stars: 5, avatar: 'carrosel/camila.jpeg' },
-        { text: '"Simplesmente o melhor investimento que fiz esse ano. Economia real de tempo e dinheiro."', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpeg' },
-        { text: '"Meus pintinhos estão muito mais fortes e saudáveis. O manejo de elite funciona mesmo."', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpeg' },
-        { text: '"Tirei todas as minhas dúvidas sobre nutrição. Minhas galinhas nunca produziram tanto!"', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpeg' }
+        { text: '"Minha criação mudou da água pro vinho. Onde morriam 20 pintinhos, hoje não morre nenhum."', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
+        { text: '"Eu ia desistir de criar galinhas. Esse ebook salvou meu negócio e minha paixão."', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
+        { text: '"Achava que sabia tudo, mas estava perdendo dinheiro todo dia. O protocolo funciona!"', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
+        { text: '"Apliquei o método e em 3 dias o galo que estava triste já estava cantando de novo."', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' },
+        { text: '"Não é gasto, é investimento. O que economizei de antibiótico já pagou o curso 10x."', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpeg' },
+        { text: '"Simples, direto e sem enrolação. Qualquer um consegue seguir e ter resultado."', author: 'Pedro Almeida', location: 'Bahia', stars: 5, avatar: 'carrosel/pedro.png' },
+        { text: '"Eu não tinha noção do erro que estava cometendo na ração. Meus frangos dobraram de tamanho."', author: 'Camila Rocha', location: 'Espirito Santo', stars: 5, avatar: 'carrosel/camila.jpeg' },
+        { text: '"Recomendo para todo mundo. Quem cria galinha precisa ler isso urgente."', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpeg' },
+        { text: '"O suporte é excelente e o material é muito rico. Nota 10!"', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpeg' },
+        { text: '"Depois de anos no prejuízo, finalmente estou vendo o lucro entrar. Obrigado!"', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpeg' }
     ];
 
     const testimonialsTrack = document.getElementById('testimonials-track');
     if (testimonialsTrack) {
-        // 1. Defined dimensions for JS-CSS sync
-        const CARD_WIDTH = 300;
-        const CARD_MARGIN = 20;
-        const SET_WIDTH = testimonials.length * (CARD_WIDTH + CARD_MARGIN); // 5 * 320 = 1600px
+        // Clear existing content
+        testimonialsTrack.innerHTML = '';
 
-        // 2. Set the CSS variable for the animation distance (exactly 1 set width, NEGATIVE)
-        testimonialsTrack.style.setProperty('--scroll-amount', `-${SET_WIDTH}px`);
-
-        // 3. Massive duplication to ensure infinite illusion even on 8K screens
-        // 12 sets * 1600px = 19200px total width.
-        const loopContent = Array(12).fill(testimonials).flat();
-
-        loopContent.forEach(t => {
+        // Render all testimonials but hide them initially (except first)
+        testimonials.forEach((t, index) => {
             const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
             const card = document.createElement('div');
-            card.className = 'testimonial-card-original';
-            // Enforce strict dimensions matching our calculation
-            card.style.minWidth = `${CARD_WIDTH}px`;
-            card.style.maxWidth = `${CARD_WIDTH}px`;
-            card.style.marginRight = `${CARD_MARGIN}px`; // Inline to guarantee calculation match
+            card.className = 'testimonial-card-single'; // New class for single display
+            // Style for single focused card
+            card.style.opacity = index === 0 ? '1' : '0';
+            card.style.position = 'absolute';
+            card.style.top = '0';
+            card.style.left = index === 0 ? '0' : '100%'; // Start off-screen right
+            card.style.width = '100%';
+            card.style.height = '100%';
+            card.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.transform = index === 0 ? 'translateX(0)' : 'translateX(50px)'; // Helper for fade in
 
             card.innerHTML = `
-                <div style="font-size: 1.5rem; color: rgba(255,255,255,0.3); margin-bottom: 0.5rem;"><i class="fa-solid fa-quote-left"></i></div>
-                <p style="font-style: italic; margin-bottom: 1.5rem; color: #eee; font-size: 0.95rem; min-height: 60px;">"${t.text}"</p>
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; display: flex; align-items: center; gap: 1rem;">
-                    <div style="width: 45px; height: 45px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;">
                         <img src="${t.avatar}" alt="${t.author}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${t.author}&background=random&color=fff'">
                     </div>
                     <div>
-                        <strong style="display: block; color: #fff; font-size: 0.9rem;">${t.author}</strong>
-                        <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;"><i class="fa-solid fa-location-dot" style="margin-right: 4px;"></i> ${t.location}</small>
-                        <div style="margin-top: 0.2rem; font-size: 0.7rem; color: #FFD700;">${starsHTML}</div>
+                        <strong style="display: block; color: #fff; font-size: 0.95rem; line-height: 1.2;">${t.author}</strong>
+                        <small style="color: rgba(255,255,255,0.5); font-size: 0.75rem;"><i class="fa-solid fa-location-dot" style="margin-right: 4px;"></i> ${t.location}</small>
+                        <div style="font-size: 0.7rem; color: #FFD700; margin-top: 2px;">${starsHTML}</div>
                     </div>
                 </div>
+                <p style="font-style: normal; margin: 0; color: rgba(255,255,255,0.8); font-size: 0.85rem; line-height: 1.5;">"${t.text}"</p>
             `;
             testimonialsTrack.appendChild(card);
         });
+
+        let currentIdx = 0;
+
+        function nextSlide() {
+            const cards = document.querySelectorAll('.testimonial-card-single');
+            const total = cards.length;
+
+            // Current card moves OUT to LEFT
+            const current = cards[currentIdx];
+            current.style.opacity = '0';
+            current.style.left = '-100%';
+            current.style.transform = 'translateX(-50px)';
+
+            // Wait briefly then reset it to RIGHT side for next cycle
+            setTimeout(() => {
+                current.style.transition = 'none'; // Disable transition for instant move
+                current.style.left = '100%';
+                setTimeout(() => {
+                    current.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'; // Re-enable
+                }, 50);
+            }, 800); // Wait for exit animation
+
+            // Next card moves IN from RIGHT
+            currentIdx = (currentIdx + 1) % total;
+            const next = cards[currentIdx];
+
+            // Ensure next is ready at start position
+            next.style.left = '0';
+            next.style.opacity = '1';
+            next.style.transform = 'translateX(0)';
+        }
+
+        // Change slide every 5 seconds
+        setInterval(nextSlide, 5000);
     }
 
     // --- 5. Initializations ---
@@ -334,7 +365,7 @@ async function openCheckout(productId, forceBumps = []) {
                     setTimeout(() => {
                         logoOverlay.classList.remove('active', 'run-left');
                     }, 800); // Logo transition time
-                }, 800); // Time for the logo to stay visible (Reduced from 1500)
+                }, 100); // INSTANT: Reduced from 800 to 100
             } else {
                 checkoutModal.classList.add('active');
             }
@@ -1551,4 +1582,66 @@ function getPaymentMethodId(number) {
     if (/^(4011|4389|4514|4576|5041|5066|5090|6277|6362|6363)/.test(n)) return 'elo';
     if (/^(38|60)/.test(n)) return 'hipercard';
     return 'other';
+}
+// Comparison Slider Navigation Logic with Boundary Detection
+const comparisonSlider = document.getElementById('comparison-slider-track');
+const prevButton = document.getElementById('comparison-prev');
+const nextButton = document.getElementById('comparison-next');
+
+if (comparisonSlider && prevButton && nextButton) {
+
+    // Function to update arrow states based on scroll position
+    function updateArrowStates() {
+        const scrollLeft = comparisonSlider.scrollLeft;
+        const maxScroll = comparisonSlider.scrollWidth - comparisonSlider.clientWidth;
+
+        // Disable/enable left arrow
+        if (scrollLeft <= 0) {
+            prevButton.disabled = true;
+            prevButton.style.opacity = '0.3';
+            prevButton.style.cursor = 'not-allowed';
+        } else {
+            prevButton.disabled = false;
+            prevButton.style.opacity = '1';
+            prevButton.style.cursor = 'pointer';
+        }
+
+        // Disable/enable right arrow
+        if (scrollLeft >= maxScroll - 1) { // -1 for rounding tolerance
+            nextButton.disabled = true;
+            nextButton.style.opacity = '0.3';
+            nextButton.style.cursor = 'not-allowed';
+        } else {
+            nextButton.disabled = false;
+            nextButton.style.opacity = '1';
+            nextButton.style.cursor = 'pointer';
+        }
+    }
+
+    // Initial state check
+    updateArrowStates();
+
+    // Update on scroll
+    comparisonSlider.addEventListener('scroll', updateArrowStates);
+
+    // Click handlers
+    prevButton.addEventListener('click', () => {
+        if (!prevButton.disabled) {
+            const slideWidth = comparisonSlider.querySelector('.comparison-slide').offsetWidth;
+            comparisonSlider.scrollBy({
+                left: -slideWidth,
+                behavior: 'smooth'
+            });
+        }
+    });
+
+    nextButton.addEventListener('click', () => {
+        if (!nextButton.disabled) {
+            const slideWidth = comparisonSlider.querySelector('.comparison-slide').offsetWidth;
+            comparisonSlider.scrollBy({
+                left: slideWidth,
+                behavior: 'smooth'
+            });
+        }
+    });
 }

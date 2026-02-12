@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=20">
     <link rel="stylesheet" href="order_bump_modal.css">
 
     <!-- Meta Pixel Code -->
@@ -100,7 +100,23 @@
                     <img src="carrosel/fernanda.png" alt="Aluna" loading="lazy" width="40" height="40">
                     <img src="carrosel/joao_new.jpg" alt="Aluno" loading="lazy" width="40" height="40">
                 </div>
-                <p class="alumni-text">Já são <span>Centenas de alunos</span> satisfeitos!</p>
+                <p class="alumni-text">Já são <span>Mais de 1.600 alunos</span> satisfeitos!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="section testimonial-section-original">
+        <div class="container" style="overflow: hidden;">
+            <!-- Overflow hidden mainly for container if needed, but track handles it -->
+            <h2 class="text-center" style="color: white; margin-bottom: 2rem;">JÁ SÃO MAIS DE <span
+                    class="text-highlight">1.600 ALUNOS</span> SATISFEITOS</h2>
+
+            <div class="testimonial-carousel">
+                <!-- Track will be populated and duplicated by JS -->
+                <div class="testimonial-track-original" id="testimonials-track">
+                    <!-- Populated by JS -->
+                </div>
             </div>
         </div>
     </section>
@@ -145,105 +161,101 @@
     <section class="section comparison-showcase" id="results"
         style="background: #000; padding: 5rem 0; border-bottom: 1px solid rgba(212, 175, 55, 0.1);">
         <div class="container">
-            <div class="text-center" style="margin-bottom: 4rem;">
-
+            <div class="text-center" style="margin-bottom: 2rem;">
                 <h2>Resultados Que <span class="text-highlight">Falam Por Si</span></h2>
-                <p style="max-width: 600px; margin: 1rem auto 0; opacity: 0.8; font-size: 1.1rem;">Veja na prática a
-                    diferença brutal entre a criação amadora e o Protocolo Elite 360º.</p>
+                <p style="max-width: 600px; margin: 1rem auto 0; opacity: 0.8; font-size: 1.1rem;">
+                    Deslize para o lado e veja a transformação. <i class="fa-solid fa-arrow-right"
+                        style="font-size: 0.9rem; margin-left: 5px; color: var(--color-secondary);"></i>
+                </p>
             </div>
 
-            <div class="comparison-grid-v2">
-                <!-- Comparison 1: Chicks -->
-                <div class="comparison-item-v2">
-                    <div class="comp-text">
-                        <span class="comp-tag">DESENVOLVIMENTO ACELERADO</span>
-                        <h3>O Segredo do Crescimento</h3>
-                        <p>Observe a diferença de porte entre estas duas aves da mesma idade. Enquanto uma segue sob
-                            manejo comum, a outra <strong>SEGUE SUPERIOR</strong> seguindo nossos protocolos.</p>
-                        <ul class="comp-check-list">
-                            <li><i class="fa-solid fa-check"></i> 3x mais ganho de peso</li>
-                            <li><i class="fa-solid fa-check"></i> Penugem mais saudável</li>
-                            <li><i class="fa-solid fa-check"></i> Vitalidade impressionante</li>
-                        </ul>
-                    </div>
-                    <div class="comp-visual-v2">
-                        <div class="img-wrapper">
-                            <img src="comparacao_pintinhos.png" alt="Comparação de Crescimento" loading="lazy"
-                                width="600" height="800">
-                            <div class="img-labels">
-                                <span class="label-amador">MANEJO AMADOR</span>
-                                <span class="label-elite">PROTOCOLO ELITE</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- New Scroll Snap Slider Container with Navigation -->
+            <div style="position: relative; max-width: 1200px; margin: 0 auto;">
+                <!-- Left Arrow -->
+                <button class="comparison-nav-arrow comparison-nav-left" id="comparison-prev" aria-label="Previous">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
 
-                <!-- Comparison 2: Rooster -->
-                <div class="comp-text">
-                    <span class="comp-tag color-red" style="background: var(--color-accent-red); color: #fff;">ESTAVA
-                        CONDENADO</span>
-                    <h3>O Milagre da Recuperação</h3>
-                    <p>Este galo estava com a <strong>sentença de morte assinada</strong> pela Coriza Infecciosa. Já não
-                        comia, não enxergava e o cheiro da podridão tomava conta.</p>
-                    <ul class="comp-check-list">
-                        <li><i class="fa-solid fa-skull-crossbones" style="color: var(--color-accent-red);"></i>
-                            Estancamos a morte em 24h</li>
-                        <li><i class="fa-solid fa-check"></i> Limpeza total das secreções</li>
-                        <li><i class="fa-solid fa-check"></i> Visão e apetite restaurados</li>
-                        <li><i class="fa-solid fa-check"></i> Voltou a ser o rei do terreiro</li>
-                    </ul>
-                </div>
-                <div class="comp-visual-v2">
-                    <div class="img-wrapper-split">
-                        <div
-                            style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-                            <span
-                                style="font-size: 0.75rem; font-weight: 700; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px;">Antes
-                                do Tratamento</span>
-                            <div class="split-side">
-                                <img src="galo_doente_novo.png" alt="Galo com Coriza" loading="lazy" width="400"
-                                    height="400">
-                            </div>
-                            <span class="split-label danger">DOENTE</span>
-                        </div>
-                        <div
-                            style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-                            <span
-                                style="font-size: 0.75rem; font-weight: 700; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px;">Depois
-                                do Tratamento</span>
-                            <div class="split-side border-elite">
-                                <img src="galo_curado_novo.png" alt="Galo Curado" loading="lazy" width="400"
-                                    height="400">
-                            </div>
-                            <span class="split-label success">RECUPERADO</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <!-- Right Arrow -->
+                <button class="comparison-nav-arrow comparison-nav-right" id="comparison-next" aria-label="Next">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
 
-            <!-- Comparison 3: Transformation -->
-            <div class="comparison-item-v2">
-                <div class="comp-text">
-                    <span class="comp-tag color-gold" style="background: var(--color-secondary); color: #000;">MÁXIMA
-                        PERFORMANCE</span>
-                    <h3>Transformação em Tempo Recorde</h3>
-                    <p>O Protocolo de Elite foca na <strong>reconstituição total</strong> da ave. Veja a diferença
-                        na vitalidade, postura e coloração da crista após apenas uma semana de manejo correto.</p>
-                    <ul class="comp-check-list">
-                        <li><i class="fa-solid fa-check"></i> Recuperação acelerada</li>
-                        <li><i class="fa-solid fa-check"></i> Imunidade blindada</li>
-                        <li><i class="fa-solid fa-check"></i> Zero desperdício de aves</li>
-                    </ul>
-                </div>
-                <div class="comp-visual-v2">
-                    <div class="img-wrapper transformacao-realista-v3">
-                        <img src="transformacao_realista_v3.png" alt="Transformação Realista" loading="lazy"
-                            width="1024" height="1024">
-                        <div class="img-labels">
-                            <span class="label-amador">SINTOMAS GRAVES</span>
-                            <span class="label-elite">TOTALMENTE RECUPERADA</span>
+                <div class="comparison-slider" id="comparison-slider-track">
+
+                    <!-- Slide 1: Rooster (Galo) -->
+                    <div class="comparison-slide">
+                        <div class="comparison-item-v2">
+                            <div class="comp-text">
+                                <span class="comp-tag color-red"
+                                    style="background: var(--color-accent-red); color: #fff;">ESTAVA CONDENADO</span>
+                                <h3>O Milagre da Recuperação</h3>
+                                <p>Este galo estava com a <strong>sentença de morte assinada</strong> pela Coriza
+                                    Infecciosa. Já não comia, não enxergava e o cheiro da podridão tomava conta.</p>
+                                <ul class="comp-check-list">
+                                    <li><i class="fa-solid fa-skull-crossbones"
+                                            style="color: var(--color-accent-red);"></i>
+                                        Estancamos a morte em 24h</li>
+                                    <li><i class="fa-solid fa-check"></i> Limpeza total das secreções</li>
+                                    <li><i class="fa-solid fa-check"></i> Visão e apetite restaurados</li>
+                                    <li><i class="fa-solid fa-check"></i> Voltou a ser o rei do terreiro</li>
+                                </ul>
+                            </div>
+                            <div class="comp-visual-v2">
+                                <div class="img-wrapper-split">
+                                    <div
+                                        style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                        <span
+                                            style="font-size: 0.75rem; font-weight: 700; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px;">Antes</span>
+                                        <div class="split-side">
+                                            <img src="galo_doente_novo.png" alt="Galo com Coriza" loading="lazy"
+                                                width="400" height="400">
+                                        </div>
+                                        <span class="split-label danger">DOENTE</span>
+                                    </div>
+                                    <div
+                                        style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                        <span
+                                            style="font-size: 0.75rem; font-weight: 700; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px;">Depois</span>
+                                        <div class="split-side border-elite">
+                                            <img src="galo_curado_novo.png" alt="Galo Curado" loading="lazy" width="400"
+                                                height="400">
+                                        </div>
+                                        <span class="split-label success">RECUPERADO</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Slide 2: Hen Transformation -->
+                    <div class="comparison-slide">
+                        <div class="comparison-item-v2">
+                            <div class="comp-text">
+                                <span class="comp-tag color-gold"
+                                    style="background: var(--color-secondary); color: #000;">MÁXIMA PERFORMANCE</span>
+                                <h3>Transformação em Tempo Recorde</h3>
+                                <p>O Protocolo de Elite foca na <strong>reconstituição total</strong> da ave. Veja a
+                                    diferença na vitalidade, postura e coloração da crista.</p>
+                                <ul class="comp-check-list">
+                                    <li><i class="fa-solid fa-check"></i> Recuperação acelerada</li>
+                                    <li><i class="fa-solid fa-check"></i> Imunidade blindada</li>
+                                    <li><i class="fa-solid fa-check"></i> Zero desperdício de aves</li>
+                                </ul>
+                            </div>
+                            <div class="comp-visual-v2">
+                                <div class="img-wrapper transformacao-realista-v3">
+                                    <img src="transformacao_realista_v3.png" alt="Transformação Realista" loading="lazy"
+                                        width="1024" height="1024">
+                                    <div class="img-labels">
+                                        <span class="label-amador">SINTOMAS GRAVES</span>
+                                        <span class="label-elite">TOTALMENTE RECUPERADA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -355,21 +367,6 @@
     </section>
 
 
-
-    <!-- Testimonials Section -->
-    <section class="section testimonial-section-original">
-        <div class="container" style="overflow: hidden;">
-            <!-- Overflow hidden mainly for container if needed, but track handles it -->
-            <h2 class="text-center" style="color: white; margin-bottom: 2rem;">JÁ AJUDAMOS CENTENAS DE CRIADORES</h2>
-
-            <div class="testimonial-carousel">
-                <!-- Track will be populated and duplicated by JS -->
-                <div class="testimonial-track" id="testimonials-track">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Pricing / Oferta Única -->
     <section class="section pricing" id="offers">
@@ -922,7 +919,7 @@
     <!-- Scripts -->
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <script src="order_bump_modal.js"></script>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 
 </html>
