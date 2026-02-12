@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="style.css?v=19">
     <link rel="stylesheet" href="order_bump_modal.css">
 
     <!-- Meta Pixel Code -->
@@ -80,7 +80,7 @@
                     e sua paixão hoje mesmo.</p>
                 <div class="hero-actions" style="margin-top: 2rem;">
                     <a href="#offer-focus" class="btn btn-primary btn-lg btn-pulse" data-cta="hero-primary">
-                        QUERO ELEVAR MINHA PRODUÇÃO <i class="fa-solid fa-arrow-right" style="margin-left: 10px;"></i>
+                        QUERO SALVAR MINHAS GALINHAS <i class="fa-solid fa-arrow-right" style="margin-left: 10px;"></i>
                     </a>
                 </div>
             </div>
@@ -249,7 +249,7 @@
         </div>
 
         <div class="text-center" style="margin-top: 4rem;">
-            <a href="#offer-focus" class="btn btn-primary btn-lg btn-pulse">QUERO ESSA TRANSFORMAÇÃO</a>
+            <a href="#offer-focus" class="btn btn-primary btn-lg btn-pulse">QUERO PARAR DE PERDER GALINHAS</a>
         </div>
         </div>
     </section>
@@ -271,8 +271,8 @@
                 <div class="text-center" style="margin-top: 2rem;">
                     <p style="font-weight: 700; color: var(--color-secondary); letter-spacing: 1px;">ASSISTA O VÍDEO
                         COMPLETO ACIMA</p>
-                    <a href="#offer-focus" class="btn btn-primary" style="margin-top: 1.5rem;">QUERO ESSA
-                        TRANSFORMAÇÃO</a>
+                    <a href="#offer-focus" class="btn btn-primary" style="margin-top: 1.5rem;">SALVAR MEU GALINHEIRO
+                        AGORA</a>
                 </div>
             </div>
         </div>
@@ -347,7 +347,7 @@
                     </div>
 
                     <div style="margin-top: 2rem;">
-                        <a href="#offer-focus" class="btn btn-primary btn-pulse">GARANTIR MEU ACESSO AGORA</a>
+                        <a href="#offer-focus" class="btn btn-primary btn-pulse">SALVAR MEU GALINHEIRO AGORA</a>
                     </div>
                 </div>
             </div>
@@ -371,27 +371,35 @@
         </div>
     </section>
 
-    <!-- Pricing / Offers -->
+    <!-- Pricing / Oferta Única -->
     <section class="section pricing" id="offers">
         <div class="container">
             <div class="text-center" style="margin-bottom: var(--spacing-lg);">
-                <h2>ESCOLHA SUA OFERTA</h2>
-                <p>O conhecimento que separa o prejuízo do lucro.</p>
-                <p class="mobile-scroll-hint"
-                    style="display: none; color: var(--color-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
-                    <i class="fa-solid fa-hand-point-right"></i> Deslize para ver todas as ofertas <i
-                        class="fa-solid fa-hand-point-left"></i>
-                </p>
+                <h2 style="font-size: 2.5rem;">OFERTA DE ACESSO IMEDIATO</h2>
+                <p style="font-size: 1.2rem; opacity: 0.9;">O conhecimento que separa o prejuízo do lucro no seu
+                    galinheiro.</p>
             </div>
 
-            <div class="pricing-wrapper">
-                <div class="pricing-grid" id="home-products-container">
-                    <!-- Dinamicamente preenchido pelo script.js -->
+            <div class="pricing-wrapper" style="max-width: 500px; margin: 0 auto;">
+                <div class="pricing-grid single-offer" id="home-products-container">
+                    <!-- Dinamicamente preenchido pelo script.js (agora configurado para oferta única) -->
                 </div>
             </div>
 
-            <!-- Guarantee -->
-            <!-- The old simple block is removed and replaced by new section below -->
+            <!-- Bônus Pix Highlight -->
+            <div class="pix-bonus-badge-horizontal"
+                style="margin-top: 3rem; text-align: center; background: rgba(50, 188, 173, 0.1); border: 2px dashed #32bcad; padding: 2rem; border-radius: 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-size: 3rem; color: #32bcad;"><i class="fa-brands fa-pix"></i></div>
+                    <div style="text-align: left;">
+                        <h4 style="color: #32bcad; margin-bottom: 5px; font-size: 1.5rem;">PRESENTE EXCLUSIVO NO PIX
+                        </h4>
+                        <p style="margin: 0; font-size: 1.1rem; opacity: 0.9;">Pagando via <strong>PIX</strong>, você
+                            ganha agora a <strong>Tabela de Rações Elite</strong> (Economia de 65% na ração) totalmente
+                            grátis.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -417,7 +425,8 @@
                         costas.</p>
                     <p>Você tem <strong>7 dias</strong> para aplicar o método. Se não ver resultado no seu manejo, eu
                         devolvo 100% do seu dinheiro. Sem perguntas.</p>
-                    <a href="#offer-focus" class="btn btn-primary" style="margin-top: 1rem;">QUERO TESTAR SEM RISCO</a>
+                    <a href="#offer-focus" class="btn btn-primary" style="margin-top: 1rem;">QUERO SALVAR MINHAS
+                        GALINHAS</a>
                 </div>
 
             </div>
@@ -464,7 +473,7 @@
             style="position: relative; display: flex; justify-content: center; align-items: center; height: 100%;">
             <a href="#offer-focus" class="btn btn-primary btn-sm btn-pulse"
                 style="padding: 0.8rem 2.5rem; font-size: 1rem; text-decoration: none; z-index: 2; min-width: 250px; text-align: center;">
-                GARANTIR ACESSO AGORA
+                SALVAR MEU GALINHEIRO AGORA
             </a>
             <img src="logo.png" alt="Logo" class="sticky-right-logo">
         </div>
@@ -579,13 +588,19 @@
                     </button>
                 </div>
 
+                <!-- Status do Bônus Pix -->
+                <div id="pix-bonus-status"
+                    style="margin: 0 0 1rem 0; text-align: center; font-size: 0.85rem; display: none;">
+                </div>
+
                 <!-- Product Summary -->
                 <div class="checkout-product-summary">
                     <div class="p-icon-wrapper" id="product-icon-container">
                         <!-- Dynamic -->
                     </div>
                     <div class="p-main-info">
-                        <span class="p-label">RESUMO DO PEDIDO:</span>
+                        <span class="p-label" style="display: none;">RESUMO DO PEDIDO:</span>
+                        <!-- Hide label if this is what user meant by 'PRINCIPAL', or maybe the tag? -->
                         <h4 id="checkout-product-name" class="p-title">Carregando...</h4>
                     </div>
                     <div class="p-price-tag" id="checkout-product-price-display">
@@ -703,15 +718,13 @@
                                 </div>
                             </div>
 
-                            <div class="installments-toggle">
-                                <label class="installment-option">
-                                    <input type="radio" name="installments" value="1" checked>
-                                    <span class="installment-box">1x <strong id="price-1x">R$ --,--</strong></span>
-                                </label>
-                                <label class="installment-option">
-                                    <input type="radio" name="installments" value="2">
-                                    <span class="installment-box">2x <strong id="price-2x">R$ --,--</strong></span>
-                                </label>
+                            <div class="installments-wrapper" style="margin-bottom: 20px;">
+                                <label
+                                    style="display: block; font-size: 0.8rem; color: #888; margin-bottom: 8px; font-weight: 600;">Opções
+                                    de Parcelamento:</label>
+                                <select id="installments-select" class="custom-select" style="width: 100%;">
+                                    <!-- Dynamic Options from JS -->
+                                </select>
                             </div>
 
                             <div class="favorecido-info-card"

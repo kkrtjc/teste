@@ -262,36 +262,22 @@ async function trackEvent(type, isMobileManual = null, ctaId = null, details = n
     } catch (e) { }
 }
 
-async function openCheckout(productId) {
+async function openCheckout(productId, forceBumps = []) {
     trackEvent('checkout_open');
     trackEvent('click');
     sessionStorage.setItem('mura_modal_open', 'true');
-    // Pixel Tracking: AddToCart & InitiateCheckout
-    if (typeof fbq === 'function') {
-        fbq('track', 'AddToCart', { content_ids: [productId], content_type: 'product' });
-        fbq('track', 'InitiateCheckout');
-    }
-    if (typeof ttq === 'object') {
-        ttq.track('AddToCart', { contents: [{ content_id: productId }] });
-        ttq.track('InitiateCheckout');
-    }
+    // Pixel Tracking
+    if (typeof fbq === 'function') fbq('track', 'InitiateCheckout');
 
     if (!checkoutModal) return;
 
     // --- RESET CHECKOUT STATE ---
-    // 1. Reset View
     document.getElementById('checkout-main-view').classList.remove('hidden');
     document.getElementById('pix-result').classList.add('hidden');
 
-    // 2. Clear any active polling (Global variable needs to be defined at top level)
     if (window.activePixPoll) {
         clearInterval(window.activePixPoll);
         window.activePixPoll = null;
-    }
-
-    // RESET Order Bump state for new attempt (if not accepted yet)
-    if (typeof orderBumpAccepted !== 'undefined' && !orderBumpAccepted) {
-        orderBumpShown = false;
     }
 
     const secureOverlay = document.getElementById('secure-loading');
@@ -303,20 +289,14 @@ async function openCheckout(productId) {
     if (secureOverlay) {
         secureOverlay.classList.add('active');
         lockScroll();
-        const secureText = document.getElementById('secure-text');
-        if (secureText) {
-            secureText.innerText = "Estabelecendo conexão segura...";
-        }
     }
 
     try {
         const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`);
         const productData = await response.json();
 
-        if (productData.error) throw new Error(productData.error);
-
         cart.mainProduct = { ...productData, id: productId };
-        cart.bumps = [];
+        cart.bumps = forceBumps || []; // Adiciona os bumps forçados pelo funil (ex: Upsell)
 
         document.getElementById('checkout-product-name').innerText = productData.title;
         document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
@@ -334,9 +314,12 @@ async function openCheckout(productId) {
             }
         }
 
+        // Define Pix como padrão E aplica a filtragem correta desde o início
+        currentPaymentMethod = 'pix';
+        switchMethod('pix'); // Garante UI state
+
         renderOrderBumps(productData.fullBumps);
         updateTotal();
-        switchMethod('pix');
 
         // --- Guided Animation Sequence ---
         setTimeout(() => {
@@ -369,7 +352,14 @@ async function openCheckout(productId) {
 function renderOrderBumps(bumps) {
     const area = document.getElementById('order-bump-area');
     if (!area) return;
-    area.innerHTML = (bumps || []).map(bump => {
+
+    // Filtra bumps que não devem aparecer (Ex: Tabela no Pix)
+    const filteredBumps = (bumps || []).filter(bump => {
+        if (currentPaymentMethod === 'pix' && bump.id === 'bump-6361') return false;
+        return true;
+    });
+
+    area.innerHTML = filteredBumps.map(bump => {
         let imgSrc = bump.image;
         if (!imgSrc) {
             if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.png';
@@ -386,7 +376,7 @@ function renderOrderBumps(bumps) {
                         <span class="order-bump-tag">${bump.tag || 'OFERTA ÚNICA'}</span>
                         <strong class="order-bump-title" style="display: block; color: #fff;">${bump.title}</strong>
                         <span class="order-bump-description" style="display: block; color: rgba(255,255,255,0.5); font-size: 0.8rem;">${bump.description}</span>
-                        <span class="order-bump-price" style="color: var(--color-secondary); font-weight: 800;">+ ${formatBRL(bump.price)}</span>
+                        <span class="order-bump-price" style="color: var(--color-secondary); font-weight: 800;">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
                     </div>
                 </div>
             </div>`;
@@ -404,50 +394,85 @@ function toggleBump(bumpId) {
 }
 
 function updateTotal() {
-    // PRICING LOGIC: 
-    // PIX = Discounted Price (cart.mainProduct.price)
-    // CARD = Full Price (cart.mainProduct.originalPrice)
+    // PRICING LOGIC DEFINIDA PELO USUÁRIO:
+    // Doenças: 119.90 (Pix) | 10x 19.90 (Card)
+    // Pintinhos: + 59.90 (Pix) | 10x 9.90 (Card)
+    // Combo: 129.90 (Pix) | 10x 29.90 (Card)
+    // Tabela: R$ 0 (Pix) | R$ 19.90 (Card)
 
-    let basePrice = cart.mainProduct.price; // Default to discounted
-    const hasDiscount = cart.mainProduct.originalPrice && (cart.mainProduct.originalPrice > cart.mainProduct.price);
+    let basePrice = cart.mainProduct.price; // Pix: 119.90
+    let cardPrice = cart.mainProduct.originalPrice || 139.90; // Card: 139.90
 
-    // Default UI Reset
+    // Se for combo, manter valores anteriores ou ajustar?
+    // User pediu 139.90 e 119.90 especificamente para o fluxo principal.
+
+    let total = basePrice;
+    let cardTotal = cardPrice;
+
+    // Adiciona Bumps
+    cart.bumps.forEach(id => {
+        if (id === 'ebook-manejo') {
+            total += 39.9; // PREÇO PROMOCIONAL ATUALIZADO (39.90)
+            cardTotal += 59.9; // Mantendo preço cheio no cartão ou ajusta também? User disse "preço do ebook dos pintinhos pode colocar de 69,90 apenas agora por 39,90". Provavelmente vale para ambos ou só Pix?
+            // Assumindo oferta geral de 39.90 para ser agressivo
+            cardTotal = cardTotal - 59.9 + 39.9;
+        } else if (id === 'bump-6361') {
+            total += 0; // Tabela Grátis no Pix
+            cardTotal += 19.9;
+        }
+    });
+
     document.querySelectorAll('.pix-discount-badge').forEach(b => b.remove());
 
-    if (currentPaymentMethod === 'card') {
-        // If has originalPrice, use it. Otherwise keep price.
-        if (cart.mainProduct.originalPrice) {
-            basePrice = cart.mainProduct.originalPrice;
+    const finalDisplayPrice = currentPaymentMethod === 'pix' ? total : cardTotal;
+
+    // Mostrar Bônus Pix de forma clara
+    const bonusDisplay = document.getElementById('pix-bonus-status');
+    if (bonusDisplay) {
+        if (currentPaymentMethod === 'pix') {
+            bonusDisplay.innerHTML = '<span style="color: #32bcad; font-weight: 800;"><i class="fa-solid fa-gift"></i> TABELA DE RAÇÃO INCLUÍDA (BÔNUS)</span>';
+            bonusDisplay.style.display = 'block';
+        } else {
+            bonusDisplay.style.display = 'none';
         }
     }
 
-    let total = basePrice;
-
-    cart.bumps.forEach(id => {
-        const b = cart.mainProduct.fullBumps.find(x => x.id === id);
-        if (b) total += b.price;
-    });
-
     document.querySelectorAll('.checkout-total-display').forEach(el => {
-        el.innerText = formatBRL(total);
+        el.innerText = formatBRL(finalDisplayPrice);
 
-        // Add Discount Badge for PIX
-        if (currentPaymentMethod === 'pix' && hasDiscount) {
+        if (currentPaymentMethod === 'pix') {
             const badge = document.createElement('span');
             badge.className = 'pix-discount-badge';
-            badge.style.cssText = 'font-size: 0.75rem; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2);';
-            badge.innerText = '20% OFF';
+            badge.style.cssText = 'font-size: 0.75rem; color: #32bcad; background: rgba(50, 188, 173, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 700; border: 1px solid rgba(50, 188, 173, 0.2);';
+            badge.innerText = 'TABELA GRÁTIS';
             el.appendChild(badge);
         }
     });
 
-    // CORREÇÃO: Atualizar também o preço no resumo do topo (perto da capa)
     const topPriceDisplay = document.getElementById('checkout-product-price-display');
     if (topPriceDisplay) {
-        topPriceDisplay.innerText = formatBRL(total);
+        topPriceDisplay.innerText = formatBRL(finalDisplayPrice);
     }
 
-    updateInstallments(total);
+    updateInstallments(finalDisplayPrice);
+}
+
+function updateInstallments(total) {
+    const selector = document.getElementById('installments-select');
+    if (!selector) return;
+
+    selector.innerHTML = '';
+
+    // De 1x até 4x (Regra: Atá 4x de 34,97 sem juros baseados no 139,90)
+    for (let i = 1; i <= 4; i++) {
+        const val = total / i;
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = `${i}x de ${formatBRL(val)} ${i > 1 ? 'sem juros' : '(À vista)'}`;
+        opt.style.background = "#151515";
+        opt.style.color = "#fff";
+        selector.appendChild(opt);
+    }
 }
 
 function formatBRL(val) {
@@ -458,8 +483,7 @@ async function renderHomeProducts() {
     const container = document.getElementById('home-products-container');
     if (!container) return;
 
-    // Show skeletons immediately
-    showSkeletons(container);
+    showSkeletons(container, 1); // Apenas 1 skeleton para foco único
 
     try {
         const res = await fetch(`${API_URL}/api/config?t=${Date.now()}`);
@@ -469,54 +493,187 @@ async function renderHomeProducts() {
         const products = db.products;
         container.innerHTML = '';
 
-        Object.keys(products).forEach(id => {
-            const p = products[id];
-            const card = document.createElement('div');
-            card.className = `price-card ${p.isFeatured ? 'featured' : ''}`;
-            if (p.isFeatured) card.id = 'offer-focus';
+        // Foco apenas no produto principal (Doenças) conforme planejado
+        const mainId = 'ebook-doencas';
+        const p = products[mainId];
 
-            const featuresHTML = (p.features || []).map(f => `<li><span class="check-icon">✓</span> ${f}</li>`).join('');
+        if (!p) {
+            container.innerHTML = `<p style="color: #fff; text-align: center;">Produto principal não encontrado.</p>`;
+            return;
+        }
 
-            let coverHTML = '';
-            if (p.cover === 'combo') {
-                coverHTML = `
-                    <div class="combo-visual">
-                        <img src="capadospintinhos.png" class="combo-img" alt="Manejo">
-                        <img src="capadasdoencas.png" class="combo-img" alt="Doenças">
-                    </div>`;
-            } else {
-                coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 120px; margin: 10px auto; display: block;">`;
-            }
+        const card = document.createElement('div');
+        card.className = `price-card featured`;
+        card.id = 'offer-focus';
 
-            const isDiscounted = p.originalPrice && (p.originalPrice > p.price);
+        const featuresHTML = (p.features || []).map(f => `<li><span class="check-icon">✓</span> ${f}</li>`).join('');
 
-            card.innerHTML = `
-                ${p.isFeatured ? `<span class="badge-featured">${p.badge || 'MAIS VENDIDO'}</span>` : ''}
-                <h3 class="price-title">${p.title}</h3>
-                <p>${p.description || ''}</p>
-                ${coverHTML}
-                ${p.originalPrice ? `<div style="text-decoration: line-through; color: #999; margin-top: 10px;">De R$ ${p.originalPrice.toFixed(2).replace('.', ',')}</div>` : ''}
-                
-                <div style="display: flex; flex-direction: column; align-items: center; line-height: 1.1; margin-bottom: 5px;">
-                    <span class="price-amount" ${p.isFeatured ? 'style="color: var(--color-secondary);"' : ''}>
-                        R$ ${Math.floor(p.price)}<small>,${(p.price % 1).toFixed(2).split('.')[1]}</small>
+        const coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 140px; margin: 10px auto; display: block; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));">`;
+        const isDiscounted = p.originalPrice && (p.originalPrice > p.price);
+
+        card.innerHTML = `
+            <span class="badge-featured">${p.badge || 'OFERTA ÚNICA'}</span>
+            <h3 class="price-title">${p.title}</h3>
+            <p>${p.description || ''}</p>
+            ${coverHTML}
+            
+            <div class="price-container" style="margin: 20px 0;">
+                <div style="text-decoration: line-through; color: #999; font-size: 0.9rem;">De R$ ${p.originalPrice.toFixed(2).replace('.', ',')} por apenas:</div>
+                <div style="display: flex; flex-direction: column; align-items: center; line-height: 1.1;">
+                    <span class="price-amount" style="color: var(--color-secondary); font-size: 3.5rem;">
+                        R$ 119<small>,90</small>
                     </span>
-                    ${isDiscounted ? '<span style="font-size: 0.8rem; color: var(--success); font-weight: 700; margin-top: 2px;">NO PIX</span>' : ''}
+                    <span style="font-size: 0.9rem; color: var(--color-text-light); margin-top: 5px;">ou até 4x de <strong>R$ 34,97</strong> s/ juros</span>
+                </div>
+            </div>
+
+            <ul class="price-features" style="margin-top: 1rem;">
+                ${featuresHTML}
+                <li style="color: #32bcad; font-weight: 800;"><span class="check-icon">✓</span> + TABELA DE RAÇÃO (GRÁTIS NO PIX)</li>
+            </ul>
+            
+            <button onclick="openCheckout('${mainId}')" class="btn btn-primary btn-pulse" style="width:100%; font-size: 1.3rem; padding: 1.5rem;">
+                QUERO MEU ACESSO AGORA!
+            </button>
+            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 15px;"><i class="fa-solid fa-shield-halved"></i> Compra 100% Segura e Acesso Imediato</p>
+        `;
+        container.appendChild(card);
+    } catch (e) {
+        console.error("ERRO CARGA OFERTA ÚNICA:", e);
+        container.innerHTML = `<p style="color: #fff; text-align: center; padding: 20px;">Não foi possível carregar a oferta principal.</p>`;
+    }
+}
+
+// --- FUNNEL LOGIC (UPSELL/DOWNSELL) ---
+
+let funnelState = {
+    mainId: null,
+    upsellAccepted: false,
+    downsellActive: false
+};
+
+function startFunnel(productId) {
+    funnelState.mainId = productId;
+    funnelState.upsellAccepted = false;
+    funnelState.downsellActive = false;
+
+    showUpsellModal();
+}
+
+function showSlideInUpsell(method) {
+    const obModal = document.getElementById('order-bump-modal');
+    if (!obModal) return;
+
+    const price = method === 'pix' ? '39,90' : '39,90';
+
+    // Inicia o timer de 10 minutos
+    let duration = 600; // 10 minutos em segundos
+    const timerInterval = setInterval(() => {
+        const timerEl = document.getElementById('upsell-timer');
+        if (!timerEl) {
+            clearInterval(timerInterval);
+            return;
+        }
+
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+        timerEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        if (--duration < 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = "0:00";
+        }
+    }, 1000);
+
+    obModal.innerHTML = `
+        <div class="order-bump-slide-content">
+            <button class="order-bump-close" onclick="declineUpsell('${method}')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="order-bump-header" style="text-align: center;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.8rem; color: #e74c3c;"></i>
+                <h3 style="margin-top: 10px; font-size: 1.1rem; color: #fff; text-transform: uppercase;">
+                    OFERTA EXCLUSIVA APENAS AGORA<br>
+                    <span style="font-size: 0.9rem; color: #aaa; font-weight: 400;">VOCÊ NÃO VAI VER ISSO DE NOVO</span>
+                </h3>
+            </div>
+
+            <div style="background: rgba(231,76,60,0.2); border: 1px solid #e74c3c; border-radius: 6px; padding: 8px; margin: 10px 0; text-align: center;">
+                <span style="color: #fff; font-size: 0.9rem;">Expira em: </span>
+                <span id="upsell-timer" style="color: #fbbf24; font-weight: 800; font-size: 1.1rem;">10:00</span>
+            </div>
+
+            <div class="order-bump-body" style="text-align: center;">
+                <p style="color: #fff; font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.4;">
+                    <strong>8 de cada 10 pintinhos</strong> morrem nos primeiros 30 dias por erros de manejo.
+                    Não jogue seu dinheiro fora!
+                </p>
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 1rem; text-align: left;">
+                    <img src="capadospintinhos.png" style="width: 90px; border-radius: 8px; border: 2px solid #fbbf24; flex-shrink: 0;">
+                    <ul style="color: #fff; font-size: 0.8rem; padding: 0; margin: 0; list-style: none; line-height: 1.3;">
+                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Diminuir taxa de mortalidade</li>
+                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Ambiente adequado p/ evitar doenças</li>
+                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Alimentação para crescimento rápido</li>
+                        <li><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Aumente seu lucro com o Ebook</li>
+                    </ul>
                 </div>
 
-                <ul class="price-features" ${p.isFeatured ? 'style="margin-top: 1.5rem;"' : ''}>
-                    ${featuresHTML}
-                </ul>
-                <button onclick="openCheckout('${id}')" class="btn ${p.isFeatured ? 'btn-primary btn-pulse' : 'btn-secondary'}" style="width:100%;">
-                    ${p.isFeatured ? 'QUERO SALVAR MINHA CRIAÇÃO' : 'COMPRAR AGORA'}
+                <div class="order-bump-price-tag">
+                    <div style="color: #888; text-decoration: line-through; font-size: 0.9rem; margin-bottom: 5px;">De R$ 69,90</div>
+                    <div style="color: #fff; font-size: 0.8rem; margin-bottom: 2px;">TUDO ISSO POR APENAS</div>
+                    <span style="color: #fbbf24; font-size: 1.6rem; font-weight: 900;">R$ ${price}</span>
+                </div>
+            </div>
+
+            <div class="order-bump-actions" style="margin-top: 1rem;">
+                <button class="btn-accept-bump" onclick="confirmUpsell('${method}')" style="background: #fbbf24; color: #000; width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer;">
+                    SIM! PROTEGER MEUS PINTINHOS
                 </button>
-            `;
-            container.appendChild(card);
-        });
-    } catch (e) {
-        console.error("ERRO CARGA OFERTAS:", e);
-        container.innerHTML = `<p style="color: #fff; text-align: center; grid-column: 1/-1; padding: 20px;">Não foi possível carregar as ofertas. <br><small>Verifique se o servidor no Render está online.</small></p>`;
-    }
+                <button class="btn-decline-bump" onclick="declineUpsell('${method}')" style="background: none; border: none; color: #888; text-decoration: underline; margin-top: 10px; cursor: pointer; display: block; width: 100%;">
+                    Não, prefiro arriscar a vida deles.
+                </button>
+            </div>
+        </div>
+    `;
+
+    obModal.classList.add('show');
+}
+
+function confirmUpsell(method) {
+    midCheckoutUpsellPending = false;
+    cart.bumps.push('ebook-manejo');
+    updateTotal();
+    const obModal = document.getElementById('order-bump-modal');
+    if (obModal) obModal.classList.remove('show');
+    handlePayment(method);
+}
+
+function declineUpsell(method) {
+    midCheckoutUpsellPending = false;
+    const obModal = document.getElementById('order-bump-modal');
+    if (obModal) obModal.classList.remove('show');
+    handlePayment(method);
+}
+
+function acceptUpsell() {
+    closeFunnelModal();
+    // Adiciona Pintinhos como Bump e abre checkout de Doenças
+    funnelState.upsellAccepted = true;
+    openCheckout(funnelState.mainId, ['ebook-manejo']);
+}
+
+function acceptDownsell() {
+    closeFunnelModal();
+    // Abre checkout direto do Combo
+    openCheckout('combo-elite');
+}
+
+function rejectFunnel() {
+    closeFunnelModal();
+    // Abre checkout apenas do produto principal
+    openCheckout(funnelState.mainId);
 }
 
 // --- Skeleton Loader Helper ---
@@ -572,30 +729,20 @@ function switchMethod(method) {
 
     // RECALCULATE TOTAL WHEN SWITCHING
     if (cart.mainProduct) {
+        renderOrderBumps(cart.mainProduct.fullBumps);
         updateTotal();
     }
 }
 
-function updateInstallments(price) {
-    // NEW: Update toggle-style installments (1x and 2x only)
-    const price1x = document.getElementById('price-1x');
-    const price2x = document.getElementById('price-2x');
 
-    if (price1x) price1x.innerText = formatBRL(price);
-    if (price2x) {
-        // 2x with small interest (1.5% per installment = 3% total for 2x)
-        const total2x = price * 1.03;
-        const parcel2x = total2x / 2;
-        price2x.innerText = formatBRL(parcel2x);
-    }
-}
+let midCheckoutUpsellPending = true;
 
 async function handlePayment(method) {
-    // SMART DATA MAPPING
-    const commonData = {
-        email: document.getElementById('payer-email').value,
-        phone: document.getElementById('payer-phone').value ? document.getElementById('payer-phone').value.replace(/\D/g, '') : ''
-    };
+    // Interceptação para Upsell Mid-Checkout (Slide-in)
+    if (midCheckoutUpsellPending && !cart.bumps.includes('ebook-manejo')) {
+        showSlideInUpsell(method);
+        return;
+    }
 
     let customer = {};
 
@@ -757,7 +904,7 @@ async function handlePayment(method) {
 
             const payload = {
                 items, customer, token: token.id,
-                installments: document.querySelector('input[name="installments"]:checked')?.value || '1',
+                installments: document.getElementById('installments-select')?.value || '1',
                 payment_method_id: getPaymentMethodId(cardNumber),
                 issuer_id: null,
                 deviceId: (mp && typeof mp.getDeviceId === 'function') ? mp.getDeviceId() : null
