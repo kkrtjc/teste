@@ -1,17 +1,17 @@
 {
     "totals": {
-        "clicks": 128,
-        "checkoutOpens": 113,
-        "checkoutStarts": 32,
+        "clicks": 141,
+        "checkoutOpens": 135,
+        "checkoutStarts": 33,
         "uiErrors": 11,
         "trustClicks": 3,
         "mobileSessions": 0,
         "desktopSessions": 48,
         "slowLoads": 0,
         "pageViews": 48,
-        "ctaClicks": 33,
-        "uniqueVisits": 11,
-        "checkoutAbandons": 12
+        "ctaClicks": 37,
+        "uniqueVisits": 13,
+        "checkoutAbandons": 15
     },
     "daily": {
         "2026-01-30": {
@@ -138,9 +138,9 @@
             }
         },
         "2026-02-12": {
-            "clicks": 8,
-            "checkoutOpens": 8,
-            "checkoutStarts": 5,
+            "clicks": 11,
+            "checkoutOpens": 11,
+            "checkoutStarts": 6,
             "uiErrors": 0,
             "trustClicks": 0,
             "mobileSessions": 0,
@@ -149,12 +149,46 @@
             "pageViews": 0,
             "emailClicks": 0,
             "uniqueVisits": 2,
-            "ctaClicks": 8,
-            "checkoutAbandons": 7,
+            "ctaClicks": 10,
+            "checkoutAbandons": 8,
             "ctaBreakdown": {
-                "hero-primary": 6,
+                "hero-primary": 8,
                 "generic_cta": 2
             }
+        },
+        "2026-02-13": {
+            "clicks": 10,
+            "checkoutOpens": 19,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 2,
+            "checkoutAbandons": 2,
+            "ctaBreakdown": {
+                "hero-primary": 2
+            }
+        },
+        "2026-02-14": {
+            "clicks": 0,
+            "checkoutOpens": 0,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 0,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {}
         }
     }
 }

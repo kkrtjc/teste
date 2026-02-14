@@ -420,7 +420,10 @@ app.get('/api/products/:id', (req, res) => {
     const db = getDB();
     const product = db.products[req.params.id];
     if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
-    const bumps = (product.orderBumps || []).map(id => db.orderBumps[id]).filter(k => k);
+
+    // CORREÇÃO: Busca em orderBumps E products (para permitir upsell de produtos como o ebook-manejo)
+    const bumps = (product.orderBumps || []).map(id => db.orderBumps[id] || db.products[id]).filter(k => k);
+
     res.json({ ...product, fullBumps: bumps });
 });
 
@@ -1039,13 +1042,38 @@ app.get('/api/access/:token', (req, res) => {
             }
         }
 
-        // Redirect to actual downloads page
-        const redirectUrl = `https://osegredodasgalinhas.pages.dev/downloads.html?t=${encodeURIComponent(token)}`;
+        // Redirect to actual downloads page with items param
+        const itemsStr = parts[1] || '';
+        const redirectUrl = `https://osegredodasgalinhas.pages.dev/downloads.html?t=${encodeURIComponent(token)}&items=${encodeURIComponent(itemsStr)}`;
         res.redirect(redirectUrl);
     } catch (e) {
         console.error("Tracking error:", e);
         res.redirect(`https://osegredodasgalinhas.pages.dev/downloads.html?t=${token}`);
     }
+});
+
+// --- 5. ADMIN CONFIG API (CRÍTICO) ---
+app.get('/api/config', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(getDB());
+});
+
+app.post('/api/config/update', (req, res) => {
+    const { password, data } = req.body;
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+
+    if (!data || !data.products) return res.status(400).json({ error: 'Dados inválidos' });
+
+    console.log('💾 [ADMIN] Salvando novas configurações...');
+    saveDB(data);
+    res.json({ success: true });
+});
+
+app.post('/api/config/reset', (req, res) => {
+    const { password } = req.body;
+    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    // Reset Logic Placeholder
+    res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 10000;

@@ -1,4 +1,4 @@
-// --- 1. GLOBAL CONFIG & STATE ---
+﻿// --- 1. GLOBAL CONFIG & STATE ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
     ? 'http://localhost:10000'
     : 'https://teste-m1kq.onrender.com';
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (source && source.dataset.src) {
                         source.src = source.dataset.src;
                         lazyVideo.load();
-                        console.log("📹 [VIDEO] Lazy Source Loaded");
+                        console.log("🎥 [VIDEO] Lazy Source Loaded");
                     }
                     observer.unobserve(lazyVideo);
                 }
@@ -75,8 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. FAQ Accordion Logic ---
-    const faqQuestions = document.querySelectorAll('.faq-question');
-    faqQuestions.forEach(question => {
+    document.querySelectorAll('.faq-question').forEach(question => {
         question.addEventListener('click', () => {
             const item = question.parentElement;
             const isOpen = item.classList.contains('active');
@@ -127,19 +126,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- 4. Testimonials (Infinite Carousel) ---
-    // UPDATED: More impactful testimonials & +1600 students proof
+    // --- 4. Testimonials (Single-Slide Carousel - COMPACT) ---
     const testimonials = [
-        { text: '"Minha criação mudou da água pro vinho. Onde morriam 20 pintinhos, hoje não morre nenhum."', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
-        { text: '"Eu ia desistir de criar galinhas. Esse ebook salvou meu negócio e minha paixão."', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
-        { text: '"Achava que sabia tudo, mas estava perdendo dinheiro todo dia. O protocolo funciona!"', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-        { text: '"Apliquei o método e em 3 dias o galo que estava triste já estava cantando de novo."', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' },
-        { text: '"Não é gasto, é investimento. O que economizei de antibiótico já pagou o curso 10x."', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpeg' },
-        { text: '"Simples, direto e sem enrolação. Qualquer um consegue seguir e ter resultado."', author: 'Pedro Almeida', location: 'Bahia', stars: 5, avatar: 'carrosel/pedro.png' },
-        { text: '"Eu não tinha noção do erro que estava cometendo na ração. Meus frangos dobraram de tamanho."', author: 'Camila Rocha', location: 'Espirito Santo', stars: 5, avatar: 'carrosel/camila.jpeg' },
-        { text: '"Recomendo para todo mundo. Quem cria galinha precisa ler isso urgente."', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpeg' },
-        { text: '"O suporte é excelente e o material é muito rico. Nota 10!"', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpeg' },
-        { text: '"Depois de anos no prejuízo, finalmente estou vendo o lucro entrar. Obrigado!"', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpeg' }
+        { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
+        { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
+        { text: 'Tinha uma galinha que não comia, só ficava no canto. Segui o passo a passo e em 2 dias ela voltou ao normal.', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
+        { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' },
+        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpeg' },
+        { text: 'Galinha parou de botar e tava com a crista caída. Segui o protocolo e voltou a produzir normal.', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpeg' },
+        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpeg' },
+        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpeg' }
     ];
 
     const testimonialsTrack = document.getElementById('testimonials-track');
@@ -183,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function nextSlide() {
             const cards = document.querySelectorAll('.testimonial-card-single');
             const total = cards.length;
+            if (total === 0) return;
 
             // Current card moves OUT to LEFT
             const current = cards[currentIdx];
@@ -211,6 +208,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Change slide every 5 seconds
         setInterval(nextSlide, 5000);
+    }
+
+    // --- 5. Comparison Slider (Results) ---
+    const sliderTrack = document.getElementById('comparison-slider-track');
+    if (sliderTrack) {
+        const nextBtn = document.getElementById('comparison-next');
+        const prevBtn = document.getElementById('comparison-prev');
+        if (nextBtn && prevBtn) {
+            nextBtn.addEventListener('click', () => {
+                sliderTrack.scrollBy({ left: 300, behavior: 'smooth' });
+            });
+            prevBtn.addEventListener('click', () => {
+                sliderTrack.scrollBy({ left: -300, behavior: 'smooth' });
+            });
+        }
     }
 
     // --- 5. Initializations ---
@@ -352,24 +364,31 @@ async function openCheckout(productId, forceBumps = []) {
         renderOrderBumps(productData.fullBumps);
         updateTotal();
 
-        // --- Guided Animation Sequence ---
+        // --- Guided Animation Sequence - VERSÃO SINCRONIZADA ---
         setTimeout(() => {
             if (secureOverlay) secureOverlay.classList.remove('active');
 
             const logoOverlay = document.getElementById('checkout-logo-overlay');
             if (logoOverlay) {
+                // 1. Logo aparece deslizando da direita
                 logoOverlay.classList.add('active');
+
+                // 2. Após 1.2s (tempo para ver a logo), ela começa a se mover para o fundo
                 setTimeout(() => {
                     logoOverlay.classList.add('run-left');
-                    checkoutModal.classList.add('active');
+
+                    // 3. Checkout aparece ao mesmo tempo que a logo vai para o fundo
                     setTimeout(() => {
-                        logoOverlay.classList.remove('active', 'run-left');
-                    }, 800); // Logo transition time
-                }, 100); // INSTANT: Reduced from 800 to 100
+                        checkoutModal.classList.add('active');
+                        // NÃO remove as classes - mantém a logo no fundo!
+                        // logoOverlay permanece com 'active' e 'run-left' para ficar visível
+                    }, 200); // Pequeno delay para suavizar
+
+                }, 1200); // Tempo para ver a logo antes de ir para o fundo (aumentado de 100ms)
             } else {
                 checkoutModal.classList.add('active');
             }
-        }, 800); // Time for the Secure Lock to stay visible (Reduced from 1500)
+        }, 800); // Time for the Secure Lock to stay visible
 
     } catch (err) {
         console.error("Error opening checkout:", err);
@@ -425,31 +444,52 @@ function toggleBump(bumpId) {
 }
 
 function updateTotal() {
-    // PRICING LOGIC DEFINIDA PELO USUÁRIO:
-    // Doenças: 119.90 (Pix) | 10x 19.90 (Card)
-    // Pintinhos: + 59.90 (Pix) | 10x 9.90 (Card)
-    // Combo: 129.90 (Pix) | 10x 29.90 (Card)
-    // Tabela: R$ 0 (Pix) | R$ 19.90 (Card)
-
-    let basePrice = cart.mainProduct.price; // Pix: 119.90
-    let cardPrice = cart.mainProduct.originalPrice || 139.90; // Card: 139.90
-
-    // Se for combo, manter valores anteriores ou ajustar?
-    // User pediu 139.90 e 119.90 especificamente para o fluxo principal.
+    let basePrice = cart.mainProduct.price; // Preço PIX do produto principal
+    let cardPrice = cart.mainProduct.originalPrice || cart.mainProduct.price; // Preço Cartão
 
     let total = basePrice;
     let cardTotal = cardPrice;
 
-    // Adiciona Bumps
+    // Adiciona Bumps com preços Dinâmicos do banco de dados
     cart.bumps.forEach(id => {
-        if (id === 'ebook-manejo') {
-            total += 39.9; // PREÇO PROMOCIONAL ATUALIZADO (39.90)
-            cardTotal += 59.9; // Mantendo preço cheio no cartão ou ajusta também? User disse "preço do ebook dos pintinhos pode colocar de 69,90 apenas agora por 39,90". Provavelmente vale para ambos ou só Pix?
-            // Assumindo oferta geral de 39.90 para ser agressivo
-            cardTotal = cardTotal - 59.9 + 39.9;
-        } else if (id === 'bump-6361') {
-            total += 0; // Tabela Grátis no Pix
-            cardTotal += 19.9;
+        // Busca o bump no array fullBumps do produto
+        let bump = cart.mainProduct.fullBumps?.find(b => b.id === id);
+
+        // FALLBACK: Se não encontrou em fullBumps, busca na config global (se carregada)
+        if (!bump && id.startsWith('ebook-')) {
+            if (window.siteConfig && window.siteConfig.products && window.siteConfig.products[id]) {
+                const prod = window.siteConfig.products[id];
+                bump = {
+                    id: id,
+                    price: prod.price, // Preço PIX do banco
+                    priceCard: prod.originalPrice || prod.price // Preço Cartão do banco (ou fallback)
+                };
+            } else {
+                // Fallback de emergência (caso config não tenha carregado) - EVITAR SE POSSÍVEL
+                bump = { id: id, price: 59.9, priceCard: 99.0 };
+            }
+        }
+
+        console.log('ðŸ” DEBUG updateTotal - Bump ID:', id, 'Encontrado:', bump);
+
+        if (bump) {
+            // Usa o preço do banco de dados
+            const bumpPriceForPix = bump.price || 0;
+            const bumpPriceForCard = bump.priceCard || bump.price || 0;
+
+            console.log('ðŸ’° Preços do bump:', { pix: bumpPriceForPix, card: bumpPriceForCard });
+
+            // Regra especial: Tabela grátis no PIX
+            if (id === 'bump-6361') {
+                total += 0; // Grátis no PIX
+                cardTotal += bumpPriceForCard;
+            } else {
+                // Outros bumps: usa o preço do banco
+                total += bumpPriceForPix;
+                cardTotal += bumpPriceForCard;
+            }
+        } else {
+            console.error('âŒ Bump não encontrado em fullBumps:', id);
         }
     });
 
@@ -494,7 +534,7 @@ function updateInstallments(total) {
 
     selector.innerHTML = '';
 
-    // De 1x até 4x (Regra: Atá 4x de 34,97 sem juros baseados no 139,90)
+    // De 1x até 4x (Regra: Até 4x de 34,97 sem juros baseados no 139,90)
     for (let i = 1; i <= 4; i++) {
         const val = total / i;
         const opt = document.createElement('option');
@@ -521,6 +561,7 @@ async function renderHomeProducts() {
         if (!res.ok) throw new Error("Fetch failed");
 
         const db = await res.json();
+        window.siteConfig = db; // EXPOSIÇÃO GLOBAL PARA O UPSELL
         const products = db.products;
         container.innerHTML = '';
 
@@ -748,6 +789,11 @@ function switchMethod(method) {
         const cpfInput = document.getElementById('payer-cpf');
         if (cpfInput) cpfInput.placeholder = 'Seu CPF';
 
+        // ADICIONA TABELA DE RAÇÃO AUTOMATICAMENTE NO PIX (GRÁTIS)
+        if (!cart.bumps.includes('bump-6361')) {
+            cart.bumps.push('bump-6361');
+        }
+
     } else {
         if (cardArea) { cardArea.style.display = 'block'; setTimeout(() => cardArea.style.opacity = '1', 50); }
         if (pixIdentity) { pixIdentity.style.display = 'none'; }
@@ -756,6 +802,12 @@ function switchMethod(method) {
         // CORREÇÃO: Placeholder do CPF para Cartão
         const cpfInput = document.getElementById('payer-cpf');
         if (cpfInput) cpfInput.placeholder = 'CPF do Titular do Cartão';
+
+        // REMOVE TABELA DE RAÇÃO NO CARTÃO (não é grátis)
+        const tabelaIndex = cart.bumps.indexOf('bump-6361');
+        if (tabelaIndex > -1) {
+            cart.bumps.splice(tabelaIndex, 1);
+        }
     }
 
     // RECALCULATE TOTAL WHEN SWITCHING
@@ -810,16 +862,42 @@ async function handlePayment(method) {
     }
 
     const items = [{ id: cart.mainProduct.id, title: cart.mainProduct.title, price: mainPrice }];
+
+    // Adiciona bumps com preços corretos baseados no método de pagamento
     cart.bumps.forEach(id => {
-        const b = cart.mainProduct.fullBumps.find(x => x.id === id);
-        if (b) items.push({ id: b.id, title: b.title, price: b.price });
+        let b = cart.mainProduct.fullBumps?.find(x => x.id === id);
+
+        // FALLBACK: Se não encontrou em fullBumps, pode ser um produto (upsell)
+        if (!b && id.startsWith('ebook-')) {
+            b = {
+                id: id,
+                price: 59.9,
+                priceCard: 59.9,
+                title: id === 'ebook-manejo' ? 'Manual de Manejo de Pintinhos' : 'Ebook'
+            };
+        }
+
+        if (b) {
+            let bumpPrice = b.price;
+
+            // Aplica preços específicos baseados no método de pagamento
+            if (id === 'bump-6361') {
+                // Tabela de Ração: Grátis no PIX, preço do banco no Cartão
+                bumpPrice = method === 'pix' ? 0 : (b.priceCard || b.price);
+            } else if (method === 'card' && b.priceCard) {
+                // Se tiver preços específicos para cartão, usa ele
+                bumpPrice = b.priceCard;
+            }
+
+            items.push({ id: b.id, title: b.title, price: bumpPrice });
+        }
     });
 
     if (method === 'pix') {
         const btn = document.getElementById('btn-pay-pix');
         const originalText = btn.innerText;
 
-        // --- 🛡️ PIX LOGIC (ALWAYS NEW) ---
+        // --- ðŸ›¡ï¸ PIX LOGIC (ALWAYS NEW) ---
         // We removed the "Reuse Only" logic to fix the "Stuck" issue.
         // Logic fix: Calculate total again or rely on updateTotal? 
         // Ideally rely on the calculated values, but for safety lets reclac logic briefly
@@ -931,7 +1009,7 @@ async function handlePayment(method) {
 
             // Hide specific PIX elements if any, or just update the text
             const pixInstructions = processingView.querySelector('.pix-instructions');
-            if (pixInstructions) pixInstructions.innerText = '💳 PROCESSANDO PAGAMENTO SEGURO...';
+            if (pixInstructions) pixInstructions.innerText = 'ðŸ’³ PROCESSANDO PAGAMENTO SEGURO...';
 
             const qrContainer = processingView.querySelector('.qr-container');
             if (qrContainer) qrContainer.style.display = 'none';
@@ -962,7 +1040,7 @@ async function handlePayment(method) {
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else if (result.status === 'in_process' || result.status === 'pending') {
                 // NOVO: Pagamento em análise - tratar como sucesso parcial
-                alert('✅ Seu pagamento está sendo processado!\n\nVocê receberá a confirmação por e-mail em até 2 dias úteis.\n\nSe precisar de ajuda, entre em contato pelo WhatsApp.');
+                alert('âœ… Seu pagamento está sendo processado!\n\nVocê receberá a confirmação por e-mail em até 2 dias úteis.\n\nSe precisar de ajuda, entre em contato pelo WhatsApp.');
                 checkoutModal.classList.remove('active');
                 document.body.style.overflow = '';
                 document.documentElement.style.overflow = '';
@@ -997,7 +1075,7 @@ async function handlePayment(method) {
                 };
 
                 if (result.status_detail && map[result.status_detail]) {
-                    alert(map[result.status_detail] + '\n\n💡 Dica: O PIX tem aprovação instantânea!');
+                    alert(map[result.status_detail] + '\n\nðŸ’¡ Dica: O PIX tem aprovação instantÃ¢nea!');
                 } else {
                     console.error("Erro detalhado:", result);
                     alert(`Pagamento não autorizado.\n\nDetalhe: ${msg}\n\nTente usar outro cartão ou PIX.`);
@@ -1014,7 +1092,7 @@ async function handlePayment(method) {
                 btn.innerText = originalText;
             }
         } catch (e) {
-            console.error("ERRO CRÍTICO CARTÃO:", e);
+            console.error("ERRO CRÃTICO CARTÃO:", e);
             let errDisplay = 'Erro desconhecido';
 
             if (e && e.message) errDisplay = e.message;
@@ -1355,7 +1433,7 @@ function validateCheckoutInputs(method) {
     return isValid;
 }
 
-// ⏳ Tooltip / Help Bubble Logic (5s Idle)
+// â³ Tooltip / Help Bubble Logic (5s Idle)
 let helpTimer = null;
 const HELP_MESSAGES = {
     'payer-email': 'Insira seu melhor e-mail para receber o acesso.',
@@ -1645,3 +1723,35 @@ if (comparisonSlider && prevButton && nextButton) {
         }
     });
 }
+// Mobile Checkout Modal Fix - Apply body class to prevent background scroll
+(function () {
+    // Get any modal elements
+    const modalElements = document.querySelectorAll('[id*="modal"], [id*="checkout"]');
+
+    // Create a MutationObserver to watch for modal display changes
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                const target = mutation.target;
+                const display = window.getComputedStyle(target).display;
+
+                if (display === 'flex' || display === 'block') {
+                    // Modal is opening
+                    document.body.classList.add('modal-open');
+                } else if (display === 'none') {
+                    // Modal is closing
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        });
+    });
+
+    // Observe each modal for style changes
+    modalElements.forEach(function (modal) {
+        observer.observe(modal, {
+            attributes: true,
+            attributeFilter: ['style']
+        });
+    });
+})();
+

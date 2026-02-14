@@ -1,7 +1,7 @@
 {
     "products": {
         "ebook-doencas": {
-            "title": "Doenças Avícolas (Principal)",
+            "title": "PROTOCOLO ELITE: A Cura das Aves",
             "price": 119.9,
             "originalPrice": 139.9,
             "description": "Protocolo Elite Doenças",
@@ -15,7 +15,8 @@
             ],
             "cover": "capadasdoencas.png",
             "orderBumps": [
-                "bump-6361"
+                "bump-6361",
+                "ebook-manejo"
             ]
         },
         "ebook-manejo": {
@@ -29,20 +30,6 @@
                 "Nutrição Essencial"
             ],
             "cover": "capadospintinhos.png",
-            "orderBumps": []
-        },
-        "combo-elite": {
-            "title": "Combo Protocolo Elite 360º",
-            "price": 129.9,
-            "originalPrice": 299.0,
-            "description": "Tudo Liberado",
-            "features": [
-                "Manejo de Pintinhos Elite",
-                "Doenças Avícolas Completo",
-                "Tabela de Ração Grátis (no PIX)",
-                "Suporte Especializado"
-            ],
-            "cover": "combo",
             "orderBumps": []
         }
     },
