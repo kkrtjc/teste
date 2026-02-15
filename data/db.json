@@ -13,7 +13,7 @@
                 "Protocolos de Tratamento",
                 "Bônus: Tabela de Ração (no PIX)"
             ],
-            "cover": "capadasdoencas.png",
+            "cover": "capadasdoencas.jpg",
             "orderBumps": [
                 "bump-6361"
             ]
@@ -28,7 +28,7 @@
                 "Ambiente de Elite",
                 "Nutrição Essencial"
             ],
-            "cover": "capadospintinhos.png",
+            "cover": "capadospintinhos.jpg",
             "orderBumps": []
         },
         "combo-elite": {
@@ -55,7 +55,7 @@
             "title": "Tabela de Raçao",
             "price": 19.9,
             "description": "Produza sua propria raçao E economize ate 65%.",
-            "image": "tabela_racao_bump.png"
+            "image": "tabela_racao_bump.jpg"
         }
     }
 }
