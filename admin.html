@@ -2025,9 +2025,10 @@
                     </div>
                 </div>
             </div>
+            <input type="hidden" id="nb-id">
             <div class="actions" style="margin-top: 20px; position: static;">
                 <button class="btn btn-secondary" onclick="closeModal('bump-modal')">CANCELAR</button>
-                <button class="btn btn-primary" onclick="createNewBump()">CADASTRAR BUMP</button>
+                <button class="btn btn-primary" onclick="saveBump()">SALVAR BUMP</button>
             </div>
         </div>
     </div>
@@ -2751,7 +2752,12 @@
                         </div>
                         <div class="compact-info">
                             <strong>${p.title}</strong>
-                            <span>#${id}</span>
+                            <div style="display:flex; gap:5px; margin-top:5px">
+                                <span class="status-badge info">#${id}</span>
+                                ${id === 'ebook-doencas' ? '<span class="status-badge success">PRINCIPAL</span>' : ''}
+                                ${id === 'ebook-manejo' ? '<span class="status-badge warning">UPSELL</span>' : ''}
+                                ${id === 'combo-elite' ? '<span class="status-badge" style="background:purple; color:white">COMBO</span>' : ''}
+                            </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px">
                             <div class="price-tag">R$ ${p.price.toFixed(2)}</div>
@@ -2767,8 +2773,8 @@
                     <div class="collapsible-content">
                         <div class="input-group">
                             <div class="control"><label>Título</label><input type="text" value="${p.title}" onchange="db.products['${id}'].title=this.value; renderAdmin(); checkChanges()"></div>
-                            <div class="control"><label>Preço PIX (Oferta)</label><input type="number" step="0.01" value="${p.price}" oninput="db.products['${id}'].price=parseFloat(this.value)||0; checkChanges()" onchange="renderAdmin()"></div>
-                            <div class="control"><label>Preço Cartão (Cheio)</label><input type="number" step="0.01" value="${p.originalPrice || 0}" oninput="db.products['${id}'].originalPrice=parseFloat(this.value)||0; checkChanges()" onchange="renderAdmin()"></div>
+                            <div class="control"><label>Preço PIX (Oferta)</label><input type="number" step="0.01" value="${p.price}" onchange="db.products['${id}'].price=parseFloat(this.value)||0; renderAdmin(); checkChanges()"></div>
+                            <div class="control"><label>Preço Cartão (Cheio)</label><input type="number" step="0.01" value="${p.originalPrice || 0}" onchange="db.products['${id}'].originalPrice=parseFloat(this.value)||0; renderAdmin(); checkChanges()"></div>
                         </div>
                         <div class="control" style="margin-top:15px"><label>Descrição curta</label><input type="text" value="${p.description || ''}" onchange="db.products['${id}'].description=this.value; checkChanges()"></div>
                     </div>
@@ -2816,6 +2822,7 @@
                         </div>
                         <div style="display:flex; align-items:center; gap:10px">
                             <div class="price-tag">+ R$ ${b.price.toFixed(2)}</div>
+                            <button class="btn-icon" style="color:var(--accent); border-color:var(--accent)" onclick="editBump('${id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button class="btn-icon danger" onclick="deleteBump('${id}')"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
@@ -2899,8 +2906,30 @@
             } catch (e) { alert('Erro ao subir imagem.'); }
         }
 
-        async function createNewBump() {
-            const id = 'bump-' + Date.now().toString().slice(-4);
+        function editBump(id) {
+            const b = db.orderBumps[id];
+            document.getElementById('nb-id').value = id;
+            document.getElementById('nb-title').value = b.title;
+            document.getElementById('nb-price').value = b.price;
+            document.getElementById('nb-desc').value = b.description;
+            document.getElementById('nb-img-url').value = b.image || '';
+
+            const prev = document.getElementById('nb-preview-img');
+            if (b.image) {
+                prev.src = b.image;
+                prev.parentElement.style.display = 'block';
+            } else {
+                prev.parentElement.style.display = 'none';
+            }
+
+            document.querySelector('#bump-modal h3').innerText = 'Editar Bump';
+            openModal('bump-modal');
+        }
+
+        async function saveBump() {
+            const idInput = document.getElementById('nb-id').value;
+            const id = idInput || 'bump-' + Date.now().toString().slice(-4);
+
             const title = document.getElementById('nb-title').value;
             const price = parseFloat(document.getElementById('nb-price').value);
             const description = document.getElementById('nb-desc').value;
@@ -2909,10 +2938,20 @@
             if (!title) return alert('Dê um título!');
 
             db.orderBumps[id] = { id, title, price, description, image };
+
+            // Clear form
+            document.getElementById('nb-id').value = '';
+            document.getElementById('nb-title').value = '';
+            document.getElementById('nb-price').value = '';
+            document.getElementById('nb-desc').value = '';
+            document.getElementById('nb-img-url').value = '';
+            document.getElementById('nb-preview-img').parentElement.style.display = 'none';
+            document.querySelector('#bump-modal h3').innerText = 'Novo Order Bump';
+
             closeModal('bump-modal');
             renderAdmin();
             checkChanges();
-            showToast('Bump Adicionado!');
+            showToast('Bump Salvo!');
         }
 
         async function createNewProduct() {

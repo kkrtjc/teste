@@ -12,12 +12,329 @@
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order_bump_modal.css">
+    <link rel="stylesheet" href="modern_enhancements.css">
+
+    <style>
+        /* Promoção de Elite Interstitial Re-style */
+        .elite-promo-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 21000;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .elite-promo-modal.show {
+            display: flex;
+        }
+
+        .elite-promo-content {
+            background: #0a0a0a;
+            width: 100%;
+            max-width: 480px;
+            max-height: 95vh;
+            border-radius: 20px;
+            border: 2px solid #fbbf24;
+            overflow-y: auto;
+            position: relative;
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .elite-promo-header {
+            background: #fbbf24;
+            color: #000;
+            padding: 15px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .elite-promo-header h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .elite-promo-body {
+            padding: 20px 15px;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .benefit-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: left;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .benefit-box h4 {
+            color: #fbbf24;
+            margin: 0 0 8px 0;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .benefit-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .benefit-box li {
+            color: #ccc;
+            font-size: 0.825rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .benefit-box li i {
+            color: #fbbf24;
+            font-size: 0.75rem;
+            margin-top: 3px;
+        }
+
+        .elite-promo-price {
+            margin: 15px 0;
+            background: rgba(251, 191, 36, 0.05);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px dashed #fbbf24;
+        }
+
+        .promo-timer-bar {
+            background: #e74c3c;
+            color: #fff;
+            font-weight: 900;
+            font-size: 0.8rem;
+            padding: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .elite-promo-btn-accept {
+            background: #22c55e;
+            color: #fff;
+            width: 100%;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 6px 15px rgba(34, 197, 94, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .elite-promo-btn-decline {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.8rem;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .elite-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 0.65rem;
+            z-index: 10;
+        }
+    </style>
 
     <!-- Meta Pixel Code -->
     <script>
         !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s) }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
         fbq('init', '1346740157465853'); fbq('track', 'PageView');
     </script>
+
+    <!-- UPSELL MODAL SIDE-PANEL -->
+    <div id="upsell-modal-container" class="upsell-modal-container">
+        <div class="upsell-content">
+            <h3 style="color: #ef4444; font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px;"><i
+                    class="fa-solid fa-triangle-exclamation"></i> PARE DE PERDER PINTINHOS</h3>
+
+            <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 15px; line-height: 1.4;">
+                <strong style="color: #111;">8 a cada 10 pintinhos morrem</strong> antes dos 20 dias por erro de manejo.
+            </p>
+
+            <div
+                style="display: flex; gap: 15px; background: #fff; padding: 10px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 15px;">
+                <img src="capadospintinhos.png" style="width: 70px; height: auto; border-radius: 5px;">
+                <div>
+                    <h4 style="font-size: 0.95rem; margin: 0; color: #111;">Manejo de Pintinhos</h4>
+                    <p style="font-size: 0.8rem; color: var(--gray-500); margin: 2px 0;">De: <span
+                            style="text-decoration: line-through;">R$ 99,90</span></p>
+                    <div style="font-weight: 800; color: var(--success); font-size: 1.1rem;">Por: R$ 49,90</div>
+                </div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--gray-600); margin-bottom: 20px;">
+                Aprenda o passo a passo do nascimento à fase adulta e blinde sua criação.
+            </p>
+
+            <button onclick="acceptUpsell()" class="btn-upsell-yes">
+                <i class="fa-solid fa-check"></i> SIM, ADICIONAR AGORA
+            </button>
+            <button onclick="declineUpsell()" class="btn-upsell-no">
+                Não, prefiro correr o risco
+            </button>
+        </div>
+    </div>
+
+    <style>
+        .upsell-modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            align-items: center;
+            /* Center vertically on mobile */
+            justify-content: center;
+            /* Center horizontally on mobile */
+        }
+
+        .upsell-modal-container.active {
+            display: flex;
+            /* Flex to center */
+            opacity: 1;
+        }
+
+        .upsell-content {
+            background: #fff;
+            width: 90%;
+            max-width: 400px;
+            /* Standard modal width */
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            transform: translateX(-50px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: left;
+            position: relative;
+        }
+
+        /* Desktop specific: Slide from left side */
+        @media (min-width: 768px) {
+            .upsell-modal-container {
+                justify-content: flex-start;
+                /* Align to left */
+            }
+
+            .upsell-content {
+                width: 400px;
+                height: 100%;
+                border-radius: 0 20px 20px 0;
+                transform: translateX(-100%);
+                /* Start fully off-screen */
+                margin: 0;
+                max-width: none;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+        }
+
+        .upsell-modal-container.active .upsell-content {
+            transform: translateX(0);
+        }
+
+        .btn-upsell-yes {
+            width: 100%;
+            padding: 15px;
+            background: var(--success);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-upsell-yes:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-upsell-no {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--gray-400);
+            border: none;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .btn-upsell-no:hover {
+            color: var(--gray-600);
+        }
+    </style>
+
+    <!-- FORÇAR BARRA TRANSLÚCIDA -->
+    <style>
+        header,
+        .header,
+        .sticky,
+        header.sticky {
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
+        }
+
+        /* Garantir legibilidade do texto flutuante */
+        header h1,
+        .header h1,
+        header h1 span {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+    </style>
 </head>
 
 <body>
@@ -29,65 +346,103 @@
                 <i class="fa-solid fa-book-open"></i>
                 <h1>PROTOCOLO <span style="color: var(--amber-600)">ELITE</span></h1>
             </div>
-            <button onclick="openCheckout('ebook-doencas')" class="btn-primary">Comprar Agora</button>
+            <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary">SALVAR MINHAS GALINHAS
+                AGORA</button>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="hero container">
-        <!-- Social Proof Header -->
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 2rem;">
-            <div class="avatar-stack" style="display: flex; margin-right: 5px;">
-                <div
-                    style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; background: #ddd; overflow: hidden; margin-right: -10px;">
-                    <img src="carrosel/carlos.png" style="width: 100%; height: 100%; object-fit: cover;">
+    <section class="hero">
+        <div class="container">
+            <!-- Social Proof Header -->
+            <div
+                style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 2.5rem; flex-wrap: wrap;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div class="avatar-stack" style="display: flex; margin-right: 15px;">
+                        <div
+                            style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #ddd; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <img src="carrosel/carlos.png" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div
+                            style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #ccc; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <img src="carrosel/maria.PNG" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div
+                            style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #bbb; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <img src="carrosel/joao_new.jpg" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div
+                            style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #aaa; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <img src="carrosel/ana.png" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div
+                            style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #999; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <img src="carrosel/lucas.jpeg" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    </div>
+                    <span
+                        style="font-size: 0.75rem; font-weight: 800; color: #16a34a; background: rgba(22, 163, 74, 0.15); padding: 2px 10px; border-radius: 10px; backdrop-filter: blur(5px);">+de
+                        1600 alunos</span>
                 </div>
-                <div
-                    style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; background: #ccc; overflow: hidden; margin-right: -10px;">
-                    <img src="carrosel/maria.PNG" style="width: 100%; height: 100%; object-fit: cover;">
+                <div style="max-width: 400px; text-align: left;">
+                    <span
+                        style="font-size: 1.1rem; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; font-family: var(--font-heading); text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+                        MÉTODO COMPROVADO POR<br>MAIS DE 1600 ALUNOS
+                    </span>
                 </div>
-                <div
-                    style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; background: #bbb; overflow: hidden; margin-right: -10px;">
-                    <img src="carrosel/joao_new.jpg" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-                <div
-                    style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; background: var(--amber-600); color: #fff; font-size: 0.55rem; font-weight: 800;">
-                    +1k</div>
             </div>
-            <span
-                style="font-size: 0.8rem; font-weight: 800; color: var(--gray-700); text-transform: uppercase; letter-spacing: 1px;">METODO
-                COMPROVADO POR MAIS DE 1600 ALUNOS</span>
-        </div>
 
-        <h2>
-            <span
-                style="color: #dc2626; display: block; margin-bottom: 0.5rem; font-size: 2.2rem; line-height: 1.1;">COMECE
-                AGORA O TRATAMENTO DA SUA GALINHA</span>
-            <span
-                style="font-size: 1.5rem; display: block; margin-top: 0.5rem; font-weight: 600; color: var(--gray-700);">Sem
-                Gastar Fortunas com Veterinários.</span>
-        </h2>
+            <h2>
+                <span
+                    style="color: #ff4d4d; display: block; margin-bottom: 0.5rem; font-size: 2.2rem; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">COMECE
+                    AGORA O TRATAMENTO DA SUA GALINHA</span>
+                <span
+                    style="font-size: 1.5rem; display: block; margin-top: 0.5rem; font-weight: 600; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">Sem
+                    Gastar Fortunas com Veterinários.</span>
+            </h2>
 
-        <p style="font-size: 1.25rem; color: var(--gray-700); margin-bottom: 1rem; font-weight: 700;">
-            Descubra o tratamento certo para sua galinha.
-        </p>
-        <p style="font-size: 1.1rem; color: var(--gray-600); line-height: 1.5; margin-bottom: 2rem;">
-            <span style="color: #2563eb;">(Ronqueira, Peito seco, Espirro, queda de postura?)</span>
-            Tudo isso você vai aprender a tratar <span style="color: #2563eb;">(corretamente)</span>,
-            <span style="color: #dc2626; font-weight: 800;">CHEGA</span> de métodos caseiros que nao funcionam.
-        </p>
+            <p
+                style="font-size: 1.25rem; color: #ffffff; margin-bottom: 1rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
+                Descubra o tratamento certo para sua galinha.
+            </p>
+            <div
+                style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.5rem; margin: 0 auto 2rem; max-width: 800px; backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 1rem;">
+                    <span
+                        style="background: rgba(220, 38, 38, 0.2); color: #ff6b6b; padding: 6px 16px; border-radius: 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid rgba(220, 38, 38, 0.4); text-shadow: 0 1px 4px rgba(0,0,0,0.5);"><i
+                            class="fa-solid fa-triangle-exclamation"></i> Ronqueira</span>
+                    <span
+                        style="background: rgba(220, 38, 38, 0.2); color: #ff6b6b; padding: 6px 16px; border-radius: 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid rgba(220, 38, 38, 0.4); text-shadow: 0 1px 4px rgba(0,0,0,0.5);"><i
+                            class="fa-solid fa-skull-crossbones"></i> Peito Seco</span>
+                    <span
+                        style="background: rgba(220, 38, 38, 0.2); color: #ff6b6b; padding: 6px 16px; border-radius: 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid rgba(220, 38, 38, 0.4); text-shadow: 0 1px 4px rgba(0,0,0,0.5);"><i
+                            class="fa-solid fa-notes-medical"></i> Espirro</span>
+                    <span
+                        style="background: rgba(220, 38, 38, 0.2); color: #ff6b6b; padding: 6px 16px; border-radius: 20px; font-size: 1.1rem; font-weight: 800; border: 2px solid rgba(220, 38, 38, 0.4); text-shadow: 0 1px 4px rgba(0,0,0,0.5);"><i
+                            class="fa-solid fa-arrow-trend-down"></i> Queda de Postura</span>
+                </div>
 
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
-            <button onclick="openCheckout('ebook-doencas')" class="btn-primary btn-large">Acessar Guia Agora - R$
-                99,90</button>
-            <a href="#learning" class="btn-outline"
-                style="text-decoration: none; display: flex; align-items: center; justify-content: center;">VER O QUE
-                VOU APRENDER</a>
-        </div>
-        <div class="trust-badges">
-            <div class="trust-badge"><i class="fa-solid fa-circle-check"></i> Garantia de 7 dias</div>
-            <div class="trust-badge"><i class="fa-solid fa-shield-halved"></i> 100% Seguro</div>
-            <div class="trust-badge"><i class="fa-solid fa-bolt"></i> Acesso Imediato</div>
+                <p
+                    style="font-size: 1.25rem; color: #ffffff; margin-bottom: 0.5rem; line-height: 1.4; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">
+                    Tudo isso você vai aprender a tratar <strong
+                        style="color: #fbbf24; text-decoration: underline; text-decoration-color: #fbbf24; text-underline-offset: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">corretamente</strong>.
+                </p>
+
+                <p
+                    style="font-size: 1.1rem; color: #ff4d4d; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 10px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">
+                    <i class="fa-solid fa-hand"></i> CHEGA de métodos caseiros que não funcionam.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+                <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large">SALVAR MINHAS
+                    GALINHAS
+                    AGORA</button>
+                <a href="#learning" class="btn-outline"
+                    style="text-decoration: none; display: flex; align-items: center; justify-content: center;">VER O
+                    QUE
+                    VOU APRENDER</a>
+            </div>
         </div>
     </section>
 
@@ -106,26 +461,38 @@
                 <ul
                     style="list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
                     <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i> 11
-                        Doenças Documentadas</li>
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Identificar doenças em segundos</li>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Medicamento correto para cada doença</li>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Dosagem que realmente funciona</li>
                     <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
                             class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
                         Protocolos Passo a Passo</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Tabelas de Sintomas</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Ração Econômica (BÔNUS)</li>
                 </ul>
+
+                <div
+                    style="margin-top: 1.25rem; padding: 1rem; background: var(--amber-50); border-radius: 0.75rem; text-align: center;">
+                    <span
+                        style="display: block; font-size: 0.85rem; color: var(--gray-600); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">POR
+                        APENAS</span>
+                    <span style="display: block; font-size: 1.5rem; color: var(--gray-900); font-weight: 900;">R$ <span
+                            id="display-price-value">109,90</span></span>
+                    <span
+                        style="font-size: 0.75rem; color: #10b981; font-weight: 800; display: block; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px; display: inline-block;">🔥
+                        27% DE DESCONTO NO PIX</span>
+                    <span style="font-size: 0.9rem; color: var(--gray-600); display: block; margin-top: 5px;">ou em até
+                        <strong>4x
+                            sem juros</strong> no cartão</span>
+                    <span
+                        style="font-size: 0.85rem; color: var(--amber-900); font-weight: 800; display: block; margin-top: 0.5rem; text-transform: uppercase;">QUANTO
+                        VALE UMA GALINHA PRA VOCE?</span>
+                </div>
             </div>
         </div>
-    </section>
-    <div class="trust-badges">
-        <div class="trust-badge"><i class="fa-solid fa-circle-check"></i> Garantia de 7 dias</div>
-        <div class="trust-badge"><i class="fa-solid fa-shield-halved"></i> 100% Seguro</div>
-        <div class="trust-badge"><i class="fa-solid fa-bolt"></i> Acesso Imediato</div>
-    </div>
     </section>
 
     <!-- Social Proof Bar -->
@@ -143,11 +510,11 @@
                     <i class="fa-solid fa-graduation-cap"></i>
                     <div class="stat-text">
                         <strong>+1.600 Alunos</strong>
-                        que já <b>salvaram</b> suas galinhas
+                        que já salvaram suas galinhas
                     </div>
                 </div>
                 <div class="stat-item">
-                    <i class="fa-solid fa-shield-check"></i>
+                    <i class="fa-solid fa-circle-check"></i>
                     <div class="stat-text">
                         <strong>Método Comprovado</strong>
                         resultados reais e garantidos
@@ -251,7 +618,7 @@
     <section class="urgency-bar">
         <div class="container urgency-content">
             <div class="urgency-pill"><i class="fa-solid fa-triangle-exclamation"></i> Oferta Por Tempo Limitado</div>
-            <p style="font-size: 1.5rem; font-weight: 700;">Preço especial de R$ 99,90 (em breve será R$ 149,90)</p>
+            <p style="font-size: 1.5rem; font-weight: 700;">Preço especial de R$ 109,90 (em breve será R$ 149,90)</p>
             <p style="opacity: 0.8;">Aproveite agora antes que o preço suba!</p>
         </div>
     </section>
@@ -263,18 +630,20 @@
                 Começar?</h3>
             <p style="font-size: 1.125rem; color: var(--gray-700); margin-bottom: 2rem;">Acesse o ebook agora e comece a
                 economizar com seus galinhas ainda hoje.</p>
-            <button onclick="openCheckout('ebook-doencas')" class="btn-primary btn-large">Comprar Agora - R$
-                99,90</button>
+            <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large">SALVAR MINHAS GALINHAS
+                AGORA</button>
             <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 1rem;">Acesso imediato • Garantia de 7
                 dias • 100% Seguro</p>
         </div>
     </section>
 
-    <!-- Checkout Modal -->
+    <!-- Checkout Modal (Restored White Design) -->
     <div id="checkout-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header" style="margin-bottom: 1rem;">
-                <h3 class="modal-title">Finalize Sua Compra E salve suas galinhas.</h3>
+                <h3 class="modal-title">Finalize Sua Compra</h3>
+                <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 0.5rem;">Preencha os dados abaixo
+                    para garantir seu acesso.</p>
                 <div class="modal-trust-info">
                     <span><i class="fa-solid fa-circle-check"></i> Garantia de 7 Dias</span>
                     <span><i class="fa-solid fa-circle-check"></i> +1.600 Alunos</span>
@@ -282,255 +651,423 @@
                 </div>
             </div>
 
-            <form id="payment-form">
-                <div class="radio-group-top">
-                    <label class="form-label">1. Escolha a Forma de Pagamento *</label>
-                    <div class="payment-methods-grid">
-                        <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
-                            <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
-                            <div class="radio-label">
-                                <span class="radio-title">PIX</span>
-                                <span class="radio-desc">Imediato</span>
+            <!-- CSS Otimizado para Checkout Compacto e Tooltips -->
+            <style>
+                .checkout-summary {
+                    display: flex;
+                    gap: 12px;
+                    background: #fffbeb;
+                    border: 1px solid #fcd34d;
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-bottom: 15px;
+                    align-items: center;
+                }
+
+                .summary-img {
+                    width: 60px;
+                    height: 80px;
+                    object-fit: cover;
+                    border-radius: 6px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .summary-details h4 {
+                    font-size: 0.95rem;
+                    color: #78350f;
+                    margin: 0 0 4px 0;
+                    font-weight: 800;
+                }
+
+                .summary-features {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    font-size: 0.75rem;
+                    color: #92400e;
+                }
+
+                .summary-features li {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-bottom: 2px;
+                }
+
+                .summary-features i {
+                    color: #059669;
+                }
+
+                /* Compactação do Form */
+                .form-group {
+                    margin-bottom: 4px !important;
+                    /* Menos espaço entre campos */
+                }
+
+                .form-label {
+                    text-transform: uppercase;
+                    font-size: 0.75rem !important;
+                    font-weight: 800 !important;
+                    color: #374151 !important;
+                    margin-bottom: 2px !important;
+                }
+
+                .form-input {
+                    padding: 8px 10px !important;
+                    /* Input mais compacto */
+                    font-size: 0.9rem !important;
+                    height: auto !important;
+                }
+
+                .form-section-title {
+                    font-size: 0.9rem !important;
+                    margin: 10px 0 8px !important;
+                }
+
+                /* Tooltip de Ociosidade */
+                .field-tooltip {
+                    position: absolute;
+                    background: #1f2937;
+                    color: #fff;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    bottom: 100%;
+                    right: 0;
+                    margin-bottom: 5px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    opacity: 0;
+                    transform: translateY(5px);
+                    transition: all 0.3s ease;
+                    pointer-events: none;
+                    z-index: 10;
+                    white-space: nowrap;
+                }
+
+                .field-tooltip.active {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+
+                .field-tooltip::after {
+                    content: '';
+                    position: absolute;
+                    top: 100%;
+                    right: 15px;
+                    border-width: 5px;
+                    border-style: solid;
+                    border-color: #1f2937 transparent transparent transparent;
+                }
+
+                .form-group {
+                    position: relative;
+                }
+
+                /* Para posicionar o tooltip */
+
+                /* Validation Styles */
+                .form-input.input-error {
+                    border-color: #ef4444 !important;
+                    /* Red */
+                    background-color: #fef2f2 !important;
+                }
+
+                .form-input.input-success {
+                    border-color: #22c55e !important;
+                    /* Green */
+                    background-color: #f0fdf4 !important;
+                }
+
+                .error-message {
+                    color: #ef4444;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    margin-top: -4px;
+                    margin-bottom: 4px;
+                    display: block;
+                    animation: fadeIn 0.3s ease;
+                }
+
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-5px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+
+            <div id="checkout-main-view" style="position: relative;">
+                <!-- 1. Resumo do Pedido (Compacto) -->
+                <div class="checkout-summary">
+                    <img src="capadasdoencas.png" alt="Capa" class="summary-img">
+                    <div class="summary-details">
+                        <h4>Protocolo Elite: A Cura das Aves</h4>
+                        <ul class="summary-features">
+                            <li><i class="fa-solid fa-check"></i> Guia completo de tratamentos</li>
+                            <li><i class="fa-solid fa-check"></i> Medicamentos corretos</li>
+                            <li><i class="fa-solid fa-check"></i> Doses corretas</li>
+                            <li><i class="fa-solid fa-check"></i> Identificar a doença</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <form id="payment-form">
+                    <div class="radio-group-top" style="margin-bottom: 10px;">
+                        <label class="form-label" style="display: block; margin-bottom: 5px;">ESCOLHA A FORMA DE
+                            PAGAMENTO</label>
+                        <div class="payment-methods-grid">
+                            <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
+                                <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
+                                <div class="radio-label">
+                                    <span class="radio-title">PIX</span>
+                                    <span class="radio-desc">Acesso imediato</span>
+                                </div>
+                                <i class="fa-brands fa-pix" style="color: #32bcad; font-size: 1.4rem;"></i>
                             </div>
-                            <i class="fa-brands fa-pix" style="color: #32bcad; font-size: 1.5rem;"></i>
+
+                            <div class="radio-item" onclick="selectPaymentMethod('card')">
+                                <input type="radio" name="paymentMethod" id="method-card" value="card">
+                                <div class="radio-label">
+                                    <span class="radio-title">CARTÃO</span>
+                                    <span class="radio-desc">Até 12x</span>
+                                </div>
+                                <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
+                                    <img src="https://logospng.org/download/visa/logo-visa-256.png"
+                                        style="height: 18px;" alt="Visa">
+                                    <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
+                                        style="height: 18px;" alt="Mastercard">
+                                    <img src="https://logodownload.org/wp-content/uploads/2014/10/elo-logo-2.png"
+                                        style="height: 18px;" alt="Elo">
+                                </div>
+                            </div>
                         </div>
-
-                        <div class="radio-item" onclick="selectPaymentMethod('card')">
-                            <input type="radio" name="paymentMethod" id="method-card" value="card">
-                            <div class="radio-label">
-                                <span class="radio-title">Cartão</span>
-                                <span class="radio-desc">Até 12x</span>
-                            </div>
-                            <div class="payment-flags">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
-                                    style="height: 12px;" alt="Visa">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                                    style="height: 18px;" alt="Mastercard">
-                            </div>
-                        </div>
                     </div>
-                </div>
 
-                <div class="form-section-title">2. Seus Dados de Acesso</div>
-                <div class="form-group">
-                    <label class="form-label">Nome Completo *</label>
-                    <input type="text" id="payer-name" class="form-input" placeholder="João da Silva" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email *</label>
-                    <input type="email" id="payer-email" class="form-input" placeholder="seu@email.com" required>
-                </div>
-                <div style="display: flex; gap: 0.75rem;">
-                    <div class="form-group" style="flex: 1.2;">
-                        <label class="form-label">CPF *</label>
-                        <input type="text" id="payer-cpf" class="form-input" placeholder="000.000.000-00" required>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label class="form-label">WhatsApp *</label>
-                        <input type="tel" id="payer-phone" class="form-input" placeholder="(11) 99999-9999" required>
-                    </div>
-                </div>
-
-                <!-- Card Details Area (Hidden by default) -->
-                <div id="card-area"
-                    style="display: none; margin-top: 0.5rem; border: 1px solid var(--amber-100); padding: 1rem; border-radius: 0.5rem; background: var(--amber-50);">
+                    <div class="form-section-title">SEUS DADOS DE ACESSO</div>
                     <div class="form-group">
-                        <label class="form-label">Número do Cartão</label>
-                        <input type="text" id="card-number" class="form-input" placeholder="0000 0000 0000 0000">
+                        <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
+                            data-tip="Digite seu nome e sobrenome completo para o certificado.">
+                        <div class="field-tooltip">Digite seu nome completo</div>
                     </div>
-                    <div style="display: flex; gap: 1rem;">
+                    <div class="form-group">
+                        <input type="email" id="payer-email" class="form-input" placeholder="EMAIL" required
+                            data-tip="Seu melhor email onde receberá o acesso ao guia.">
+                        <div class="field-tooltip">Onde você receberá o acesso</div>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <div class="form-group" style="flex: 1.2;">
+                            <input type="text" id="payer-cpf" class="form-input" placeholder="CPF" required
+                                data-tip="Necessário para emitir a nota fiscal (apenas números).">
+                            <div class="field-tooltip">Apenas números do CPF</div>
+                        </div>
                         <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Validade</label>
-                            <input type="text" id="card-expiration" class="form-input" placeholder="MM/AA">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">CVV</label>
-                            <input type="text" id="card-cvv" class="form-input" placeholder="123">
+                            <input type="tel" id="payer-phone" class="form-input" placeholder="WHATSAPP" required
+                                data-tip="Para suporte e avisos importantes (DDD + Número).">
+                            <div class="field-tooltip">DDD + Número</div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Nome no Cartão</label>
-                        <input type="text" id="card-holder" class="form-input" placeholder="JOAO S SILVA">
+
+                    <!-- Card Details Area -->
+                    <div id="card-area"
+                        style="display: none; margin-top: 0.5rem; border: 1px solid var(--amber-100); padding: 1rem; border-radius: 0.5rem; background: var(--amber-50);">
+                        <div class="form-group">
+                            <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO"
+                                data-tip="Os 16 números na frente do cartão.">
+                            <div class="field-tooltip">Digite os números do cartão</div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="form-group" style="flex: 1.5;">
+                                <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE"
+                                    data-tip="Mês e Ano de vencimento (Ex: 12/28).">
+                                <div class="field-tooltip">MM/AA</div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <input type="text" id="card-cvv" class="form-input" placeholder="CVV"
+                                    data-tip="3 dígitos no verso do cartão.">
+                                <div class="field-tooltip">3 dígitos no verso</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO"
+                                data-tip="Nome exatamente como impresso no cartão.">
+                            <div class="field-tooltip">Igual impresso no cartão</div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR"
+                                data-tip="CPF do dono do cartão (apenas números).">
+                            <div class="field-tooltip">CPF do Dono do Cartão</div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="card-cep" class="form-input" placeholder="CEP"
+                                data-tip="CEP do endereço de cobrança.">
+                            <div class="field-tooltip">CEP de cobrança</div>
+                        </div>
+                        <div class="form-group">
+                            <select id="installments-select" class="form-input"></select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">CEP</label>
-                        <input type="text" id="card-cep" class="form-input" placeholder="00000-000">
+
+                    <!-- Order Bump Area -->
+                    <div id="order-bump-area"></div>
+
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <div class="price-summary-box"
+                            style="margin-bottom: 1rem; background: var(--amber-50); border: 1px dashed var(--amber-600); padding: 0.75rem; border-radius: 0.5rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; font-weight: 700; color: var(--amber-900);">
+                                <span>Total a pagar:</span>
+                                <span class="checkout-total-display">R$ --,--</span>
+                            </div>
+                            <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
+                        </div>
+
+                        <button type="button" id="btn-pay-pix" class="btn-primary"
+                            style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX</button>
+                        <button type="button" id="btn-pay-card" class="btn-primary"
+                            style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar
+                            Pagamento</button>
+
+
+                        <div
+                            style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                            <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 24px;"
+                                alt="Visa">
+                            <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
+                                style="height: 24px;" alt="Mastercard">
+                            <img src="https://logodownload.org/wp-content/uploads/2014/10/elo-logo-2.png"
+                                style="height: 24px;" alt="Elo">
+                            <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
+                                style="height: 24px;" alt="Mercado Pago">
+                        </div>
+                        <p style="font-size: 0.7rem; color: #166534; margin-top: 0.75rem; font-weight: 600;"><i
+                                class="fa-solid fa-lock"></i> Pagamento 100% Seguro</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Parcelas</label>
-                        <select id="installments-select" class="form-input"></select>
-                    </div>
+                </form>
+            </div>
+
+            <div id="pix-result" class="hidden" style="text-align: center;">
+                <h3 class="modal-title">Quase lá!</h3>
+                <p style="font-size: 0.9rem; color: var(--gray-600); margin: 0.5rem 0;">Escaneie o QR Code ou copie o
+                    código abaixo.</p>
+
+                <div
+                    style="background: #fff; padding: 1rem; border-radius: 0.75rem; display: inline-block; margin: 1rem 0; border: 1px solid var(--gray-200);">
+                    <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 180px; height: 180px; display: block;">
                 </div>
 
-                <div style="text-align: center; margin-top: 1rem;">
-                    <button type="button" id="btn-pay-pix" class="btn-primary"
-                        style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX - R$ 99,90</button>
-                    <button type="button" id="btn-pay-card" class="btn-primary"
-                        style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar
-                        Pagamento</button>
+                <button id="btn-copy-pix" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                    <i class="fa-regular fa-copy"></i> COPIAR CÓDIGO PIX
+                </button>
+                <textarea id="pix-copy-paste" readonly style="opacity: 0; position: absolute; z-index: -1;"></textarea>
 
-                    <div
-                        style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; align-items: center;">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
-                            style="height: 15px;" alt="Visa">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                            style="height: 25px;" alt="Mastercard">
-                        <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-                            style="height: 25px;" alt="Mercado Pago">
-                    </div>
-
-                    <p style="font-size: 0.7rem; color: #166534; margin-top: 0.75rem; font-weight: 600;">
-                        <i class="fa-solid fa-lock"></i> Sua segurança é nossa prioridade
-                    </p>
+                <div
+                    style="text-align: left; font-size: 0.85rem; color: var(--gray-600); line-height: 1.6; background: #f8fafc; padding: 1rem; border-radius: 0.5rem;">
+                    <p>1. Abra o app do seu banco e escolha <strong>Pix</strong>.</p>
+                    <p>2. Selecione <strong>Pix Copia e Cola</strong> ou <strong>Ler QR Code</strong>.</p>
+                    <p>3. Cole o código ou escaneie a imagem acima.</p>
                 </div>
-            </form>
+
+                <div style="margin-top: 1.5rem; font-size: 0.85rem;">
+                    Dúvidas? <a href="https://wa.me/5538999832950" target="_blank"
+                        style="color: #25d366; font-weight: 700;"><i class="fa-brands fa-whatsapp"></i> Chame no
+                        WhatsApp</a>
+                </div>
+
+                <button
+                    onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');"
+                    style="margin-top: 1rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer;">Voltar</button>
+            </div>
+
+            <!-- Payment Pending View (New) -->
+            <div id="payment-pending-view" class="hidden" style="text-align: center; padding: 1rem 0;">
+                <div style="font-size: 4rem; color: #f59e0b; margin-bottom: 1rem;">
+                    <i class="fa-solid fa-shield-halved fa-beat-normal"></i>
+                </div>
+                <h3 class="modal-title" style="color: #92400e;">Pagamento em Análise</h3>
+                <p style="font-size: 0.95rem; color: var(--gray-600); margin: 1rem 0; line-height: 1.5;">
+                    Sua transação está sendo processada com segurança pelo Mercado Pago. <br>
+                    <strong>Não se preocupe, isso é um procedimento normal.</strong>
+                </p>
+
+                <div
+                    style="background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 0.75rem; text-align: left; margin-bottom: 1.5rem;">
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #92400e;">
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso será enviado para
+                            o seu e-mail assim que aprovado.</li>
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de análise: de alguns
+                            minutos até 48h.</li>
+                        <li><i class="fa-solid fa-check-double"></i> Fique atento à sua caixa de entrada e Spam.</li>
+                    </ul>
+                </div>
+
+                <a href="https://wa.me/5538999832950?text=Olá,%20meu%20pagamento%20ficou%20em%20análise.%20Pode%20me%20ajudar?"
+                    target="_blank" class="btn-primary"
+                    style="width: 100%; background: #25d366; border-color: #25d366; text-decoration: none; display: inline-block;">
+                    <i class="fa-brands fa-whatsapp"></i> FALAR COM SUPORTE
+                </a>
+
+                <button onclick="closeCheckout()"
+                    style="margin-top: 1.5rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                    Entendi, fechar checkout
+                </button>
+            </div>
+
+            <!-- Order Bump Area (Dynamic) -->
+            <div id="order-bump-area"></div>
 
             <button onclick="closeCheckout()"
-                style="position: absolute; top: 1rem; right: 1rem; border: none; background: none; cursor: pointer; color: var(--gray-300); font-size: 1.5rem;">&times;</button>
+                style="position: absolute; top: 1rem; right: 1rem; border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 1.5rem;">&times;</button>
         </div>
     </div>
 
-    <!-- Pix Result View -->
-    <div id="pix-result" class="modal-overlay">
-        <!-- Filled by script.js -->
-    </div>
+    <!-- Official Footer -->
+    <footer style="background: #fff; padding: 3rem 0; border-top: 1px solid #fef3c7; text-align: center;">
+        <div class="container">
+            <div style="margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-book-open" style="color: #d97706; font-size: 1.5rem;"></i>
+                <h4 style="color: #78350f; font-weight: 800; margin-top: 0.5rem;">PROTOCOLO ELITE</h4>
+            </div>
+            <div style="font-size: 0.8rem; color: #6b7280; line-height: 1.6;">
+                <p>GALOS MURA BRASIL OFICIAL</p>
+                <p>CNPJ: 63.665.824/0001-09</p>
+                <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem;">
+                    <a href="#" style="color: #6b7280; text-decoration: underline;">Termos de Uso</a>
+                    <a href="#" style="color: #6b7280; text-decoration: underline;">Política de Privacidade</a>
+                </div>
+                <p style="margin-top: 1.5rem; font-size: 0.75rem; opacity: 0.8;">
+                    Este site não é afiliado ao Facebook ou a qualquer entidade do Facebook. <br>
+                    Depois que você sair do Facebook, a responsabilidade não é deles e sim do nosso site.
+                </p>
+            </div>
+        </div>
+    </footer>
 
-    <!-- Overlays for script.js animations -->
-    <div id="checkout-secure-overlay" style="display:none;"></div>
+    <!-- Elite Promo Modal (Removed) -->
+    <div id="order-bump-modal" class="order-bump-slide-modal"></div>
+
+
+    <!-- Hidden Helpers for script.js -->
+    <div id="secure-loading" style="display:none;"></div>
     <div id="checkout-logo-overlay" style="display:none;"></div>
-    <div id="order-bump-modal" style="display:none;"></div>
     <div id="checkout-product-name" style="display:none;"></div>
     <div id="checkout-product-price-display" style="display:none;"></div>
     <div id="product-icon-container" style="display:none;"></div>
-    <video id="vsl-video" style="display:none;"></video>
-
-    <!-- Custom Script for Modal Behavior -->
-    <script>
-        function selectPaymentMethod(method) {
-            const items = document.querySelectorAll('.radio-item');
-            items.forEach(i => i.classList.remove('selected'));
-
-            const selected = event.currentTarget;
-            selected.classList.add('selected');
-            selected.querySelector('input').checked = true;
-
-            const cardArea = document.getElementById('card-area');
-            const btnPix = document.getElementById('btn-pay-pix');
-            const btnCard = document.getElementById('btn-pay-card');
-
-            if (method === 'card') {
-                cardArea.style.display = 'block';
-                btnCard.style.display = 'block';
-                btnPix.style.display = 'none';
-                if (typeof switchMethod === 'function') switchMethod('card');
-            } else {
-                cardArea.style.display = 'none';
-                btnCard.style.display = 'none';
-                btnPix.style.display = 'block';
-                if (typeof switchMethod === 'function') switchMethod('pix');
-            }
-        }
-
-        function closeCheckout() {
-            document.getElementById('checkout-modal').classList.remove('active');
-            document.body.classList.remove('no-scroll');
-        }
-
-        // Override script.js openCheckout to use our modal
-        const originalOpenCheckout = window.openCheckout;
-        window.openCheckout = async function (productId, bumps = []) {
-            document.getElementById('checkout-modal').classList.add('active');
-            document.body.classList.add('no-scroll');
-            // Call original if needed, but we might need to adapt script.js
-        };
-    </script>
 
     <script src="https://sdk.mercadopago.com/js/v2"></script>
     <script>const mp = new MercadoPago('APP_USR-73238612-450f-4fbe-9a9f-3d5f9919f2d1');</script>
-    <script src="script.js?v=24"></script>
+    <script src="smart_fields.js"></script>
+    <script src="script.js?v=26"></script>
     <script src="order_bump_modal.js"></script>
 
-    <!-- Bulletproof Testimonials Runner for index2 -->
-    <script>
-        (function () {
-            const testimonials = [
-                { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
-                { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
-                { text: 'Tinha uma galinha que não comia, só ficava no canto. Segui o passo a passo e em 2 dias ela voltou ao normal.', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-                { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' }
-            ];
+</body>
 
-            function runSlider() {
-                const track = document.getElementById('testimonials-track');
-                if (!track) return;
+</html>
 
-                track.innerHTML = '';
-                testimonials.forEach((t, index) => {
-                    const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
-                    const card = document.createElement('div');
-                    card.className = 'testimonial-card-single';
-                    card.style.cssText = `
-                        opacity: ${index === 0 ? '1' : '0'};
-                        position: absolute;
-                        top: 0;
-                        left: ${index === 0 ? '0' : '100%'};
-                        width: 100%;
-                        height: 100%;
-                        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-                        transform: ${index === 0 ? 'translateX(0)' : 'translateX(50px)'};
-                        background: #1e293b;
-                        padding: 1.5rem;
-                        border-radius: 0.75rem;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                        color: #fff;
-                    `;
-
-                    card.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;">
-                                <img src="${t.avatar}" alt="${t.author}" style="width: 100%; height: 100%; object-fit: cover;">
-                            </div>
-                            <div>
-                                <strong style="display: block; color: #fff; font-size: 0.95rem;">${t.author}</strong>
-                                <small style="color: rgba(255,255,255,0.5); font-size: 0.75rem;">${t.location}</small>
-                                <div style="font-size: 0.7rem; color: #FFD700; margin-top: 2px;">${starsHTML}</div>
-                            </div>
-                        </div>
-                        <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 0.85rem; line-height: 1.5;">"${t.text}"</p>
-                    `;
-                    track.appendChild(card);
-                });
-
-                let current = 0;
-                setInterval(() => {
-                    const cards = track.querySelectorAll('.testimonial-card-single');
-                    if (cards.length === 0) return;
-
-                    const old = cards[current];
-                    old.style.opacity = '0';
-                    old.style.left = '-100%';
-                    old.style.transform = 'translateX(-50px)';
-
-                    current = (current + 1) % cards.length;
-                    const next = cards[current];
-                    next.style.transition = 'none';
-                    next.style.left = '100%';
-                    setTimeout(() => {
-                        next.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                        next.style.opacity = '1';
-                        next.style.left = '0';
-                        next.style.transform = 'translateX(0)';
-                    }, 50);
-                }, 4000);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', runSlider);
-            } else {
-                runSlider();
-            }
-        })();
-    </script>
 </body>
 
 </html>
