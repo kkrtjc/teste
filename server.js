@@ -648,6 +648,7 @@ function formatErrorLog(context, customer, error) {
 }
 
 app.post('/api/checkout/pix', async (req, res) => {
+    const startTime = Date.now();
     const { items, customer, deliveryMethod } = req.body;
     console.log(`💠 [PIX] Nova solicitação Iniciada`);
     console.log(`👤 Cliente: ${customer.name} (${customer.email})`);

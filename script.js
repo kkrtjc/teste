@@ -11,6 +11,9 @@ let cart = {
 // GLOBAL PAYMENT STATE
 let currentPaymentMethod = 'pix'; // Default
 
+// --- PERFORMANCE: PRE-FETCHING ---
+const prefetchedProducts = {};
+
 // --- INIT: CHECK PENDING PIX (Recover Logic) ---
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. UNIQUE VISITOR TRACKING
@@ -52,19 +55,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- 5. DYNAMIC PRICE FETCH ---
-    try {
-        const response = await fetch(`${API_URL}/api/products/ebook-doencas`);
-        if (response.ok) {
-            const data = await response.json();
-            const priceElement = document.getElementById('display-price-value');
-            if (priceElement && data.price) {
-                priceElement.innerText = data.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    // --- 5. DYNAMIC PRE-FETCH (Instant Checkout) ---
+    const productsToPreload = ['ebook-doencas', 'combo-elite', 'ebook-manejo'];
+    productsToPreload.forEach(async (id) => {
+        try {
+            const response = await fetch(`${API_URL}/api/products/${id}`);
+            if (response.ok) {
+                prefetchedProducts[id] = await response.json();
+                console.log(`🚀 [PREFETCH] ${id} carregado`);
+
+                // Update specific price elements if they exist
+                if (id === 'ebook-doencas') {
+                    const resp = prefetchedProducts[id];
+                    const priceElement = document.getElementById('display-price-value');
+                    if (priceElement && resp.price) {
+                        priceElement.innerText = resp.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    }
+                }
             }
+        } catch (e) {
+            console.warn(`[PREFETCH] Falha ao carregar ${id}`, e);
         }
-    } catch (e) {
-        console.warn("Pricing update failed", e);
-    }
+    });
 
     // 3. LAZY VIDEO LOADING (Intersection Observer)
     const lazyVideo = document.getElementById('vsl-video');
@@ -1613,9 +1625,13 @@ function showPixResult(data, items) {
             } else {
                 // If not approved yet, schedule next poll
                 attempts++;
-                // First 30 seconds: poll every 1 second (FAST)
+                // FIRST 10 SECONDS: poll every 500ms (ULTRA-FAST PERF)
+                // Next 20 seconds: poll every 1 second (FAST)
                 // After that: poll every 3 seconds (NORMAL)
-                const delay = attempts < fastPollDuration ? 1000 : 3000;
+                let delay = 3000;
+                if (attempts < 20) delay = 500; // 0-10s
+                else if (attempts < 40) delay = 1000; // 10-30s
+
                 window.activePixPoll = setTimeout(pollLogic, delay);
             }
         } catch (e) {
@@ -2299,33 +2315,39 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     };
 
     try {
-        let productData;
-        try {
-            // Try fetch with timeout (3s)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
+        let productData = prefetchedProducts[productId];
 
-            const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`, { signal: controller.signal });
-            clearTimeout(timeoutId);
+        if (!productData) {
+            console.log(`⚠️ [CHECKOUT] Dados não pré-carregados para ${productId}, buscando agora...`);
+            try {
+                // Try fetch with timeout (3s)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-            if (!response.ok) throw new Error("API Error");
-            productData = await response.json();
-            console.log("Product data loaded from API");
-        } catch (fetchErr) {
-            console.warn("API Fetch failed or timed out, using fallback data.", fetchErr);
-            productData = fallbackData[productId];
+                const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
 
-            if (!productData) {
-                // Last resort fallback
-                productData = {
-                    title: 'Protocolo Elite',
-                    price: 99.90,
-                    originalPrice: 149.90,
-                    cover: 'capadasdoencas.jpg',
-                    fullBumps: []
-                };
+                if (!response.ok) throw new Error("API Error");
+                productData = await response.json();
+                console.log("Product data loaded from API");
+            } catch (fetchErr) {
+                console.warn("API Fetch failed or timed out, using fallback data.", fetchErr);
+                productData = fallbackData[productId];
+
+                if (!productData) {
+                    // Last resort fallback
+                    productData = {
+                        title: 'Protocolo Elite',
+                        price: 99.90,
+                        originalPrice: 149.90,
+                        cover: 'capadasdoencas.jpg',
+                        fullBumps: []
+                    };
+                }
+                productData.id = productId;
             }
-            productData.id = productId;
+        } else {
+            console.log(`✅ [CHECKOUT] Usando dados pré-carregados para ${productId}`);
         }
 
         cart.mainProduct = { ...productData, id: productId };
@@ -2362,9 +2384,17 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         updateTotal();
 
         // --- Guided Animation Sequence - VERSÃO SIMPLIFICADA PARA WHITE CHECKOUT ---
-        if (secureOverlay) secureOverlay.classList.remove('active');
-        checkoutModal.classList.add('active');
-        document.body.classList.add('modal-open');
+        const delay = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts[productId]) ? 50 : 300;
+        if (secureOverlay) {
+            setTimeout(() => {
+                secureOverlay.classList.remove('active');
+                checkoutModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            }, delay);
+        } else {
+            checkoutModal.classList.add('active');
+            document.body.classList.add('modal-open');
+        }
 
     } catch (err) {
         console.error("Error opening checkout:", err);
