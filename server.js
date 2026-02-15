@@ -110,7 +110,8 @@ const upload = multer({ storage });
 let cacheDB = null;
 
 function getDB() {
-    if (cacheDB) return cacheDB;
+    // Forçar a leitura do arquivo para evitar dados em cache quando editamos o arquivo manualmente
+    // if (cacheDB) return cacheDB; 
     try {
         cacheDB = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
         return cacheDB;

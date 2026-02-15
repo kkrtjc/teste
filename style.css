@@ -26,6 +26,43 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
+/* VSL Video Section */
+.vsl-square-section {
+    padding: 2.5rem 0;
+    background: #fcfcfc;
+}
+
+.square-video-container {
+    max-width: 320px;
+    /* Ajuste para equilibrar tamanho e visibilidade */
+    margin: 0 auto;
+}
+
+.square-video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    /* Ratio 1:1 */
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    background: #000;
+}
+
+.square-video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 60%;
+    transform: scale(1.04);
+    /* Pequeno zoom para "matar" qualquer borda preta do arquivo de vídeo */
+    filter: brightness(1.02);
+    /* Leve realce para combinar melhor com o fundo claro */
+}
+
 * {
     margin: 0;
     padding: 0;

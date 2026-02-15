@@ -2302,7 +2302,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             cover: 'capadasdoencas.jpg',
             fullBumps: [
                 { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.jpg', description: 'Crie pintinhos fortes e saudáveis.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Economize na ração.', tag: 'OFERTA ÚNICA' }
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentação correta em todas as fases da sua criação. Economize na ração e acelere o crescimento das suas aves.', tag: 'OFERTA ÚNICA' }
             ]
         },
         'ebook-manejo': {
