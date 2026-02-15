@@ -142,14 +142,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 4. Testimonials (Single-Slide Carousel - COMPACT) ---
     const testimonials = [
-        { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.png' },
-        { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.PNG' },
+        { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.jpg' },
+        { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.jpg' },
         { text: 'Tinha uma galinha que não comia, só ficava no canto. Segui o passo a passo e em 2 dias ela voltou ao normal.', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-        { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.png' },
-        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpeg' },
-        { text: 'Galinha parou de botar e tava com a crista caída. Segui o protocolo e voltou a produzir normal.', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpeg' },
-        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpeg' },
-        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpeg' }
+        { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.jpg' },
+        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpg' },
+        { text: 'Galinha parou de botar e tava com a crista caída. Segui o protocolo e voltou a produzir normal.', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpg' },
+        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpg' },
+        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpg' }
     ];
 
     const testimonialsTrack = document.getElementById('testimonials-track');
@@ -420,8 +420,8 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             if (productData.cover === 'combo') {
                 iconContainer.innerHTML = `
                     <div style="display: flex; gap: 5px; align-items: center;">
-                        <img src="capadospintinhos.png" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                        <img src="capadasdoencas.png" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadospintinhos.jpg" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadasdoencas.jpg" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
                     </div>`;
             } else {
                 iconContainer.innerHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px;">`;
@@ -470,9 +470,9 @@ function renderOrderBumps(bumps) {
     area.innerHTML = filteredBumps.map(bump => {
         let imgSrc = bump.image;
         if (!imgSrc) {
-            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.png';
-            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.png';
-            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.png';
+            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
+            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
+            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
         }
 
         return `
@@ -730,7 +730,7 @@ function showSlideInUpsell(method) {
                 
                 <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 1rem; text-align: left;">
                     <div style="position: relative;">
-                         <img src="capadospintinhos.png" style="width: 85px; border-radius: 6px; border: 2px solid #fbbf24; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));">
+                         <img src="capadospintinhos.jpg" style="width: 85px; border-radius: 6px; border: 2px solid #fbbf24; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));">
                          <div style="position: absolute; top: -10px; right: -10px; background: #e74c3c; color: #fff; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; transform: rotate(15deg); border: 2px solid #fff;">-35%</div>
                     </div>
                     <ul style="color: #fff; font-size: 0.75rem; padding: 0; margin: 0; list-style: none; line-height: 1.4;">
@@ -1632,13 +1632,13 @@ function showPixResult(data, items) {
 
 // --- 5. FLOATING TOASTS LOGIC ---
 const toastData = [
-    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpeg' },
-    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.png' },
+    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpg' },
+    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.jpg' },
     { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.jpg' },
-    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.png' },
-    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.png' },
+    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.jpg' },
+    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.jpg' },
     { name: 'Roberto J.', city: 'RS', text: 'Entrega imediata, já estou estudando.', avatar: 'https://ui-avatars.com/api/?name=Roberto+J&background=random' },
-    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.PNG' }
+    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.jpg' }
 ];
 
 let toastInterval = null;
@@ -2283,17 +2283,17 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             title: 'Protocolo Elite: A Cura das Aves',
             price: 109.90,
             originalPrice: 149.90,
-            cover: 'capadasdoencas.png',
+            cover: 'capadasdoencas.jpg',
             fullBumps: [
-                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.png', description: 'Crie pintinhos fortes e saudáveis.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.png', description: 'Economize na ração.', tag: 'OFERTA ÚNICA' }
+                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.jpg', description: 'Crie pintinhos fortes e saudáveis.' },
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Economize na ração.', tag: 'OFERTA ÚNICA' }
             ]
         },
         'ebook-manejo': {
             title: 'Manual de Pintinhos de Elite',
             price: 49.90,
             originalPrice: 99.90,
-            cover: 'capadospintinhos.png',
+            cover: 'capadospintinhos.jpg',
             fullBumps: []
         }
     };
@@ -2321,7 +2321,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
                     title: 'Protocolo Elite',
                     price: 99.90,
                     originalPrice: 149.90,
-                    cover: 'capadasdoencas.png',
+                    cover: 'capadasdoencas.jpg',
                     fullBumps: []
                 };
             }
@@ -2339,8 +2339,8 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             if (productData.cover === 'combo') {
                 iconContainer.innerHTML = `
                     <div style="display: flex; gap: 5px; align-items: center;">
-                        <img src="capadospintinhos.png" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                        <img src="capadasdoencas.png" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadospintinhos.jpg" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadasdoencas.jpg" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
                     </div>`;
             } else {
                 iconContainer.innerHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px;">`;

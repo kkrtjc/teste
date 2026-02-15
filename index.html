@@ -6,13 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PROTOCOLO ELITE: A Cura das Aves | O Segredo das Galinhas</title>
 
+    <!-- Performance Optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
     <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        media="print" onload="this.media='all'">
 
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="order_bump_modal.css">
-    <link rel="stylesheet" href="modern_enhancements.css">
+    <link rel="stylesheet" href="order_bump_modal.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="modern_enhancements.css" media="print" onload="this.media='all'">
 
     <style>
         /* Promoção de Elite Interstitial Re-style */
@@ -188,7 +194,7 @@
 
             <div
                 style="display: flex; gap: 15px; background: #fff; padding: 10px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 15px;">
-                <img src="capadospintinhos.png" style="width: 70px; height: auto; border-radius: 5px;">
+                <img src="capadospintinhos.jpg" style="width: 70px; height: auto; border-radius: 5px;">
                 <div>
                     <h4 style="font-size: 0.95rem; margin: 0; color: #111;">Manejo de Pintinhos</h4>
                     <p style="font-size: 0.8rem; color: var(--gray-500); margin: 2px 0;">De: <span
@@ -361,11 +367,11 @@
                     <div class="avatar-stack" style="display: flex; margin-right: 15px;">
                         <div
                             style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #ddd; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <img src="carrosel/carlos.png" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="carrosel/carlos.jpg" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <div
                             style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #ccc; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <img src="carrosel/maria.PNG" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="carrosel/maria.jpg" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <div
                             style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #bbb; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
@@ -373,11 +379,11 @@
                         </div>
                         <div
                             style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #aaa; overflow: hidden; margin-right: -15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <img src="carrosel/ana.png" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="carrosel/ana.jpg" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <div
                             style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #fff; background: #999; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <img src="carrosel/lucas.jpeg" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="carrosel/lucas.jpg" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     </div>
                     <span
@@ -451,7 +457,7 @@
         style="padding: 3rem 0; border-top: 2px solid var(--amber-100); border-bottom: 2px solid var(--amber-100);">
         <div class="container authority-grid" style="gap: 2rem;">
             <div class="mockup-side" style="flex: 0 0 180px;">
-                <img src="capadasdoencas.png" alt="Guia O Segredo das Galinhas"
+                <img src="capadasdoencas.jpg" alt="Guia O Segredo das Galinhas"
                     style="width: 100%; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));">
             </div>
             <div class="learning-side"
@@ -548,7 +554,7 @@
     <!-- Authority Section -->
     <section class="bg-white" style="padding: 4rem 0; border-top: 2px solid var(--amber-100);">
         <div class="container authority-grid">
-            <img src="comparacao_pintinhos.png" alt="Comparação Pintinhos" class="authority-img">
+            <img src="comparacao_pintinhos.jpg" alt="Comparação Pintinhos" class="authority-img">
             <div class="authority-content">
                 <h3>Quem Sou eu ?</h3>
                 <p>
@@ -804,7 +810,7 @@
             <div id="checkout-main-view" style="position: relative;">
                 <!-- 1. Resumo do Pedido (Compacto) -->
                 <div class="checkout-summary">
-                    <img src="capadasdoencas.png" alt="Capa" class="summary-img">
+                    <img src="capadasdoencas.jpg" alt="Capa" class="summary-img">
                     <div class="summary-details">
                         <h4>Protocolo Elite: A Cura das Aves</h4>
                         <ul class="summary-features">
@@ -1058,11 +1064,11 @@
     <div id="checkout-product-price-display" style="display:none;"></div>
     <div id="product-icon-container" style="display:none;"></div>
 
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <script src="https://sdk.mercadopago.com/js/v2" defer></script>
     <script>const mp = new MercadoPago('APP_USR-73238612-450f-4fbe-9a9f-3d5f9919f2d1');</script>
-    <script src="smart_fields.js"></script>
-    <script src="script.js?v=26"></script>
-    <script src="order_bump_modal.js"></script>
+    <script src="smart_fields.js" defer></script>
+    <script src="script.js?v=26" defer></script>
+    <script src="order_bump_modal.js" defer></script>
 
 </body>
 
