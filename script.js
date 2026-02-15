@@ -716,56 +716,54 @@ function showSlideInUpsell(method) {
     }, 1000);
 
     obModal.innerHTML = `
-        <div class="order-bump-slide-content" style="border-top: 5px solid #fbbf24; background: #1a1a1a; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);">
-            <button class="order-bump-close" onclick="declineSlideUpsell('${method}')" style="background: rgba(255,255,255,0.1); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; top: 10px; right: 10px;">
-                <i class="fa-solid fa-xmark"></i>
+        <div class="order-bump-slide-content" style="border-top: 3px solid #fbbf24; background: #1a1a1a; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);">
+            <button class="order-bump-close" onclick="declineSlideUpsell('${method}')" style="background: rgba(255,255,255,0.1); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; top: 5px; right: 5px;">
+                <i class="fa-solid fa-xmark" style="font-size: 0.8rem;"></i>
             </button>
 
-            <div class="order-bump-header" style="text-align: center; padding: 10px 0;">
-                <div style="display: inline-block; background: #e74c3c; color: #fff; padding: 4px 12px; border-radius: 4px; font-weight: 900; font-size: 0.75rem; margin-bottom: 8px; letter-spacing: 1px;">PROMOÇÃO RELÂMPAGO</div>
-                <h3 style="margin-top: 5px; font-size: 1.25rem; color: #fbbf24; text-transform: uppercase; line-height: 1.2;">
+            <div class="order-bump-header" style="text-align: center; padding: 5px 0;">
+                <div style="display: inline-block; background: #e74c3c; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 900; font-size: 0.65rem; margin-bottom: 4px; letter-spacing: 1px;">PROMOÇÃO RELÂMPAGO</div>
+                <h3 style="margin-top: 2px; font-size: 1.05rem; color: #fbbf24; text-transform: uppercase; line-height: 1.1;">
                     APENAS AGORA<br>
-                    <span style="font-size: 0.85rem; color: #fff; font-weight: 400; opacity: 0.8;">MANUAL DE PINTINHOS DE ELITE</span>
+                    <span style="font-size: 0.8rem; color: #fff; font-weight: 400; opacity: 0.8;">MANUAL DE PINTINHOS DE ELITE</span>
                 </h3>
             </div>
 
-            <div style="background: rgba(251,191,36,0.1); border: 1px dashed #fbbf24; border-radius: 8px; padding: 10px; margin: 10px 0; text-align: center;">
-                <span style="color: #fff; font-size: 0.85rem;">Essa oferta expira em: </span>
-                <span id="upsell-timer" style="color: #fbbf24; font-weight: 900; font-size: 1.25rem; font-family: monospace;">05:00</span>
+            <div style="background: rgba(251,191,36,0.1); border: 1px dashed #fbbf24; border-radius: 8px; padding: 6px; margin: 6px 0; text-align: center;">
+                <span style="color: #fff; font-size: 0.75rem;">Expira em: </span>
+                <span id="upsell-timer" style="color: #fbbf24; font-weight: 900; font-size: 1.1rem; font-family: monospace;">05:00</span>
             </div>
 
-            <div class="order-bump-body" style="text-align: center; padding: 0 10px;">
-                <p style="color: #fff; font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
-                    <strong style="color: #e74c3c;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO CRIAR PINTINHOS E SE LIVRE DE DOENÇA DESDE O NASCIMETO.<br>
-                    <strong style="color: #fbbf24; display: block; margin-top: 8px;">SE TORNE O CRIADOR COMPLETO</strong>
+            <div class="order-bump-body" style="text-align: center; padding: 0 5px;">
+                <p style="color: #fff; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.3; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+                    <strong style="color: #e74c3c;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO CRIAR PINTINHOS E SE LIVRE DE DOENÇA.<br>
+                    <strong style="color: #fbbf24; display: block; margin-top: 4px;">SE TORNE O CRIADOR COMPLETO</strong>
                 </p>
                 
-                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 1rem; text-align: left;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0.75rem; text-align: left;">
                     <div style="position: relative;">
-                         <img src="capadospintinhos.jpg" style="width: 85px; border-radius: 6px; border: 2px solid #fbbf24; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));">
-                         <div style="position: absolute; top: -10px; right: -10px; background: #e74c3c; color: #fff; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; transform: rotate(15deg); border: 2px solid #fff;">-35%</div>
+                         <img src="capadospintinhos.jpg" style="width: 75px; border-radius: 6px; border: 2px solid #fbbf24;">
+                         <div style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; transform: rotate(15deg); border: 1.5px solid #fff;">-35%</div>
                     </div>
-                    <ul style="color: #fff; font-size: 0.75rem; padding: 0; margin: 0; list-style: none; line-height: 1.4;">
-                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 6px;"></i> Sobrevivência de até 98%</li>
-                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 6px;"></i> Crescimento 3x mais rápido</li>
-                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 6px;"></i> Ambiente ideal</li>
-                        <li style="margin-bottom: 4px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 6px;"></i> Doenças Comuns e como tratar</li>
+                    <ul style="color: #fff; font-size: 0.7rem; padding: 0; margin: 0; list-style: none; line-height: 1.3;">
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Sobrevivência de até 98%</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Crescimento 3x mais rápido</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Doenças e tratamentos</li>
                     </ul>
                 </div>
 
-                <div class="order-bump-price-tag" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="color: rgba(255,255,255,0.4); text-decoration: line-through; font-size: 0.85rem; margin-bottom: 2px;">De R$ 59,90</div>
-                    <div style="color: #fff; font-size: 0.75rem; opacity: 0.6; margin-bottom: 5px;">HOJE POR APENAS</div>
-                    <div style="color: #fbbf24; font-size: 2.25rem; font-weight: 900; line-height: 1;">R$ 39<span style="font-size: 1.25rem;">,90</span></div>
+                <div class="order-bump-price-tag" style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="color: rgba(255,255,255,0.4); text-decoration: line-through; font-size: 0.75rem;">De R$ 59,90</div>
+                    <div style="color: #fbbf24; font-size: 1.8rem; font-weight: 900; line-height: 1;">R$ 39<span style="font-size: 1rem;">,90</span></div>
                 </div>
             </div>
 
-            <div class="order-bump-actions" style="padding: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <button class="btn-accept-bump btn-pulse" onclick="confirmSlideUpsell('${method}')" style="background: #fbbf24; color: #000; width: 100%; border: none; padding: 16px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            <div class="order-bump-actions" style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button class="btn-accept-bump" onclick="confirmSlideUpsell('${method}')" style="background: #fbbf24; color: #000; width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.9rem; text-transform: uppercase;">
                     QUERO SALVAR MEUS PINTINHOS
                 </button>
-                <button class="btn-decline-bump" onclick="declineSlideUpsell('${method}')" style="background: none; border: none; color: rgba(255,255,255,0.4); text-decoration: underline; margin-top: 12px; cursor: pointer; display: block; width: 100%; font-size: 0.8rem;">
-                    Não, não quero proteger meus pintinhos.
+                <button class="btn-decline-bump" onclick="declineSlideUpsell('${method}')" style="background: none; border: none; color: rgba(255,255,255,0.4); text-decoration: underline; margin-top: 8px; cursor: pointer; display: block; width: 100%; font-size: 0.75rem;">
+                    Não, obrigado.
                 </button>
             </div>
         </div>
