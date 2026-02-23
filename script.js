@@ -484,6 +484,9 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             if (secureOverlay) secureOverlay.classList.remove('active');
             checkoutModal.classList.add('active');
             document.body.classList.add('modal-open');
+
+            // Reforçar disparo do Pixel ao abrir definitivamente
+            if (typeof fbq === 'function') fbq('track', 'InitiateCheckout');
         }, delay);
 
     } catch (err) {
@@ -491,6 +494,15 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         if (secureOverlay) secureOverlay.classList.remove('active');
         document.body.classList.remove('modal-open');
     }
+}
+
+function closeCheckout() {
+    const modal = document.getElementById('checkout-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+    sessionStorage.removeItem('mura_modal_open');
 }
 
 function renderOrderBumps(bumps) {
@@ -1865,3 +1877,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// --- 6. LIGHTBOX SYSTEM ---
+function openLightbox(src) {
+    const overlay = document.getElementById('lightbox-overlay');
+    const img = document.getElementById('lightbox-img');
+    if (overlay && img) {
+        img.src = src;
+        overlay.classList.add('active');
+        // Não prendemos o scroll aqui para não bugar com o modal aberto embaixo
+    }
+}
+
+function closeLightbox() {
+    const overlay = document.getElementById('lightbox-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// Fechar com ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeLightbox();
+        // Não fechamos o checkout no ESC por segurança na conversão, apenas o lightbox
+    }
+});

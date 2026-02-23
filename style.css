@@ -151,6 +151,10 @@ body {
     max-width: 100%;
 }
 
+body.modal-open {
+    overflow: hidden !important;
+}
+
 body {
     background: #000;
     /* Fallback */
@@ -1137,4 +1141,62 @@ header.sticky {
     }
 
     /* Stacking rules removed to maintain horizontal layout */
+}
+
+/* --- LIGHTBOX SYSTEM --- */
+.lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 30000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    cursor: zoom-out;
+    backdrop-filter: blur(5px);
+}
+
+.lightbox-overlay.active {
+    display: flex;
+}
+
+.lightbox-content {
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+    cursor: default;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    object-fit: contain;
+}
+
+.lightbox-overlay.active .lightbox-content {
+    transform: scale(1);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    z-index: 30001;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
