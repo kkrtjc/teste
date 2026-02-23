@@ -722,7 +722,56 @@ header.sticky {
 }
 
 .auth-badge i {
-    color: var(--red-600);
+    color: #fbbf24;
+}
+
+/* Mobile Authority Overrides */
+@media (max-width: 768px) {
+    .authority-profile-section {
+        padding: 2rem 0 !important;
+    }
+
+    .authority-grid {
+        gap: 1.5rem !important;
+    }
+
+    .authority-video-container {
+        max-width: 220px !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .authority-content h3 {
+        font-size: 1.6rem !important;
+        margin-bottom: 1rem !important;
+        text-align: center;
+    }
+
+    .authority-content p {
+        font-size: 1rem !important;
+        margin-bottom: 0.75rem !important;
+        line-height: 1.5 !important;
+        text-align: center;
+    }
+
+    .authority-badges {
+        margin-bottom: 1rem !important;
+        justify-content: center;
+        gap: 8px !important;
+    }
+
+    .auth-badge {
+        padding: 6px 12px !important;
+        font-size: 0.75rem !important;
+    }
+
+    .authority-content>div:last-child {
+        margin-top: 1rem !important;
+    }
+
+    .authority-content .btn-primary {
+        padding: 1rem !important;
+        font-size: 1.1rem !important;
+    }
 }
 
 /* --- Guarantee --- */
