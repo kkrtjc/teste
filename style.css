@@ -29,7 +29,7 @@
 /* VSL Video Section */
 .vsl-square-section {
     padding: 2.5rem 0;
-    background: #fcfcfc;
+    background: transparent;
 }
 
 .square-video-container {
@@ -63,21 +63,242 @@
     /* Leve realce para combinar melhor com o fundo claro */
 }
 
+/* VSL PREMIUM OVERLAY */
+.vsl-play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.4s ease;
+}
+
+.play-btn-circle {
+    width: 80px;
+    height: 80px;
+    background: var(--amber-600);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+    animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+    0% {
+        box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
+        transform: scale(1);
+    }
+
+    70% {
+        box-shadow: 0 0 0 20px rgba(217, 119, 6, 0);
+        transform: scale(1.05);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(217, 119, 6, 0);
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+}
+
+.square-video-wrapper:hover .vsl-play-overlay {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.square-video-wrapper:hover .play-btn-circle {
+    transform: scale(1.1);
+    background: var(--amber-500);
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html,
 body {
-    background-color: var(--amber-50);
-    color: var(--gray-800);
-    font-family: var(--font-sans);
-    line-height: 1.5;
+    overflow-x: hidden;
+    position: relative;
+    max-width: 100%;
 }
 
-body.no-scroll {
-    overflow: hidden;
+body {
+    background: #000;
+    /* Fallback */
+    color: #ffffff;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* Stable Fixed Background Technique for Mobile and Desktop */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Layer 1: The Image */
+    background-image: url('hero-mura-bg.png');
+    background-size: cover;
+    background-position: center bottom;
+    /* Focal point for Desktop */
+    background-repeat: no-repeat;
+    z-index: -2;
+}
+
+/* Dark gradient overlay as a separate layer for control */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.75));
+    z-index: -1;
+}
+
+/* Mobile Specific Focal Point Optimization */
+@media (max-width: 768px) {
+    body::before {
+        background-position: 50% 0%;
+        /* Levanta a imagem ao máximo (topo) */
+        background-size: cover;
+        /* Ajusta para preencher melhor sem zoom excessivo */
+    }
+}
+
+/* --- Authority Section Badges --- */
+.auth-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: #ffffff !important;
+}
+
+section,
+.bg-white,
+.bg-amber-50,
+.social-proof-bar {
+    background: transparent !important;
+}
+
+/* Social Proof Bar Layout & Stat Items */
+.social-proof-bar {
+    padding: 3rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.stat-item i {
+    width: 60px;
+    height: 60px;
+    background: transparent !important;
+    border: 2px solid #fbbf24;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fbbf24;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: none !important;
+}
+
+.stat-text {
+    flex: 1;
+}
+
+/* Force high-visibility text legibility across all sections (EXCEPT MODALS) */
+body>section h1,
+body>section h2,
+body>section h3,
+body>section h4,
+body>section p,
+body>section li,
+body>section span,
+body>section strong,
+body>section b,
+.social-proof-bar *,
+.hero * {
+    color: #ffffff !important;
+}
+
+/* Ensure Modal Content stays legible (Dark on Light) */
+.modal-content,
+.modal-content * {
+    text-shadow: none !important;
+}
+
+/* Specific exceptions for accent colors to keep their "glow" */
+[style*="color: #fbbf24"],
+.accent-yellow {
+    color: #fbbf24 !important;
+}
+
+[style*="color: #ff4d4d"],
+.accent-red {
+    color: #ff4d4d !important;
+}
+
+[style*="color: #16a34a"],
+.accent-green {
+    color: #22c55e !important;
+}
+
+/* Add a very subtle "dark haze" to containers to ease reading */
+section .container {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    padding: 2rem 1.5rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .container {
@@ -85,6 +306,8 @@ body.no-scroll {
     /* max-w-4xl */
     margin: 0 auto;
     padding: 0 1rem;
+    position: relative;
+    z-index: 2;
 }
 
 /* --- Navigation --- */
@@ -169,10 +392,7 @@ header.sticky {
     position: relative;
     text-align: center;
     padding: 6rem 0 4rem;
-    background: linear-gradient(rgba(10, 10, 10, 0.75), rgba(0, 0, 0, 0.5)), url('hero-mura-bg.png');
-    background-size: cover;
-    background-position: center 20%;
-    background-attachment: fixed;
+    background: transparent !important;
     color: #fff !important;
     margin-bottom: 0;
     border-radius: 0;
@@ -316,16 +536,18 @@ header.sticky {
 }
 
 .card {
-    background: var(--white);
+    background: rgba(255, 255, 255, 0.05);
+    /* Glass effect for cinematic theme */
+    backdrop-filter: blur(5px);
     padding: 1.25rem;
-    border: 2px solid var(--amber-100);
-    border-radius: 0.5rem;
-    transition: border-color 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
     text-align: center;
 }
 
 .card:hover {
-    border-color: var(--red-200);
+    border-color: #fbbf24;
 }
 
 .icon-circle {
@@ -558,18 +780,24 @@ header.sticky {
 /* --- Checkout Modal --- */
 .modal-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
+    z-index: 10000;
+    /* Increased to stay above everything */
     display: flex;
     align-items: flex-start;
-    /* Better for scrolling */
     justify-content: center;
     opacity: 0;
     pointer-events: none;
-    transition: 0.2s;
+    transition: opacity 0.3s ease;
     overflow-y: auto;
-    padding: 1.5rem;
+    overflow-x: hidden;
+    /* Lock horizontal */
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-overlay.active {
@@ -582,17 +810,17 @@ header.sticky {
     width: 100%;
     max-width: 28rem;
     padding: 1.5rem;
-    border-radius: 0.75rem;
-    transform: scale(0.95);
-    transition: 0.2s;
-    margin: auto;
-    /* Centers when content is short */
+    border-radius: 1rem;
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 2rem auto;
     position: relative;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    will-change: transform;
 }
 
 .modal-overlay.active .modal-content {
-    transform: scale(1);
+    transform: translateY(0);
 }
 
 .modal-header {
@@ -715,7 +943,8 @@ header.sticky {
     display: block;
     font-weight: 700;
     font-size: 0.875rem;
-    color: var(--gray-800);
+    color: #1f2937 !important;
+    /* Force dark gray */
 }
 
 /* Order Bump White Design */
@@ -735,7 +964,8 @@ header.sticky {
 
 .radio-desc {
     font-size: 0.6875rem;
-    color: var(--gray-500);
+    color: #4b5563 !important;
+    /* Force medium gray */
 }
 
 .payment-flags {
@@ -772,9 +1002,16 @@ header.sticky {
     }
 
     .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
-        flex-direction: column;
-        align-items: flex-start;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        width: 100%;
     }
 
     .authority-grid {

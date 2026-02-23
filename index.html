@@ -20,6 +20,10 @@
     <link rel="stylesheet" href="order_bump_modal.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="modern_enhancements.css" media="print" onload="this.media='all'">
 
+    <!-- Preload critical assets -->
+    <link rel="preload" href="logo.png" as="image">
+    <link rel="preload" href="capadasdoencas.jpg" as="image">
+
     <style>
         /* Promoção de Elite Interstitial Re-style */
         .elite-promo-modal {
@@ -189,7 +193,8 @@
                     class="fa-solid fa-triangle-exclamation"></i> PARE DE PERDER PINTINHOS</h3>
 
             <p style="font-size: 0.8rem; color: var(--gray-600); margin-bottom: 8px; line-height: 1.3;">
-                <strong style="color: #111;">8 a cada 10 pintinhos morrem</strong> antes dos 20 dias por erro de manejo.
+                <strong style="color: #111;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO
+                CRIAR PINTINHOS E SE LIVRE DE DOENÇA DESDE O NASCIMENTO.
             </p>
 
             <div
@@ -197,15 +202,28 @@
                 <img src="capadospintinhos.jpg" style="width: 70px; height: auto; border-radius: 5px;">
                 <div>
                     <h4 style="font-size: 0.95rem; margin: 0; color: #111;">Manejo de Pintinhos</h4>
-                    <p style="font-size: 0.8rem; color: var(--gray-500); margin: 2px 0;">De: <span
-                            style="text-decoration: line-through;">R$ 99,90</span></p>
-                    <div style="font-weight: 800; color: var(--success); font-size: 1rem;">Por: R$ 49,90</div>
+                    <p style="font-size: 0.75rem; color: var(--gray-500); margin: 2px 0;">De: <span
+                            style="text-decoration: line-through;">R$ 69,90 no cartão</span></p>
+                    <div style="font-weight: 800; color: var(--success); font-size: 0.95rem;">por apenas R$ 49,90 no pix
+                    </div>
                 </div>
             </div>
 
-            <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 10px; line-height: 1.3;">
-                Aprenda o passo a passo do nascimento à fase adulta e blinde sua criação.
-            </p>
+            <ul
+                style="list-style: none; padding: 0; margin: 0 0 12px 5px; font-size: 0.8rem; color: var(--gray-600); text-align: left;">
+                <li style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 8px;"><i
+                        class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    Sobrevivência de até 90%</li>
+                <li style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 8px;"><i
+                        class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    Crescimento mais rápido</li>
+                <li style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 8px;"><i
+                        class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i> Ambiente
+                    100% adequado</li>
+                <li style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 8px;"><i
+                        class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i> As
+                    principais doenças em pintinhos e como tratar.</li>
+            </ul>
 
             <button onclick="acceptUpsell()" class="btn-upsell-yes">
                 <i class="fa-solid fa-check"></i> SIM, ADICIONAR AGORA
@@ -235,48 +253,55 @@
         }
 
         .upsell-modal-container.active {
-            display: flex;
-            /* Flex to center */
+            display: flex !important;
             opacity: 1;
         }
 
         .upsell-content {
             background: #fff;
             width: 90%;
-            max-width: 400px;
-            /* Standard modal width */
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transform: translateX(-50px);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 420px;
+            padding: 20px 15px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: scale(0.9);
+            /* Start slightly smaller */
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             text-align: left;
             position: relative;
+        }
+
+        .upsell-modal-container.active .upsell-content {
+            transform: scale(1);
+            opacity: 1;
         }
 
         /* Desktop specific: Slide from left side */
         @media (min-width: 768px) {
             .upsell-modal-container {
                 justify-content: flex-start;
-                /* Align to left */
+                padding-left: 0;
             }
 
             .upsell-content {
                 width: 400px;
                 height: 100%;
-                border-radius: 0 20px 20px 0;
+                max-height: 100vh;
+                border-radius: 0 24px 24px 0;
                 transform: translateX(-100%);
-                /* Start fully off-screen */
+                opacity: 1;
                 margin: 0;
                 max-width: none;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             }
-        }
 
-        .upsell-modal-container.active .upsell-content {
-            transform: translateX(0);
+            .upsell-modal-container.active .upsell-content {
+                transform: translateX(0);
+            }
         }
 
         .btn-upsell-yes {
@@ -400,16 +425,16 @@
 
             <h2>
                 <span
-                    style="color: #ff4d4d; display: block; margin-bottom: 0.5rem; font-size: 2.2rem; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">COMECE
-                    AGORA O TRATAMENTO DA SUA GALINHA</span>
+                    style="color: #ff4d4d; display: block; margin-bottom: 0.5rem; font-size: 2.2rem; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">SALVE
+                    SUAS GALINHAS AGORA</span>
                 <span
                     style="font-size: 1.5rem; display: block; margin-top: 0.5rem; font-weight: 600; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">Sem
-                    Gastar Fortunas com Veterinários.</span>
+                    Gastar Fortunas com Veterinário.</span>
             </h2>
 
             <p
-                style="font-size: 1.25rem; color: #ffffff; margin-bottom: 1rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
-                Descubra o tratamento certo para sua galinha.
+                style="font-size: 1.25rem; color: #ffffff; margin-bottom: 1.2rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
+                Tratamentos com resultados comprovados.
             </p>
             <div
                 style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.5rem; margin: 0 auto 2rem; max-width: 800px; backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
@@ -429,14 +454,13 @@
                 </div>
 
                 <p
-                    style="font-size: 1.25rem; color: #ffffff; margin-bottom: 0.5rem; line-height: 1.4; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">
-                    Tudo isso você vai aprender a tratar <strong
-                        style="color: #fbbf24; text-decoration: underline; text-decoration-color: #fbbf24; text-underline-offset: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">corretamente</strong>.
+                    style="font-size: 1.25rem; color: #ffffff; margin-bottom: 0.5rem; line-height: 1.4; font-weight: 800;">
+                    Vai perder mais quantas galinhas para esses problemas ?
                 </p>
 
                 <p
-                    style="font-size: 1.1rem; color: #ff4d4d; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 10px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">
-                    <i class="fa-solid fa-hand"></i> CHEGA de métodos caseiros que não funcionam.
+                    style="font-size: 1.1rem; color: #fbbf24; font-weight: 900; letter-spacing: 0.5px; text-transform: none; margin-top: 10px;">
+                    <i class="fa-solid fa-hand"></i> Resolva hoje mesmo o problema da sua galinha antes que seja tarde.
                 </p>
             </div>
 
@@ -452,68 +476,113 @@
         </div>
     </section>
 
-    <!-- VSL Video Section (Square) -->
-    <section class="vsl-square-section">
-        <div class="container">
-            <div class="square-video-container">
-                <div class="square-video-wrapper">
-                    <video playsinline controls poster="video_cover_vsl.jpg">
-                        <source src="venda_vsl.mp4" type="video/mp4">
+
+    <!-- Authority Section ("Quem Sou Eu") -->
+    <section class="authority-profile-section"
+        style="padding: 4rem 0; border-top: 2px solid rgba(255,255,255,0.1); background: transparent;">
+        <div class="container authority-grid">
+            <img src="comparacao_pintinhos.jpg" alt="Quem Sou Eu" class="authority-img">
+            <div class="authority-content">
+                <h3 style="color: #ffffff; font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem;">Quem Sou eu ?</h3>
+                <p style="color: #ffffff; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem;">
+                    Com <strong>mais de 10 anos de experiência</strong> na criação de aves, dediquei minha vida a
+                    entender os segredos por trás de um plantel saudável e produtivo.
+                </p>
+                <p style="color: #ffffff; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                    Hoje, compartilho meu conhecimento com milhares de seguidores e já ajudei diversos alunos a
+                    transformarem suas criações, eliminando prejuízos e trazendo de volta o prazer de criar.
+                </p>
+
+                <div class="authority-badges" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 2rem;">
+                    <div class="auth-badge"
+                        style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.2);">
+                        <i class="fa-solid fa-award" style="color: #fbbf24;"></i> 10+ Anos de Experiência
+                    </div>
+                    <div class="auth-badge"
+                        style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.2);">
+                        <i class="fa-solid fa-users" style="color: #fbbf24;"></i> Milhares de Seguidores
+                    </div>
+                    <div class="auth-badge"
+                        style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.2);">
+                        <i class="fa-solid fa-graduation-cap" style="color: #fbbf24;"></i> Mentor de Diversos Alunos
+                    </div>
+                </div>
+
+                <!-- Video Container for the User -->
+                <div class="authority-video-container"
+                    style="margin: 2rem auto 0; max-width: 260px; border-radius: 20px; overflow: hidden; border: 3px solid #fbbf24; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000;">
+                    <video controls playsinline style="width: 100%; display: block;">
+                        <source src="vsl autoridade.mp4" type="video/mp4">
                         Seu navegador não suporta vídeos.
                     </video>
                 </div>
-            </div>
-            <div style="text-align: center; margin-top: 1.5rem;">
-                <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large"
-                    style="padding: 1rem 2.5rem; font-size: 1.25rem;">SALVAR MINHAS GALINHAS</button>
+
+                <!-- CTA Below Authority Video -->
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
+                        style="width: 100%; max-width: 320px; padding: 1.25rem; font-size: 1.2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(217,119,6,0.3);">
+                        QUERO SALVAR MINHAS GALINHAS AGORA
+                    </button>
+                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 10px; font-weight: 600;">
+                        <i class="fa-solid fa-lock" style="font-size: 0.75rem;"></i> Compra 100% Segura
+                    </p>
+                </div>
             </div>
         </div>
     </section>
 
+
+
     <!-- Horizontal Learning Section -->
-    <section id="learning" class="bg-white"
-        style="padding: 3rem 0; border-top: 2px solid var(--amber-100); border-bottom: 2px solid var(--amber-100);">
+    <section id="learning" class="learning-section" style="padding: 3rem 0; background: transparent;">
         <div class="container authority-grid" style="gap: 2rem;">
             <div class="mockup-side" style="flex: 0 0 180px;">
                 <img src="capadasdoencas.jpg" alt="Guia O Segredo das Galinhas"
                     style="width: 100%; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));">
             </div>
             <div class="learning-side"
-                style="flex: 1.5; min-width: 300px; background: rgba(217, 119, 6, 0.02); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--amber-50);">
-                <h4 style="color: var(--amber-900); margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 800;">O Que
+                style="flex: 1.5; min-width: 300px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h4 style="color: #ffffff; margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 800;">O Que
                     Você Vai Aprender Hoje:</h4>
                 <ul
                     style="list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: #ffffff;"><i
+                            class="fa-solid fa-circle-check" style="color: #22c55e; margin-top: 3px;"></i>
                         Identificar doenças em segundos</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: #ffffff;"><i
+                            class="fa-solid fa-circle-check" style="color: #22c55e; margin-top: 3px;"></i>
                         Medicamento correto para cada doença</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: #ffffff;"><i
+                            class="fa-solid fa-circle-check" style="color: #22c55e; margin-top: 3px;"></i>
                         Dosagem que realmente funciona</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--gray-700);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: #ffffff;"><i
+                            class="fa-solid fa-circle-check" style="color: #22c55e; margin-top: 3px;"></i>
                         Protocolos Passo a Passo</li>
                 </ul>
 
                 <div
-                    style="margin-top: 1.25rem; padding: 1rem; background: var(--amber-50); border-radius: 0.75rem; text-align: center;">
+                    style="margin-top: 1.25rem; padding: 1.5rem; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 1rem; text-align: center;">
                     <span
-                        style="display: block; font-size: 0.85rem; color: var(--gray-600); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">POR
+                        style="display: block; font-size: 0.85rem; color: #ffffff; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.6; text-decoration: line-through;">De
+                        149,90</span>
+                    <span
+                        style="display: block; font-size: 0.85rem; color: #ffffff; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">POR
                         APENAS</span>
-                    <span style="display: block; font-size: 1.5rem; color: var(--gray-900); font-weight: 900;">R$ <span
-                            id="display-price-value">109,90</span></span>
                     <span
-                        style="font-size: 0.75rem; color: #10b981; font-weight: 800; display: block; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px; display: inline-block;">🔥
+                        style="display: block; font-size: 2rem; color: #fbbf24; font-weight: 900; margin-bottom: 10px;">R$
+                        <span id="display-price-value">119,90</span> no pix</span>
+                    <span
+                        style="font-size: 0.9rem; color: #ffffff; font-weight: 800; display: inline-block; margin-bottom: 15px; background: #dc2626; padding: 6px 15px; border-radius: 6px; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">🔥
                         27% DE DESCONTO NO PIX</span>
-                    <span style="font-size: 0.9rem; color: var(--gray-600); display: block; margin-top: 5px;">ou em até
-                        <strong>4x
-                            sem juros</strong> no cartão</span>
+                    <span style="font-size: 1rem; color: #ffffff; display: block; margin-bottom: 10px;">ou em até
+                        <strong>4x de R$ 34,90 sem juros</strong> no cartão</span>
                     <span
-                        style="font-size: 0.85rem; color: var(--amber-900); font-weight: 800; display: block; margin-top: 0.5rem; text-transform: uppercase;">QUANTO
+                        style="font-size: 1rem; color: #ffffff; font-weight: 900; display: block; margin-top: 1rem; text-transform: uppercase; letter-spacing: 1px;">QUANTO
                         VALE UMA GALINHA PRA VOCE?</span>
+                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
+                        style="width: 100%; margin-top: 15px; padding: 12px; font-size: 1rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(217,119,6,0.2);">
+                        SALVAR MINHAS GALINHAS AGORA
+                    </button>
                 </div>
             </div>
         </div>
@@ -525,22 +594,22 @@
             <div class="stat-grid">
                 <div class="stat-item">
                     <i class="fa-solid fa-users"></i>
-                    <div class="stat-text">
-                        <strong>+12.000 Pessoas</strong>
+                    <div class="stat-text" style="color: #ffffff;">
+                        <strong style="color: #ffffff; display: block;">+12.000 Pessoas</strong>
                         acompanham meu trabalho
                     </div>
                 </div>
                 <div class="stat-item">
                     <i class="fa-solid fa-graduation-cap"></i>
-                    <div class="stat-text">
-                        <strong>+1.600 Alunos</strong>
+                    <div class="stat-text" style="color: #ffffff;">
+                        <strong style="color: #ffffff; display: block;">+1.600 Alunos</strong>
                         que já salvaram suas galinhas
                     </div>
                 </div>
                 <div class="stat-item">
                     <i class="fa-solid fa-circle-check"></i>
-                    <div class="stat-text">
-                        <strong>Método Comprovado</strong>
+                    <div class="stat-text" style="color: #ffffff;">
+                        <strong style="color: #ffffff; display: block;">Método Comprovado</strong>
                         resultados reais e garantidos
                     </div>
                 </div>
@@ -549,56 +618,13 @@
     </div>
 
 
-    <!-- Social Proof Section (Moved Up) -->
-    <section class="bg-white border-t-amber" style="padding: 4rem 0;">
-        <div class="container">
-            <h3
-                style="text-align: center; font-size: 1.875rem; font-weight: 700; color: var(--amber-900); margin-bottom: 3rem;">
-                O que alunos estao falando.
-            </h3>
-            <div class="testimonial-slider-v2">
-                <div class="testimonial-carousel">
-                    <!-- ID must match what script.js expects -->
-                    <div class="testimonial-track-original" id="testimonials-track"
-                        style="position: relative; height: 180px; color: #78350f; font-family: sans-serif;">
-                        <div style="text-align: center; padding-top: 50px; font-weight: bold;">Carregando Depoimentos
-                            Reais...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Authority Section -->
-    <section class="bg-white" style="padding: 4rem 0; border-top: 2px solid var(--amber-100);">
-        <div class="container authority-grid">
-            <img src="comparacao_pintinhos.jpg" alt="Comparação Pintinhos" class="authority-img">
-            <div class="authority-content">
-                <h3>Quem Sou eu ?</h3>
-                <p>
-                    Com <strong>mais de 10 anos de experiência</strong> na criação de aves, dediquei minha vida a
-                    entender
-                    os segredos por trás de um plantel saudável e produtivo.
-                </p>
-                <p>
-                    Hoje, compartilho meu conhecimento com milhares de seguidores e já ajudei diversos alunos a
-                    transformarem suas criações, eliminando prejuízos e trazendo de volta o prazer de criar.
-                </p>
-                <div class="authority-badges">
-                    <div class="auth-badge"><i class="fa-solid fa-award"></i> 10+ Anos de Experiência</div>
-                    <div class="auth-badge"><i class="fa-solid fa-users"></i> Milhares de Seguidores</div>
-                    <div class="auth-badge"><i class="fa-solid fa-graduation-cap"></i> Mentor de Diversos Alunos</div>
-                </div>
-            </div>
-        </div>
-    </section>
 
 
     <!-- Benefits Section (Moved Down) -->
     <section id="benefits" class="bg-white border-t-amber" style="padding: 4rem 0;">
         <div class="container">
-            <h3
-                style="text-align: center; font-size: 1.875rem; font-weight: 700; color: var(--amber-900); margin-bottom: 3rem;">
+            <h3 style="text-align: center; font-size: 1.875rem; font-weight: 700; color: #ffffff; margin-bottom: 3rem;">
                 Por Que Você Precisa Deste Ebook?
             </h3>
             <div class="grid-2-2">
@@ -633,203 +659,244 @@
             <h3>Garantia de 7 Dias</h3>
             <p>Se por qualquer motivo você não ficar satisfeito com o ebook nos primeiros 7 dias, devolvemos 100% do seu
                 dinheiro. Sem perguntas. Sem complicações.</p>
-            <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 1rem;">Isso significa que você pode
+            <p style="font-size: 0.875rem; color: #ffffff; margin-top: 1rem;">Isso significa que você pode
                 testar o ebook completamente sem risco. Se não gostar, recupera seu dinheiro.</p>
         </div>
     </section>
 
     <!-- Urgency -->
-    <section class="urgency-bar">
-        <div class="container urgency-content">
-            <div class="urgency-pill"><i class="fa-solid fa-triangle-exclamation"></i> Oferta Por Tempo Limitado</div>
-            <p style="font-size: 1.5rem; font-weight: 700;">Preço especial de R$ 109,90 (em breve será R$ 149,90)</p>
-            <p style="opacity: 0.8;">Aproveite agora antes que o preço suba!</p>
+    <section class="urgency-bar" style="background: transparent; border: none; padding: 4rem 0;">
+        <div class="container urgency-content" style="text-align: center;">
+            <div class="urgency-pill"
+                style="display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); padding: 8px 20px; border-radius: 50px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);">
+                <i class="fa-solid fa-triangle-exclamation"></i> Oferta Por Tempo Limitado
+            </div>
+
+            <div style="font-size: 1.2rem; opacity: 0.9; text-decoration: line-through; margin-bottom: 5px;">De 149,90
+            </div>
+            <div style="font-size: 1.4rem; font-weight: 600;">POR APENAS</div>
+            <p
+                style="font-size: 3rem; font-weight: 900; color: #fbbf24; margin: 10px 0; text-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                R$ 119,90 no pix</p>
+
+            <div
+                style="background: #dc2626; color: #fff; display: inline-block; padding: 6px 16px; border-radius: 6px; font-weight: 800; font-size: 1rem; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">
+                🔥 27% DE DESCONTO NO PIX
+            </div>
+
+            <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 25px; font-weight: 600;">ou em até 4x de R$ 34,90
+                sem juros no cartão</p>
+
+            <h4
+                style="font-size: 1.8rem; font-weight: 900; text-transform: uppercase; color: #fff; line-height: 1.2; letter-spacing: -0.02em;">
+                QUANTO VALE UMA GALINHA PRA VOCE?</h4>
         </div>
     </section>
 
     <!-- Final CTA -->
-    <section class="bg-white" style="padding: 4rem 0;">
+    <section class="final-cta" style="padding: 6rem 0; background: transparent;">
         <div class="container text-center">
-            <h3 style="font-size: 1.875rem; font-weight: 700; color: var(--amber-900); margin-bottom: 1rem;">Pronto Para
-                Começar?</h3>
-            <p style="font-size: 1.125rem; color: var(--gray-700); margin-bottom: 2rem;">Acesse o ebook agora e comece a
-                economizar com seus galinhas ainda hoje.</p>
-            <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large">SALVAR MINHAS GALINHAS
-                AGORA</button>
-            <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 1rem;">Acesso imediato • Garantia de 7
-                dias • 100% Seguro</p>
+            <h3
+                style="font-size: 2.5rem; font-weight: 900; color: #ffffff; margin-bottom: 1.5rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8);">
+                Pronto Para Começar?</h3>
+            <p
+                style="font-size: 1.25rem; color: #ffffff; margin-bottom: 2.5rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
+                Acesse o ebook agora e comece a economizar com seus galinhas ainda hoje.</p>
+            <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large"
+                style="padding: 1.2rem 3rem; font-size: 1.3rem; font-weight: 800; border-radius: 50px; background: #fbbf24; color: #7c2d12; border: none; box-shadow: 0 6px 0 #d97706; transform: scale(1.1); transition: all 0.3s ease;">
+                SALVAR MINHAS GALINHAS AGORA
+            </button>
+            <p style="font-size: 0.95rem; color: rgba(255,255,255,0.8); margin-top: 2.5rem; font-weight: 600;">
+                <i class="fa-solid fa-bolt"></i> Acesso imediato • <i class="fa-solid fa-shield"></i> Garantia de 7 dias
+                • <i class="fa-solid fa-lock"></i> 100% Seguro
+            </p>
         </div>
     </section>
 
     <!-- Checkout Modal (Restored White Design) -->
     <div id="checkout-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header"
-                style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
-                <div style="flex: 1;">
-                    <h3 class="modal-title" style="margin-bottom: 4px;">Finalize Sua Compra</h3>
-                    <p style="font-size: 0.9rem; color: var(--gray-600); margin-bottom: 0;">Preencha os dados abaixo
-                        para garantir seu acesso.</p>
+            <div id="checkout-main-view" style="position: relative;">
+                <div class="modal-header"
+                    style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                    <div style="flex: 1; text-align: left;">
+                        <h3 class="modal-title"
+                            style="color: #7c2d12; font-size: 1.4rem; font-weight: 800; line-height: 1.2; margin: 0;">
+                            Finalize Sua Compra Agora, e Garanta a saude da suas galinhas.
+                        </h3>
+                        <p
+                            style="font-size: 0.85rem; color: #6b7280; margin-top: 8px; font-weight: 600; line-height: 1.3;">
+                            Nao espere amanha, pra sua galinha <br> amanha pode ser tarde.
+                        </p>
+                    </div>
+                    <img src="logo.png" alt="Logo" style="height: 110px; flex-shrink: 0; filter: contrast(1.1);">
                 </div>
-                <img src="logo.png" alt="Logo" style="height: 140px; flex-shrink: 0;">
-            </div>
-            <div class="modal-trust-info">
-                <span><i class="fa-solid fa-circle-check"></i> Garantia de 7 Dias</span>
-                <span><i class="fa-solid fa-circle-check"></i> +1.600 Alunos</span>
-                <span><i class="fa-solid fa-circle-check"></i> 100% Seguro</span>
-            </div>
+                <div class="modal-trust-info"
+                    style="display: flex; gap: 8px; justify-content: space-between; margin-bottom: 20px;">
+                    <span
+                        style="background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 0.85rem;"></i> Garantia de 7 Dias
+                    </span>
+                    <span
+                        style="background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-plus" style="font-size: 0.85rem;"></i> +1.600 Alunos
+                    </span>
+                    <span
+                        style="background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 0.85rem;"></i> 100% Seguro
+                    </span>
+                </div>
 
-            <!-- CSS Otimizado para Checkout Compacto e Tooltips -->
-            <style>
-                .checkout-summary {
-                    display: flex;
-                    gap: 12px;
-                    background: #fffbeb;
-                    border: 1px solid #fcd34d;
-                    border-radius: 8px;
-                    padding: 10px;
-                    margin-bottom: 15px;
-                    align-items: center;
-                }
-
-                .summary-img {
-                    width: 60px;
-                    height: 80px;
-                    object-fit: cover;
-                    border-radius: 6px;
-                    border: 1px solid #e5e7eb;
-                }
-
-                .summary-details h4 {
-                    font-size: 0.95rem;
-                    color: #78350f;
-                    margin: 0 0 4px 0;
-                    font-weight: 800;
-                }
-
-                .summary-features {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    font-size: 0.75rem;
-                    color: #92400e;
-                }
-
-                .summary-features li {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    margin-bottom: 2px;
-                }
-
-                .summary-features i {
-                    color: #059669;
-                }
-
-                /* Compactação do Form */
-                .form-group {
-                    margin-bottom: 4px !important;
-                    /* Menos espaço entre campos */
-                }
-
-                .form-label {
-                    text-transform: uppercase;
-                    font-size: 0.75rem !important;
-                    font-weight: 800 !important;
-                    color: #374151 !important;
-                    margin-bottom: 2px !important;
-                }
-
-                .form-input {
-                    padding: 8px 10px !important;
-                    /* Input mais compacto */
-                    font-size: 0.9rem !important;
-                    height: auto !important;
-                }
-
-                .form-section-title {
-                    font-size: 0.9rem !important;
-                    margin: 10px 0 8px !important;
-                }
-
-                /* Tooltip de Ociosidade */
-                .field-tooltip {
-                    position: absolute;
-                    background: #1f2937;
-                    color: #fff;
-                    padding: 6px 10px;
-                    border-radius: 6px;
-                    font-size: 0.75rem;
-                    bottom: 100%;
-                    right: 0;
-                    margin-bottom: 5px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    opacity: 0;
-                    transform: translateY(5px);
-                    transition: all 0.3s ease;
-                    pointer-events: none;
-                    z-index: 10;
-                    white-space: nowrap;
-                }
-
-                .field-tooltip.active {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-
-                .field-tooltip::after {
-                    content: '';
-                    position: absolute;
-                    top: 100%;
-                    right: 15px;
-                    border-width: 5px;
-                    border-style: solid;
-                    border-color: #1f2937 transparent transparent transparent;
-                }
-
-                .form-group {
-                    position: relative;
-                }
-
-                /* Para posicionar o tooltip */
-
-                /* Validation Styles */
-                .form-input.input-error {
-                    border-color: #ef4444 !important;
-                    /* Red */
-                    background-color: #fef2f2 !important;
-                }
-
-                .form-input.input-success {
-                    border-color: #22c55e !important;
-                    /* Green */
-                    background-color: #f0fdf4 !important;
-                }
-
-                .error-message {
-                    color: #ef4444;
-                    font-size: 0.7rem;
-                    font-weight: 700;
-                    margin-top: -4px;
-                    margin-bottom: 4px;
-                    display: block;
-                    animation: fadeIn 0.3s ease;
-                }
-
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-5px);
+                <!-- CSS Otimizado para Checkout Compacto e Tooltips -->
+                <style>
+                    .checkout-summary {
+                        display: flex;
+                        gap: 12px;
+                        background: #fffbeb;
+                        border: 1px solid #fcd34d;
+                        border-radius: 8px;
+                        padding: 10px;
+                        margin-bottom: 15px;
+                        align-items: center;
                     }
 
-                    to {
+                    .summary-img {
+                        width: 60px;
+                        height: 80px;
+                        object-fit: cover;
+                        border-radius: 6px;
+                        border: 1px solid #e5e7eb;
+                    }
+
+                    .summary-details h4 {
+                        font-size: 0.95rem;
+                        color: #78350f;
+                        margin: 0 0 4px 0;
+                        font-weight: 800;
+                    }
+
+                    .summary-features {
+                        list-style: none;
+                        padding: 0;
+                        margin: 0;
+                        font-size: 0.75rem;
+                        color: #92400e;
+                    }
+
+                    .summary-features li {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-bottom: 2px;
+                    }
+
+                    .summary-features i {
+                        color: #059669;
+                    }
+
+                    /* Compactação do Form */
+                    .form-group {
+                        margin-bottom: 4px !important;
+                        /* Menos espaço entre campos */
+                    }
+
+                    .form-label {
+                        text-transform: uppercase;
+                        font-size: 0.75rem !important;
+                        font-weight: 800 !important;
+                        color: #374151 !important;
+                        margin-bottom: 2px !important;
+                    }
+
+                    .form-input {
+                        padding: 8px 10px !important;
+                        /* Input mais compacto */
+                        font-size: 0.9rem !important;
+                        height: auto !important;
+                    }
+
+                    .form-section-title {
+                        font-size: 0.9rem !important;
+                        margin: 10px 0 8px !important;
+                    }
+
+                    /* Tooltip de Ociosidade */
+                    .field-tooltip {
+                        position: absolute;
+                        background: #1f2937;
+                        color: #fff;
+                        padding: 6px 10px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        bottom: 100%;
+                        right: 0;
+                        margin-bottom: 5px;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                        opacity: 0;
+                        transform: translateY(5px);
+                        transition: all 0.3s ease;
+                        pointer-events: none;
+                        z-index: 10;
+                        white-space: nowrap;
+                    }
+
+                    .field-tooltip.active {
                         opacity: 1;
                         transform: translateY(0);
                     }
-                }
-            </style>
 
-            <div id="checkout-main-view" style="position: relative;">
+                    .field-tooltip::after {
+                        content: '';
+                        position: absolute;
+                        top: 100%;
+                        right: 15px;
+                        border-width: 5px;
+                        border-style: solid;
+                        border-color: #1f2937 transparent transparent transparent;
+                    }
+
+                    .form-group {
+                        position: relative;
+                    }
+
+                    /* Para posicionar o tooltip */
+
+                    /* Validation Styles */
+                    .form-input.input-error {
+                        border-color: #ef4444 !important;
+                        /* Red */
+                        background-color: #fef2f2 !important;
+                    }
+
+                    .form-input.input-success {
+                        border-color: #22c55e !important;
+                        /* Green */
+                        background-color: #f0fdf4 !important;
+                    }
+
+                    .error-message {
+                        color: #ef4444;
+                        font-size: 0.7rem;
+                        font-weight: 700;
+                        margin-top: -4px;
+                        margin-bottom: 4px;
+                        display: block;
+                        animation: fadeIn 0.3s ease;
+                    }
+
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-5px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                </style>
+
                 <!-- 1. Resumo do Pedido (Compacto) -->
                 <div class="checkout-summary">
                     <div style="display: flex; gap: 1rem; align-items: start;">
@@ -865,7 +932,7 @@
                                 <input type="radio" name="paymentMethod" id="method-card" value="card">
                                 <div class="radio-label">
                                     <span class="radio-title">CARTÃO</span>
-                                    <span class="radio-desc">Até 12x</span>
+                                    <span class="radio-desc">Até 4x</span>
                                 </div>
                                 <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
                                     <img src="https://logospng.org/download/visa/logo-visa-256.png"
@@ -891,7 +958,7 @@
                         <div class="field-tooltip">Onde você receberá o acesso</div>
                     </div>
                     <div style="display: flex; gap: 0.75rem;">
-                        <div class="form-group" style="flex: 1.2;">
+                        <div class="form-group" style="flex: 1.2;" id="cpf-container">
                             <input type="text" id="payer-cpf" class="form-input" placeholder="CPF" required
                                 data-tip="Necessário para emitir a nota fiscal (apenas números).">
                             <div class="field-tooltip">Apenas números do CPF</div>
@@ -948,20 +1015,59 @@
 
                     <div style="text-align: center; margin-top: 1rem;">
                         <div class="price-summary-box"
-                            style="margin-bottom: 1rem; background: var(--amber-50); border: 1px dashed var(--amber-600); padding: 0.75rem; border-radius: 0.5rem;">
-                            <div
-                                style="display: flex; justify-content: space-between; font-weight: 700; color: var(--amber-900);">
-                                <span>Total a pagar:</span>
-                                <span class="checkout-total-display">R$ --,--</span>
-                            </div>
-                            <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
+                            style="margin-bottom: 0.5rem; background: #fffbeb; border: 1px dashed #fde68a; padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 1.1rem; font-weight: 800; color: #7c2d12;">Total:</span>
+                            <span class="checkout-total-display"
+                                style="font-size: 1.25rem; font-weight: 900; color: #7c2d12;">R$ 119,90</span>
                         </div>
+                        <p
+                            style="font-size: 1.1rem; color: #b45309; font-weight: 900; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: -0.2px;">
+                            <i class="fa-solid fa-circle-check"></i> uma galinha salva, ja paga seu investimento.
+                        </p>
+
+                        <p
+                            style="color: #16a34a; font-weight: 800; font-size: 0.95rem; text-transform: uppercase; margin-bottom: 12px;">
+                            <i class="fa-solid fa-bolt"></i> Acesso Imediato Após o Pagamento
+                        </p>
 
                         <button type="button" id="btn-pay-pix" class="btn-primary"
-                            style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX</button>
+                            style="width: 100%; padding: 18px; font-size: 1.25rem; font-weight: 900; background: #dc2626; border: none; border-radius: 10px; box-shadow: 0 4px 0 #991b1b; transition: all 0.2s; cursor: pointer; text-transform: uppercase;">
+                            QUERO SALVAR AGORA.
+                        </button>
+
                         <button type="button" id="btn-pay-card" class="btn-primary"
-                            style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar
-                            Pagamento</button>
+                            style="display: none; width: 100%; padding: 18px; font-size: 1.25rem; font-weight: 900; background: #dc2626; border: none; border-radius: 10px; box-shadow: 0 4px 0 #991b1b; transition: all 0.2s; cursor: pointer; text-transform: uppercase;">
+                            Finalizar Pagamento
+                        </button>
+
+                        <!-- Subtle Social Proof (Wpp Screenshots) -->
+                        <div style="margin-top: 1.5rem; border-top: 1px solid #f3f4f6; padding-top: 1.5rem;">
+                            <p
+                                style="font-size: 0.8rem; color: #6b7280; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                                Resultados Reais de Nossos Alunos:</p>
+                            <div
+                                style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; -ms-overflow-style: none;">
+                                <img src="depoimento_wpp_1.png" alt="Depoimento 1"
+                                    style="height: 180px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer;"
+                                    onclick="window.open(this.src)">
+                                <img src="depoimento_wpp_2.png" alt="Depoimento 2"
+                                    style="height: 180px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer;"
+                                    onclick="window.open(this.src)">
+                                <img src="depoimento_wpp_3.png" alt="Depoimento 3"
+                                    style="height: 180px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer;"
+                                    onclick="window.open(this.src)">
+                            </div>
+                            <p style="font-size: 0.7rem; color: #9ca3af; font-style: italic; margin-top: 5px;">(Clique
+                                para ampliar)</p>
+                        </div>
+
+                        <p
+                            style="font-size: 1.1rem; color: #dc2626; font-weight: 900; margin-top: 20px; margin-bottom: 8px; text-transform: uppercase; animation: pulse 2s infinite;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> nao deixe pra depois, sua galinha nao pode
+                            esperar.
+                        </p>
+                        <p style="font-size: 0.85rem; color: #6b7280; font-weight: 600;">Garantia de 7 Dias ou seu
+                            dinheiro de volta.</p>
 
 
                         <div
@@ -983,12 +1089,23 @@
 
             <div id="pix-result" class="hidden" style="text-align: center;">
                 <h3 class="modal-title">Quase lá!</h3>
-                <p style="font-size: 0.9rem; color: var(--gray-600); margin: 0.5rem 0;">Escaneie o QR Code ou copie o
+                <p style="font-size: 0.9rem; color: var(--gray-600); margin: 0.5rem 0;">Escaneie o QR Code ou copie
+                    o
                     código abaixo.</p>
 
                 <div
-                    style="background: #fff; padding: 1rem; border-radius: 0.75rem; display: inline-block; margin: 1rem 0; border: 1px solid var(--gray-200);">
-                    <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 180px; height: 180px; display: block;">
+                    style="background: #fff; padding: 1.5rem; border-radius: 1.2rem; display: block; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 15px 35px rgba(0,0,0,0.08); max-width: fit-content; position: relative;">
+                    <img id="qr-code-img" src="" alt="QR Code PIX"
+                        style="width: 180px; height: 180px; display: block; margin: 0 auto;">
+                    <div
+                        style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #f1f5f9; text-align: center;">
+                        <span
+                            style="display: block; font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 3px;">Recebedor
+                            Verificado</span>
+                        <span
+                            style="display: block; font-size: 0.85rem; color: #1e293b; font-weight: 900; letter-spacing: -0.3px;">JOAO
+                            PAULO SANTOS CAMARGO</span>
+                    </div>
                 </div>
 
                 <button id="btn-copy-pix" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
@@ -1020,7 +1137,6 @@
                         <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
                             style="height: 22px;" alt="Mercado Pago">
                     </div>
-
                     <div
                         style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                         <p
@@ -1057,11 +1173,14 @@
                 <div
                     style="background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 0.75rem; text-align: left; margin-bottom: 1.5rem;">
                     <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #92400e;">
-                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso será enviado para
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso será enviado
+                            para
                             o seu e-mail assim que aprovado.</li>
-                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de análise: de alguns
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de análise: de
+                            alguns
                             minutos até 48h.</li>
-                        <li><i class="fa-solid fa-check-double"></i> Fique atento à sua caixa de entrada e Spam.</li>
+                        <li><i class="fa-solid fa-check-double"></i> Fique atento à sua caixa de entrada e Spam.
+                        </li>
                     </ul>
                 </div>
 
@@ -1077,8 +1196,6 @@
                 </button>
             </div>
 
-            <!-- Order Bump Area (Dynamic) -->
-            <div id="order-bump-area"></div>
 
             <button onclick="closeCheckout()"
                 style="position: absolute; top: 1rem; right: 1rem; border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 1.5rem;">&times;</button>

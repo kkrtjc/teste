@@ -29,7 +29,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('click', () => {
             const ctaId = btn.getAttribute('data-cta') || 'generic_cta';
             trackEvent('cta_click', null, ctaId);
+            // Prepare for lead capture on hover or click if we have info
         });
+    });
+
+    // --- REAL-TIME LEAD CAPTURE ---
+    let captureTimeout = null;
+    const captureLostLead = () => {
+        clearTimeout(captureTimeout);
+        captureTimeout = setTimeout(async () => {
+            const name = document.getElementById('payer-name')?.value?.trim();
+            const email = document.getElementById('payer-email')?.value?.trim();
+            const phone = document.getElementById('payer-phone')?.value?.trim();
+            const product = cart.mainProduct ? (prefetchedProducts[cart.mainProduct]?.title || cart.mainProduct) : 'N/A';
+
+            if (!phone || phone.length < 8) return;
+
+            try {
+                await fetch(`${API_URL}/api/leads/lost`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, product })
+                });
+                console.log("📥 [LEAD] Captura em tempo real enviada.");
+            } catch (e) {
+                console.warn("[LEAD] Erro na captura em tempo real", e);
+            }
+        }, 1500); // Wait 1.5s after last input
+    };
+
+    // Listen to checkout inputs
+    ['payer-name', 'payer-email', 'payer-phone'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', captureLostLead);
     });
 
     const cached = localStorage.getItem('active_pix_session');
@@ -56,47 +88,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 5. DYNAMIC PRE-FETCH (Instant Checkout) ---
-    const productsToPreload = ['ebook-doencas', 'combo-elite', 'ebook-manejo'];
-    productsToPreload.forEach(async (id) => {
-        try {
-            const response = await fetch(`${API_URL}/api/products/${id}`);
-            if (response.ok) {
-                prefetchedProducts[id] = await response.json();
-                console.log(`🚀 [PREFETCH] ${id} carregado`);
+    try {
+        const response = await fetch(`${API_URL}/api/config`);
+        if (response.ok) {
+            const config = await response.json();
+            // Merge both products and orderBumps into prefetchedProducts for easy access
+            Object.assign(prefetchedProducts, config.products, config.orderBumps);
+            console.log('🚀 [PREFETCH] Configuração completa carregada (Produtos + Bumps)');
 
-                // Update specific price elements if they exist
-                if (id === 'ebook-doencas') {
-                    const resp = prefetchedProducts[id];
-                    const priceElement = document.getElementById('display-price-value');
-                    if (priceElement && resp.price) {
-                        priceElement.innerText = resp.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                    }
-                }
+            // Update specific price elements if they exist
+            const mainP = prefetchedProducts['ebook-doencas'];
+            const priceElement = document.getElementById('display-price-value');
+            if (priceElement && mainP && mainP.price) {
+                priceElement.innerText = mainP.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             }
-        } catch (e) {
-            console.warn(`[PREFETCH] Falha ao carregar ${id}`, e);
         }
-    });
+    } catch (e) {
+        console.warn('[PREFETCH] Falha ao carregar configuração global', e);
+    }
 
     // 3. LAZY VIDEO LOADING (Intersection Observer)
-    const lazyVideo = document.getElementById('vsl-video');
-    if (lazyVideo && 'IntersectionObserver' in window) {
-        const videoObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const source = lazyVideo.querySelector('source');
-                    if (source && source.dataset.src) {
-                        source.src = source.dataset.src;
-                        lazyVideo.load();
-                        console.log("🎥 [VIDEO] Lazy Source Loaded");
+    const lazyVideo = document.getElementById('vsl-video') || document.querySelector('.square-video-wrapper video');
+    if (lazyVideo) {
+        let tracked = false;
+        lazyVideo.addEventListener('play', () => {
+            if (!tracked) {
+                trackEvent('video_play');
+                tracked = true;
+                console.log("🎥 [VIDEO] Play Tracked");
+            }
+        });
+
+        if ('IntersectionObserver' in window) {
+            const videoObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const source = lazyVideo.querySelector('source');
+                        if (source && source.dataset.src) {
+                            source.src = source.dataset.src;
+                            lazyVideo.load();
+                            console.log("🎥 [VIDEO] Lazy Source Loaded");
+                        }
+                        observer.unobserve(lazyVideo);
                     }
-                    observer.unobserve(lazyVideo);
-                }
-            });
-        }, { rootMargin: '200px' });
-        videoObserver.observe(lazyVideo);
+                });
+            }, { rootMargin: '200px' });
+            videoObserver.observe(lazyVideo);
+        }
     }
 });
+
+function toggleVSL() {
+    const video = document.getElementById('vsl-video-player');
+    const overlay = document.getElementById('vsl-overlay');
+    if (!video) return;
+
+    if (video.paused) {
+        video.play().then(() => {
+            if (overlay) overlay.style.display = 'none';
+        }).catch(err => {
+            console.error("Video play failed:", err);
+            // Fallback: try to play muted if it's a browser restriction
+            video.muted = true;
+            video.play();
+            if (overlay) overlay.style.display = 'none';
+        });
+    } else {
+        video.pause();
+        if (overlay) overlay.style.display = 'flex';
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -152,89 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- 4. Testimonials (Single-Slide Carousel - COMPACT) ---
-    const testimonials = [
-        { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.jpg' },
-        { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.jpg' },
-        { text: 'Tinha uma galinha que não comia, só ficava no canto. Segui o passo a passo e em 2 dias ela voltou ao normal.', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-        { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.jpg' },
-        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpg' },
-        { text: 'Galinha parou de botar e tava com a crista caída. Segui o protocolo e voltou a produzir normal.', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpg' },
-        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpg' },
-        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpg' }
-    ];
 
-    const testimonialsTrack = document.getElementById('testimonials-track');
-    if (testimonialsTrack) {
-        // Clear existing content
-        testimonialsTrack.innerHTML = '';
-
-        // Render all testimonials but hide them initially (except first)
-        testimonials.forEach((t, index) => {
-            const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
-            const card = document.createElement('div');
-            card.className = 'testimonial-card-single'; // New class for single display
-            // Style for single focused card
-            card.style.opacity = index === 0 ? '1' : '0';
-            card.style.position = 'absolute';
-            card.style.top = '0';
-            card.style.left = index === 0 ? '0' : '100%'; // Start off-screen right
-            card.style.width = '100%';
-            card.style.height = '100%';
-            card.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-            card.style.transform = index === 0 ? 'translateX(0)' : 'translateX(50px)'; // Helper for fade in
-
-            card.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;">
-                        <img src="${t.avatar}" alt="${t.author}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${t.author}&background=random&color=fff'">
-                    </div>
-                    <div>
-                        <strong style="display: block; color: #fff; font-size: 0.95rem; line-height: 1.2;">${t.author}</strong>
-                        <small style="color: rgba(255,255,255,0.5); font-size: 0.75rem;"><i class="fa-solid fa-location-dot" style="margin-right: 4px;"></i> ${t.location}</small>
-                        <div style="font-size: 0.7rem; color: #FFD700; margin-top: 2px;">${starsHTML}</div>
-                    </div>
-                </div>
-                <p style="font-style: normal; margin: 0; color: rgba(255,255,255,0.8); font-size: 0.85rem; line-height: 1.5;">"${t.text}"</p>
-            `;
-            testimonialsTrack.appendChild(card);
-        });
-
-        let currentIdx = 0;
-
-        function nextSlide() {
-            const cards = document.querySelectorAll('.testimonial-card-single');
-            const total = cards.length;
-            if (total === 0) return;
-
-            // Current card moves OUT to LEFT
-            const current = cards[currentIdx];
-            current.style.opacity = '0';
-            current.style.left = '-100%';
-            current.style.transform = 'translateX(-50px)';
-
-            // Wait briefly then reset it to RIGHT side for next cycle
-            setTimeout(() => {
-                current.style.transition = 'none'; // Disable transition for instant move
-                current.style.left = '100%';
-                setTimeout(() => {
-                    current.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'; // Re-enable
-                }, 50);
-            }, 800); // Wait for exit animation
-
-            // Next card moves IN from RIGHT
-            currentIdx = (currentIdx + 1) % total;
-            const next = cards[currentIdx];
-
-            // Ensure next is ready at start position
-            next.style.left = '0';
-            next.style.opacity = '1';
-            next.style.transform = 'translateX(0)';
-        }
-
-        // Change slide every 5 seconds
-        setInterval(nextSlide, 5000);
-    }
 
     // --- 5. Comparison Slider (Results) ---
     const sliderTrack = document.getElementById('comparison-slider-track');
@@ -392,7 +371,6 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     trackEvent('checkout_open');
     trackEvent('click');
     sessionStorage.setItem('mura_modal_open', 'true');
-    // Pixel Tracking
     if (typeof fbq === 'function') fbq('track', 'InitiateCheckout');
 
     if (!checkoutModal) return;
@@ -407,22 +385,73 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     }
 
     const secureOverlay = document.getElementById('secure-loading');
-    const lockScroll = () => {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-    };
-
     if (secureOverlay) {
         secureOverlay.classList.add('active');
-        lockScroll();
+        document.body.classList.add('modal-open');
     }
 
+    // FALLBACK DATA (Offline Support)
+    const fallbackData = {
+        'ebook-doencas': {
+            title: 'Protocolo Elite: A Cura das Aves',
+            price: 109.90,
+            originalPrice: 149.90,
+            cover: 'capadasdoencas.jpg',
+            fullBumps: [
+                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.jpg', description: 'Crie pintinhos fortes e saudáveis.' },
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentaçao correta em todas as fases da sua criaçao. Economize na raçao e acelere o crescimento das suas aves com o balanceamento ideal.', tag: 'OFERTA ÚNICA' }
+            ]
+        },
+        'combo-elite': {
+            title: 'Combo Elite (Doenças + Manual)',
+            price: 147.00,
+            originalPrice: 169.80,
+            cover: 'combo',
+            fullBumps: [
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
+            ]
+        }
+    };
+
     try {
-        const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`);
-        const productData = await response.json();
+        let productData = (typeof prefetchedProducts !== 'undefined') ? prefetchedProducts[productId] : null;
+
+        if (!productData) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
+                const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error("API Error");
+                productData = await response.json();
+            } catch (fetchErr) {
+                console.warn("[CHECKOUT] API Fetch failed, using fallback.", fetchErr);
+                productData = fallbackData[productId] || fallbackData['ebook-doencas'];
+                productData.id = productId;
+            }
+        }
 
         cart.mainProduct = { ...productData, id: productId };
-        cart.bumps = forceBumps || []; // Adiciona os bumps forçados pelo funil (ex: Upsell)
+
+        console.log('💠 [CHECKOUT] Abrindo para:', productId);
+        console.log('💠 [CHECKOUT] Bumps vinculados no DB:', cart.mainProduct.orderBumps);
+
+        // Ensure fullBumps exist even if prefetched
+        if ((!cart.mainProduct.fullBumps || cart.mainProduct.fullBumps.length === 0) && cart.mainProduct.orderBumps) {
+            console.log('💠 [CHECKOUT] Reconstruindo fullBumps do cache local...');
+            cart.mainProduct.fullBumps = cart.mainProduct.orderBumps
+                .map(id => {
+                    const found = prefetchedProducts[id];
+                    if (found) return { ...found, id: id }; // Garante que o ID esteja presente
+                    return null;
+                })
+                .filter(b => b);
+        }
+
+        console.log('💠 [CHECKOUT] Full Bumps Finais:', cart.mainProduct.fullBumps);
+
+        cart.bumps = forceBumps || [];
 
         document.getElementById('checkout-product-name').innerText = productData.title;
         document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
@@ -440,38 +469,38 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             }
         }
 
-        // Define Pix como padrão E aplica a filtragem correta desde o início
         currentPaymentMethod = 'pix';
-
-        // Ensure UI state for white checkout
         if (typeof selectPaymentMethod === 'function') {
             selectPaymentMethod('pix');
-        } else {
+        } else if (typeof switchMethod === 'function') {
             switchMethod('pix');
         }
 
-        renderOrderBumps(productData.fullBumps);
+        renderOrderBumps(cart.mainProduct.fullBumps);
         updateTotal();
 
-        // --- Guided Animation Sequence - VERSÃO SIMPLIFICADA PARA WHITE CHECKOUT ---
-        if (secureOverlay) secureOverlay.classList.remove('active');
-        checkoutModal.classList.add('active');
-        document.body.classList.add('modal-open');
+        const delay = (productData && productData.fullBumps) ? 10 : 250;
+        setTimeout(() => {
+            if (secureOverlay) secureOverlay.classList.remove('active');
+            checkoutModal.classList.add('active');
+            document.body.classList.add('modal-open');
+        }, delay);
 
     } catch (err) {
-        console.error("Error opening checkout:", err);
-        alert("Erro ao carregar checkout. Verifique sua conexão.");
+        console.error("Critical error opening checkout:", err);
         if (secureOverlay) secureOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
+        document.body.classList.remove('modal-open');
     }
 }
 
 function renderOrderBumps(bumps) {
+    // ORDER BUMP DESATIVADO POR SOLICITAÇÃO DO USUÁRIO
     const area = document.getElementById('order-bump-area');
-    if (!area) return;
+    if (area) area.innerHTML = '';
+    return;
+}
 
-    // Filtra bumps que não devem aparecer
+function legacy_renderOrderBumps(bumps) {
     const filteredBumps = (bumps || []).filter(bump => {
         // Remove Manual de Pintinhos do checkout (deve ser upsell posterior)
         if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') return false;
@@ -488,15 +517,29 @@ function renderOrderBumps(bumps) {
         }
 
         return `
-            <div class="order-bump-container" onclick="toggleBump('${bump.id}')" style="margin-top: 1rem; padding: 1rem; background: #fffbeb; border: 2px dashed #d97706; border-radius: 0.5rem; cursor: pointer; transition: 0.3s;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: #d97706;">
-                    ${imgSrc ? `<img src="${imgSrc}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #d97706;">` : ''}
+            <div class="order-bump-container" onclick="toggleBump('${bump.id}')" 
+                style="margin-top: 1rem; position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 120px; display: flex;">
+                
+                <!-- Imagem de Fundo Preenchendo Tudo -->
+                ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">` : ''}
+                
+                <!-- Overlay Gradiente para Legibilidade -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%); z-index: 1;"></div>
+
+                <!-- Conteúdo por cima do fundo -->
+                <div style="position: relative; z-index: 2; display: flex; align-items: center; gap: 15px; padding: 15px; width: 100%;">
+                    <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} 
+                        style="width: 24px; height: 24px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));">
+                    
                     <div class="order-bump-content" style="flex: 1;">
-                        <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 5px;">${bump.tag || 'OFERTA ÚNICA'}</span>
-                        <strong class="order-bump-title" style="display: block; color: #78350f; font-size: 0.95rem; margin-top: 4px;">${bump.title}</strong>
-                        <span class="order-bump-description" style="display: block; color: #92400e; font-size: 0.85rem; margin-top: 4px; line-height: 1.4;">${bump.description}</span>
-                        <span class="order-bump-price" style="color: #d97706; font-weight: 800; font-size: 1rem; display: block; margin-top: 6px;">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                            <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">${bump.tag || 'OFERTA ÚNICA'}</span>
+                        </div>
+                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 1.05rem; margin-top: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${bump.title}</strong>
+                        <span class="order-bump-description" style="display: block; color: rgba(255,255,255,0.9); font-size: 0.85rem; margin-top: 4px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${bump.description}</span>
+                        <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 8px;">
+                            <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1.2rem; text-shadow: 0 2px 5px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -525,14 +568,15 @@ function updateTotal() {
         // Busca o bump no array fullBumps do produto
         let bump = cart.mainProduct.fullBumps?.find(b => b.id === id);
 
-        // FALLBACK: Se não encontrou em fullBumps, busca na config global (se carregada)
+        // FALLBACK: Se não encontrou em fullBumps, busca na config global (se carregada) ou prefetched
         if (!bump && id.startsWith('ebook-')) {
-            if (window.siteConfig && window.siteConfig.products && window.siteConfig.products[id]) {
-                const prod = window.siteConfig.products[id];
+            const configData = (window.siteConfig && window.siteConfig.products) ? window.siteConfig.products[id] : prefetchedProducts[id];
+
+            if (configData) {
                 bump = {
                     id: id,
-                    price: prod.price, // Preço PIX do banco
-                    priceCard: prod.originalPrice || prod.price // Preço Cartão do banco (ou fallback)
+                    price: configData.price, // Preço PIX do banco
+                    priceCard: configData.originalPrice || configData.price // Preço Cartão do banco (ou fallback)
                 };
             } else {
                 // Fallback de emergência (caso config não tenha carregado) - EVITAR SE POSSÍVEL
@@ -736,25 +780,26 @@ function showSlideInUpsell(method) {
 
             <div class="order-bump-body" style="text-align: center; padding: 0 5px;">
                 <p style="color: #fff; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.3; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
-                    <strong style="color: #e74c3c;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO CRIAR PINTINHOS E SE LIVRE DE DOENÇA.<br>
+                    <strong style="color: #e74c3c;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO CRIAR PINTINHOS E SE LIVRE DE DOENÇA DESDE O NASCIMENTO.<br>
                     <strong style="color: #fbbf24; display: block; margin-top: 4px;">SE TORNE O CRIADOR COMPLETO</strong>
                 </p>
                 
                 <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0.75rem; text-align: left;">
                     <div style="position: relative;">
-                         <img src="capadospintinhos.jpg" style="width: 75px; border-radius: 6px; border: 2px solid #fbbf24;">
+                         <img src="capadospintinhos.jpg" style="width: 75px; border-radius: 12px; border: 1.5px solid #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);">
                          <div style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; transform: rotate(15deg); border: 1.5px solid #fff;">-35%</div>
                     </div>
                     <ul style="color: #fff; font-size: 0.7rem; padding: 0; margin: 0; list-style: none; line-height: 1.3;">
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Sobrevivência de até 98%</li>
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Crescimento 3x mais rápido</li>
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Doenças e tratamentos</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Sobrevivência de até 90%</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Crescimento mais rápido</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Ambiente 100% adequado</li>
+                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> As principais doenças em pintinhos e como tratar.</li>
                     </ul>
                 </div>
 
                 <div class="order-bump-price-tag" style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="color: rgba(255,255,255,0.4); text-decoration: line-through; font-size: 0.75rem;">De R$ 59,90</div>
-                    <div style="color: #fbbf24; font-size: 1.8rem; font-weight: 900; line-height: 1;">R$ 39<span style="font-size: 1rem;">,90</span></div>
+                    <div style="color: rgba(255,255,255,0.4); text-decoration: line-through; font-size: 0.75rem;">De R$ 69,90 no cartão</div>
+                    <div style="color: #fbbf24; font-size: 1.8rem; font-weight: 900; line-height: 1;">R$ 49<span style="font-size: 1rem;">,90 no pix</span></div>
                 </div>
             </div>
 
@@ -855,6 +900,8 @@ function closeCheckout() {
     const checkoutModal = document.getElementById('checkout-modal');
     if (checkoutModal) checkoutModal.classList.remove('active');
     document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+    sessionStorage.removeItem('mura_modal_open');
     document.documentElement.style.overflow = '';
 
     // Esconde qualquer overlay pendente
@@ -910,11 +957,19 @@ function switchMethod(method) {
         if (btnPix) btnPix.style.display = 'block';
         if (btnCard) btnCard.style.display = 'none';
 
+        // Esconder CPF para PIX (CPF fallback no backend)
+        const cpfContainer = document.getElementById('cpf-container');
+        if (cpfContainer) cpfContainer.style.display = 'none';
+
     } else if (method === 'card') {
         if (pixArea) { pixArea.style.display = 'none'; }
         if (cardArea) { cardArea.style.display = 'block'; }
         if (btnPix) btnPix.style.display = 'none';
         if (btnCard) btnCard.style.display = 'block';
+
+        // Mostrar CPF para Cartão
+        const cpfContainer = document.getElementById('cpf-container');
+        if (cpfContainer) cpfContainer.style.display = 'block';
     }
 
     // RECALCULATE TOTAL WHEN SWITCHING
@@ -1045,12 +1100,14 @@ async function handlePayment(method) {
 
                 showPixResult(data, items);
 
-                // UPSELL PÓS-PIX: Mostra o upsell dos pintinhos após gerar o PIX
+                // UPSELL PÓS-PIX: DESATIVADO
+                /*
                 setTimeout(() => {
                     if (midCheckoutUpsellPending && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
                         showSlideInUpsell('pix');
                     }
-                }, 2000); // Aguarda 2 segundos após mostrar o QR Code
+                }, 2000);
+                */
             } else {
                 // Error from server
                 console.error("Pix Error Response:", data);
@@ -1225,28 +1282,15 @@ async function startPixPayment(event) {
     console.log('🔵 startPixPayment CALLED');
     if (event) event.preventDefault();
 
-    // NEW: VALIDAÇÃO ANTES DO UPSELL
+    // VALIDAÇÃO
     if (!validateCheckoutInputs('pix')) {
-        console.warn('⚠️ Validation failed before upsell/pix');
-        return; // Para aqui se estiver inválido
+        console.warn('⚠️ Validation failed before pix');
+        return;
     }
 
     try {
-        // Check if upsell (Manual de Pintinhos) is already in cart
-        const upsellId = 'ebook-manejo';
-        const isUpsellInCart = cart.bumps && cart.bumps.includes(upsellId);
-
-        console.log('📊 Upsell check:', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
-
-        // If upsell NOT in cart, show modal and STOP (don't generate PIX yet)
-        if (!isUpsellInCart) {
-            console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
-            showSlideInUpsell('pix');
-            return; // STOP HERE - PIX will be generated when user accepts/rejects upsell
-        }
-
-        // If upsell already in cart, proceed directly to generate PIX
-        console.log('✅ Upsell already in cart, proceeding to PIX generation');
+        // UPSELL DESATIVADO: Proceed directly to generate PIX
+        console.log('✅ Proceeding directly to PIX generation (Upsells disabled)');
         await processPixPayment();
     } catch (error) {
         console.error('❌ Error in startPixPayment:', error);
@@ -1255,43 +1299,8 @@ async function startPixPayment(event) {
 }
 
 async function processPixPayment() {
-    console.log('🔵 processPixPayment CALLED');
-    const name = document.getElementById('payer-name').value;
-    const email = document.getElementById('payer-email').value;
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    console.log('📋 Form values:', { name, email, cpf, phone });
-
-    if (!name || !email || !cpf || !phone) {
-        console.warn('⚠️ Validation failed: Missing required fields');
-        alert('Por favor, preencha todos os campos obrigatórios.');
-        return;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return;
-    }
-
-    // If all validations pass, proceed with the original handlePayment('pix') logic
-    handlePayment('pix');
+    console.log('✅ processPixPayment: Proceeding to handlePayment');
+    await handlePayment('pix');
 }
 
 // --- 2. CARD PAYMENT (MODIFIED FOR UPSELL INTERCEPTION) ---
@@ -1299,28 +1308,15 @@ async function startCardPayment(event) {
     console.log('🔵 startCardPayment CALLED');
     if (event) event.preventDefault();
 
-    // NEW: VALIDAÇÃO ANTES DO UPSELL
+    // VALIDAÇÃO
     if (!validateCheckoutInputs('card')) {
-        console.warn('⚠️ Validation failed before upsell/card');
-        return; // Para aqui se estiver inválido
+        console.warn('⚠️ Validation failed before card');
+        return;
     }
 
     try {
-        // Check if upsell (Manual de Pintinhos) is already in cart
-        const upsellId = 'ebook-manejo';
-        const isUpsellInCart = cart.bumps && cart.bumps.includes(upsellId);
-
-        console.log('📊 Upsell check (Card):', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
-
-        // If upsell NOT in cart, show modal and STOP
-        if (!isUpsellInCart) {
-            console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
-            showSlideInUpsell('card');
-            return; // STOP HERE - Card payment will be processed when user accepts/rejects upsell
-        }
-
-        // If upsell already in cart, proceed directly to process payment
-        console.log('✅ Upsell already in cart, proceeding to Card payment');
+        // UPSELL DESATIVADO: Proceed directly to process payment
+        console.log('✅ Proceeding directly to Card payment (Upsells disabled)');
         await processCardPayment();
     } catch (error) {
         console.error('❌ Error in startCardPayment:', error);
@@ -1329,103 +1325,13 @@ async function startCardPayment(event) {
 }
 
 async function processCardPayment() {
-    const name = document.getElementById('payer-name').value;
-    const email = document.getElementById('payer-email').value;
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    if (!name || !email || !cpf || !phone) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
-        return;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return;
-    }
-
-    // Validações específicas para cartão
-    const cardNumber = document.getElementById('card-number')?.value?.trim();
-    const cardExpiration = document.getElementById('card-expiration')?.value?.trim();
-    const cardCvv = document.getElementById('card-cvv')?.value?.trim();
-    const cardHolder = document.getElementById('card-holder')?.value?.trim();
-
-    if (!cardNumber || !cardExpiration || !cardCvv || !cardHolder) {
-        alert('Por favor, preencha todos os dados do cartão.');
-        return false;
-    }
-
-    // If all validations pass, proceed with the original handlePayment('card') logic
-    handlePayment('card');
+    console.log('✅ processCardPayment: Proceeding to handlePayment');
+    await handlePayment('card');
 }
 
 // --- VALIDATION AND INTERCEPTION FUNCTIONS ---
 
-// The original validateCheckoutInputs is now split and integrated into processPixPayment and processCardPayment
-// This function is no longer needed in its original form, but keeping it for context if other parts of the code still call it.
-function validateCheckoutInputs(method) {
-    const name = document.getElementById('payer-name')?.value?.trim();
-    const email = document.getElementById('payer-email')?.value?.trim();
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    if (!name || !email || !cpf || !phone) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
-        return false;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return false;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return false;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return false;
-    }
-
-    // Validações específicas para cartão
-    if (method === 'card') {
-        const cardNumber = document.getElementById('card-number')?.value?.trim();
-        const cardExpiration = document.getElementById('card-expiration')?.value?.trim();
-        const cardCvv = document.getElementById('card-cvv')?.value?.trim();
-        const cardHolder = document.getElementById('card-holder')?.value?.trim();
-
-        if (!cardNumber || !cardExpiration || !cardCvv || !cardHolder) {
-            alert('Por favor, preencha todos os dados do cartão.');
-            return false;
-        }
-    }
-
-    return true;
-}
+// function validateCheckoutInputs(method) removed as it was a duplicate and replaced by the one at the bottom of the file
 
 function interceptPaymentButton(callback) {
     // Esta função pode ser usada para interceptar o pagamento com upsells
@@ -1554,51 +1460,36 @@ function showPixResult(data, items) {
     document.getElementById('qr-code-img').src = `data:image/png;base64,${data.qr_code_base64}`;
     document.getElementById('pix-copy-paste').value = data.qr_code;
 
-    const copyBtn = document.getElementById('btn-copy-pix');
-    if (copyBtn) {
-        // Tenta copiar automaticamente
-        try {
-            navigator.clipboard.writeText(data.qr_code).then(() => {
-                // Feedback Discreto (Toast)
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                toast.className = 'toast-card';
-                toast.style.borderColor = '#2ecc71'; // Green border for success
-                toast.innerHTML = `
-                    <div style="width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
-                    <div class="toast-content">
-                        <h4>Código PIX Copiado!</h4>
-                        <p>Cole no app do seu banco para pagar.</p>
-                    </div>
-                `;
-                container.appendChild(toast);
-                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
-            }).catch(() => {
-                // Silently ignore or log internally
-            });
-        } catch (err) { console.warn(err); }
-
-
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(data.qr_code);
-            // Feedback Discreto (Toast)
-            const container = document.getElementById('toast-container');
+    // Auto-copy PIX code
+    if (data.qr_code && navigator.clipboard) {
+        navigator.clipboard.writeText(data.qr_code).then(() => {
+            console.log('✅ PIX code auto-copied');
+            // Show Success Notification
+            const container = document.getElementById('toast-container') || document.body;
             const toast = document.createElement('div');
             toast.className = 'toast-card';
-            toast.style.borderColor = '#2ecc71';
-            toast.innerHTML = `
-                <div style="width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
-                    <i class="fa-solid fa-check"></i>
-                </div>
-                <div class="toast-content">
-                    <h4>Código PIX Copiado!</h4>
-                    <p>Cole no app do seu banco para pagar.</p>
-                </div>
-            `;
+            toast.style.cssText = "position: fixed; bottom: 20px; right: 20px; background: #16a34a; color: white; padding: 15px 25px; border-radius: 10px; z-index: 10000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: bold;";
+            toast.innerHTML = `<i class="fa-solid fa-check-double"></i> codigo pix copiado com seucesso`;
             container.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+            setTimeout(() => toast.remove(), 4000);
+        }).catch(err => {
+            console.warn('❌ Auto-copy failed:', err);
+        });
+    }
+
+    const copyBtn = document.getElementById('btn-copy-pix');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(data.qr_code).then(() => {
+                // Show Success Notification
+                const container = document.getElementById('toast-container') || document.body;
+                const toast = document.createElement('div');
+                toast.className = 'toast-card';
+                toast.style.cssText = "position: fixed; bottom: 20px; right: 20px; background: #16a34a; color: white; padding: 15px 25px; border-radius: 10px; z-index: 10000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: bold;";
+                toast.innerHTML = `<i class="fa-solid fa-check-double"></i> codigo pix copiado com seucesso`;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            });
         };
     }
 
@@ -1704,318 +1595,7 @@ function showRandomToast() {
     }, 5500); // wait for animation end (5s) + buffer
 }
 
-// --- 4. CHECKOUT COMPACTION & UX UTILS ---
-
-function validateCheckoutInputs(method) {
-    const email = document.getElementById('payer-email');
-    const phone = document.getElementById('payer-phone');
-    const name = (method === 'pix') ? document.getElementById('payer-name') : document.getElementById('card-holder');
-    const cpf = document.getElementById('payer-cpf');
-    const cep = (method === 'card') ? document.getElementById('card-cep') : null;
-
-    let isValid = true;
-
-    // Reset visual states
-    const fields = [email, phone, name, cpf];
-    if (cep) fields.push(cep);
-
-    fields.forEach(el => el.classList.remove('is-invalid'));
-
-    if (!email.value || !email.value.includes('@')) { email.classList.add('is-invalid'); isValid = false; }
-    if (!phone.value || phone.value.replace(/\D/g, '').length < 10) { phone.classList.add('is-invalid'); isValid = false; }
-    if (!name.value || name.value.trim().length < 3) { name.classList.add('is-invalid'); isValid = false; }
-    if (!cpf.value || cpf.value.replace(/\D/g, '').length < 11) { cpf.classList.add('is-invalid'); isValid = false; }
-    if (cep && (!cep.value || cep.value.replace(/\D/g, '').length < 8)) { cep.classList.add('is-invalid'); isValid = false; }
-
-    if (!isValid) {
-        // Log which fields failed validation
-        const invalidFields = [];
-        if (email.classList.contains('is-invalid')) invalidFields.push('email');
-        if (phone.classList.contains('is-invalid')) invalidFields.push('phone');
-        if (name.classList.contains('is-invalid')) invalidFields.push('name');
-        if (cpf.classList.contains('is-invalid')) invalidFields.push('cpf');
-        if (cep && cep.classList.contains('is-invalid')) invalidFields.push('cep');
-
-        trackEvent('ui_error', null, null, `Erro Validação Frontend: ${invalidFields.join(', ')}`);
-
-        fields.forEach(el => validateField(el, null, true));
-        const firstError = document.querySelector('.is-invalid');
-        if (firstError) firstError.focus();
-    }
-
-    return isValid;
-}
-
-// â³ Tooltip / Help Bubble Logic (5s Idle)
-let helpTimer = null;
-const HELP_MESSAGES = {
-    'payer-email': 'Insira seu melhor e-mail para receber o acesso.',
-    'payer-phone': 'Precisamos do seu WhatsApp para suporte técnico.',
-    'payer-name': 'Digite seu nome completo conforme documento.',
-    'payer-cpf': 'O CPF é necessário para emissão da sua nota fiscal.',
-    'card-holder': 'Nome exatamente como está escrito no seu cartão.',
-    'card-number': 'Digite os 16 números da frente do seu cartão.',
-    'card-cep': 'CEP da sua residência para validação de segurança.'
-};
-
-function initHelpBubbles() {
-    const inputs = document.querySelectorAll('.checkout-form input');
-
-    inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            clearTimeout(helpTimer);
-            if (!input.value) {
-                // Diminuído para 3 segundos conforme solicitado
-                helpTimer = setTimeout(() => showHelpBubble(input), 3000);
-            }
-        });
-
-        input.addEventListener('input', () => {
-            clearTimeout(helpTimer);
-            removeHelpBubbles();
-        });
-
-        input.addEventListener('blur', () => {
-            clearTimeout(helpTimer);
-            removeHelpBubbles();
-            // Show error if empty OR invalid on blur
-            validateField(input, null, true);
-        });
-    });
-}
-
-/**
- * Consolidated Validation Logic
- * Only shows error if field is not empty or if submission attempted.
- */
-function validateField(input, type = null, forceShowError = false) {
-    const id = input.id;
-    const val = input.value.trim();
-    const cleanVal = val.replace(/\D/g, '');
-    let isValid = true;
-
-    // Use explicit type if provided, otherwise infer from ID
-    const validationType = type || (id.includes('cpf') ? 'cpf' : id.includes('phone') ? 'phone' : id.includes('email') ? 'email' : id.includes('number') ? 'card' : id.includes('expiration') ? 'date' : id.includes('cvv') ? 'cvv' : id.includes('cep') ? 'cep' : 'name');
-
-    if (validationType === 'email') isValid = val.includes('@') && val.length > 5;
-    else if (validationType === 'phone') isValid = cleanVal.length >= 10;
-    else if (validationType === 'cpf') isValid = cleanVal.length === 11;
-    else if (validationType === 'card') isValid = cleanVal.length >= 13 && cleanVal.length <= 16;
-    else if (validationType === 'date') isValid = /^\d{2}\/\d{2}$/.test(val);
-    else if (validationType === 'cvv') isValid = cleanVal.length >= 3;
-    else if (validationType === 'cep') isValid = cleanVal.length === 8;
-    else if (validationType === 'name' || id === 'card-holder') isValid = val.length >= 3;
-
-    // UI Feedback logic
-    if (val.length === 0 && !forceShowError) {
-        input.classList.remove('is-valid', 'is-invalid');
-    } else if (isValid) {
-        input.classList.add('is-valid');
-        input.classList.remove('is-invalid');
-    } else if (forceShowError || val.length > 0) {
-        // Only show invalid if there is content OR forceShowError (blur/submit)
-        input.classList.add('is-invalid');
-        input.classList.remove('is-valid');
-    }
-}
-
-function showHelpBubble(input) {
-    removeHelpBubbles();
-    const msg = HELP_MESSAGES[input.id] || 'Preencha este campo para continuar.';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'mura-help-bubble';
-    bubble.innerText = msg;
-
-    // Append to the input wrapper
-    input.parentElement.appendChild(bubble);
-}
-
-function removeHelpBubbles() {
-    document.querySelectorAll('.mura-help-bubble').forEach(b => b.remove());
-}
-
-// Initialize on load
-document.addEventListener('DOMContentLoaded', () => {
-    initHelpBubbles();
-
-    // Hide help bubbles on scroll to prevent "floating" issue
-    window.addEventListener('scroll', removeHelpBubbles, true);
-    // Also scroll on modal container if it's the one scrolling
-    const modalContent = document.querySelector('#checkout-modal .modal-content');
-    if (modalContent) {
-        modalContent.addEventListener('scroll', removeHelpBubbles);
-    }
-
-    // Global click to blur inputs (hide mobile keyboard)
-    document.addEventListener('click', (e) => {
-        if (typeof checkoutModal !== 'undefined' && checkoutModal.classList.contains('active')) {
-            if (!e.target.closest('input') && !e.target.closest('select') && !e.target.closest('button') && !e.target.closest('.method-btn')) {
-                if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-                    document.activeElement.blur();
-                }
-            }
-        }
-    });
-});
-
-
-// --- UPSELL LOGIC (GLOBAL SCOPE) ---
-let pendingPaymentMethod = null;
-
-function showUpsellModal(method) {
-    pendingPaymentMethod = method;
-    const modal = document.getElementById('upsell-modal-container');
-    modal.style.display = 'flex'; // Enable display to allow transition
-
-    // Small timeout to trigger CSS transition
-    setTimeout(() => {
-        modal.classList.add('active');
-    }, 10);
-}
-
-function acceptUpsell() {
-    // Add Manejo to order
-    const upsellId = 'ebook-manejo';
-    if (!selectedBumps.includes(upsellId)) {
-        selectedBumps.push(upsellId);
-        updateTotalDisplay();
-
-        // Update checkbox visually if it exists in the main list
-        const checkbox = document.querySelector(`input[type="checkbox"][value="${upsellId}"]`);
-        if (checkbox) checkbox.checked = true;
-    }
-
-    // Close modal
-    closeUpsellModal();
-
-    // Proceed with original payment
-    if (pendingPaymentMethod === 'pix') processPixPayment();
-    if (pendingPaymentMethod === 'card') processCardPayment();
-}
-
-function declineUpsell() {
-    // Close modal
-    closeUpsellModal();
-
-    // Proceed with original payment WITHOUT the item
-    if (pendingPaymentMethod === 'pix') processPixPayment();
-    if (pendingPaymentMethod === 'card') processCardPayment();
-}
-
-function closeUpsellModal() {
-    const modal = document.getElementById('upsell-modal-container');
-    modal.classList.remove('active');
-    setTimeout(() => {
-        modal.style.display = 'none';
-        pendingPaymentMethod = null;
-    }, 300); // Match CSS transition duration
-}
-
-// --- HELPER: DETECT PAYMENT METHOD ---
-// --- 5. VALIDATION HELPERS ---
-function isValidCPF(cpf) {
-    cpf = cpf.replace(/[^\d]+/g, '');
-    if (cpf == '') return false;
-    // Elimina CPFs invalidos conhecidos
-    if (cpf.length != 11 ||
-        cpf == "00000000000" ||
-        cpf == "11111111111" ||
-        cpf == "22222222222" ||
-        cpf == "33333333333" ||
-        cpf == "44444444444" ||
-        cpf == "55555555555" ||
-        cpf == "66666666666" ||
-        cpf == "77777777777" ||
-        cpf == "88888888888" ||
-        cpf == "99999999999")
-        return false;
-    // Valida 1o digito
-    let add = 0;
-    for (let i = 0; i < 9; i++)
-        add += parseInt(cpf.charAt(i)) * (10 - i);
-    let rev = 11 - (add % 11);
-    if (rev == 10 || rev == 11)
-        rev = 0;
-    if (rev != parseInt(cpf.charAt(9)))
-        return false;
-    // Valida 2o digito
-    add = 0;
-    for (let i = 0; i < 10; i++)
-        add += parseInt(cpf.charAt(i)) * (11 - i);
-    rev = 11 - (add % 11);
-    if (rev == 10 || rev == 11)
-        rev = 0;
-    if (rev != parseInt(cpf.charAt(10)))
-        return false;
-    return true;
-}
-
-function validateField(el, type) {
-    if (!el) return true;
-    const val = el.value.trim();
-    let isValid = true;
-
-    if (type === 'email') isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-    else if (type === 'phone') isValid = val.replace(/\D/g, '').length >= 10;
-    else if (type === 'cpf') isValid = isValidCPF(val);
-    else if (type === 'card') isValid = val.replace(/\D/g, '').length >= 15;
-    else if (type === 'date') isValid = /^\d{2}\/\d{2}$/.test(val);
-    else if (type === 'cvv') isValid = val.length >= 3;
-    else if (val.length < 3) isValid = false;
-
-    const errorId = `error-${el.id}`;
-    const errorEl = document.getElementById(errorId);
-
-    if (!isValid && val.length > 0) {
-        el.classList.add('input-error');
-        if (errorEl) errorEl.style.display = 'block';
-    } else {
-        el.classList.remove('input-error');
-        if (errorEl) errorEl.style.display = 'none';
-    }
-
-    return isValid;
-}
-
-function validateCheckoutInputs(method) {
-    let allValid = true;
-    const fields = ['payer-email', 'payer-phone'];
-
-    if (method === 'pix') {
-        fields.push('payer-name', 'payer-cpf');
-    } else {
-        fields.push('card-holder', 'payer-cpf', 'card-number', 'card-expiration', 'card-cvv');
-    }
-
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        const type = id.includes('email') ? 'email' : (id.includes('phone') ? 'phone' : (id.includes('cpf') ? 'cpf' : (id.includes('number') ? 'card' : (id.includes('expiration') ? 'date' : (id.includes('cvv') ? 'cvv' : 'text')))));
-        if (!validateField(el, type)) allValid = false;
-    });
-
-    if (!allValid) {
-        const container = document.getElementById('toast-container');
-        if (container) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-card';
-            toast.style.borderColor = '#e74c3c';
-            toast.innerHTML = `
-                <div style="width: 40px; height: 40px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="toast-content">
-                    <strong>Ops! Quase lá...</strong>
-                    <p>Por favor, preencha corretamente todos os campos destacados em vermelho.</p>
-                </div>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
-        }
-    }
-
-    return allValid;
-}
+// Redundant code block (validation, help bubbles, global listeners) removed for consolidation.
 
 function getPaymentMethodId(number) {
     if (!number) return null;
@@ -2129,16 +1709,16 @@ function validateCheckoutInputs(method) {
     const inputsToValidate = [
         'payer-name',
         'payer-email',
-        'payer-cpf',
         'payer-phone'
     ];
 
+    // CPF é obrigatório apenas para cartão ou se o usuário preencher (para PIX é opcional no frontend devido ao fallback)
+    if (method !== 'pix') {
+        inputsToValidate.push('payer-cpf');
+    }
+
     if (method === 'card') {
         inputsToValidate.push('card-number', 'card-expiration', 'card-cvv', 'card-holder', 'card-cpf');
-        // Remove payer-cpf validation if it's card mode (we use card-cpf instead, or keeping both if backend needs it)
-        // User said: "quando for cartao esse CPF tem quee ser CPF DO TITULAR". 
-        // We still need payer-cpf for the account creation/invoice maybe? 
-        // Let's validate BOTH as they are both in the form and required.
     }
 
     inputsToValidate.forEach(id => {
@@ -2258,147 +1838,30 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.value = v;
         });
     }
+
+    // --- 10. VSL Live Counter Dynamism ---
+    const vslCounter = document.getElementById('vsl-counter');
+    if (vslCounter) {
+        let count = parseInt(vslCounter.innerText) || 247;
+
+        function fluctuateCounter() {
+            // Randomly add or subtract between 1 and 3 people
+            const variation = Math.floor(Math.random() * 7) - 3; // -3 to +3
+            count += variation;
+
+            // Keep it in a realistic range for this stage
+            if (count < 180) count += 5;
+            if (count > 350) count -= 5;
+
+            vslCounter.innerText = count;
+
+            // Next fluctuation in 3 to 10 seconds
+            const nextTime = Math.floor(Math.random() * 7000) + 3000;
+            setTimeout(fluctuateCounter, nextTime);
+        }
+
+        // Start after a short delay
+        setTimeout(fluctuateCounter, 3000);
+    }
 });
 
-// --- OVERRIDE FOR ROBUSTNESS (Added by Support) ---
-// This function replaces the original startCheckoutProcess to add offline fallback support.
-async function startCheckoutProcess(productId, forceBumps = []) {
-    trackEvent('checkout_open');
-    trackEvent('click');
-    sessionStorage.setItem('mura_modal_open', 'true');
-    // Pixel Tracking
-    if (typeof fbq === 'function') fbq('track', 'InitiateCheckout');
-
-    if (!checkoutModal) return;
-
-    // --- RESET CHECKOUT STATE ---
-    document.getElementById('checkout-main-view').classList.remove('hidden');
-    document.getElementById('pix-result').classList.add('hidden');
-
-    if (window.activePixPoll) {
-        clearInterval(window.activePixPoll);
-        window.activePixPoll = null;
-    }
-
-    const secureOverlay = document.getElementById('secure-loading');
-    const lockScroll = () => {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-    };
-
-    if (secureOverlay) {
-        secureOverlay.classList.add('active');
-        lockScroll();
-    }
-
-    // FALLBACK DATA (Offline Support)
-    const fallbackData = {
-        'ebook-doencas': {
-            title: 'Protocolo Elite: A Cura das Aves',
-            price: 109.90,
-            originalPrice: 149.90,
-            cover: 'capadasdoencas.jpg',
-            fullBumps: [
-                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.jpg', description: 'Crie pintinhos fortes e saudáveis.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentação correta em todas as fases da sua criação. Economize na ração e acelere o crescimento das suas aves.', tag: 'OFERTA ÚNICA' }
-            ]
-        },
-        'ebook-manejo': {
-            title: 'Manual de Pintinhos de Elite',
-            price: 49.90,
-            originalPrice: 99.90,
-            cover: 'capadospintinhos.jpg',
-            fullBumps: []
-        }
-    };
-
-    try {
-        let productData = prefetchedProducts[productId];
-
-        if (!productData) {
-            console.log(`⚠️ [CHECKOUT] Dados não pré-carregados para ${productId}, buscando agora...`);
-            try {
-                // Try fetch with timeout (3s)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-                const response = await fetch(`${API_URL}/api/products/${productId}?t=${Date.now()}`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) throw new Error("API Error");
-                productData = await response.json();
-                console.log("Product data loaded from API");
-            } catch (fetchErr) {
-                console.warn("API Fetch failed or timed out, using fallback data.", fetchErr);
-                productData = fallbackData[productId];
-
-                if (!productData) {
-                    // Last resort fallback
-                    productData = {
-                        title: 'Protocolo Elite',
-                        price: 99.90,
-                        originalPrice: 149.90,
-                        cover: 'capadasdoencas.jpg',
-                        fullBumps: []
-                    };
-                }
-                productData.id = productId;
-            }
-        } else {
-            console.log(`✅ [CHECKOUT] Usando dados pré-carregados para ${productId}`);
-        }
-
-        cart.mainProduct = { ...productData, id: productId };
-        cart.bumps = forceBumps || []; // Adiciona os bumps forçados pelo funil
-
-        document.getElementById('checkout-product-name').innerText = productData.title;
-        document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
-
-        const iconContainer = document.getElementById('product-icon-container');
-        if (iconContainer) {
-            if (productData.cover === 'combo') {
-                iconContainer.innerHTML = `
-                    <div style="display: flex; gap: 5px; align-items: center;">
-                        <img src="capadospintinhos.jpg" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                        <img src="capadasdoencas.jpg" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                    </div>`;
-            } else {
-                iconContainer.innerHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px;">`;
-            }
-        }
-
-        // Define Pix como padrão E aplica a filtragem correta desde o início
-        currentPaymentMethod = 'pix';
-
-        // Ensure UI state for white checkout
-        if (typeof selectPaymentMethod === 'function') {
-            selectPaymentMethod('pix');
-        } else {
-            // Fallback if smart_fields hasn't loaded properly
-            if (typeof switchMethod === 'function') switchMethod('pix');
-        }
-
-        renderOrderBumps(productData.fullBumps);
-        updateTotal();
-
-        // --- Guided Animation Sequence - VERSÃO SIMPLIFICADA PARA WHITE CHECKOUT ---
-        const delay = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts[productId]) ? 50 : 300;
-        if (secureOverlay) {
-            setTimeout(() => {
-                secureOverlay.classList.remove('active');
-                checkoutModal.classList.add('active');
-                document.body.classList.add('modal-open');
-            }, delay);
-        } else {
-            checkoutModal.classList.add('active');
-            document.body.classList.add('modal-open');
-        }
-
-    } catch (err) {
-        console.error("Error opening checkout:", err);
-        alert("Erro ao carregar checkout. Tente novamente.");
-        if (secureOverlay) secureOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-    }
-}
