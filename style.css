@@ -725,52 +725,42 @@ header.sticky {
     color: #fbbf24;
 }
 
-/* Mobile Authority Overrides */
+/* Mobile Authority Overrides (Wrap Style) */
 @media (max-width: 768px) {
     .authority-profile-section {
-        padding: 2rem 0 !important;
-    }
-
-    .authority-grid {
-        gap: 1.5rem !important;
+        padding: 2.5rem 0 !important;
     }
 
     .authority-video-container {
-        max-width: 220px !important;
-        margin-bottom: 1rem !important;
+        width: 130px !important;
+        /* Smaller float on mobile */
+        margin: 0 15px 10px 0 !important;
+        border-width: 2px !important;
     }
 
-    .authority-content h3 {
-        font-size: 1.6rem !important;
-        margin-bottom: 1rem !important;
-        text-align: center;
+    .authority-content-wrap h3 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
+        text-align: left !important;
     }
 
-    .authority-content p {
-        font-size: 1rem !important;
+    .authority-content-wrap .auth-p {
+        font-size: 0.95rem !important;
         margin-bottom: 0.75rem !important;
         line-height: 1.5 !important;
-        text-align: center;
+        text-align: left !important;
     }
 
     .authority-badges {
+        margin-top: 1rem !important;
         margin-bottom: 1rem !important;
-        justify-content: center;
-        gap: 8px !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
     }
 
     .auth-badge {
-        padding: 6px 12px !important;
-        font-size: 0.75rem !important;
-    }
-
-    .authority-content>div:last-child {
-        margin-top: 1rem !important;
-    }
-
-    .authority-content .btn-primary {
-        padding: 1rem !important;
-        font-size: 1.1rem !important;
+        padding: 5px 10px !important;
+        font-size: 0.7rem !important;
     }
 }
 

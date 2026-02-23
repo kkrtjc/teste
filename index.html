@@ -480,17 +480,19 @@
     <!-- Authority Section ("Quem Sou Eu") -->
     <section class="authority-profile-section"
         style="padding: 4rem 0; border-top: 2px solid rgba(255,255,255,0.1); background: transparent;">
-        <div class="container authority-grid">
-            <!-- Video Side Area (Replaced Image) -->
-            <div class="authority-video-container"
-                style="flex: 1; max-width: 260px; border-radius: 20px; overflow: hidden; border: 3px solid #fbbf24; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000; margin: 0 auto;">
-                <video controls playsinline style="width: 100%; display: block;">
-                    <source src="vsl autoridade.mp4" type="video/mp4">
-                    Seu navegador não suporta vídeos.
-                </video>
-            </div>
-            <div class="authority-content">
+        <div class="container">
+            <div class="authority-content-wrap">
+                <!-- Video nested inside content for float wrapping -->
+                <div class="authority-video-container"
+                    style="float: left; width: 45%; max-width: 260px; border-radius: 20px; overflow: hidden; border: 3px solid #fbbf24; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: #000; margin: 0 25px 15px 0;">
+                    <video controls playsinline style="width: 100%; display: block;">
+                        <source src="vsl autoridade.mp4" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
+                </div>
+
                 <h3 style="color: #ffffff; font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem;">Quem Sou eu ?</h3>
+
                 <p style="color: #ffffff; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem;" class="auth-p">
                     <strong>João Paulo Camargo, 29 anos.</strong> Com <strong>mais de 10 anos de experiência</strong> na
                     criação de aves, <strong>estudante de Zootecnia e Genômica</strong>, dediquei minha vida a
@@ -501,7 +503,8 @@
                     transformarem suas criações, eliminando prejuízos e trazendo de volta o prazer de criar.
                 </p>
 
-                <div class="authority-badges" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 2rem;">
+                <div class="authority-badges"
+                    style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 2rem; clear: none;">
                     <div class="auth-badge"
                         style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.2);">
                         <i class="fa-solid fa-award" style="color: #fbbf24;"></i> 10+ Anos de Experiência
@@ -516,10 +519,8 @@
                     </div>
                 </div>
 
-
-
-                <!-- CTA Below Authority Video -->
-                <div style="text-align: center; margin-top: 2rem;">
+                <!-- CTA -->
+                <div style="text-align: center; margin-top: 2rem; clear: both;">
                     <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
                         style="width: 100%; max-width: 320px; padding: 1.25rem; font-size: 1.2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(217,119,6,0.3);">
                         QUERO SALVAR MINHAS GALINHAS AGORA
