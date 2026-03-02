@@ -45,12 +45,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 21000;
             justify-content: center;
             align-items: center;
             padding: 10px;
-            backdrop-filter: blur(10px);
         }
 
         .elite-promo-modal.show {
@@ -58,9 +57,7 @@
         }
 
         .elite-promo-content {
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
+            background: #0f170f;
             width: 100%;
             max-width: 480px;
             max-height: 95vh;
@@ -196,24 +193,23 @@
         .vsl-style-border {
             border: 3px solid #fbbf24;
             border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-            background: rgba(10, 15, 10, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: #0a0f0a;
             margin: 2rem auto;
             overflow: hidden;
             position: relative;
             z-index: 1;
             animation: pulseGlow 3s infinite alternate;
+            will-change: transform;
         }
 
         @keyframes pulseGlow {
             0% {
-                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+                border-color: #fbbf24;
             }
 
             100% {
-                box-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+                border-color: #fcd34d;
             }
         }
     </style>
@@ -468,8 +464,7 @@
 
     <!-- Header -->
     <header class="sticky">
-        <div class="container nav-content vsl-style-border"
-            style="margin-top: 5px; margin-bottom: 5px; border-radius: 12px; padding: 10px 18px;">
+        <div class="container nav-content">
             <div class="logo-area">
                 <img src="logo.jpg" alt="Logo" style="height: 60px; border-radius: 8px;">
                 <h1>PROTOCOLO <span style="color: var(--amber-600)">ELITE</span></h1>
@@ -481,8 +476,7 @@
     </header>
 
     <!-- Sub-Header Tabs -->
-    <div class="sub-header-tabs vsl-style-border"
-        style="margin: 0.5rem auto; max-width: 95%; border-radius: 12px; padding: 4px;">
+    <div class="sub-header-tabs">
         <a href="#authority-video">Autoridade</a>
         <a href="#learning">Benefícios</a>
         <a href="#faq">Perguntas frequentes</a>
@@ -1227,17 +1221,9 @@
             width: 100%;
         }
 
-        /* Subtle grid background */
-        #checkout-modal::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(0, 230, 118, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 230, 118, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: 0;
+        /* Subtle background color instead of expensive grid */
+        #checkout-modal {
+            background: #080e08;
         }
 
         .vc-wrapper {
@@ -1273,11 +1259,9 @@
         }
 
         .vc-wrapper::-webkit-scrollbar-thumb {
-            background: rgba(0, 230, 118, 0.2);
+            background: rgba(0, 230, 118, 0.4);
             border-radius: 10px;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.2);
         }
 
         .vc-wrapper::-webkit-scrollbar-thumb:hover {
@@ -1287,10 +1271,8 @@
         /* === TOOLTIP HINT === */
         .vc-field-hint {
             position: absolute;
-            background: rgba(0, 230, 118, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 230, 118, 0.3);
+            background: #0d1a0d;
+            border: 1px solid rgba(0, 230, 118, 0.4);
             color: #00e676;
             padding: 8px 12px;
             border-radius: 8px;
@@ -1532,9 +1514,11 @@
             gap: 18px;
             align-items: center;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             position: relative;
             overflow: hidden;
+            transform: translateZ(0);
+            /* Hardware acceleration */
         }
 
         /* === PROMO INSTRUCTION === */
@@ -1556,16 +1540,7 @@
             font-weight: 800;
         }
 
-        .vc-product::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(0, 230, 118, 0.05) 0%, transparent 70%);
-            pointer-events: none;
-        }
+        /* Removed expensive radial-gradient ::before */
 
         .vc-product img {
             width: 140px;
@@ -1574,13 +1549,13 @@
             border-radius: 12px;
             flex-shrink: 0;
             border: 1.5px solid rgba(0, 230, 118, 0.3);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-            transform: perspective(1000px) rotateY(-5deg);
-            transition: 0.3s;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
+            /* Removed 3D transform to fix scroll drift */
+            transition: transform 0.3s ease;
         }
 
         .vc-product img:hover {
-            transform: perspective(1000px) rotateY(0deg) scale(1.05);
+            transform: scale(1.05);
         }
 
         .vc-product-info {
@@ -2383,10 +2358,15 @@
                 <!-- QR Code -->
                 <div class="vc-qr-box">
                     <img id="qr-code-img" src="" alt="QR Code PIX" width="190" height="190">
-                    <div class="vc-qr-verified">
-                        <span>Nome do PIX</span>
-                        <span>JOAO PAULO SANTOS CAMARGO</span>
-                    </div>
+                </div>
+
+                <div class="vc-qr-verified"
+                    style="margin: -5px 18px 15px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: calc(100% - 36px);">
+                    <span
+                        style="color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block; text-transform: uppercase; font-weight: 800; margin-bottom: 4px;">Nome
+                        do PIX</span>
+                    <span style="color: #fff; font-size: 0.95rem; font-weight: 900; display: block;">JOAO PAULO SANTOS
+                        CAMARGO</span>
                 </div>
 
                 <!-- Copy Button -->
