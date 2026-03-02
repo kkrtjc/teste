@@ -90,7 +90,8 @@ if (!fs.existsSync(ANALYTICS_PATH)) fs.writeFileSync(ANALYTICS_PATH, JSON.string
         clicks: 0, checkoutOpens: 0, checkoutStarts: 0,
         uiErrors: 0, trustClicks: 0, mobileSessions: 0,
         desktopSessions: 0, slowLoads: 0, pageViews: 0,
-        emailClicks: 0, pixGenerated: 0, pixPaid: 0
+        emailClicks: 0, pixGenerated: 0, pixPaid: 0,
+        vslAuthorityView: 0, vslEbookView: 0, vslVendaView: 0
     },
     daily: {}
 }, null, 4));
@@ -274,9 +275,24 @@ app.get('/api/config', (req, res) => {
     res.json(getDB());
 });
 
+app.post('/api/auth', (req, res) => {
+    const { password } = req.body;
+    const master = (process.env.ADMIN_PASSWORD || 'MURA2026').trim();
+    if (password && password.trim() === master) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ error: 'Senha incorreta' });
+    }
+});
+
 app.post('/api/config/update', (req, res) => {
     const password = req.headers['x-admin-password'];
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    const master = (process.env.ADMIN_PASSWORD || 'MURA2026').trim();
+    if (password && password.trim() === master) {
+        // Continue
+    } else {
+        return res.status(401).json({ error: 'Acesso Negado' });
+    }
 
     const data = req.body;
     if (!data || !data.products) return res.status(400).json({ error: 'Dados inválidos' });
@@ -288,7 +304,7 @@ app.post('/api/config/update', (req, res) => {
 
 app.post('/api/config/reset', (req, res) => {
     const password = req.headers['x-admin-password'] || req.body.password;
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    if (password !== (process.env.ADMIN_PASSWORD || 'MURA2026')) return res.status(401).json({ error: 'Acesso Negado' });
 
     console.log('🚨 [ADMIN] Solicitando RESTAURAÇÃO DE FÁBRICA...');
     try {
@@ -312,22 +328,22 @@ app.post('/api/config/reset', (req, res) => {
 // 4. Admin History & Analytics API
 app.get('/api/history', (req, res) => {
     const password = req.params.password || req.query.password || req.headers['x-admin-password'];
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    if (password !== (process.env.ADMIN_PASSWORD || 'MURA2026')) return res.status(401).json({ error: 'Acesso Negado' });
     res.json(getHistory());
 });
 
 app.post('/api/history/clear', (req, res) => {
     const { password } = req.body;
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    if (password !== (process.env.ADMIN_PASSWORD || 'MURA2026')) return res.status(401).json({ error: 'Acesso Negado' });
     saveHistory([]);
     res.json({ success: true });
 });
 
 // 4.1 Leads API
 app.get('/api/leads', (req, res) => {
-    const password = req.params.password || req.query.password || req.headers['x-admin-password'];
-    // Allow basic access for now or strictly enforce password
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
+    const password = (req.params.password || req.query.password || req.headers['x-admin-password'] || '').trim();
+    const master = (process.env.ADMIN_PASSWORD || 'MURA2026').trim();
+    if (password !== master) return res.status(401).json({ error: 'Acesso Negado' });
     res.json(getLeads());
 });
 
@@ -383,15 +399,13 @@ app.post('/api/leads/lost', (req, res) => {
 
 app.get('/api/leads/lost', (req, res) => {
     const password = req.headers['x-admin-password'] || req.query.password;
-    if (password !== (process.env.ADMIN_PASSWORD || 'mura123')) return res.status(401).json({ error: 'Acesso Negado' });
+    if (password !== (process.env.ADMIN_PASSWORD || 'MURA2026')) return res.status(401).json({ error: 'Acesso Negado' });
     res.json(getLostLeads());
 });
 
 app.get('/api/analytics', (req, res) => {
-    // Allow basic analytics without auth or require it? keeping consistent
     const password = req.params.password || req.query.password || req.headers['x-admin-password'];
-    // if (password !== (process.env.ADMIN_PASSWORD || 'mura2026')) return res.status(401).json({ error: 'Acesso Negado' });
-    // Allow analytics to be fetched by admin panel freely if CORS allows
+    if (password !== (process.env.ADMIN_PASSWORD || 'MURA2026')) return res.status(401).json({ error: 'Acesso Negado' });
     res.json(getAnalytics());
 });
 
@@ -455,6 +469,9 @@ app.post('/api/track', (req, res) => {
     }
     else if (type === 'video_play') {
         increment('videoPlay');
+        if (details === 'authority') increment('vslAuthorityView');
+        if (details === 'ebook') increment('vslEbookView');
+        if (details === 'venda') increment('vslVendaView');
     }
 
     saveAnalytics(analytics);

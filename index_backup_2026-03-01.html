@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>PROTOCOLO ELITE: A Cura das Aves | O Segredo das Galinhas</title>
 
     <!-- Performance Optimizations -->
@@ -1149,1270 +1148,534 @@
 
 
 
-    <!-- ==========================================
-         NOVO CHECKOUT — VAULT DARK (2026-03-01)
-         100% Mobile-First | Dark Green Theme
-         ========================================== -->
-    <style>
-        /* === VAULT CHECKOUT — BASE === */
-        #checkout-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 20000;
-            background: #080e08;
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.35s ease;
-            overflow: hidden;
-        }
-
-        #checkout-modal.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* Bloqueio de scroll na página ao fundo */
-        body.modal-open,
-        html.modal-open {
-            overflow: hidden !important;
-            height: 100vh !important;
-            position: fixed;
-            width: 100%;
-        }
-
-        /* Subtle grid background */
-        #checkout-modal::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(0, 230, 118, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 230, 118, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .vc-wrapper {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        @keyframes vcFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* === CUSTOM GLASS SCROLLBAR === */
-        .vc-wrapper::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .vc-wrapper::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .vc-wrapper::-webkit-scrollbar-thumb {
-            background: rgba(0, 230, 118, 0.2);
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(0, 230, 118, 0.1);
-        }
-
-        .vc-wrapper::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 230, 118, 0.4);
-        }
-
-        /* === TOOLTIP HINT === */
-        .vc-field-hint {
-            position: absolute;
-            background: rgba(0, 230, 118, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 230, 118, 0.3);
-            color: #00e676;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            z-index: 100;
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            max-width: 250px;
-            line-height: 1.3;
-        }
-
-        .vc-field-hint.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .vc-field-hint::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 20px;
-            width: 10px;
-            height: 10px;
-            background: inherit;
-            border-right: 1px solid rgba(0, 230, 118, 0.3);
-            border-bottom: 1px solid rgba(0, 230, 118, 0.3);
-            transform: rotate(45deg);
-        }
-
-        /* === TOP BAR === */
-        .vc-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 18px 10px;
-            border-bottom: 1px solid rgba(0, 230, 118, 0.12);
-            background: rgba(8, 14, 8, 0.95);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            flex-shrink: 0;
-        }
-
-        .vc-topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .vc-topbar-brand .vc-lock-icon {
-            width: 28px;
-            height: 28px;
-            background: rgba(0, 230, 118, 0.12);
-            border: 1px solid rgba(0, 230, 118, 0.3);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #00e676;
-            font-size: 0.75rem;
-        }
-
-        .vc-topbar-brand span {
-            font-size: 0.7rem;
-            font-weight: 800;
-            color: #00e676;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .vc-close-btn {
-            width: 34px;
-            height: 34px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-        }
-
-        .vc-close-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-        }
-
-        /* === STEPS BAR === */
-        .vc-steps {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 18px;
-            gap: 0;
-            flex-shrink: 0;
-        }
-
-        .vc-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .vc-step-num {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1.5px solid rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.35);
-            font-size: 0.65rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.3s;
-        }
-
-        .vc-step.done .vc-step-num {
-            background: rgba(0, 230, 118, 0.15);
-            border-color: #00e676;
-            color: #00e676;
-        }
-
-        .vc-step.active .vc-step-num {
-            background: #00e676;
-            border-color: #00e676;
-            color: #000;
-            box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
-        }
-
-        .vc-step-label {
-            font-size: 0.55rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .vc-step.active .vc-step-label {
-            color: #00e676;
-        }
-
-        .vc-step.done .vc-step-label {
-            color: rgba(0, 230, 118, 0.7);
-        }
-
-        .vc-step-line {
-            flex: 1;
-            height: 1.5px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 8px;
-            margin-bottom: 14px;
-        }
-
-        .vc-step-line.done {
-            background: rgba(0, 230, 118, 0.4);
-        }
-
-        /* === COUNTDOWN === */
-        .vc-countdown {
-            margin: 0 18px 14px;
-            background: rgba(220, 38, 38, 0.08);
-            border: 1px solid rgba(220, 38, 38, 0.25);
-            border-radius: 10px;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: vcPulseRed 2s ease-in-out infinite;
-        }
-
-        @keyframes vcPulseRed {
-
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-            }
-
-            50% {
-                box-shadow: 0 0 0 5px rgba(220, 38, 38, 0);
-            }
-        }
-
-        .vc-countdown i {
-            color: #ef4444;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .vc-countdown-text {
-            flex: 1;
-        }
-
-        .vc-countdown-text p {
-            font-size: 0.95rem;
-            font-weight: 800;
-            color: #fff;
-            margin: 0;
-            line-height: 1.2;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .vc-countdown-text strong {
-            color: #ef4444;
-            font-weight: 900;
-        }
-
-        .vc-timer-display {
-            font-size: 1.1rem;
-            font-weight: 900;
-            color: #ef4444;
-            font-family: monospace;
-            white-space: nowrap;
-            background: rgba(220, 38, 38, 0.1);
-            padding: 4px 10px;
-            border-radius: 6px;
-        }
-
-        /* === PRODUCT CARD === */
-        .vc-product {
-            margin: 0 18px 24px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(0, 230, 118, 0.15);
-            border-radius: 20px;
-            padding: 24px 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            align-items: center;
-            text-align: center;
-            box-shadow: inset 0 0 40px rgba(0, 230, 118, 0.02);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .vc-product::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(0, 230, 118, 0.05) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .vc-product img {
-            width: 140px;
-            height: auto;
-            object-fit: contain;
-            border-radius: 12px;
-            flex-shrink: 0;
-            border: 1.5px solid rgba(0, 230, 118, 0.3);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-            transform: perspective(1000px) rotateY(-5deg);
-            transition: 0.3s;
-        }
-
-        .vc-product img:hover {
-            transform: perspective(1000px) rotateY(0deg) scale(1.05);
-        }
-
-        .vc-product-info {
-            width: 100%;
-            min-width: 0;
-            z-index: 1;
-        }
-
-        .vc-product-badge {
-            display: inline-block;
-            background: linear-gradient(90deg, rgba(0, 230, 118, 0.2), rgba(0, 230, 118, 0.1));
-            color: #00e676;
-            font-size: 0.65rem;
-            font-weight: 900;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            padding: 5px 12px;
-            border-radius: 100px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(0, 230, 118, 0.3);
-        }
-
-        .vc-product-name {
-            font-size: 1.15rem;
-            font-weight: 900;
-            color: #fff;
-            margin: 0 0 10px;
-            line-height: 1.1;
-            letter-spacing: -0.2px;
-        }
-
-        .vc-product-features {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .vc-product-features li {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-align: center;
-        }
-
-        .vc-product-features li i {
-            color: #00e676;
-            font-size: 0.75rem;
-            filter: drop-shadow(0 0 3px rgba(0, 230, 118, 0.4));
-        }
-
-        /* === PAYMENT METHOD TABS === */
-        .vc-method-tabs {
-            margin: 0 18px 14px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .vc-method-tab {
-            flex: 1;
-            padding: 12px 8px;
-            border-radius: 12px;
-            border: 1.5px solid rgba(255, 255, 255, 0.12);
-            background: rgba(255, 255, 255, 0.04);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            transition: 0.25s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .vc-method-tab.selected {
-            border-color: #00e676;
-            background: rgba(0, 230, 118, 0.08);
-            box-shadow: 0 0 14px rgba(0, 230, 118, 0.15);
-        }
-
-        .vc-method-tab img {
-            height: 20px;
-        }
-
-        .vc-method-tab .vc-tab-name {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-        }
-
-        .vc-method-tab.selected .vc-tab-name {
-            color: #00e676;
-        }
-
-        .vc-method-tab .vc-tab-sub {
-            font-size: 0.6rem;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-        .vc-method-tab.selected .vc-tab-sub {
-            color: rgba(0, 230, 118, 0.7);
-        }
-
-        /* === FORM === */
-        .vc-form-area {
-            padding: 0 18px;
-        }
-
-        .vc-form-label {
-            display: block;
-            font-size: 0.6rem;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .vc-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            /* prevents iOS zoom */
-            padding: 14px 16px;
-            outline: none;
-            transition: 0.25s;
-            margin-bottom: 10px;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .vc-input::placeholder {
-            color: rgba(255, 255, 255, 0.25);
-        }
-
-        .vc-input:focus {
-            border-color: #00e676;
-            background: rgba(0, 230, 118, 0.04);
-            box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.08);
-        }
-
-        .vc-input.input-error {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
-        }
-
-        .vc-input.input-success {
-            border-color: #00e676;
-        }
-
-        @keyframes vcShake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-4px);
-            }
-
-            50% {
-                transform: translateX(4px);
-            }
-
-            75% {
-                transform: translateX(-4px);
-            }
-        }
-
-        .vc-input-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .vc-input-row .vc-field {
-            flex: 1;
-        }
-
-        select.vc-input {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300e676'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
-            padding-right: 36px;
-            cursor: pointer;
-        }
-
-        select.vc-input option {
-            background: #0d1a0d;
-            color: #fff;
-        }
-
-        /* === CARD AREA === */
-        #vc-card-area {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 10px;
-        }
-
-        .vc-card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .vc-card-header i {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .vc-card-header span {
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* === ORDER BUMP === */
-        #order-bump-area .order-bump-container {
-            margin-bottom: 10px;
-        }
-
-        /* === URGENCY MSG === */
-        #pix-urgency-msg {
-            margin: 0 0 10px;
-            background: rgba(220, 38, 38, 0.07);
-            border: 1px solid rgba(220, 38, 38, 0.2);
-            border-radius: 10px;
-            padding: 8px 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #pix-urgency-msg i {
-            color: #ef4444;
-            font-size: 0.85rem;
-        }
-
-        #pix-urgency-msg span {
-            font-size: 0.72rem;
-            font-weight: 800;
-            color: #ef4444;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        /* === PRICE TOTAL BAR === */
-        .vc-total-bar {
-            margin-bottom: 14px;
-            background: rgba(0, 230, 118, 0.06);
-            border: 1px solid rgba(0, 230, 118, 0.2);
-            border-radius: 12px;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .vc-total-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-        }
-
-        .vc-total-value {
-            font-size: 1.3rem;
-            font-weight: 900;
-            color: #00e676;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* === CTA BUTTON === */
-        .vc-btn-pix {
-            width: 100%;
-            padding: 18px;
-            font-size: 1.1rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            background: #00e676;
-            color: #000;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4);
-            animation: vcGlowPulse 2.5s ease-in-out infinite;
-            transition: transform 0.15s, box-shadow 0.15s;
-            margin-bottom: 10px;
-            -webkit-tap-highlight-color: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .vc-btn-pix:active {
-            transform: scale(0.98);
-        }
-
-        @keyframes vcGlowPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.5), 0 6px 0 #00b248;
-            }
-
-            50% {
-                box-shadow: 0 0 20px 4px rgba(0, 230, 118, 0.2), 0 6px 0 #00b248;
-            }
-        }
-
-        .vc-btn-card {
-            width: 100%;
-            padding: 18px;
-            font-size: 1.05rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            background: transparent;
-            color: #00e676;
-            border: 2px solid #00e676;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-bottom: 10px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .vc-btn-card:active {
-            background: rgba(0, 230, 118, 0.08);
-        }
-
-        /* === GUARANTEE === */
-        .vc-guarantee {
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .vc-guarantee i {
-            color: #00e676;
-            font-size: 0.9rem;
-        }
-
-        .vc-guarantee span {
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* === TRUST LOGOS === */
-        .vc-trust {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            padding: 14px 18px 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            margin-top: 4px;
-        }
-
-        .vc-trust img {
-            height: 20px;
-            opacity: 0.55;
-            filter: grayscale(0.3);
-        }
-
-        /* === PIX RESULT SCREEN === */
-        #pix-result {
-            padding: 0;
-            background: #080e08;
-            min-height: 100%;
-        }
-
-        .vc-pix-header {
-            padding: 18px 18px 14px;
-            text-align: center;
-            background: rgba(0, 230, 118, 0.04);
-            border-bottom: 1px solid rgba(0, 230, 118, 0.1);
-        }
-
-        .vc-pix-icon {
-            width: 56px;
-            height: 56px;
-            background: rgba(0, 230, 118, 0.1);
-            border: 2px solid rgba(0, 230, 118, 0.4);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            animation: vcRotateIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes vcRotateIn {
-            from {
-                transform: scale(0) rotate(-180deg);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-        }
-
-        .vc-pix-icon i {
-            color: #00e676;
-            font-size: 1.5rem;
-        }
-
-        .vc-pix-title {
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: #fff;
-            margin: 0 0 4px;
-        }
-
-        .vc-pix-sub {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin: 0;
-        }
-
-        .vc-qr-box {
-            margin: 18px 18px 14px;
-            background: #fff;
-            border-radius: 18px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.25), 0 0 30px rgba(0, 230, 118, 0.12);
-        }
-
-        #qr-code-img {
-            width: 190px;
-            height: 190px;
-            display: block;
-        }
-
-        .vc-qr-verified {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e5e7eb;
-            width: 100%;
-            text-align: center;
-        }
-
-        .vc-qr-verified span:first-child {
-            display: block;
-            font-size: 0.55rem;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 800;
-            margin-bottom: 2px;
-        }
-
-        .vc-qr-verified span:last-child {
-            display: block;
-            font-size: 0.8rem;
-            color: #1e293b;
-            font-weight: 900;
-        }
-
-        .vc-copy-btn {
-            margin: 0 18px 14px;
-            width: calc(100% - 36px);
-            padding: 16px;
-            background: #00e676;
-            color: #000;
-            font-size: 1rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: 0.2s;
-        }
-
-        .vc-copy-btn:active {
-            transform: scale(0.98);
-        }
-
-        .vc-pix-steps {
-            margin: 0 18px 14px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .vc-pix-step-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .vc-pix-step-num {
-            width: 24px;
-            height: 24px;
-            background: rgba(0, 230, 118, 0.1);
-            border: 1px solid rgba(0, 230, 118, 0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            font-weight: 900;
-            color: #00e676;
-            flex-shrink: 0;
-        }
-
-        .vc-pix-step-text {
-            font-size: 0.82rem;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.4;
-            padding-top: 3px;
-        }
-
-        .vc-pix-step-text strong {
-            color: #fff;
-        }
-
-        .vc-pix-footer {
-            margin: 0 18px 24px;
-            text-align: center;
-        }
-
-        .vc-pix-footer .vc-guarantee {
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-
-        .vc-pix-secure {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-
-        .vc-pix-secure img {
-            height: 18px;
-            opacity: 0.5;
-        }
-
-        .vc-company-info {
-            font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.25);
-            line-height: 1.6;
-        }
-
-        .vc-back-link {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 0.8rem;
-            text-decoration: underline;
-            cursor: pointer;
-            display: block;
-            margin: 10px auto 0;
-        }
-
-        /* === HIDDEN === */
-        .hidden {
-            display: none !important;
-        }
-
-        /* === PAYMENT PENDING === */
-        #payment-pending-view {
-            padding: 30px 20px;
-            text-align: center;
-            color: #fff;
-        }
-
-        #payment-pending-view h3 {
-            color: #f59e0b;
-            margin-bottom: 10px;
-        }
-
-        #payment-pending-view p {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-    </style>
-
+    <!-- Checkout Modal (Restored White Design) -->
     <div id="checkout-modal" class="modal-overlay">
-        <div class="vc-wrapper">
-
-            <!-- ====== TOP BAR ====== -->
-            <div class="vc-topbar">
-                <div class="vc-topbar-brand">
-                    <div class="vc-lock-icon"><i class="fa-solid fa-lock"></i></div>
-                    <span>Pagamento Seguro</span>
+        <div class="modal-content">
+            <div id="checkout-main-view" style="position: relative;">
+                <div class="modal-header"
+                    style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                    <div style="flex: 1; text-align: left;">
+                        <h3 class="modal-title"
+                            style="color: #00C851 !important; font-size: 1.4rem; font-weight: 800; line-height: 1.2; margin: 0; text-shadow: none;">
+                            Finalize Sua Compra Agora, e Garanta a saúde das suas galinhas.
+                        </h3>
+                        <p
+                            style="color: #3b82f6 !important; font-size: 0.9rem; font-weight: 700; margin-top: 8px; line-height: 1.3;">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Produto 100% digital, baixe imediatamente
+                            depois do pagamento.
+                        </p>
+                        <p
+                            style="font-size: 0.85rem; color: #ef4444; margin-top: 8px; font-weight: 600; line-height: 1.3; text-shadow: none; opacity: 1;">
+                            Não espere amanhã, para sua galinha <br> amanhã pode ser tarde.
+                        </p>
+                    </div>
+                    <img src="logo.jpg" alt="Logo" style="height: 110px; flex-shrink: 0; filter: contrast(1.1);"
+                        fetchpriority="high">
                 </div>
-                <button class="vc-close-btn" onclick="closeCheckout()">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
+                <!-- Checkout simplification: Trust badges removed per request -->
 
-            <!-- ====== MAIN VIEW ====== -->
-            <div id="checkout-main-view">
 
-                <!-- Steps -->
-                <div class="vc-steps">
-                    <div class="vc-step done" id="step-1">
-                        <div class="vc-step-num"><i class="fa-solid fa-check" style="font-size:0.6rem;"></i></div>
-                        <div class="vc-step-label">Pedido</div>
-                    </div>
-                    <div class="vc-step-line done"></div>
-                    <div class="vc-step active" id="step-2">
-                        <div class="vc-step-num">2</div>
-                        <div class="vc-step-label">Dados</div>
-                    </div>
-                    <div class="vc-step-line"></div>
-                    <div class="vc-step" id="step-3">
-                        <div class="vc-step-num">3</div>
-                        <div class="vc-step-label">Pagamento</div>
-                    </div>
-                </div>
+                <!-- CSS Otimizado para Checkout Compacto e Tooltips -->
+                <style>
+                    .checkout-summary {
+                        position: relative;
+                        background: #000;
+                        border-radius: 12px;
+                        margin-bottom: 20px;
+                        overflow: hidden;
+                        min-height: 180px;
+                        display: flex;
+                        align-items: stretch;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                    }
 
-                <!-- Offer message (timer removed) -->
-                <div class="vc-countdown">
-                    <i class="fa-solid fa-fire-flame-curved"></i>
-                    <div class="vc-countdown-text">
-                        <p><strong>Oferta por tempo limitado!</strong></p>
-                    </div>
-                </div>
+                    .summary-bg-image {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                        opacity: 0.5;
+                        filter: blur(2px) scale(1.1);
+                    }
 
-                <!-- Product summary -->
-                <div class="vc-product">
-                    <img src="capadasdoencas.jpg" alt="Protocolo Elite" fetchpriority="high">
-                    <div class="vc-product-info">
-                        <div class="vc-product-badge">✓ Acesso Digital Imediato</div>
-                        <h4 class="vc-product-name">Protocolo Elite: A Cura das Aves</h4>
-                        <ul class="vc-product-features">
-                            <li><i class="fa-solid fa-circle-check"></i> Diagnóstico exato de doenças</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Remédios com dosagem certa</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Baixe na hora após pagar</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Garantia de 7 dias</li>
-                        </ul>
+                    .summary-content {
+                        position: relative;
+                        z-index: 2;
+                        display: flex;
+                        width: 100%;
+                        background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 30%, rgba(0, 0, 0, 0.4) 100%);
+                        padding: 15px;
+                        gap: 15px;
+                        align-items: center;
+                    }
+
+                    .summary-img-full {
+                        width: 90px;
+                        height: 130px;
+                        object-fit: cover;
+                        border-radius: 8px;
+                        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        flex-shrink: 0;
+                    }
+
+                    .summary-details h4 {
+                        font-size: 1.1rem;
+                        color: #ffffff;
+                        margin: 0 0 6px 0;
+                        font-weight: 900;
+                        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                    }
+
+                    .summary-features {
+                        list-style: none;
+                        padding: 0;
+                        margin: 0;
+                        font-size: 0.85rem;
+                        color: rgba(255, 255, 255, 0.9);
+                        font-weight: 600;
+                    }
+
+                    .summary-features li {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        margin-bottom: 2px;
+                    }
+
+                    .summary-features i {
+                        color: #059669;
+                    }
+
+                    /* Compactação do Form */
+                    .form-group {
+                        margin-bottom: 4px !important;
+                        /* Menos espaço entre campos */
+                    }
+
+                    .form-label {
+                        text-transform: uppercase;
+                        font-size: 0.75rem !important;
+                        font-weight: 800 !important;
+                        color: #374151 !important;
+                        margin-bottom: 2px !important;
+                    }
+
+                    .form-input {
+                        padding: 12px 14px !important;
+                        /* Input confortável mobile */
+                        font-size: 16px !important;
+                        height: auto !important;
+                    }
+
+                    .form-section-title {
+                        font-size: 0.9rem !important;
+                        margin: 10px 0 8px !important;
+                    }
+
+                    /* Tooltip de Ociosidade */
+                    .field-tooltip {
+                        position: absolute;
+                        background: #1f2937;
+                        color: #fff;
+                        padding: 6px 10px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        bottom: 100%;
+                        right: 0;
+                        margin-bottom: 5px;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                        opacity: 0;
+                        transform: translateY(5px);
+                        transition: all 0.3s ease;
+                        pointer-events: none;
+                        z-index: 10;
+                        white-space: nowrap;
+                    }
+
+                    .field-tooltip.active {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+
+                    .field-tooltip::after {
+                        content: '';
+                        position: absolute;
+                        top: 100%;
+                        right: 15px;
+                        border-width: 5px;
+                        border-style: solid;
+                        border-color: #1f2937 transparent transparent transparent;
+                    }
+
+                    .form-group {
+                        position: relative;
+                    }
+
+                    /* Para posicionar o tooltip */
+
+                    /* Validation Styles */
+                    .form-input.input-error {
+                        border-color: #ef4444 !important;
+                        /* Red */
+                        background-color: #fef2f2 !important;
+                    }
+
+                    .form-input.input-success {
+                        border-color: #22c55e !important;
+                        /* Green */
+                        background-color: #f0fdf4 !important;
+                    }
+
+                    .error-message {
+                        color: #ef4444;
+                        font-size: 0.7rem;
+                        font-weight: 700;
+                        margin-top: -4px;
+                        margin-bottom: 4px;
+                        display: block;
+                        animation: fadeIn 0.3s ease;
+                    }
+
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-5px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                </style>
+
+                <!-- 1. Resumo do Pedido -->
+                <div class="checkout-summary glass-panel"
+                    style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px;">
+                    <!-- Text on the left -->
+                    <div style="flex: 1; min-width: 0;">
+                        <h4
+                            style="color: #d97706 !important; font-size: 0.95rem; font-weight: 900; margin: 0 0 6px 0; line-height: 1.2;">
+                            Protocolo Elite: A Cura das Aves</h4>
+                        <p style="color: var(--text-primary); font-size: 0.8rem; line-height: 1.4; margin-bottom: 6px;">
+                            Tenha o <strong style="color: #ff0000;">diagnóstico exato</strong> e o <strong
+                                style="color: #ff0000;">tratamento imediato</strong>
+                            na palma da sua mão e <span style="color: #00C851; font-weight: 800;">salve o seu plantel
+                                hoje.</span>
+                        </p>
+                        <p style="color: var(--text-secondary); font-size: 0.75rem; line-height: 1.4; margin: 0;">
+                            Deixar para depois significa <span style="color: #ff0000; font-weight: 700;">perder suas
+                                aves amanhã</span> por doenças que você poderia ter evitado agora.
+                        </p>
                     </div>
+                    <!-- Ebook cover on the right -->
+                    <img src="capadasdoencas.jpg" alt="Protocolo Elite"
+                        style="width: 80px; height: 112px; object-fit: cover; border-radius: 6px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.08);"
+                        fetchpriority="high">
                 </div>
 
                 <form id="payment-form">
-                    <!-- Payment method tabs -->
-                    <div class="vc-method-tabs">
-                        <div class="vc-method-tab selected" onclick="selectPaymentMethod('pix')" id="tab-pix">
-                            <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked
-                                style="display:none;">
-                            <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" alt="Pix"
-                                style="filter: brightness(1.2);">
-                            <div class="vc-tab-name">PIX</div>
-                            <div class="vc-tab-sub">Acesso imediato</div>
-                        </div>
-                        <div class="vc-method-tab" onclick="selectPaymentMethod('card')" id="tab-card">
-                            <input type="radio" name="paymentMethod" id="method-card" value="card"
-                                style="display:none;">
-                            <div style="display:flex; gap:4px; align-items:center;">
-                                <img src="https://logospng.org/download/visa/logo-visa-256.png"
-                                    style="height:14px; opacity:0.7;" alt="Visa">
-                                <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
-                                    style="height:14px; opacity:0.7;" alt="MC">
+                    <div class="radio-group-top" style="margin-bottom: 10px;">
+                        <label class="form-label" style="display: block; margin-bottom: 5px;">ESCOLHA A FORMA DE
+                            PAGAMENTO</label>
+                        <div class="payment-methods-grid">
+                            <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
+                                <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
+                                <div class="radio-label">
+                                    <span class="radio-title">PIX</span>
+                                    <span class="radio-desc">Acesso imediato</span>
+                                </div>
+                                <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png"
+                                    style="height: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" alt="Pix">
                             </div>
-                            <div class="vc-tab-name">CARTÃO</div>
-                            <div class="vc-tab-sub">Até 4x</div>
+
+                            <div class="radio-item" onclick="selectPaymentMethod('card')">
+                                <input type="radio" name="paymentMethod" id="method-card" value="card">
+                                <div class="radio-label">
+                                    <span class="radio-title">CARTÃO</span>
+                                    <span class="radio-desc">Até 4x</span>
+                                </div>
+                                <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
+                                    <img src="https://logospng.org/download/visa/logo-visa-256.png"
+                                        style="height: 18px;" alt="Visa">
+                                    <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
+                                        style="height: 18px;" alt="Mastercard">
+                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png"
+                                        style="height: 18px;" alt="Pix">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Personal data -->
-                    <div class="vc-form-area">
-                        <input type="text" id="payer-name" class="vc-input form-input" placeholder="Seu nome completo"
-                            required data-tip="Digite seu nome e sobrenome completo.">
-                        <input type="email" id="payer-email" class="vc-input form-input" placeholder="Seu melhor e-mail"
-                            required data-tip="Onde você receberá o acesso.">
-                        <input type="tel" id="payer-phone" class="vc-input form-input"
-                            placeholder="WhatsApp (DDD + Número)" required
-                            data-tip="Para suporte e avisos importantes.">
+                    <div class="form-section-title">SEUS DADOS DE ACESSO</div>
+                    <div class="form-group">
+                        <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
+                            data-tip="Digite seu nome e sobrenome completo para o certificado.">
+                        <div class="field-tooltip">Digite seu nome completo</div>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="payer-email" class="form-input" placeholder="EMAIL" required
+                            data-tip="Seu melhor email onde receberá o acesso ao guia.">
+                        <div class="field-tooltip">Onde você receberá o acesso</div>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <div class="form-group" style="flex: 1.2;" id="cpf-container">
+                            <input type="text" id="payer-cpf" class="form-input" placeholder="CPF" required
+                                data-tip="Necessário para emitir a nota fiscal (apenas números).">
+                            <div class="field-tooltip">Apenas números do CPF</div>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <input type="tel" id="payer-phone" class="form-input" placeholder="WHATSAPP" required
+                                data-tip="Para suporte e avisos importantes (DDD + Número).">
+                            <div class="field-tooltip">DDD + Número</div>
+                        </div>
+                    </div>
 
-
-                        <!-- Card fields -->
-                        <div id="card-area" style="display:none;">
-                            <div id="vc-card-area">
-                                <div class="vc-card-header">
-                                    <i class="fa-regular fa-credit-card"></i>
-                                    <span>Dados do Cartão</span>
-                                </div>
-                                <input type="text" id="card-number" class="vc-input form-input"
-                                    placeholder="Número do cartão" data-tip="Os 16 números na frente do cartão.">
-                                <div class="vc-input-row">
-                                    <div class="vc-field">
-                                        <input type="text" id="card-expiration" class="vc-input form-input"
-                                            placeholder="Validade (MM/AA)" data-tip="Mês e Ano de vencimento.">
-                                    </div>
-                                    <div class="vc-field">
-                                        <input type="text" id="card-cvv" class="vc-input form-input" placeholder="CVV"
-                                            data-tip="3 dígitos no verso.">
-                                    </div>
-                                </div>
-                                <input type="text" id="card-holder" class="vc-input form-input"
-                                    placeholder="Nome no cartão" data-tip="Igual impresso no cartão.">
-                                <input type="text" id="card-cpf" class="vc-input form-input" placeholder="CPF"
-                                    data-tip="CPF do dono do cartão.">
-                                <input type="text" id="card-cep" class="vc-input form-input" placeholder="CEP"
-                                    data-tip="CEP do endereço de cobrança.">
-                                <select id="installments-select" class="vc-input form-input"></select>
+                    <!-- Card Details Area -->
+                    <div id="card-area"
+                        style="display: none; margin-top: 0.5rem; border: 1px solid var(--amber-100); padding: 1rem; border-radius: 0.5rem; background: var(--amber-50);">
+                        <div class="form-group">
+                            <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO"
+                                data-tip="Os 16 números na frente do cartão.">
+                            <div class="field-tooltip">Digite os números do cartão</div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="form-group" style="flex: 1.5;">
+                                <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE"
+                                    data-tip="Mês e Ano de vencimento (Ex: 12/28).">
+                                <div class="field-tooltip">MM/AA</div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <input type="text" id="card-cvv" class="form-input" placeholder="CVV"
+                                    data-tip="3 dígitos no verso do cartão.">
+                                <div class="field-tooltip">3 dígitos no verso</div>
                             </div>
                         </div>
-
-                        <!-- Order Bump Area -->
-                        <div id="order-bump-area"></div>
-
-                        <!-- PIX urgency msg -->
-                        <div id="pix-urgency-msg">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Desconto PIX expira em breve — garanta agora</span>
+                        <div class="form-group">
+                            <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO"
+                                data-tip="Nome exatamente como impresso no cartão.">
+                            <div class="field-tooltip">Igual impresso no cartão</div>
                         </div>
-
-                        <!-- Total bar -->
-                        <div class="vc-total-bar">
-                            <span class="vc-total-label">Total</span>
-                            <span class="vc-total-value checkout-total-display">R$ <span data-price-of="ebook-doencas"
-                                    class="card-price-value">87,90</span></span>
+                        <div class="form-group">
+                            <input type="text" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR"
+                                data-tip="CPF do dono do cartão (apenas números).">
+                            <div class="field-tooltip">CPF do Dono do Cartão</div>
                         </div>
+                        <div class="form-group">
+                            <input type="text" id="card-cep" class="form-input" placeholder="CEP"
+                                data-tip="CEP do endereço de cobrança.">
+                            <div class="field-tooltip">CEP de cobrança</div>
+                        </div>
+                        <div class="form-group">
+                            <select id="installments-select" class="form-input"></select>
+                        </div>
+                    </div>
 
-                        <!-- CTA Buttons -->
-                        <button type="button" id="btn-pay-pix" class="vc-btn-pix">
-                            <i class="fa-solid fa-bolt"></i>
-                            GERAR PIX AGORA
+                    <!-- Order Bump Area -->
+                    <div id="order-bump-area"></div>
+
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <div class="price-summary-box glass-panel"
+                            style="margin-bottom: 0.5rem; padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 1.1rem; font-weight: 800; color: var(--amber-600);">Total:</span>
+                            <span class="checkout-total-display"
+                                style="font-size: 1.25rem; font-weight: 900; color: var(--amber-600);">R$ <span
+                                    data-price-of="ebook-doencas" class="card-price-value">87,90</span></span>
+                        </div>
+                        <!-- PIX urgency message - shown only when PIX is selected -->
+                        <div id="pix-urgency-msg"
+                            style="display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(220,38,38,0.08); border: 1.5px solid #dc2626; border-radius: 8px; padding: 8px 12px; margin: 8px 0 0 0; animation: pulseBorder 1.5s ease-in-out infinite;">
+                            <i class="fa-solid fa-triangle-exclamation"
+                                style="color: #dc2626; font-size: 1rem; animation: pulse 1.5s ease-in-out infinite;"></i>
+                            <span
+                                style="color: #dc2626; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px;">
+                                Faça o pagamento agora e aproveite o desconto no pix por tempo limitado
+                            </span>
+                        </div>
+                        <style>
+                            @keyframes pulseBorder {
+
+                                0%,
+                                100% {
+                                    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3);
+                                }
+
+                                50% {
+                                    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+                                }
+                            }
+                        </style>
+                        <!-- Checkout simplification: Economy reinforcement removed -->
+
+                        <p
+                            style="font-size: 1.1rem; color: #22c55e; font-weight: 900; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: -0.2px;">
+                            <i class="fa-solid fa-circle-check"></i> uma galinha salva, já paga seu investimento.
+                        </p>
+
+                        <!-- Checkout simplification: Acesso imediato removed -->
+
+
+                        <button type="button" id="btn-pay-pix" class="btn-primary"
+                            style="width: 100%; padding: 18px; font-size: 1.25rem; font-weight: 900; background: #dc2626; border: none; border-radius: 10px; box-shadow: 0 4px 0 #991b1b; transition: all 0.2s; cursor: pointer; text-transform: uppercase;">
+                            GERAR PIX.
                         </button>
-                        <button type="button" id="btn-pay-card" class="vc-btn-card" style="display:none;">
-                            <i class="fa-regular fa-credit-card"></i>
-                            FINALIZAR PAGAMENTO
+
+                        <button type="button" id="btn-pay-card" class="btn-primary"
+                            style="display: none; width: 100%; padding: 18px; font-size: 1.25rem; font-weight: 900; background: #dc2626; border: none; border-radius: 10px; box-shadow: 0 4px 0 #991b1b; transition: all 0.2s; cursor: pointer; text-transform: uppercase;">
+                            Finalizar Pagamento
                         </button>
 
-                        <!-- Guarantee -->
-                        <div class="vc-guarantee">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <span>7 dias de garantia — se não gostar, devolvemos 100%</span>
+                        <!-- Simplified Guarantee -->
+                        <div
+                            style="margin-top: 1.5rem; background: rgba(22, 163, 74, 0.05); padding: 12px; border-radius: 10px; text-align: center;">
+                            <p
+                                style="color: #00C851 !important; font-weight: 800; font-size: 0.85rem; margin: 0; text-transform: uppercase;">
+                                <i class="fa-solid fa-lock"></i> SE VOCÊ NÃO GOSTAR TE DEVOLVO SEU DINHEIRO, SEM RISCO
+                            </p>
                         </div>
-                    </div><!-- /vc-form-area -->
 
-                    <!-- Trust logos -->
-                    <div class="vc-trust">
-                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" alt="Pix">
-                        <img src="https://logospng.org/download/visa/logo-visa-256.png" alt="Visa">
-                        <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" alt="Mastercard">
-                        <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-                            alt="Mercado Pago">
-                        <i class="fa-solid fa-lock" style="color: #00e676; font-size: 0.9rem;"></i>
-                        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight:700;">SSL
-                            256-bit</span>
+
+
+
+
+
+
+                        <div
+                            style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                            <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 24px;"
+                                alt="Visa">
+                            <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
+                                style="height: 24px;" alt="Mastercard">
+                            <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 20px;"
+                                alt="Pix">
+                            <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
+                                style="height: 24px;" alt="Mercado Pago">
+                        </div>
+                        <p style="font-size: 0.7rem; color: #22c55e; margin-top: 0.75rem; font-weight: 600;"><i
+                                class="fa-solid fa-lock"></i> Pagamento 100% Seguro</p>
                     </div>
                 </form>
-            </div><!-- /checkout-main-view -->
+            </div>
 
-            <!-- ====== PIX RESULT ====== -->
-            <div id="pix-result" class="hidden">
-                <div class="vc-pix-header">
-                    <div class="vc-pix-icon">
-                        <i class="fa-brands fa-pix"></i>
+            <div id="pix-result" class="hidden" style="text-align: center;">
+                <h3 class="modal-title">Quase lá!</h3>
+                <p style="font-size: 0.9rem; color: var(--gray-600); margin: 0.5rem 0;">Escaneie o QR Code ou copie
+                    o
+                    código abaixo.</p>
+
+                <div
+                    style="background: #fff; padding: 1.5rem; border-radius: 1.2rem; display: block; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 15px 35px rgba(0,0,0,0.08); max-width: fit-content; position: relative;">
+                    <img id="qr-code-img" src="" alt="QR Code PIX"
+                        style="width: 180px; height: 180px; display: block; margin: 0 auto;">
+                    <div
+                        style="margin-top: 15px; padding-top: 12px; border-top: 1px solid #f1f5f9; text-align: center;">
+                        <span
+                            style="display: block; font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 3px;">Recebedor
+                            Verificado</span>
+                        <span
+                            style="display: block; font-size: 0.85rem; color: #1e293b; font-weight: 900; letter-spacing: -0.3px;">JOAO
+                            PAULO SANTOS CAMARGO</span>
                     </div>
-                    <h3 class="vc-pix-title">Quase lá! Pague agora</h3>
-                    <p class="vc-pix-sub">Escaneie o QR Code ou copie o código abaixo</p>
                 </div>
 
-                <!-- QR Code -->
-                <div class="vc-qr-box">
-                    <img id="qr-code-img" src="" alt="QR Code PIX" width="190" height="190">
-                    <div class="vc-qr-verified">
-                        <span>Recebedor Verificado</span>
-                        <span>JOAO PAULO SANTOS CAMARGO</span>
-                    </div>
-                </div>
-
-                <!-- Copy Button -->
-                <button id="btn-copy-pix" class="vc-copy-btn">
+                <button id="btn-copy-pix" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
                     <i class="fa-regular fa-copy"></i> COPIAR CÓDIGO PIX
                 </button>
-                <textarea id="pix-copy-paste" readonly
-                    style="opacity:0; position:absolute; z-index:-1; width:1px; height:1px;"></textarea>
+                <textarea id="pix-copy-paste" readonly style="opacity: 0; position: absolute; z-index: -1;"></textarea>
 
-                <!-- Steps to pay -->
-                <div class="vc-pix-steps">
-                    <div class="vc-pix-step-item">
-                        <div class="vc-pix-step-num">1</div>
-                        <div class="vc-pix-step-text">Abra o app do banco e escolha <strong>Pix</strong></div>
-                    </div>
-                    <div class="vc-pix-step-item">
-                        <div class="vc-pix-step-num">2</div>
-                        <div class="vc-pix-step-text">Selecione <strong>Pix Copia e Cola</strong> ou <strong>Ler QR
-                                Code</strong></div>
-                    </div>
-                    <div class="vc-pix-step-item">
-                        <div class="vc-pix-step-num">3</div>
-                        <div class="vc-pix-step-text">Cole o código ou escaneie e confirme o pagamento</div>
-                    </div>
-                    <div class="vc-pix-step-item">
-                        <div class="vc-pix-step-num">4</div>
-                        <div class="vc-pix-step-text"><strong>Receba o acesso no seu e-mail imediatamente</strong> após
-                            confirmação</div>
-                    </div>
+                <div class="glass-panel"
+                    style="text-align: left; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; padding: 1rem; border-radius: 0.5rem;">
+                    <p>1. Abra o app do seu banco e escolha <strong>Pix</strong>.</p>
+                    <p>2. Selecione <strong>Pix Copia e Cola</strong> ou <strong>Ler QR Code</strong>.</p>
+                    <p>3. Cole o código ou escaneie a imagem acima.</p>
                 </div>
 
-                <!-- Footer PIX -->
-                <div class="vc-pix-footer">
-                    <div class="vc-guarantee">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span>Garantia de 7 dias — sem risco</span>
-                    </div>
-                    <div class="vc-pix-secure">
-                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" alt="Pix">
+                <div style="margin-top: 1.5rem; font-size: 0.85rem;">
+                    Dúvidas? <a href="https://wa.me/5538999832950" target="_blank"
+                        style="color: #25d366; font-weight: 700;"><i class="fa-brands fa-whatsapp"></i> Chame no
+                        WhatsApp</a>
+                </div>
+
+                <!-- Security Reinforcement (Ultra-Confiança) -->
+                <div class="pix-security-reinforcement"
+                    style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-bottom: 15px;">
+                        <i class="fa-solid fa-lock" style="color: #16a34a; font-size: 1.2rem;"></i>
+                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px;"
+                            alt="Pix">
                         <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-                            alt="Mercado Pago">
-                        <i class="fa-solid fa-lock" style="color:#00e676; font-size:0.85rem;"></i>
+                            style="height: 22px;" alt="Mercado Pago">
                     </div>
-                    <div class="vc-company-info">
+                    <!-- Simplified Guarantee (Pix View) -->
+                    <div
+                        style="background: rgba(22, 163, 74, 0.05); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                        <p
+                            style="color: #00C851 !important; font-weight: 800; font-size: 0.8rem; margin: 0; text-transform: uppercase;">
+                            <i class="fa-solid fa-lock"></i> SE VOCÊ NÃO GOSTAR TE DEVOLVO SEU DINHEIRO, SEM RISCO
+                        </p>
+                    </div>
+
+                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 500;">
                         <p>GALOS MURA BRASIL OFICIAL</p>
                         <p>CNPJ: 63.665.824/0001-09</p>
                     </div>
-                    <a href="https://wa.me/5538999832950" target="_blank"
-                        style="display:inline-flex; align-items:center; gap:6px; color:#25d366; font-size:0.8rem; font-weight:700; text-decoration:none; margin-top:12px;">
-                        <i class="fa-brands fa-whatsapp"></i> Dúvidas? Fale no WhatsApp
-                    </a>
-                    <button class="vc-back-link"
-                        onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');">
-                        ← Voltar
-                    </button>
                 </div>
-            </div><!-- /pix-result -->
 
-            <!-- ====== PAYMENT PENDING ====== -->
-            <div id="payment-pending-view" class="hidden">
+                <button
+                    onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');"
+                    style="margin-top: 1rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer;">Voltar</button>
+            </div>
+
+            <!-- Payment Pending View (New) -->
+            <div id="payment-pending-view" class="hidden" style="text-align: center; padding: 1rem 0;">
                 <div style="font-size: 4rem; color: #f59e0b; margin-bottom: 1rem;">
                     <i class="fa-solid fa-shield-halved fa-beat-normal"></i>
                 </div>
-                <h3>Pagamento em Análise</h3>
-                <p>Sua transação está sendo processada com segurança. <br>
-                    <strong style="color:#fff;">Não se preocupe, isso é normal.</strong>
+                <h3 class="modal-title" style="color: #92400e;">Pagamento em Análise</h3>
+                <p style="font-size: 0.95rem; color: var(--gray-600); margin: 1rem 0; line-height: 1.5;">
+                    Sua transação está sendo processada com segurança pelo Mercado Pago. <br>
+                    <strong>Não se preocupe, isso é um procedimento normal.</strong>
                 </p>
+
                 <div
-                    style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); padding: 1rem; border-radius: 12px; text-align: left; margin: 1rem 0; font-size:0.85rem; color: rgba(255,255,255,0.7);">
-                    <p style="margin-bottom:8px;"><i class="fa-solid fa-envelope" style="color:#f59e0b;"></i> Acesso
-                        enviado ao e-mail após aprovação</p>
-                    <p style="margin-bottom:8px;"><i class="fa-solid fa-clock" style="color:#f59e0b;"></i> Prazo: alguns
-                        minutos até 48h</p>
-                    <p><i class="fa-solid fa-check-double" style="color:#f59e0b;"></i> Verifique caixa de entrada e Spam
-                    </p>
+                    style="background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 0.75rem; text-align: left; margin-bottom: 1.5rem;">
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #92400e;">
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso será enviado
+                            para
+                            o seu e-mail assim que aprovado.</li>
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de análise: de
+                            alguns
+                            minutos até 48h.</li>
+                        <li><i class="fa-solid fa-check-double"></i> Fique atento à sua caixa de entrada e Spam.
+                        </li>
+                    </ul>
                 </div>
+
                 <a href="https://wa.me/5538999832950?text=Olá,%20meu%20pagamento%20ficou%20em%20análise.%20Pode%20me%20ajudar?"
-                    target="_blank"
-                    style="display:block; width:100%; padding:14px; background:#25d366; color:#fff; font-weight:800; text-decoration:none; border-radius:12px; text-align:center; margin-bottom:12px;">
+                    target="_blank" class="btn-primary"
+                    style="width: 100%; background: #25d366; border-color: #25d366; text-decoration: none; display: inline-block;">
                     <i class="fa-brands fa-whatsapp"></i> FALAR COM SUPORTE
                 </a>
+
                 <button onclick="closeCheckout()"
-                    style="background:none; border:none; color:rgba(255,255,255,0.3); text-decoration:underline; cursor:pointer; font-size:0.85rem;">
-                    Entendi, fechar
+                    style="margin-top: 1.5rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                    Entendi, fechar checkout
                 </button>
             </div>
 
-        </div><!-- /vc-wrapper -->
-    </div><!-- /checkout-modal -->
 
-
-
-
-
+            <button onclick="closeCheckout()"
+                style="position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; background: #fff; border: 1px solid #e5e7eb; border-radius: 50%; color: #6b7280; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
 
     <!-- Official Footer -->
-
     <footer
         style="background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 3rem 0; border-top: 1px solid var(--glass-border); text-align: center;">
         <div class="container">
@@ -2489,6 +1752,7 @@
 
     <script src="https://sdk.mercadopago.com/js/v2" defer></script>
     <script>const mp = new MercadoPago('APP_USR-73238612-450f-4fbe-9a9f-3d5f9919f2d1');</script>
+    <script src="smart_fields.js" defer></script>
     <script src="script.js?v=26" defer></script>
     <script src="order_bump_modal.js" defer></script>
 
