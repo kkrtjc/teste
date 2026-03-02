@@ -65,7 +65,7 @@
             max-width: 480px;
             max-height: 95vh;
             border-radius: 20px;
-            border: 2px solid #fbbf24;
+            border: 3px solid #fbbf24;
             overflow-y: auto;
             position: relative;
             animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -191,6 +191,30 @@
             font-weight: 900;
             font-size: 0.65rem;
             z-index: 10;
+        }
+
+        .vsl-style-border {
+            border: 3px solid #fbbf24;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            background: rgba(10, 15, 10, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            margin: 2rem auto;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+            }
         }
     </style>
 
@@ -444,7 +468,8 @@
 
     <!-- Header -->
     <header class="sticky">
-        <div class="container nav-content">
+        <div class="container nav-content vsl-style-border"
+            style="margin-top: 5px; margin-bottom: 5px; border-radius: 12px; padding: 10px 18px;">
             <div class="logo-area">
                 <img src="logo.jpg" alt="Logo" style="height: 60px; border-radius: 8px;">
                 <h1>PROTOCOLO <span style="color: var(--amber-600)">ELITE</span></h1>
@@ -456,7 +481,8 @@
     </header>
 
     <!-- Sub-Header Tabs -->
-    <div class="sub-header-tabs">
+    <div class="sub-header-tabs vsl-style-border"
+        style="margin: 0.5rem auto; max-width: 95%; border-radius: 12px; padding: 4px;">
         <a href="#authority-video">Autoridade</a>
         <a href="#learning">Benefícios</a>
         <a href="#faq">Perguntas frequentes</a>
@@ -464,7 +490,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <div class="container">
+        <div class="container vsl-style-border" style="padding: 2rem;">
             <!-- Social Proof Header -->
             <div
                 style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 2.5rem; flex-wrap: wrap;">
@@ -587,218 +613,238 @@
                     <i class="fa-solid fa-hand"></i> Resolva hoje mesmo o problema da sua galinha antes que seja tarde.
                 </p>
             </div>
-
         </div>
     </section>
 
     <!-- Infinite Text Testimonial Carousel -->
     <section style="padding: 1.5rem 0; overflow: hidden; background: transparent;">
-        <p
-            style="font-size: 1rem; color: #ffffff; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fa-solid fa-star" style="color: #fbbf24;"></i> Comentários de alguns de nossos alunos. <i
-                class="fa-solid fa-star" style="color: #fbbf24;"></i>
-        </p>
-        <style>
-            .inf-track {
-                display: flex;
-                gap: 16px;
-                width: max-content;
-                animation: inf-scroll 45s linear infinite;
-            }
-
-            @keyframes inf-scroll {
-                from {
-                    transform: translateX(0);
+        <div class="vsl-style-border" style="padding: 1rem 0;">
+            <p
+                style="font-size: 1rem; color: #ffffff; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-star" style="color: #fbbf24;"></i> Comentários de alguns de nossos alunos. <i
+                    class="fa-solid fa-star" style="color: #fbbf24;"></i>
+            </p>
+            <style>
+                .inf-track {
+                    display: flex;
+                    gap: 16px;
+                    width: max-content;
+                    animation: inf-scroll 45s linear infinite;
                 }
 
-                to {
-                    transform: translateX(-50%);
+                @keyframes inf-scroll {
+                    from {
+                        transform: translateX(0);
+                    }
+
+                    to {
+                        transform: translateX(-50%);
+                    }
                 }
-            }
 
-            .inf-card {
-                background: rgba(255, 255, 255, 0.06);
-                border: 1px solid rgba(255, 255, 255, 0.12);
-                border-radius: 14px;
-                padding: 14px 18px;
-                min-width: 230px;
-                max-width: 250px;
-                flex-shrink: 0;
-            }
+                .inf-card {
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 14px;
+                    padding: 14px 18px;
+                    min-width: 230px;
+                    max-width: 250px;
+                    flex-shrink: 0;
+                }
 
-            .inf-card .inf-stars {
-                color: #fbbf24;
-                font-size: 0.85rem;
-                margin-bottom: 6px;
-            }
+                .inf-card .inf-stars {
+                    color: #fbbf24;
+                    font-size: 0.85rem;
+                    margin-bottom: 6px;
+                }
 
-            .inf-card .inf-text {
-                font-size: 0.8rem;
-                line-height: 1.5;
-                color: rgba(255, 255, 255, 0.88);
-            }
+                .inf-card .inf-text {
+                    font-size: 0.8rem;
+                    line-height: 1.5;
+                    color: rgba(255, 255, 255, 0.88);
+                }
 
-            .inf-card .inf-author {
-                font-size: 0.72rem;
-                color: #fbbf24;
-                font-weight: 700;
-                margin-top: 8px;
-            }
-        </style>
-        <div
-            style="overflow: hidden; mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);">
-            <div class="inf-track">
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Minha galinha estava com diarreia há dias. Segui o protocolo e em 2 dias ela se
-                        recuperou!"</p>
-                    <p class="inf-author">— Carlos, Minas Gerais</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Perdi muitas aves antes de conhecer esse método. Agora sei identificar a doença
-                        antes de perder o animal."</p>
-                    <p class="inf-author">— Maria, Goiás</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Valeu muito cada centavo. Já salvei 3 galinhas com a tabela de sintomas.
-                        Material de primeira!"</p>
-                    <p class="inf-author">— João, Paraná</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"O protocolo de vacinação mudou minha criação. Menos doentes, menos gasto com
-                        veterinário!"</p>
-                    <p class="inf-author">— Ana, Bahia</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Criei uma galinha do zero com o guia de pintinhos. Cresceu forte e saudável.
-                        Recomendo muito!"</p>
-                    <p class="inf-author">— Lucas, São Paulo</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"A dosagem certa do medicamento fez toda a diferença. Sem acertar a dose eu
-                        nunca teria curado minha ave."</p>
-                    <p class="inf-author">— Fernanda, Rio de Janeiro</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Minha galinha estava com coriza pesada. Achei o diagnóstico na hora, já sabia o
-                        tratamento certeiro."</p>
-                    <p class="inf-author">— Roberto, Mato Grosso</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Baixei na hora depois de pagar, achei que ia demorar mas foi instantâneo. Já
-                        tava lendo em 2 minutos!"</p>
-                    <p class="inf-author">— Patricia, Minas Gerais</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Tem o nome dos remédios, vei! Não precisei ficar adivinhando o que comprar na
-                        farmácia. Isso vale ouro."</p>
-                    <p class="inf-author">— Marcos, Pará</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Tava usando os remédios errados, por isso não melhorava. Com o ebook descobri o
-                        tratamento certo e minha ave sarou!"</p>
-                    <p class="inf-author">— Sebastião, Tocantins</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Comecei a criar pintinhos do zero com esse material. Nunca perdi nenhum. A
-                        parte de aquecimento salvou o lote!"</p>
-                    <p class="inf-author">— Cleidiane, Ceará</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Meu galo tava caindo de fraqueza. Em 3 dias de protocolo ele já tava de pé de
-                        novo. Impressionante!"</p>
-                    <p class="inf-author">— Diego, Rio Grande do Sul</p>
-                </div>
-                <!-- Duplicado para loop infinito -->
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Minha galinha estava com diarreia há dias. Segui o protocolo e em 2 dias ela se
-                        recuperou!"</p>
-                    <p class="inf-author">— Carlos, Minas Gerais</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Perdi muitas aves antes de conhecer esse método. Agora sei identificar a doença
-                        antes de perder o animal."</p>
-                    <p class="inf-author">— Maria, Goiás</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Valeu muito cada centavo. Já salvei 3 galinhas com a tabela de sintomas.
-                        Material de primeira!"</p>
-                    <p class="inf-author">— João, Paraná</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"O protocolo de vacinação mudou minha criação. Menos doentes, menos gasto com
-                        veterinário!"</p>
-                    <p class="inf-author">— Ana, Bahia</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Criei uma galinha do zero com o guia de pintinhos. Cresceu forte e saudável.
-                        Recomendo muito!"</p>
-                    <p class="inf-author">— Lucas, São Paulo</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"A dosagem certa do medicamento fez toda a diferença. Sem acertar a dose eu
-                        nunca teria curado minha ave."</p>
-                    <p class="inf-author">— Fernanda, Rio de Janeiro</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Minha galinha estava com coriza pesada. Achei o diagnóstico na hora, já sabia o
-                        tratamento certeiro."</p>
-                    <p class="inf-author">— Roberto, Mato Grosso</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Baixei na hora depois de pagar, achei que ia demorar mas foi instantâneo. Já
-                        tava lendo em 2 minutos!"</p>
-                    <p class="inf-author">— Patricia, Minas Gerais</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Tem o nome dos remédios, vei! Não precisei ficar adivinhando o que comprar na
-                        farmácia. Isso vale ouro."</p>
-                    <p class="inf-author">— Marcos, Pará</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Tava usando os remédios errados, por isso não melhorava. Com o ebook descobri o
-                        tratamento certo e minha ave sarou!"</p>
-                    <p class="inf-author">— Sebastião, Tocantins</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Comecei a criar pintinhos do zero com esse material. Nunca perdi nenhum. A
-                        parte de aquecimento salvou o lote!"</p>
-                    <p class="inf-author">— Cleidiane, Ceará</p>
-                </div>
-                <div class="inf-card">
-                    <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p class="inf-text">"Meu galo tava caindo de fraqueza. Em 3 dias de protocolo ele já tava de pé de
-                        novo. Impressionante!"</p>
-                    <p class="inf-author">— Diego, Rio Grande do Sul</p>
+                .inf-card .inf-author {
+                    font-size: 0.72rem;
+                    color: #fbbf24;
+                    font-weight: 700;
+                    margin-top: 8px;
+                }
+            </style>
+            <div
+                style="overflow: hidden; mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);">
+                <div class="inf-track">
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Minha galinha estava com diarreia há dias. Segui o protocolo e em 2 dias
+                            ela se
+                            recuperou!"</p>
+                        <p class="inf-author">— Carlos, Minas Gerais</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Perdi muitas aves antes de conhecer esse método. Agora sei identificar a
+                            doença
+                            antes de perder o animal."</p>
+                        <p class="inf-author">— Maria, Goiás</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Valeu muito cada centavo. Já salvei 3 galinhas com a tabela de sintomas.
+                            Material de primeira!"</p>
+                        <p class="inf-author">— João, Paraná</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"O protocolo de vacinação mudou minha criação. Menos doentes, menos gasto
+                            com
+                            veterinário!"</p>
+                        <p class="inf-author">— Ana, Bahia</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Criei uma galinha do zero com o guia de pintinhos. Cresceu forte e
+                            saudável.
+                            Recomendo muito!"</p>
+                        <p class="inf-author">— Lucas, São Paulo</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"A dosagem certa do medicamento fez toda a diferença. Sem acertar a dose eu
+                            nunca teria curado minha ave."</p>
+                        <p class="inf-author">— Fernanda, Rio de Janeiro</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Minha galinha estava com coriza pesada. Achei o diagnóstico na hora, já
+                            sabia o
+                            tratamento certeiro."</p>
+                        <p class="inf-author">— Roberto, Mato Grosso</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Baixei na hora depois de pagar, achei que ia demorar mas foi instantâneo.
+                            Já
+                            tava lendo em 2 minutos!"</p>
+                        <p class="inf-author">— Patricia, Minas Gerais</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Tem o nome dos remédios, vei! Não precisei ficar adivinhando o que comprar
+                            na
+                            farmácia. Isso vale ouro."</p>
+                        <p class="inf-author">— Marcos, Pará</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Tava usando os remédios errados, por isso não melhorava. Com o ebook
+                            descobri o
+                            tratamento certo e minha ave sarou!"</p>
+                        <p class="inf-author">— Sebastião, Tocantins</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Comecei a criar pintinhos do zero com esse material. Nunca perdi nenhum. A
+                            parte de aquecimento salvou o lote!"</p>
+                        <p class="inf-author">— Cleidiane, Ceará</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Meu galo tava caindo de fraqueza. Em 3 dias de protocolo ele já tava de pé
+                            de
+                            novo. Impressionante!"</p>
+                        <p class="inf-author">— Diego, Rio Grande do Sul</p>
+                    </div>
+                    <!-- Duplicado para loop infinito -->
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Minha galinha estava com diarreia há dias. Segui o protocolo e em 2 dias
+                            ela se
+                            recuperou!"</p>
+                        <p class="inf-author">— Carlos, Minas Gerais</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Perdi muitas aves antes de conhecer esse método. Agora sei identificar a
+                            doença
+                            antes de perder o animal."</p>
+                        <p class="inf-author">— Maria, Goiás</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Valeu muito cada centavo. Já salvei 3 galinhas com a tabela de sintomas.
+                            Material de primeira!"</p>
+                        <p class="inf-author">— João, Paraná</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"O protocolo de vacinação mudou minha criação. Menos doentes, menos gasto
+                            com
+                            veterinário!"</p>
+                        <p class="inf-author">— Ana, Bahia</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Criei uma galinha do zero com o guia de pintinhos. Cresceu forte e
+                            saudável.
+                            Recomendo muito!"</p>
+                        <p class="inf-author">— Lucas, São Paulo</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"A dosagem certa do medicamento fez toda a diferença. Sem acertar a dose eu
+                            nunca teria curado minha ave."</p>
+                        <p class="inf-author">— Fernanda, Rio de Janeiro</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Minha galinha estava com coriza pesada. Achei o diagnóstico na hora, já
+                            sabia o
+                            tratamento certeiro."</p>
+                        <p class="inf-author">— Roberto, Mato Grosso</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Baixei na hora depois de pagar, achei que ia demorar mas foi instantâneo.
+                            Já
+                            tava lendo em 2 minutos!"</p>
+                        <p class="inf-author">— Patricia, Minas Gerais</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Tem o nome dos remédios, vei! Não precisei ficar adivinhando o que comprar
+                            na
+                            farmácia. Isso vale ouro."</p>
+                        <p class="inf-author">— Marcos, Pará</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Tava usando os remédios errados, por isso não melhorava. Com o ebook
+                            descobri o
+                            tratamento certo e minha ave sarou!"</p>
+                        <p class="inf-author">— Sebastião, Tocantins</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Comecei a criar pintinhos do zero com esse material. Nunca perdi nenhum. A
+                            parte de aquecimento salvou o lote!"</p>
+                        <p class="inf-author">— Cleidiane, Ceará</p>
+                    </div>
+                    <div class="inf-card">
+                        <div class="inf-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <p class="inf-text">"Meu galo tava caindo de fraqueza. Em 3 dias de protocolo ele já tava de pé
+                            de
+                            novo. Impressionante!"</p>
+                        <p class="inf-author">— Diego, Rio Grande do Sul</p>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <section id="learning" class="learning-section" style="padding: 0.5rem 0 1.5rem 0; background: transparent;">
-        <div class="container" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <div class="container vsl-style-border"
+            style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.5rem 1.5rem;">
             <div class="mockup-side" style="width: 100%; max-width: 160px; margin: 0 auto;">
                 <div class="ebook-video-container"
                     style="width: 100%; border-radius: 20px; overflow: hidden; border: 3px solid #fbbf24; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);">
@@ -865,10 +911,8 @@
     </section>
 
 
-    <!-- Authority Section ("Quem Sou Eu") -->
-    <section id="authority-video" class="authority-profile-section"
-        style="padding: 2rem 0; border-top: 2px solid rgba(255,255,255,0.1); background: transparent;">
-        <div class="container" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <section id="authority-video" class="authority-profile-section" style="padding: 2rem 0; background: transparent;">
+        <div class="container vsl-style-border" style="padding: 2.5rem 1.5rem;">
             <div class="authority-content-wrap" style="width: 100%; max-width: 700px;">
                 <!-- Video top centered -->
                 <div class="authority-video-container"
@@ -926,7 +970,7 @@
 
     <!-- Social Proof Bar -->
     <div class="social-proof-bar">
-        <div class="container">
+        <div class="container vsl-style-border" style="padding: 2rem; margin-top: 1rem; margin-bottom: 1rem;">
             <div class="stat-grid">
                 <div class="stat-item">
                     <i class="fa-solid fa-users"></i>
@@ -954,7 +998,7 @@
     </div>
 
     <section class="social-proof-carousel-section" style="padding: 2rem 0; background: transparent;">
-        <div class="container container-glass" style="padding: 2rem; border-radius: 20px;">
+        <div class="container container-glass vsl-style-border" style="padding: 2rem; border-radius: 20px;">
             <p
                 style="font-size: 1rem; color: #ffffff; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <i class="fa-solid fa-star" style="color: #fbbf24;"></i> algumas pessoas que eu ja ajudei, <i
@@ -1054,7 +1098,7 @@
 
     <!-- Benefits Section (Moved Down) -->
     <section id="benefits" class="border-t-amber" style="padding: 4rem 0; background: transparent;">
-        <div class="container">
+        <div class="container vsl-style-border" style="padding: 3rem 1.5rem;">
             <h3 style="text-align: center; font-size: 1.875rem; font-weight: 700; color: #ffffff; margin-bottom: 3rem;">
                 Por Que Você Precisa Deste Ebook?
             </h3>
@@ -1084,8 +1128,9 @@
     </section>
 
     <!-- Guarantee -->
-    <section class="guarantee-section">
-        <div class="container text-center">
+    <section class="guarantee-section" style="padding: 2rem 0;">
+        <div class="container text-center vsl-style-border"
+            style="padding: 3rem 1.5rem; background: rgba(0, 230, 118, 0.03);">
             <i class="fa-solid fa-shield-halved shield-icon"></i>
             <h3>Garantia de 7 Dias</h3>
             <p>Se por qualquer motivo você não ficar satisfeito com o ebook nos primeiros 7 dias, devolvemos 100% do seu
@@ -1100,7 +1145,7 @@
     <!-- FAQ Section -->
     <section id="faq" class="section"
         style="padding: 4rem 0; background: transparent; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-        <div class="container">
+        <div class="container vsl-style-border" style="padding: 2rem;">
             <h3 style="text-align: center; font-size: 2rem; font-weight: 800; color: #ffffff; margin-bottom: 3rem;">
                 Perguntas Frequentes
             </h3>
@@ -1478,17 +1523,37 @@
         .vc-product {
             margin: 0 18px 24px;
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(0, 230, 118, 0.15);
+            border: 3px solid #fbbf24;
             border-radius: 20px;
+            animation: pulseGlow 3s infinite alternate;
             padding: 24px 18px;
             display: flex;
             flex-direction: column;
             gap: 18px;
             align-items: center;
             text-align: center;
-            box-shadow: inset 0 0 40px rgba(0, 230, 118, 0.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
             position: relative;
             overflow: hidden;
+        }
+
+        /* === PROMO INSTRUCTION === */
+        .vc-promo-instruction {
+            margin: 0 18px 24px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.4;
+            padding: 14px 18px;
+            background: rgba(0, 230, 118, 0.04);
+            border-radius: 12px;
+            border: 1px dashed rgba(0, 230, 118, 0.25);
+            z-index: 1;
+        }
+
+        .vc-promo-instruction strong {
+            color: #00e676;
+            font-weight: 800;
         }
 
         .vc-product::before {
@@ -1895,9 +1960,9 @@
         }
 
         .vc-trust img {
-            height: 20px;
-            opacity: 0.55;
-            filter: grayscale(0.3);
+            height: 22px;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
         }
 
         /* === PIX RESULT SCREEN === */
@@ -1965,7 +2030,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.25), 0 0 30px rgba(0, 230, 118, 0.12);
+            box-shadow: 0 0 0 4px #fbbf24, 0 15px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid #fbbf24;
         }
 
         #qr-code-img {
@@ -1984,12 +2050,12 @@
 
         .vc-qr-verified span:first-child {
             display: block;
-            font-size: 0.55rem;
+            font-size: 0.65rem;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 800;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .vc-qr-verified span:last-child {
@@ -2172,23 +2238,8 @@
                     </div>
                 </div>
 
-                <!-- Product summary -->
-                <div class="vc-product">
-                    <img src="capadasdoencas.jpg" alt="Protocolo Elite" fetchpriority="high">
-                    <div class="vc-product-info">
-                        <div class="vc-product-badge">✓ Acesso Digital Imediato</div>
-                        <h4 class="vc-product-name">Protocolo Elite: A Cura das Aves</h4>
-                        <ul class="vc-product-features">
-                            <li><i class="fa-solid fa-circle-check"></i> Diagnóstico exato de doenças</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Remédios com dosagem certa</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Baixe na hora após pagar</li>
-                            <li><i class="fa-solid fa-circle-check"></i> Garantia de 7 dias</li>
-                        </ul>
-                    </div>
-                </div>
-
                 <form id="payment-form">
-                    <!-- Payment method tabs -->
+                    <!-- MOVE: Payment method tabs moved to top -->
                     <div class="vc-method-tabs">
                         <div class="vc-method-tab selected" onclick="selectPaymentMethod('pix')" id="tab-pix">
                             <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked
@@ -2209,6 +2260,26 @@
                             </div>
                             <div class="vc-tab-name">CARTÃO</div>
                             <div class="vc-tab-sub">Até 4x</div>
+                        </div>
+                    </div>
+
+                    <!-- New Promo Text -->
+                    <div class="vc-promo-instruction">
+                        Escolha sua forma de pagamento. Aproveite a promoção com <strong>desconto no PIX</strong>
+                    </div>
+
+                    <!-- Product summary -->
+                    <div class="vc-product">
+                        <img src="capadasdoencas.jpg" alt="Protocolo Elite" fetchpriority="high">
+                        <div class="vc-product-info">
+                            <div class="vc-product-badge">✓ Acesso Digital Imediato</div>
+                            <h4 class="vc-product-name">Protocolo Elite: A Cura das Aves</h4>
+                            <ul class="vc-product-features">
+                                <li><i class="fa-solid fa-circle-check"></i> Diagnóstico exato de doenças</li>
+                                <li><i class="fa-solid fa-circle-check"></i> Remédios com dosagem certa</li>
+                                <li><i class="fa-solid fa-circle-check"></i> Baixe na hora após pagar</li>
+                                <li><i class="fa-solid fa-circle-check"></i> Garantia de 7 dias</li>
+                            </ul>
                         </div>
                     </div>
 
@@ -2313,7 +2384,7 @@
                 <div class="vc-qr-box">
                     <img id="qr-code-img" src="" alt="QR Code PIX" width="190" height="190">
                     <div class="vc-qr-verified">
-                        <span>Recebedor Verificado</span>
+                        <span>Nome do PIX</span>
                         <span>JOAO PAULO SANTOS CAMARGO</span>
                     </div>
                 </div>
