@@ -716,8 +716,14 @@ app.post('/api/checkout/pix', async (req, res) => {
     console.log(`💠 [PIX] Nova solicitação Iniciada`);
     console.log(`👤 Cliente: ${customer.name} (${customer.email})`);
 
-    const totalAmount = Number(items.reduce((acc, item) => acc + Number(item.price), 0).toFixed(2));
-    console.log(`💰 Total Calculado: ${totalAmount}`);
+    const db = getDB();
+    const totalAmount = Number(items.reduce((acc, item) => {
+        // SEGURANÇA: Busca o preço REAL no banco de dados, ignorando o que veio do navegador
+        const product = db.products[item.id] || db.orderBumps[item.id];
+        const realPrice = product ? (product.price || 0) : 0;
+        return acc + Number(realPrice);
+    }, 0).toFixed(2));
+    console.log(`💰 Total Real (Banco de Dados): ${totalAmount}`);
 
     if (totalAmount <= 0) {
         console.error(`❌ [PIX ERROR] Valor inválido calculado: ${totalAmount}`);
@@ -804,8 +810,15 @@ app.post('/api/checkout/card', async (req, res) => {
         console.log(`📦 Itens: ${items.length}`);
         console.log(`🔢 Parcelas: ${installments}, Method: ${payment_method_id}`);
 
-        const totalAmount = Number(items.reduce((acc, item) => acc + Number(item.price), 0).toFixed(2));
-        console.log(`💰 Total Calculado: ${totalAmount}`);
+        const db = getDB();
+        const totalAmount = Number(items.reduce((acc, item) => {
+            // SEGURANÇA: Busca o preço REAL no banco de dados para CARTÃO
+            const product = db.products[item.id] || db.orderBumps[item.id];
+            // Para cartão, usamos o originalPrice (se existir) ou o price normal
+            const realPrice = product ? (product.originalPrice || product.price || 0) : 0;
+            return acc + Number(realPrice);
+        }, 0).toFixed(2));
+        console.log(`💰 Total Real (Banco de Dados - Cartão): ${totalAmount}`);
 
         if (totalAmount <= 0) {
             console.error(`❌ [CARTÃO ERROR] Valor inválido calculado: ${totalAmount}`);
