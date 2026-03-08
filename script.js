@@ -16,13 +16,20 @@ const prefetchedProducts = {};
 
 // --- INIT: CHECK PENDING PIX (Recover Logic) ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. UNIQUE VISITOR TRACKING
+    // 1. UNIQUE VISITOR + SESSÃO TRACKING
     const today = new Date().toISOString().split('T')[0];
     const lastVisit = localStorage.getItem('mura_visita_hoje');
+
+    // Sempre dispara session_start em cada carregamento de página
+    trackEvent('session_start');
+
     if (lastVisit !== today) {
         trackEvent('unique_visit');
         localStorage.setItem('mura_visita_hoje', today);
     }
+
+    // 1.1 TIME SPENT 15S TRACKING (REMOVIDO POR SOLICITAÇÃO)
+
 
     // 2. CTA CLICK TRACKING
     document.querySelectorAll('a[href^="#offer"]').forEach(btn => {
@@ -41,6 +48,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
                     const sd = await s.json();
                     if (sd.status === 'approved') {
+                        // PIXEL: Purchase (Success from background session)
+                        trackPixel('Purchase', {
+                            value: session.total || 0,
+                            currency: 'BRL',
+                            content_name: 'Combo Elite / Produtos',
+                            content_ids: session.itemIds ? session.itemIds.split(',') : []
+                        });
                         localStorage.removeItem('active_pix_session');
                         window.location.href = `downloads.html?items=${session.itemIds}&total=${session.total.toFixed(2)}`;
                     } else {
@@ -71,6 +85,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (priceElement && resp.price) {
                         priceElement.innerText = resp.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                     }
+
+                    // PIXEL: ViewContent (For static page support)
+                    trackPixel('ViewContent', {
+                        content_ids: [id],
+                        content_name: resp.title,
+                        content_type: 'product',
+                        value: resp.price,
+                        currency: 'BRL'
+                    });
                 }
             }
         } catch (e) {
@@ -306,13 +329,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     });
 
-    // Pixels tracking
-    setTimeout(() => {
-        if (typeof fbq === 'function') {
-            fbq('trackCustom', 'TimeSpent_15s');
-            fbq('track', 'ViewContent');
+    // --- 10. Mobile Checkout: Prevent background horizontal scroll when keyboard opens ---
+    // This is the most reliable fix for iOS/Android horizontal drift
+    document.addEventListener('touchmove', (e) => {
+        // Only block if modal is open AND the touch is NOT inside the modal
+        if (document.body.classList.contains('modal-open')) {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal && !modal.contains(e.target)) {
+                e.preventDefault();
+            }
         }
-    }, 15000);
+    }, { passive: false });
 });
 
 // --- 2. CHECKOUT & API LOGIC ---
@@ -320,15 +347,60 @@ document.addEventListener('DOMContentLoaded', () => {
 // mp is initialized in index.html to avoid duplicate declaration errors
 const checkoutModal = document.getElementById('checkout-modal');
 
+// --- TRACKING ENGINE (resiliente para cold start do Render) ---
 async function trackEvent(type, isMobileManual = null, ctaId = null, details = null) {
-    const isMobile = isMobileManual !== null ? isMobileManual : (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window));
-    try {
-        fetch(`${API_URL}/api/track`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, isMobile, ctaId, details })
-        }).catch(e => console.warn("Track sync failed", e));
-    } catch (e) { }
+    const isMobile = isMobileManual !== null ? isMobileManual : (
+        window.innerWidth <= 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        ('ontouchstart' in window)
+    );
+
+    const body = JSON.stringify({ type, isMobile, ctaId, details });
+
+    // Tenta enviar até 3 vezes para lidar com o cold start do Render
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const resp = await fetch(`${API_URL}/api/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+                signal: AbortSignal.timeout(8000) // 8s timeout
+            });
+            if (resp.ok) {
+                console.log(`📈 [TRACK OK] ${type} (tentativa ${attempt})`);
+                return; // Sucesso, para de tentar
+            }
+        } catch (e) {
+            if (attempt < 3) {
+                console.warn(`📈 [TRACK] Tentativa ${attempt} falhou (${e.message}), retentando em 3s...`);
+                await new Promise(r => setTimeout(r, 3000)); // aguarda 3s antes de retentar
+            } else {
+                console.warn(`📈 [TRACK] Evento "${type}" descartado após 3 tentativas.`);
+            }
+        }
+    }
+}
+
+// Helper para disparar Pixels com resiliência (espera o fbq estar pronto)
+function trackPixel(eventName, params = {}) {
+    if (typeof fbq === 'function') {
+        fbq('track', eventName, params);
+        console.log(`📈 [PIXEL OK] ${eventName}`, params);
+    } else {
+        // Tenta novamente em 500ms se o Pixel ainda não carregou (max 5 tentativas)
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            if (typeof fbq === 'function') {
+                fbq('track', eventName, params);
+                console.log(`📈 [PIXEL OK] ${eventName} (após espera)`, params);
+                clearInterval(interval);
+            } else if (attempts >= 10) {
+                console.warn(`📈 [PIXEL FAIL] ${eventName} - fbq não inicializado.`);
+                clearInterval(interval);
+            }
+        }, 500);
+    }
 }
 
 // Interceptador para Promoção de Elite (Pré-Checkout)
@@ -389,10 +461,18 @@ function declineEliteCombo() {
 }
 
 async function startCheckoutProcess(productId, forceBumps = []) {
-    trackEvent('checkout_open');
+    // Session-based guard for checkout_open to prevent duplicates
+    if (!sessionStorage.getItem('mura_checkout_opened')) {
+        trackEvent('checkout_open');
+        sessionStorage.setItem('mura_checkout_opened', 'true');
+    }
+    
     trackEvent('click');
     sessionStorage.setItem('mura_modal_open', 'true');
-    if (typeof fbq === 'function') fbq('track', 'InitiateCheckout');
+    trackEvent('click');
+    sessionStorage.setItem('mura_modal_open', 'true');
+    // InitiateCheckout will be fired in loadCheckoutData once we have the price and name
+
 
     if (!checkoutModal) return;
 
@@ -404,6 +484,16 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         clearInterval(window.activePixPoll);
         window.activePixPoll = null;
     }
+
+    // RESET PIX BUTTON AND UPSELL STATE
+    const btnPix = document.getElementById('btn-pay-pix');
+    if (btnPix) {
+        btnPix.innerText = 'Gerar PIX';
+        btnPix.disabled = false;
+        btnPix.style.opacity = '1';
+    }
+    midCheckoutUpsellPending = true;
+    localStorage.removeItem('active_pix_session');
 
     const secureOverlay = document.getElementById('secure-loading');
     if (secureOverlay) {
@@ -456,6 +546,15 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         cart.mainProduct = { ...productData, id: productId };
         cart.bumps = forceBumps || [];
 
+        // PIXEL: InitiateCheckout (Now with real data)
+        trackPixel('InitiateCheckout', {
+            content_ids: [productId],
+            content_name: productData.title,
+            content_type: 'product',
+            value: productData.price,
+            currency: 'BRL'
+        });
+
         document.getElementById('checkout-product-name').innerText = productData.title;
         document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
 
@@ -500,8 +599,17 @@ function renderOrderBumps(bumps) {
     const area = document.getElementById('order-bump-area');
     if (!area) return;
 
+    // Global check removed to support individual toggles
+    // if (window.siteConfig && window.siteConfig.settings && window.siteConfig.settings.enableOrderBump === false) {
+    //     area.innerHTML = '';
+    //     return;
+    // }
+
     // Filtra bumps que não devem aparecer
     const filteredBumps = (bumps || []).filter(bump => {
+        // Respect individual enabled flag
+        if (bump.enabled === false) return false;
+
         // Remove Manual de Pintinhos do checkout (deve ser upsell posterior)
         if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') return false;
         // Mantém a Tabela de Ração no checkout
@@ -548,8 +656,11 @@ function renderOrderBumps(bumps) {
 
 function toggleBump(bumpId) {
     const idx = cart.bumps.indexOf(bumpId);
-    if (idx > -1) cart.bumps.splice(idx, 1);
-    else cart.bumps.push(bumpId);
+    if (idx > -1) {
+        cart.bumps.splice(idx, 1);
+    } else {
+        cart.bumps.push(bumpId);
+    }
 
     const chk = document.getElementById(`bump-chk-${bumpId}`);
     if (chk) chk.checked = cart.bumps.includes(bumpId);
@@ -677,6 +788,15 @@ async function renderHomeProducts() {
             return;
         }
 
+        // PIXEL: ViewContent
+        trackPixel('ViewContent', {
+            content_ids: [mainId],
+            content_name: p.title,
+            content_type: 'product',
+            value: p.price,
+            currency: 'BRL'
+        });
+
         const card = document.createElement('div');
         card.className = `price-card featured`;
         card.id = 'offer-focus';
@@ -685,6 +805,13 @@ async function renderHomeProducts() {
 
         const coverHTML = `<img src="${p.cover}" alt="${p.title}" style="max-width: 140px; margin: 10px auto; display: block; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));">`;
         const isDiscounted = p.originalPrice && (p.originalPrice > p.price);
+
+        // Calculando variáveis dinâmicas
+        const discountPercent = Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);
+        const installmentPrice = (p.originalPrice / 4).toFixed(2).replace('.', ',');
+        const priceStr = p.price.toFixed(2).split('.');
+        const priceInt = priceStr[0];
+        const priceDec = priceStr[1];
 
         card.innerHTML = `
             <span class="badge-featured">${p.badge || 'OFERTA ÚNICA'}</span>
@@ -696,10 +823,10 @@ async function renderHomeProducts() {
                 <div style="text-decoration: line-through; color: #999; font-size: 0.9rem;">De R$ ${p.originalPrice.toFixed(2).replace('.', ',')} por apenas:</div>
                 <div style="display: flex; flex-direction: column; align-items: center; line-height: 1.1;">
                     <span class="price-amount" style="color: var(--color-secondary); font-size: 3.5rem;">
-                        R$ 109<small>,90</small>
+                        R$ ${priceInt}<small>,${priceDec}</small>
                     </span>
-                    <span style="font-size: 0.75rem; color: #10b981; font-weight: 800; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px;">🔥 27% DE DESCONTO NO PIX</span>
-                    <span style="font-size: 0.9rem; color: var(--color-text-light); margin-top: 5px;">ou até 4x de <strong>R$ 37,47</strong> s/ juros</span>
+                    <span style="font-size: 0.75rem; color: #10b981; font-weight: 800; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px;">🔥 ${discountPercent}% DE DESCONTO NO PIX</span>
+                    <span style="font-size: 0.9rem; color: var(--color-text-light); margin-top: 5px;">ou até 4x de <strong>R$ ${installmentPrice}</strong> s/ juros</span>
                 </div>
             </div>
 
@@ -914,6 +1041,15 @@ function closeCheckout() {
         logoOverlay.classList.remove('active');
         logoOverlay.classList.remove('run-left');
     }
+
+    // RESET STATES ON CLOSE
+    const btnPix = document.getElementById('btn-pay-pix');
+    if (btnPix) {
+        btnPix.innerText = 'Gerar PIX';
+        btnPix.disabled = false;
+        btnPix.style.opacity = '1';
+    }
+    midCheckoutUpsellPending = true;
 }
 
 
@@ -1095,7 +1231,10 @@ async function handlePayment(method) {
 
                 // UPSELL PÓS-PIX: Mostra o upsell dos pintinhos após gerar o PIX
                 setTimeout(() => {
-                    if (midCheckoutUpsellPending && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
+                    const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
+                    const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
+                    
+                    if (midCheckoutUpsellPending && isUpsellEnabled && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
                         showSlideInUpsell('pix');
                     }
                 }, 2000); // Aguarda 2 segundos após mostrar o QR Code
@@ -1191,6 +1330,15 @@ async function handlePayment(method) {
 
             if (result.status === 'approved') {
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+                
+                // PIXEL: Purchase (Card Approval)
+                trackPixel('Purchase', {
+                    value: Number(totalVal) || cart.total || 0,
+                    currency: 'BRL',
+                    content_name: cart.mainProduct ? cart.mainProduct.title : 'Checkout',
+                    content_ids: items.map(i => i.id)
+                });
+
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else if (result.status === 'in_process' || result.status === 'pending') {
                 // NOVO: Pagamento em análise - Tela Profissional
@@ -1270,8 +1418,12 @@ async function handlePayment(method) {
 
 // --- 1. PIX PAYMENT (MODIFIED FOR UPSELL INTERCEPTION) ---
 async function startPixPayment(event) {
-    console.log('🔵 startPixPayment CALLED');
     if (event) event.preventDefault();
+
+    // PIXEL: AddPaymentInfo (Removido por soliciteção do usuário - Purchase será o evento final)
+
+
+    console.log('🔵 startPixPayment CALLED');
 
     // NEW: VALIDAÇÃO ANTES DO UPSELL
     if (!validateCheckoutInputs('pix')) {
@@ -1286,15 +1438,26 @@ async function startPixPayment(event) {
 
         console.log('📊 Upsell check:', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
 
-        // If upsell NOT in cart, show modal and STOP (don't generate PIX yet)
+        // If upsell NOT in cart, check individual enabled flag
         if (!isUpsellInCart) {
-            console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
-            showSlideInUpsell('pix');
-            return; // STOP HERE - PIX will be generated when user accepts/rejects upsell
+            // Use prefetchedProducts instead of window.siteConfig for absolute reliability
+            const upsellProduct = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) 
+                ? prefetchedProducts['ebook-manejo'] 
+                : (window.siteConfig?.products?.['ebook-manejo']);
+
+            const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
+
+            if (!isUpsellEnabled) {
+                console.log('✅ Upsell disabled in config, skipping to PIX');
+            } else {
+                console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
+                showSlideInUpsell('pix');
+                return; // STOP HERE - PIX will be generated when user accepts/rejects upsell
+            }
         }
 
-        // If upsell already in cart, proceed directly to generate PIX
-        console.log('✅ Upsell already in cart, proceeding to PIX generation');
+        // If upsell already in cart or disabled, proceed directly to generate PIX
+        console.log('✅ Upsell already in cart or disabled, proceeding to PIX generation');
         await processPixPayment();
     } catch (error) {
         console.error('❌ Error in startPixPayment:', error);
@@ -1360,15 +1523,26 @@ async function startCardPayment(event) {
 
         console.log('📊 Upsell check (Card):', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
 
-        // If upsell NOT in cart, show modal and STOP
+        // If upsell NOT in cart, check individual enabled flag
         if (!isUpsellInCart) {
-            console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
-            showSlideInUpsell('card');
-            return; // STOP HERE - Card payment will be processed when user accepts/rejects upsell
+            // Use prefetchedProducts instead of window.siteConfig for absolute reliability
+            const upsellProduct = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) 
+                ? prefetchedProducts['ebook-manejo'] 
+                : (window.siteConfig?.products?.['ebook-manejo']);
+
+            const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
+
+            if (!isUpsellEnabled) {
+                console.log('✅ Upsell disabled in config, skipping to Card payment');
+            } else {
+                console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
+                showSlideInUpsell('card');
+                return; // STOP HERE - Card payment will be processed when user accepts/rejects upsell
+            }
         }
 
-        // If upsell already in cart, proceed directly to process payment
-        console.log('✅ Upsell already in cart, proceeding to Card payment');
+        // If upsell already in cart or disabled, proceed directly to process payment
+        console.log('✅ Upsell already in cart or disabled, proceeding to Card payment');
         await processCardPayment();
     } catch (error) {
         console.error('❌ Error in startCardPayment:', error);
@@ -1377,6 +1551,9 @@ async function startCardPayment(event) {
 }
 
 async function processCardPayment() {
+    // PIXEL: Purchase will be fired in handlePayment upon success
+
+
     const name = document.getElementById('payer-name').value;
     const email = document.getElementById('payer-email').value;
     const cpf = document.getElementById('payer-cpf')?.value?.trim();
@@ -1481,14 +1658,41 @@ function interceptPaymentButton(callback) {
     return false;
 }
 
+async function captureAbandonedLead() {
+    const name = document.getElementById('payer-name')?.value?.trim();
+    const email = document.getElementById('payer-email')?.value?.trim();
+    const phone = document.getElementById('payer-phone')?.value?.trim();
+    const productId = cart.id || 'unknown';
+
+    // Só captura se tiver pelo menos o telefone ou e-mail preenchido
+    if ((phone && phone.length > 5) || (email && email.length > 5)) {
+        // PIXEL: Contact (Removido por solicitação do usuário)
+
+        console.log("🛒 [ABANDON] Tentando capturar lead abandonado...");
+        try {
+            await fetch(`${API_URL}/api/abandon`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, phone, product: productId })
+            });
+        } catch (e) {
+            console.warn("Falha ao registrar abandono", e);
+        }
+    }
+}
+
 // Event Listeners with Order Bump Interception
 document.getElementById('btn-pay-pix')?.addEventListener('click', startPixPayment);
 document.getElementById('btn-pay-card')?.addEventListener('click', startCardPayment);
+document.getElementById('btn-pay-card-direct')?.addEventListener('click', processCardPayment);
+
 document.querySelectorAll('.method-btn').forEach(b => b.addEventListener('click', () => switchMethod(b.dataset.method)));
-document.querySelector('.close-modal')?.addEventListener('click', () => {
+
+document.querySelector('.close-modal')?.addEventListener('click', async () => {
     // TRACK ABANDON
     if (sessionStorage.getItem('mura_modal_open') === 'true') {
         trackEvent('checkout_abandon');
+        await captureAbandonedLead(); // Captura os dados antes de fechar
         sessionStorage.removeItem('mura_modal_open');
         sessionStorage.removeItem('checkout_started');
     }
@@ -1518,6 +1722,13 @@ document.querySelector('.close-modal')?.addEventListener('click', () => {
             window.activePixPoll = null;
         }
     }, 300);
+});
+
+// Captura se fechar a aba/janela
+window.addEventListener('beforeunload', () => {
+    if (sessionStorage.getItem('mura_modal_open') === 'true') {
+        captureAbandonedLead();
+    }
 });
 
 // --- 4. MASKS ---
@@ -1667,6 +1878,15 @@ function showPixResult(data, items) {
                 localStorage.removeItem('active_pix_session');
 
                 const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+
+                // PIXEL: Purchase (PIX Poll Success)
+                trackPixel('Purchase', {
+                    value: Number(totalVal) || cart.total || 0,
+                    currency: 'BRL',
+                    content_name: cart.mainProduct ? cart.mainProduct.title : 'Checkout',
+                    content_ids: items.map(i => i.id)
+                });
+
                 window.location.href = `downloads.html?items=${items.map(i => i.id).join(',')}&total=${totalVal}`;
             } else {
                 // If not approved yet, schedule next poll
