@@ -1,0 +1,263 @@
+{
+    "totals": {
+        "clicks": 231,
+        "checkoutOpens": 211,
+        "checkoutStarts": 61,
+        "uiErrors": 11,
+        "trustClicks": 3,
+        "mobileSessions": 0,
+        "desktopSessions": 73,
+        "slowLoads": 0,
+        "pageViews": 73,
+        "ctaClicks": 39,
+        "uniqueVisits": 20,
+        "checkoutAbandons": 17,
+        "timeSpent15s": 22
+    },
+    "daily": {
+        "2026-01-30": {
+            "clicks": 44,
+            "checkoutOpens": 29,
+            "checkoutStarts": 7,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 14,
+            "slowLoads": 0,
+            "pageViews": 14,
+            "ctaClicks": {
+                "hero-primary": 15
+            }
+        },
+        "2026-01-31": {
+            "clicks": 0,
+            "checkoutOpens": 0,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 7,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {
+                "generic_cta": 2,
+                "hero-primary": 5
+            }
+        },
+        "2026-02-03": {
+            "clicks": 14,
+            "checkoutOpens": 14,
+            "checkoutStarts": 4,
+            "uiErrors": 3,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 2,
+            "ctaClicks": 13,
+            "checkoutAbandons": 4,
+            "ctaBreakdown": {
+                "hero-primary": 13
+            }
+        },
+        "2026-02-05": {
+            "clicks": 1,
+            "checkoutOpens": 1,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 2,
+            "ctaClicks": 2,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {
+                "hero-primary": 2
+            }
+        },
+        "2026-02-07": {
+            "clicks": 1,
+            "checkoutOpens": 1,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 0,
+            "ctaClicks": 1,
+            "checkoutAbandons": 1,
+            "ctaBreakdown": {
+                "generic_cta": 1
+            }
+        },
+        "2026-02-08": {
+            "clicks": 0,
+            "checkoutOpens": 0,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 3,
+            "ctaClicks": 1,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {
+                "generic_cta": 1
+            }
+        },
+        "2026-02-10": {
+            "clicks": 1,
+            "checkoutOpens": 1,
+            "checkoutStarts": 1,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 1,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {
+                "hero-primary": 1
+            }
+        },
+        "2026-02-12": {
+            "clicks": 11,
+            "checkoutOpens": 11,
+            "checkoutStarts": 6,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 2,
+            "ctaClicks": 10,
+            "checkoutAbandons": 8,
+            "ctaBreakdown": {
+                "hero-primary": 8,
+                "generic_cta": 2
+            }
+        },
+        "2026-02-13": {
+            "clicks": 10,
+            "checkoutOpens": 19,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 2,
+            "checkoutAbandons": 2,
+            "ctaBreakdown": {
+                "hero-primary": 2
+            }
+        },
+        "2026-02-14": {
+            "clicks": 11,
+            "checkoutOpens": 11,
+            "checkoutStarts": 5,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 0,
+            "checkoutAbandons": 1,
+            "ctaBreakdown": {}
+        },
+        "2026-02-15": {
+            "clicks": 55,
+            "checkoutOpens": 55,
+            "checkoutStarts": 19,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 2,
+            "ctaClicks": 0,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {}
+        },
+        "2026-03-06": {
+            "clicks": 2,
+            "checkoutOpens": 2,
+            "checkoutStarts": 2,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 0,
+            "slowLoads": 0,
+            "pageViews": 0,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 0,
+            "checkoutAbandons": 0,
+            "ctaBreakdown": {}
+        },
+        "2026-03-07": {
+            "clicks": 22,
+            "checkoutOpens": 8,
+            "checkoutStarts": 2,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 24,
+            "slowLoads": 0,
+            "pageViews": 24,
+            "emailClicks": 0,
+            "uniqueVisits": 3,
+            "ctaClicks": 2,
+            "checkoutAbandons": 1,
+            "timeSpent15s": 22,
+            "ctaBreakdown": {
+                "generic_cta": 2
+            }
+        },
+        "2026-03-08": {
+            "clicks": 0,
+            "checkoutOpens": 0,
+            "checkoutStarts": 0,
+            "uiErrors": 0,
+            "trustClicks": 0,
+            "mobileSessions": 0,
+            "desktopSessions": 1,
+            "slowLoads": 0,
+            "pageViews": 1,
+            "emailClicks": 0,
+            "uniqueVisits": 1,
+            "ctaClicks": 0,
+            "checkoutAbandons": 0,
+            "timeSpent15s": 0,
+            "ctaBreakdown": {}
+        }
+    }
+}
