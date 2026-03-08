@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seus Downloads | O Segredo das Galinhas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1346740157465853');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1346740157465853&ev=PageView&noscript=1" />
+    </noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- TikTok Pixel Code -->
+    <script>
+        !function (w, d, t) {
+            w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || []; ttq.methods = ["page", "track", "identify", "instances", "load", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"], ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < ttq.methods.length; i++)ttq.setAndDefer(ttq, ttq.methods[i]); ttq.instance = function (t) { for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++)ttq.setAndDefer(e, ttq.methods[n]); return e }, ttq.load = function (e, n) { var i = "https://analytics.tiktok.com/i18n/pixel/events.js"; ttq._i = ttq._i || {}, ttq._i[e] = [], ttq._i[e]._u = i, ttq._t = ttq._t || {}, ttq._t[e] = +new Date, ttq._o = ttq._o || {}, ttq._o[e] = n || {}; var o = d.createElement("script"); o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + t; var a = d.getElementsByTagName("script")[0]; a.parentNode.insertBefore(o, a) };
+            ttq.load('D4VFSO3C77U98L8KBEF0');
+            ttq.page();
+        }(window, document, 'ttq');
+    </script>
+    <!-- End TikTok Pixel Code -->
+
+    <style>
+        :root {
+            --gold-400: #fbbf24;
+            --gold-500: #f59e0b;
+            --gold-600: #d97706;
+            --dark-900: #0f0f0f;
+            --dark-800: #1a1a1a;
+            --dark-700: #262626;
+            --white: #ffffff;
+            --font-body: 'Inter', sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(217, 119, 6, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(217, 119, 6, 0.08), transparent 25%);
+            color: var(--white);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito de brilho no topo */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.3), transparent);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo {
+            height: 60px;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 0 10px rgba(217, 119, 6, 0.3));
+        }
+
+        .success-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 95, 70, 0.2));
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(180deg, #fff, #a3a3a3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #a3a3a3;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .downloads-section {
+            margin: 2.5rem 0;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold-500);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .download-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .download-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(251, 191, 36, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .download-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .download-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: var(--gold-400);
+            flex-shrink: 0;
+        }
+
+        .download-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+            font-family: var(--font-heading);
+            color: var(--white);
+        }
+
+        .download-info p {
+            color: #737373;
+            font-size: 0.85rem;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, var(--gold-500), var(--gold-600));
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.85rem;
+            width: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-download:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(217, 119, 6, 0.3);
+        }
+
+        .whatsapp-section {
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-whatsapp {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-weight: 600;
+            padding: 1rem;
+            width: 100%;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-whatsapp:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: #34d399;
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            color: #525252;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 2rem 1.25rem;
+                border-radius: 0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .download-header {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="logo.png" alt="Galos Mura Brasil" class="logo">
+            <div class="success-icon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h1>Pagamento Aprovado!</h1>
+            <p class="subtitle" id="success-msg">Seus materiais estão prontos para download.</p>
+
+            <!-- Video de Instrução -->
+            <div style="margin: 2rem auto; width: 100%; max-width: 400px;">
+                <video id="instruction-video" width="100%" height="auto" controls playsinline preload="auto"
+                    poster="video_cover_obrigado.png"
+                    style="display: block; width: 100%; aspect-ratio: 1/1; object-fit: cover; object-position: center 60%; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <source src="obrigado_instrucao.mp4" type="video/mp4">
+                    Seu navegador não suporta vídeos HTML5.
+                </video>
+                <p style="font-size: 0.8rem; color: #525252; margin-top: 1rem; text-align: center;">👇 Veja no vídeo
+                    acima
+                    como acessar seus materiais.</p>
+            </div>
+        </div>
+
+        <div class="downloads-section">
+            <div class="section-title">
+                <i class="fa-solid fa-download"></i>
+                <span>Seus E-books</span>
+            </div>
+
+            <!-- Manejo de Pintinhos -->
+            <div class="download-item" id="item-manejo" style="display: none;">
+                <div class="download-header">
+                    <div class="download-icon">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <div class="download-info">
+                        <h3>Manual de Manejo de Pintinhos</h3>
+                        <p>Guia completo para criação de pintinhos saudáveis</p>
+                    </div>
+                </div>
+                <a href="https://teste-m1kq.onrender.com/download/manejo" class="btn-download">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Baixar Manual</span>
+                </a>
+            </div>
+
+            <!-- Doenças Avícolas -->
+            <div class="download-item" id="item-doencas" style="display: none;">
+                <div class="download-header">
+                    <div class="download-icon">
+                        <i class="fa-solid fa-book-medical"></i>
+                    </div>
+                    <div class="download-info">
+                        <h3>Guia de Doenças Avícolas</h3>
+                        <p>Protoclos de tratamento e prevenção</p>
+                    </div>
+                </div>
+                <a href="https://teste-m1kq.onrender.com/download/doencas" class="btn-download">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Baixar Guia</span>
+                </a>
+            </div>
+
+            <!-- Order Bump -->
+            <div class="download-item" id="item-orderbump" style="display: none;">
+                <div class="download-header">
+                    <div class="download-icon">
+                        <i class="fa-solid fa-table"></i>
+                    </div>
+                    <div class="download-info">
+                        <h3>Tabela de Ração Completa</h3>
+                        <p>Produza sua ração e economize</p>
+                    </div>
+                </div>
+                <a href="https://teste-m1kq.onrender.com/download/orderbump" class="btn-download">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Baixar Tabela</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="whatsapp-section">
+            <a href="https://wa.me/5538999832950?text=Oi,%20acabei%20de%20comprar%20e%20gostaria%20de%20receber%20o%20material%20por%20aqui%20também."
+                target="_blank" class="btn-whatsapp" id="whatsapp-btn">
+                <i class="fa-brands fa-whatsapp"></i>
+                Receber também no WhatsApp
+            </a>
+        </div>
+
+        <div class="footer-note">
+            <p><i class="fa-solid fa-envelope"></i> Enviamos os dados de acesso para o seu e-mail.<br>
+                Verifique a caixa de entrada e o spam.</p>
+            <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 10px;">Pagamento processado para: João Paulo Santos
+                Camargo</p>
+        </div>
+    </div>
+
+    <script>
+        // --- Versão Simplificada e Robusta ---
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const itemsParam = params.get('items') || '';
+                const items = itemsParam.split(',').filter(i => i.trim());
+
+                // Elementos
+                const itemManejo = document.getElementById('item-manejo');
+                const itemDoencas = document.getElementById('item-doencas');
+                const itemOrderbump = document.getElementById('item-orderbump');
+                const successMsg = document.getElementById('success-msg');
+                const whatsappBtn = document.getElementById('whatsapp-btn');
+
+                // Lógica de Detecção
+                const hasKeyword = (k) => items.some(i => i.toLowerCase().includes(k.toLowerCase()));
+
+                let showManejo = hasKeyword('manejo') || hasKeyword('pintinho') || hasKeyword('combo') || hasKeyword('elite');
+                let showDoencas = hasKeyword('doenca') || hasKeyword('saude') || hasKeyword('guia') || hasKeyword('combo') || hasKeyword('elite');
+                let showBump = hasKeyword('bump') || hasKeyword('racao') || hasKeyword('tabela');
+
+                // 🚨 FALLBACK DE SEGURANÇA: Se nenhum item for detectado na URL, MOSTRAR TUDO.
+                // Isso evita que o cliente fique sem acesso em caso de erro na URL.
+                if (!showManejo && !showDoencas && !showBump) {
+                    console.warn('Fallback ativado: Nenhum item detectado, liberando tudo.');
+                    showManejo = true;
+                    showDoencas = true;
+                    showBump = true;
+                    if (successMsg) successMsg.innerText = 'Seus materiais foram liberados!';
+                }
+
+                // Aplicar Visibilidade
+                if (showManejo && itemManejo) itemManejo.style.display = 'block';
+                if (showDoencas && itemDoencas) itemDoencas.style.display = 'block';
+                if (showBump && itemOrderbump) itemOrderbump.style.display = 'block';
+
+                // Mensagens de Sucesso Personalizadas
+                if (successMsg) {
+                    if (showManejo && showDoencas) successMsg.innerText = 'Seu Combo e bônus foram liberados!';
+                    else if (showManejo) successMsg.innerText = 'Seu Manual de Pintinhos foi liberado!';
+                    else if (showDoencas) successMsg.innerText = 'Seu Guia de Doenças foi liberado!';
+                }
+
+                // WhatsApp
+                const token = params.get('t') || '';
+
+                // Propagar token para os links de download para rastreio
+                if (token) {
+                    document.querySelectorAll('.btn-download').forEach(btn => {
+                        const url = new URL(btn.href);
+                        url.searchParams.set('t', token);
+                        btn.href = url.toString();
+                    });
+                }
+
+                if (whatsappBtn) {
+                    whatsappBtn.onclick = (e) => {
+                        e.preventDefault();
+                        const phone = "5538999832950";
+                        const text = "Olá! Comprei os guias e gostaria de receber o acesso por aqui também.";
+                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+                    };
+                }
+
+                // Tracking (Silent Fail)
+                try {
+                    const total = parseFloat(params.get('total') || '0');
+                    if (total > 0 && typeof fbq === 'function') {
+                        fbq('track', 'Purchase', {
+                            value: total,
+                            currency: 'BRL',
+                            content_ids: itemIds.split(','),
+                            content_type: 'product'
+                        });
+                    }
+                } catch (e) { console.error('Erro tracking pixel', e); }
+
+            } catch (err) {
+                console.error('Erro CRÍTICO no script de downloads:', err);
+                // Último recurso: Tenta mostrar tudo via força bruta se o script falhar
+                document.querySelectorAll('.download-item').forEach(el => el.style.display = 'block');
+            }
+        });
+    </script>
+
+</body>
+
+</html>

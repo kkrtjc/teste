@@ -1,0 +1,50 @@
+/* MOBILE CHECKOUT FIX - Prevent horizontal scroll when keyboard opens */
+
+/* Lock background scrolling without position:fixed (which causes layout jumps) */
+body.modal-open {
+    overflow: hidden !important;
+    /* max-width prevents horizontal expansion when keyboard opens */
+    max-width: 100vw;
+}
+
+/* Nuclear option: prevent any scrolling on the overlay except vertical */
+.modal-overlay {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile specific fixes */
+@media (max-width: 768px) {
+
+    /* Prevent any element inside modal from causing horizontal overflow */
+    .modal-content * {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Images inside modal should never overflow */
+    .modal-content img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Forms inside modal */
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Order bump containers */
+    .order-bump-container {
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    /* Prevent payment grid from overflowing */
+    .payment-methods-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+}
