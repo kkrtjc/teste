@@ -1241,14 +1241,14 @@ async function handlePayment(method) {
             } else {
                 // Error from server
                 console.error("Pix Error Response:", data);
-                const errorMsg = data.message || data.error || 'Erro desconhecido ao gerar PIX';
-                alert(`Erro ao gerar PIX: ${errorMsg}\n\nDetalhes: ${JSON.stringify(data.details || {})}`);
+                const errorMsg = data.error || data.message || 'Houve um erro ao gerar o PIX. Verifique seus dados e tente novamente.';
+                alert(errorMsg);
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
         } catch (e) {
             console.error("Pix Error:", e);
-            alert('Erro ao gerar Pix: ' + e.message);
+            alert('Não foi possível gerar o seu PIX agora. Verifique sua conexão e tente novamente.');
             btn.disabled = false;
             btn.innerText = originalText;
         }
@@ -1383,7 +1383,8 @@ async function handlePayment(method) {
                     alert(map[result.status_detail] + '\n\n💡 Dica: O PIX tem aprovação instantânea!');
                 } else {
                     console.error("Erro detalhado:", result);
-                    alert(`Pagamento não autorizado.\n\nDetalhe: ${msg}\n\nTente usar outro cartão ou PIX.`);
+                    const errorMsg = result.error || result.message || 'Pagamento não autorizado.';
+                    alert(`${errorMsg}\n\nTente usar outro cartão ou pague via PIX para liberação imediata.`);
                 }
 
                 // Return to form if failed

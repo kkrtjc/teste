@@ -75,8 +75,8 @@ body.modal-open {
 
     /* Exceptions for larger specific images like QR Code and Product Summary */
     #qr-code-img {
-        max-height: 220px !important;
-        width: 220px !important;
+        max-height: 280px !important;
+        width: 280px !important;
         margin: 0 auto !important;
     }
 
