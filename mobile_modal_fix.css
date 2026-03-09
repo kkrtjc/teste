@@ -67,7 +67,7 @@ body.modal-open {
     /* Target ALL icons in payment methods and success screen */
     .radio-item img, 
     .payment-flags img,
-    #pix-result img,
+    #pix-result img:not(#qr-code-img),
     .pix-security-reinforcement img {
         max-height: 18px !important;
         width: auto !important;

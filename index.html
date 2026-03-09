@@ -486,8 +486,7 @@
                 </div>
             </div>
             <div style="text-align: center; margin-top: 1.5rem;">
-                <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large"
-                    style="padding: 1rem 2.5rem; font-size: 1.25rem;">SALVAR MINHAS GALINHAS</button>
+                <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large">SALVAR MINHAS GALINHAS</button>
             </div>
         </div>
     </section>
@@ -536,7 +535,7 @@
                         style="font-size: 0.85rem; color: var(--brand-red); font-weight: 900; display: block; margin-top: 0.5rem; text-transform: uppercase;">QUANTO
                         VALE UMA GALINHA PRA VOCE?</span>
                     <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
-                        style="width: 100%; margin-top: 15px; padding: 14px; font-size: 1.1rem; border-radius: 12px;">
+                        style="width: 100%; margin-top: 15px;">
                         SALVAR MINHAS GALINHAS AGORA
                     </button>
                 </div>
@@ -1065,13 +1064,13 @@
                     o
                     código abaixo.</p>
 
-                <div class="qr-container" style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: center; width: 95%; max-width: 360px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 280px; position: relative;">
+                <div class="qr-container" style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 320px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 320px; position: relative;">
                     <!-- Loader Spinner -->
                     <div id="qr-loader" class="hidden" style="position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: #10b981;"></i>
                         <p style="font-size: 0.8rem; color: #64748b; font-weight: 600;">GERANDO QR CODE...</p>
                     </div>
-                    <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 100%; height: auto; max-width: 320px; display: block; margin: 0 auto; border-radius: 8px;">
+                    <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; image-rendering: pixelated;">
                 </div>
                 <div id="pix-receiver-info" class="hidden">
                     <p style="text-align: center; margin: 0; font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recebedor:</p>
