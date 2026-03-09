@@ -145,7 +145,7 @@ body.modal-open {
 
 .floating-cta-btn {
     width: 100% !important;
-    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
+    background: linear-gradient(135deg, var(--brand-red) 0%, var(--brand-red-hover) 100%) !important;
     color: #fff !important;
     border: none !important;
     padding: 14px 20px !important;
