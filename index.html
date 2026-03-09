@@ -658,13 +658,13 @@
     <!-- Final CTA -->
     <section class="bg-white" style="padding: 4rem 0;">
         <div class="container text-center">
-            <h3 style="font-size: 1.875rem; font-weight: 700; color: var(--amber-900); margin-bottom: 1rem;">Pronto Para
+            <h3 style="font-size: 1.875rem; font-weight: 700; color: var(--white); margin-bottom: 1rem;">Pronto Para
                 Começar?</h3>
-            <p style="font-size: 1.125rem; color: var(--gray-700); margin-bottom: 2rem;">Acesse o ebook agora e comece a
-                economizar com seus galinhas ainda hoje.</p>
+            <p style="font-size: 1.125rem; color: var(--slate-300); margin-bottom: 2rem;">Acesse o ebook agora e comece a
+                economizar com suas aves ainda hoje.</p>
             <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary btn-large">SALVAR MINHAS GALINHAS
                 AGORA</button>
-            <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 1rem;">Acesso imediato • Garantia de 7
+            <p style="font-size: 0.875rem; color: var(--slate-400); margin-top: 1rem;">Acesso imediato • Garantia de 7
                 dias • 100% Seguro</p>
         </div>
     </section>
@@ -696,27 +696,34 @@
                 <style>
                     .checkout-summary {
                         display: flex;
-                        gap: 12px;
-                        background: #fffbeb;
-                        border: 1px solid #fcd34d;
+                        background: #f8fafc; /* slate-50 */
+                        border: 1px solid #e2e8f0; /* slate-200 */
                         border-radius: 8px;
-                        padding: 10px;
                         margin-bottom: 15px;
-                        align-items: center;
+                        align-items: stretch;
+                        overflow: hidden; /* Clips image to container border radius */
                     }
 
                     .summary-img {
-                        width: 60px;
-                        height: 80px;
+                        width: 110px;
+                        height: auto;
                         object-fit: cover;
-                        border-radius: 6px;
-                        border: 1px solid #e5e7eb;
+                        border-right: 1px solid #e2e8f0;
+                        margin: 0;
+                    }
+
+                    .summary-details {
+                        padding: 14px 12px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        flex: 1;
                     }
 
                     .summary-details h4 {
                         font-size: 0.95rem;
-                        color: #78350f;
-                        margin: 0 0 4px 0;
+                        color: #0f172a; /* slate-900 */
+                        margin: 0 0 6px 0;
                         font-weight: 800;
                     }
 
@@ -725,7 +732,7 @@
                         padding: 0;
                         margin: 0;
                         font-size: 0.75rem;
-                        color: #92400e;
+                        color: #475569; /* slate-600 */
                     }
 
                     .summary-features li {
@@ -758,6 +765,25 @@
                         /* Input mais compacto */
                         font-size: 0.9rem !important;
                         height: auto !important;
+                        background: #fff !important;
+                        color: #111827 !important;
+                        border: 1px solid #d1d5db !important;
+                    }
+                    
+                    .form-input::placeholder {
+                        color: #9ca3af !important;
+                    }
+                    
+                    .radio-item {
+                        background: #fff !important;
+                        border: 1px solid #d1d5db !important;
+                        color: #1f2937 !important;
+                    }
+                    
+                    .radio-item.selected {
+                        background: #f8fafc !important;
+                        border-color: #0f172a !important;
+                        box-shadow: 0 0 0 1px #0f172a inset !important;
                     }
 
                     .form-section-title {
@@ -844,11 +870,10 @@
 
                 <!-- 1. Resumo do Pedido (Compacto) -->
                 <div class="checkout-summary">
-                    <div style="display: flex; gap: 1rem; align-items: start;">
-                        <img src="capadasdoencas.jpg" alt="Capa" class="summary-img">
-                        <div class="summary-details">
-                            <h4>Protocolo Elite: A Cura das Aves</h4>
-                            <ul class="summary-features">
+                    <img src="capadasdoencas.jpg" alt="Capa" class="summary-img">
+                    <div class="summary-details">
+                        <h4>Protocolo Elite: A Cura das Aves</h4>
+                        <ul class="summary-features">
                                 <li><i class="fa-solid fa-check"></i> Guia completo de tratamentos</li>
                                 <li><i class="fa-solid fa-check"></i> Medicamentos corretos</li>
                                 <li><i class="fa-solid fa-check"></i> Doses corretas</li>
@@ -917,7 +942,7 @@
 
                     <!-- Card Details Area -->
                     <div id="card-area"
-                        style="display: none; margin-top: 0.5rem; border: 1px solid var(--slate-200); padding: 1rem; border-radius: 0.5rem; background: var(--slate-50);">
+                        style="display: none; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 0.5rem; background: #f8fafc;">
                         <div class="form-group">
                             <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO"
                                 data-tip="Os 16 números na frente do cartão.">
@@ -960,9 +985,9 @@
 
                     <div style="text-align: center; margin-top: 1rem;">
                         <div class="price-summary-box"
-                            style="margin-bottom: 1rem; background: var(--amber-50); border: 1px dashed var(--amber-600); padding: 0.75rem; border-radius: 0.5rem;">
+                            style="margin-bottom: 1rem; background: var(--slate-50); border: 1px dashed var(--slate-400); padding: 0.75rem; border-radius: 0.5rem;">
                             <div
-                                style="display: flex; justify-content: space-between; font-weight: 700; color: var(--amber-900);">
+                                style="display: flex; justify-content: space-between; font-weight: 700; color: var(--slate-900);">
                                 <span>Total a pagar:</span>
                                 <span class="checkout-total-display">R$ --,--</span>
                             </div>

@@ -16,12 +16,24 @@
     --zinc-950: #09090b;
 
     --brand-red: #e11d48; /* Ruby Red */
-    --brand-red-hover: #be123c;
-    
     --green-600: #10b981;
     --white: #ffffff;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
+
+    /* Legacy Checkout Variables */
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-600: #d97706;
+    --amber-900: #78350f;
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-200: #fecaca;
+    --red-600: #dc2626;
+    --red-700: #b91c1c;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-900: #111827;
 
     --font-heading: 'Plus Jakarta Sans', sans-serif;
     --font-sans: 'Outfit', sans-serif;
