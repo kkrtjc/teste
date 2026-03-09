@@ -5,13 +5,13 @@
     --slate-50: #f8fafc;
     --slate-100: #f1f5f9;
     --slate-200: #e2e8f0;
-    --slate-300: #cbd5e1;
     --slate-400: #94a3b8;
     --slate-600: #475569;
     --slate-700: #334155;
     --slate-800: #1e293b;
     --slate-900: #0f172a;
     
+    --zinc-800: #27272a;
     --zinc-900: #18181b;
     --zinc-950: #09090b;
 
@@ -20,19 +20,22 @@
     
     --green-600: #10b981;
     --white: #ffffff;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
 
     --font-heading: 'Plus Jakarta Sans', sans-serif;
     --font-sans: 'Outfit', sans-serif;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.7);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.8);
 }
 
 /* VSL Video Section */
 .vsl-square-section {
-    padding: 2.5rem 0;
-    background: #fcfcfc;
+    padding: 3.5rem 0;
+    background: var(--zinc-950);
+    border-bottom: 1px solid var(--slate-800);
 }
 
 .square-video-container {
@@ -80,8 +83,8 @@ body {
 }
 
 body {
-    background-color: var(--slate-50);
-    color: var(--slate-800);
+    background-color: var(--zinc-950);
+    color: var(--text-primary);
     font-family: var(--font-sans);
     line-height: 1.6;
 }
@@ -111,11 +114,11 @@ header.sticky {
     position: sticky;
     top: 0;
     z-index: 40;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(9, 9, 11, 0.85); /* Zinc 950 with transparency */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--slate-200);
-    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--slate-800);
+    box-shadow: var(--shadow-md);
 }
 
 .nav-content {
@@ -139,7 +142,7 @@ header.sticky {
 .logo-area h1 {
     font-size: 1.25rem;
     font-weight: 800;
-    color: var(--slate-900);
+    color: var(--white);
 }
 
 /* --- Buttons --- */
@@ -314,7 +317,7 @@ header.sticky {
 .stat-text strong {
     display: block;
     font-size: 1.125rem;
-    color: #fff;
+    color: var(--white);
 }
 
 .trust-badge {
@@ -344,30 +347,27 @@ header.sticky {
 }
 
 .card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 1.5rem;
-    border: 1px solid var(--slate-200);
-    border-radius: 1rem;
-    transition: all 0.3s ease;
+    background: rgba(30, 41, 59, 0.4); /* Slate 800 with transparency */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-lg);
 }
 
 .card:hover {
-    border-color: var(--red-200);
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
 .icon-circle {
     width: 3.5rem;
     height: 3.5rem;
-    background: var(--slate-100);
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.25rem;
 }
 
 .icon-circle i {
@@ -378,19 +378,19 @@ header.sticky {
 .card h4 {
     font-size: 1.125rem;
     font-weight: 800;
-    color: var(--slate-900);
+    color: var(--white);
     margin-bottom: 0.75rem;
 }
 
 .card p {
-    color: var(--gray-700);
-    font-size: 0.9rem;
-    line-height: 1.4;
+    color: var(--slate-400);
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
 /* --- Section Dividers --- */
 .bg-white {
-    background: var(--white);
+    background: var(--zinc-950);
 }
 
 .border-t-amber {
@@ -398,7 +398,7 @@ header.sticky {
 }
 
 .bg-amber-50 {
-    background: var(--slate-50);
+    background: var(--slate-900);
 }
 
 /* --- Lists --- */
@@ -501,16 +501,16 @@ header.sticky {
 .authority-content h3 {
     font-size: 2.25rem;
     font-weight: 900;
-    color: var(--slate-900);
+    color: var(--white);
     margin-bottom: 1.5rem;
     letter-spacing: -0.5px;
 }
 
 .authority-content p {
+    color: var(--slate-400);
     font-size: 1.125rem;
-    color: var(--gray-700);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
 }
 
 .authority-badges {
@@ -704,6 +704,10 @@ header.sticky {
     font-size: 1.4rem;
     font-weight: 800;
     color: var(--amber-900);
+}
+
+.testimonial-track-original {
+    color: var(--slate-100) !important;
 }
 
 .form-section-title {
