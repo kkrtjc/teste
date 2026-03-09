@@ -1,39 +1,36 @@
-/* MOBILE CHECKOUT FIX - Final Overhaul - Verified */
-
-/* Lock background scrolling - Bulletproof version */
+/* Lock background scrolling - Chrome-safe version */
 html.modal-open, 
 body.modal-open {
     overflow: hidden !important;
-    height: 100% !important;
-    width: 100% !important;
-    position: fixed !important; /* Force no scroll */
-    left: 0 !important;
-    top: 0 !important;
+    /* Removed position:fixed — it caused Chrome to clip the modal content */
 }
 
 /* Modal Overlay: Cover everything and stay fixed even if keyboard opens */
 .modal-overlay {
     position: fixed !important;
-    inset: 0 !important;
-    height: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
     width: 100% !important;
-    background: rgba(0, 0, 0, 0.9) !important; /* Darker to hide background leaks */
+    /* Use dvh (dynamic viewport height) to stay within visible area */
+    height: 100dvh !important;
+    background: rgba(0, 0, 0, 0.9) !important;
     z-index: 999999 !important;
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-end !important; /* Anchor to bottom on mobile */
     justify-content: center !important;
-    overflow: hidden !important; /* Container doesn't scroll, content does */
+    overflow-y: auto !important; /* Allow scroll if content overflows */
 }
 
 /* Modal Content: Stability and centered scaling */
 .modal-content {
     width: 100% !important;
     max-width: 450px !important;
-    max-height: 92vh !important;
+    /* Let the content set its own height naturally */
+    max-height: 92dvh !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     position: relative !important;
-    margin: 0 auto !important;
+    margin: auto !important; /* Center vertically when there's space */
     border-radius: 20px !important;
     background: #ffffff !important;
     color: var(--slate-900) !important;
@@ -44,16 +41,16 @@ body.modal-open {
 
 /* Mobile specific overrides */
 @media (max-width: 768px) {
+    .modal-overlay {
+        align-items: flex-end !important; /* Sheet slides up from bottom */
+    }
+
     .modal-content {
         width: 100% !important;
         max-width: 100% !important;
-        height: auto !important;
-        max-height: 95vh !important;
+        max-height: 95dvh !important;
         border-radius: 25px 25px 0 0 !important;
-        position: absolute !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
+        margin: 0 !important; /* Stick to the bottom */
     }
 
     /* CRITICAL: Fix Huge Icons / Logos */
