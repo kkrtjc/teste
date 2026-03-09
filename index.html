@@ -1135,6 +1135,34 @@
     <div id="checkout-product-price-display" style="display:none;"></div>
     <div id="product-icon-container" style="display:none;"></div>
 
+    <div id="floating-cta" class="floating-cta-bar">
+        <div class="floating-cta-content">
+            <button onclick="openCheckout('combo-elite')" class="floating-cta-btn">
+                SALVAR MINHAS GALINHAS AGORA
+            </button>
+            <span class="floating-cta-subtext">Não espere perder mais galinhas.</span>
+        </div>
+    </div>
+
+    <!-- Scroll Visibility Local Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const floatingCta = document.getElementById('floating-cta');
+            if (!floatingCta) return;
+
+            window.addEventListener('scroll', function() {
+                // Show after 700px scroll
+                if (window.scrollY > 700) {
+                    floatingCta.classList.add('visible');
+                    document.body.classList.add('cta-visible');
+                } else {
+                    floatingCta.classList.remove('visible');
+                    document.body.classList.remove('cta-visible');
+                }
+            });
+        });
+    </script>
+
     <script src="https://sdk.mercadopago.com/js/v2" defer></script>
     <script>const mp = new MercadoPago('APP_USR-73238612-450f-4fbe-9a9f-3d5f9919f2d1');</script>
     <script src="smart_fields.js" defer></script>
