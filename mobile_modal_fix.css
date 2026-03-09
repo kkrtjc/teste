@@ -2,7 +2,9 @@
 html.modal-open, 
 body.modal-open {
     overflow: hidden !important;
-    /* Removed position:fixed — it caused Chrome to clip the modal content */
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 /* Modal Overlay: Cover everything and stay fixed even if keyboard opens */
@@ -72,12 +74,24 @@ body.modal-open {
         object-fit: contain !important;
     }
 
-    /* Exceptions for larger specific images like QR Code and Product Summary */
+    /* QR Code Responsivo e Grande */
     #qr-code-img {
-        max-height: 320px !important;
-        width: 320px !important;
-        max-width: 100% !important;
+        max-height: 80vw !important; /* Aproveita largura da tela */
+        width: 100% !important;
+        max-width: 340px !important;
+        height: auto !important;
         margin: 0 auto !important;
+        display: block !important;
+    }
+
+    /* Container do QR Code para evitar saltos de layout */
+    .qr-container {
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        position: relative;
     }
 
     .summary-img {
@@ -103,10 +117,15 @@ body.modal-open {
         display: none !important;
     }
     
-    /* Input height and alignment */
-    .form-input {
-        height: 44px !important;
-        font-size: 16px !important; /* Prevent iOS auto-zoom */
+    /* Input stability to prevent iOS drift and zoom */
+    .form-input, 
+    input[type="text"], 
+    input[type="tel"], 
+    input[type="email"] {
+        height: 48px !important; /* Touch-friendly */
+        font-size: 16px !important; /* CRITICAL: Prevent iOS auto-zoom shift */
+        padding: 10px 12px !important;
+        box-sizing: border-box !important;
     }
 }
 

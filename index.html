@@ -1065,11 +1065,17 @@
                     o
                     código abaixo.</p>
 
-                <div
-                    style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: block; width: 95%; max-width: 360px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <div class="qr-container" style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: center; width: 95%; max-width: 360px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 280px; position: relative;">
+                    <!-- Loader Spinner -->
+                    <div id="qr-loader" class="hidden" style="position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: #10b981;"></i>
+                        <p style="font-size: 0.8rem; color: #64748b; font-weight: 600;">GERANDO QR CODE...</p>
+                    </div>
                     <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 100%; height: auto; max-width: 320px; display: block; margin: 0 auto; border-radius: 8px;">
-                    <p style="text-align: center; margin: 12px 0 0 0; font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recebedor:</p>
-                    <p style="text-align: center; margin: 2px 0 0 0; font-size: 1.1rem; color: #0f172a; font-weight: 900; text-transform: uppercase;">JOAO PAULO SANTOS CAMARGO</p>
+                </div>
+                <div id="pix-receiver-info" class="hidden">
+                    <p style="text-align: center; margin: 0; font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recebedor:</p>
+                    <p style="text-align: center; margin: 2px 0 10px 0; font-size: 1.1rem; color: #0f172a; font-weight: 900; text-transform: uppercase;">JOAO PAULO SANTOS CAMARGO</p>
                 </div>
 
                 <button id="btn-copy-pix" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
