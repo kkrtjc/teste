@@ -113,62 +113,63 @@ body.modal-open {
 /* Floating CTA Bar */
 .floating-cta-bar {
     position: fixed;
-    bottom: -120px;
+    bottom: -150px;
     left: 0;
     width: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255, 255, 255, 0.5);
-    padding: 12px 20px;
-    z-index: 9000;
-    transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border-top: 2px solid #fbbf24 !important;
+    padding: 10px 15px !important;
+    z-index: 9000 !important;
+    transition: bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
 
 .floating-cta-bar.visible {
-    bottom: 0;
+    bottom: 0 !important;
 }
 
 .floating-cta-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    width: 100%;
-    max-width: 500px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 450px !important;
 }
 
 .floating-cta-btn {
-    width: 100%;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 50px;
-    font-weight: 800;
-    font-size: 0.95rem;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    font-family: inherit;
+    width: 100% !important;
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 14px 20px !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 4px 15px rgba(225, 29, 72, 0.3) !important;
+    cursor: pointer !important;
+    transition: transform 0.2s !important;
+    font-family: inherit !important;
+    line-height: 1 !important;
 }
 
 .floating-cta-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.96) !important;
 }
 
 .floating-cta-subtext {
-    font-size: 0.7rem;
-    color: #6b7280;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    font-size: 0.8rem !important;
+    color: #4b5563 !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
 }
 
 /* Ensure body padding when bar is visible to prevent footer occlusion */
