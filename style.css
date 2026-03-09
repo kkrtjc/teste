@@ -415,11 +415,11 @@ header.sticky {
 }
 
 .border-t-amber {
-    border-top: 2px solid var(--amber-100);
+    border-top: 1px solid var(--slate-800);
 }
 
 .bg-amber-50 {
-    background: var(--slate-900);
+    background: var(--zinc-950);
 }
 
 /* --- Lists --- */
@@ -447,16 +447,19 @@ header.sticky {
     font-weight: 500;
 }
 
-/* --- Testimonials Slider V2 --- */
+/* --- Testimonials Slider V2 - REFINED (Dark Luxury) --- */
 .testimonial-slider-v2 {
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto;
-    background: var(--amber-50);
+    background: rgba(30, 41, 59, 0.45) !important; /* Elegant slate with transparency */
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
     padding: 2rem;
-    border-radius: 1rem;
-    border: 1px solid var(--amber-200);
-    box-shadow: var(--shadow-md);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
     overflow: hidden;
+    position: relative;
 }
 
 .testimonial-carousel {
@@ -486,16 +489,15 @@ header.sticky {
     border-radius: 50%;
     object-fit: cover;
     margin: 0 auto 1rem;
-    border: 3px solid var(--amber-100);
+    border: 3px solid rgba(225, 29, 72, 0.5) !important;
     display: block;
+    box-shadow: 0 0 15px rgba(225, 29, 72, 0.3) !important;
 }
 
 .testimonial-card-single {
-    background: #1e293b;
-    /* Dark slate */
+    background: transparent !important; /* Let the container handle the background */
     padding: 1.5rem;
     border-radius: 0.75rem;
-    box-shadow: var(--shadow-sm);
     text-align: left;
 }
 
@@ -554,8 +556,8 @@ header.sticky {
 
 /* --- Guarantee --- */
 .guarantee-section {
-    background: linear-gradient(to right, var(--slate-50), var(--slate-100));
-    border-top: 1px solid var(--slate-200);
+    background: var(--zinc-950) !important;
+    border-top: 1px solid var(--slate-800);
     text-align: center;
     padding: 5rem 0;
 }
@@ -724,7 +726,7 @@ header.sticky {
 .modal-title {
     font-size: 1.4rem;
     font-weight: 800;
-    color: var(--amber-900);
+    color: var(--slate-900); /* For white background modal */
 }
 
 .testimonial-track-original {
