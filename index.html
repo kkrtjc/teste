@@ -24,8 +24,25 @@
     <!-- Preload critical assets -->
     <link rel="preload" href="logo.png" as="image">
     <link rel="preload" href="capadasdoencas.jpg" as="image">
+    <!-- DNS Prefetch for external payment APIs -->
+    <link rel="dns-prefetch" href="https://secure.mlstatic.com">
+    <link rel="dns-prefetch" href="https://api.mercadopago.com">
 
     <style>
+        /* === PERFORMANCE: Content Visibility for off-screen sections === */
+        .guarantee-section,
+        .urgency-bar,
+        .testimonial-section,
+        .authority-section,
+        .vsl-square-section + section {
+            content-visibility: auto;
+            contain-intrinsic-size: 0 400px;
+        }
+
+        /* GPU-composited hover — avoids layout recalculation */
+        .btn-primary, .floating-cta-btn, .card {
+            will-change: transform;
+        }
         /* Promoção de Elite Interstitial Re-style */
         .elite-promo-modal {
             display: none;
@@ -696,24 +713,47 @@
                 <style>
                     .checkout-summary {
                         display: flex;
-                        background: #f8fafc; /* slate-50 */
-                        border: 1px solid #e2e8f0; /* slate-200 */
-                        border-radius: 8px;
+                        background: #0f172a; /* slate-900 - dark premium box */
+                        border: 1px solid #1e293b;
+                        border-radius: 12px;
                         margin-bottom: 15px;
                         align-items: stretch;
-                        overflow: hidden; /* Clips image to container border radius */
+                        overflow: hidden;
+                        min-height: 130px;
+                        position: relative;
+                    }
+
+                    .summary-img-wrap {
+                        position: relative;
+                        flex-shrink: 0;
+                        width: 110px;
+                        display: flex;
+                        align-items: center; /* center vertically in column */
+                        justify-content: center;
+                        overflow: hidden;
+                        padding: 10px 0 10px 10px;
                     }
 
                     .summary-img {
-                        width: 110px;
+                        width: 105px;
                         height: auto;
+                        max-height: 160px;
                         object-fit: cover;
-                        border-right: 1px solid #e2e8f0;
-                        margin: 0;
+                        border-radius: 8px 8px 0 0;
+                        border: 2px solid rgba(255,255,255,0.15);
+                        box-shadow:
+                            0 -8px 24px rgba(0,0,0,0.5),
+                            0 4px 12px rgba(0,0,0,0.4),
+                            inset 0 1px 0 rgba(255,255,255,0.1);
+                        display: block;
+                        position: relative;
+                        bottom: 0;
+                        transform: translateY(0);
+                        transition: transform 0.3s ease;
                     }
 
                     .summary-details {
-                        padding: 14px 12px;
+                        padding: 14px 14px 14px 8px;
                         display: flex;
                         flex-direction: column;
                         justify-content: center;
@@ -721,8 +761,8 @@
                     }
 
                     .summary-details h4 {
-                        font-size: 0.95rem;
-                        color: #0f172a; /* slate-900 */
+                        font-size: 0.9rem;
+                        color: #f8fafc;
                         margin: 0 0 6px 0;
                         font-weight: 800;
                     }
@@ -731,8 +771,8 @@
                         list-style: none;
                         padding: 0;
                         margin: 0;
-                        font-size: 0.75rem;
-                        color: #475569; /* slate-600 */
+                        font-size: 0.78rem;
+                        color: #94a3b8; /* slate-400 - visible on dark bg */
                     }
 
                     .summary-features li {
@@ -870,16 +910,17 @@
 
                 <!-- 1. Resumo do Pedido (Compacto) -->
                 <div class="checkout-summary">
-                    <img src="capadasdoencas.jpg" alt="Capa" class="summary-img">
+                    <div class="summary-img-wrap">
+                        <img src="capadasdoencas.jpg" alt="Capa" class="summary-img" loading="eager" decoding="sync">
+                    </div>
                     <div class="summary-details">
                         <h4>Protocolo Elite: A Cura das Aves</h4>
                         <ul class="summary-features">
-                                <li><i class="fa-solid fa-check"></i> Guia completo de tratamentos</li>
-                                <li><i class="fa-solid fa-check"></i> Medicamentos corretos</li>
-                                <li><i class="fa-solid fa-check"></i> Doses corretas</li>
-                                <li><i class="fa-solid fa-check"></i> Identificar a doença</li>
-                            </ul>
-                        </div>
+                            <li><i class="fa-solid fa-check" style="color:#10b981;"></i> Guia completo de tratamentos</li>
+                            <li><i class="fa-solid fa-check" style="color:#10b981;"></i> Medicamentos corretos</li>
+                            <li><i class="fa-solid fa-check" style="color:#10b981;"></i> Doses certas</li>
+                            <li><i class="fa-solid fa-check" style="color:#10b981;"></i> Identificar a doença</li>
+                        </ul>
                     </div>
                 </div>
 

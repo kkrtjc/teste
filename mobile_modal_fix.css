@@ -81,9 +81,10 @@ body.modal-open {
     }
 
     .summary-img {
-        width: 50px !important;
-        height: 65px !important;
-        min-width: 50px !important;
+        width: 95px !important;
+        min-width: 95px !important;
+        max-height: 150px !important;
+        height: auto !important;
     }
 
     /* Fix text overflow in PIX result (JOAO PAULO name) */
