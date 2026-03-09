@@ -182,6 +182,7 @@ body.modal-open {
 
 .floating-cta-btn:active {
     transform: scale(0.96) !important;
+    background: var(--brand-red) !important;
 }
 
 .floating-cta-subtext {

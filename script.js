@@ -1166,11 +1166,16 @@ async function handlePayment(method) {
         if (b) {
             let bumpPrice = b.price;
 
-            // Aplica preços específicos baseados no método de pagamento
             if (method === 'card' && b.priceCard) {
-                // Se tiver preços específicos par    if (method === 'pix') {
+                bumpPrice = b.priceCard;
+            }
+            items.push({ id: b.id, title: b.title, price: bumpPrice });
+        }
+    });
+
+    if (method === 'pix') {
         const btn = document.getElementById('btn-pay-pix');
-        const originalText = btn.innerText;
+        const originalText = (btn) ? btn.innerText : 'Gerar PIX';
 
         // --- INSTANT UI FEEDBACK ---
         document.getElementById('checkout-main-view').classList.add('hidden');
@@ -1801,6 +1806,8 @@ function showPixResult(data, items) {
         qrImg.style.opacity = '1';
         if (receiverInfo) receiverInfo.classList.remove('hidden');
         if (copyBtn) copyBtn.style.display = 'block';
+    };
+
     if (copyBtn) {
         // Tenta copiar automaticamente
         try {

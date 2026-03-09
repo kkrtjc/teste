@@ -16,6 +16,7 @@
     --zinc-950: #09090b;
 
     --brand-red: #e11d48; /* Ruby Red */
+    --brand-red-hover: #fb2c5a; /* Lighter/Vibrant red for hover */
     --green-600: #10b981;
     --white: #ffffff;
     --text-primary: #f8fafc;
@@ -161,21 +162,30 @@ header.sticky {
 .btn-primary {
     background: var(--brand-red);
     color: var(--white);
-    font-weight: 800;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3);
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 10px rgba(225, 29, 72, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-primary:hover {
-    background: var(--brand-red-hover);
+    background: var(--brand-red-hover) !important;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(225, 29, 72, 0.4);
+}
+
+.btn-primary:active {
+    background: var(--brand-red) !important;
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(225, 29, 72, 0.2);
 }
 
 .hidden {
@@ -183,28 +193,27 @@ header.sticky {
 }
 
 .btn-large {
-    font-size: 1.125rem;
-    padding: 1.5rem 2rem;
-    height: auto;
-    width: fit-content;
-    box-shadow: var(--shadow-lg);
-    border-radius: 0.5rem;
+    font-size: 1rem;
+    padding: 14px 28px;
+    width: auto;
+    min-width: 200px;
+    box-shadow: 0 8px 18px rgba(225, 29, 72, 0.2);
 }
 
 .btn-outline {
     background: transparent;
-    border: 2px solid var(--slate-800);
-    color: var(--slate-800);
-    font-weight: 800;
-    padding: 1.5rem 2rem;
-    border-radius: 0.75rem;
+    border: 2px solid var(--slate-700);
+    color: var(--white);
+    font-weight: 700;
+    padding: 16px 32px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s;
 }
 
 .btn-outline:hover {
-    background: var(--slate-100);
-    border-color: var(--slate-900);
+    background: var(--slate-800);
+    border-color: var(--slate-600);
 }
 
 /* --- Hero Section --- */
