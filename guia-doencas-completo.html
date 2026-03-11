@@ -496,6 +496,13 @@
                     <i class="fa-solid fa-worm"></i> Protocolos Vermífugo
                 </a>
             </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Encerramento</div>
+                <a href="#" class="nav-item" onclick="showSection('conclusao')">
+                    <i class="fa-solid fa-handshake"></i> Conclusão
+                </a>
+            </div>
         </aside>
 
         <!-- Main Content Area -->
@@ -508,14 +515,6 @@
                     <p>Proteja seu plantel com o conhecimento de mais de 10 anos de experiência prática. Identifique, trate e previna prejuízos.</p>
                 </div>
 
-                <!-- Search Bar -->
-                <div class="search-container">
-                    <div class="search-wrapper">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="disease-search" placeholder="O que sua galinha tem? Ex: diarreia, sementes, ronco...">
-                    </div>
-                </div>
-
                 <div class="disclaimer-banner">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <strong>Aviso Importante:</strong> Este material tem caráter educativo e informativo. Não substitui o atendimento veterinário profissional. O uso das informações é por sua conta e risco.
@@ -523,31 +522,86 @@
 
                 <div class="disease-card">
                     <div class="disease-title">
-                        <h2>Sobre este Guia</h2>
+                        <h2>Apresentação</h2>
                     </div>
-                    <p style="margin-top: 1rem; color: var(--text-secondary);">
-                        Olá, amigo criador! Este guia nasceu da necessidade de clareza no campo. Aqui você encontrará:
+                    <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 1.1rem; line-height: 1.8;">
+                        Olá, amigo criador!<br><br>
+                        Se você chegou até aqui, é provável que tenha enfrentado uma situação comum entre os apaixonados por aves: ver suas galinhas adoecerem e não saber exatamente como proceder.<br><br>
+                        Eu entendo bem esse sentimento. Meu nome é João Paulo, e sou criador de galinhas há mais de 10 anos. Neste guia, compartilho com você o conhecimento prático que adquiri ao longo dos anos, cuidando de diversas aves e superando desafios que vão desde doenças até problemas de higiene.<br><br>
+                        É importante ressaltar: <strong>não sou médico veterinário</strong>, e este material não substitui o atendimento profissional. O que você encontrará aqui é fruto da minha experiência real como criador, refletindo o que realmente funcionou no dia a dia da criação.
                     </p>
-                    <ul style="list-style: none; margin-top: 1.5rem; display: grid; gap: 1rem;">
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-title">
+                        <h2>Introdução</h2>
+                    </div>
+                    <p style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.8;">
+                        Criar galinhas é muito mais do que apenas ter aves no quintal. É um compromisso com o bem-estar, a saúde e a produtividade de um plantel que pode garantir alimento, renda e satisfação pessoal.<br><br>
+                        Quem já perdeu aves por doenças sabe a frustração de não entender os sinais, de não saber o que fazer no momento certo e de ver prejuízos aumentarem por falta de informação clara e prática.<br><br>
+                        Este guia nasceu da minha experiência prática de mais de 10 anos como criador de galinhas, convivendo diariamente com os desafios do manejo e principalmente, das doenças que podem atingir nossas aves. Não sou veterinário, todo o conteúdo aqui apresentado é fruto de vivência, observação e aprendizado contínuo com outros criadores, somado a referências e recomendações já utilizadas na prática de campo.
+                    </p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem;">
+                        <div class="disease-title">
+                            <h2>Para quem este guia é destinado?</h2>
+                        </div>
+                    </div>
+                    <ul style="list-style: none; display: grid; gap: 1rem;">
                         <li style="display: flex; gap: 12px; align-items: flex-start;">
                             <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-top: 4px;"></i>
-                            <span>Principais doenças e orientações para identificação rápida.</span>
+                            <span style="color: var(--text-secondary);">Para aqueles que estão iniciando agora e desejam aprimorar os cuidados com as galinhas.</span>
                         </li>
                         <li style="display: flex; gap: 12px; align-items: flex-start;">
                             <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-top: 4px;"></i>
-                            <span>Causas e sintomas explicados de forma simples.</span>
+                            <span style="color: var(--text-secondary);">Para criadores que já enfrentaram perdas devido a doenças e buscam evitar recorrências.</span>
                         </li>
                         <li style="display: flex; gap: 12px; align-items: flex-start;">
                             <i class="fa-solid fa-circle-check" style="color: var(--accent-emerald); margin-top: 4px;"></i>
-                            <span>Tratamentos testados na prática com dosagens específicas.</span>
+                            <span style="color: var(--text-secondary);">Para todos que acreditam que a prevenção e o conhecimento são as melhores ferramentas na criação.</span>
                         </li>
                     </ul>
+                </div>
+
+                <div class="disease-card" style="border: 1px solid rgba(56, 189, 248, 0.3);">
+                    <div class="disease-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(56, 189, 248, 0.2);">
+                        <div class="disease-title">
+                            <span class="category-badge" style="background: rgba(56, 189, 248, 0.1); color: var(--accent-blue);">O que você encontrará</span>
+                            <h2 style="margin-top: 0.5rem;">Neste e-book</h2>
+                        </div>
+                    </div>
+                    <ul style="list-style: none; display: grid; gap: 1.25rem;">
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-bullseye" style="color: var(--accent-blue); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Principais doenças que afetam as galinhas com orientações para identificação rápida.</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-bullseye" style="color: var(--accent-blue); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Causas e sintomas mais comuns, apresentados de forma clara e acessível.</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-bullseye" style="color: var(--accent-blue); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Tratamentos que se mostraram eficazes na prática, incluindo medicamentos injetáveis, via oral e comprimidos.</span>
+                        </li>
+                    </ul>
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 12px; border-left: 4px solid var(--accent-blue);">
+                        <p style="color: var(--text-secondary); font-style: italic;">"Minha missão com este e-book é ajudar você a evitar erros comuns, proteger suas aves e garantir uma criação saudável, de forma clara e objetiva, sem complicações linguísticas. Se você ama suas galinhas tanto quanto eu, este guia se tornará um recurso essencial em sua jornada como criador."</p>
+                    </div>
+                </div>
+
+                <div class="disease-card">
+                    <img src="capadasdoencas.png" alt="Capa do Ebook" style="width: 100%; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
                 </div>
             </section>
 
             <!-- Respiratory Diseases -->
             <section id="respiratorias" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Respiratórias</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_respiratorias.jpeg" alt="Doenças Respiratórias" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 
                 <div class="disease-card">
                     <div class="disease-header">
@@ -556,6 +610,7 @@
                             <h2>Bronquite Infecciosa (IBV)</h2>
                         </div>
                     </div>
+                    <img src="ibv_disease.png" alt="Sintomas de Bronquite Infecciosa" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem; object-fit: cover; border: 1px solid var(--border-color);">
                     <div class="disease-grid">
                         <div class="info-block symptoms">
                             <h3><i class="fa-solid fa-eye"></i> Sintomas</h3>
@@ -583,6 +638,7 @@
                             <h2>Coriza Infecciosa</h2>
                         </div>
                     </div>
+                    <img src="coriza_disease.png" alt="Sintomas de Coriza Infecciosa" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem; object-fit: cover; border: 1px solid var(--border-color);">
                     <div class="disease-grid">
                         <div class="info-block symptoms">
                             <h3><i class="fa-solid fa-eye"></i> Sintomas</h3>
@@ -713,6 +769,9 @@
             <!-- Viral Systems -->
             <section id="virais" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Virais Sistêmicas</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_virais.jpeg" alt="Doenças Virais Sistêmicas" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 
                 <div class="disease-card">
                     <div class="disease-header">
@@ -852,6 +911,9 @@
             <!-- Bacterial Diseases -->
             <section id="bacterianas" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Bacterianas</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_bacterianas.jpeg" alt="Doenças Bacterianas" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 
                 <div class="disease-card">
                     <div class="disease-header">
@@ -877,6 +939,37 @@
                             </div>
                             <div class="treatment-box" style="margin-top: 5px;">
                                 <code>Bactrim Veterinário: 30mg/kg por 5-7 dias (Via Oral).</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-header">
+                        <div class="disease-title">
+                            <span class="category-badge">Bacteriana Aguda/Crônica</span>
+                            <h2>Cólera Aviária (Pasteurelose)</h2>
+                        </div>
+                    </div>
+                    <div class="disease-grid">
+                        <div class="info-block symptoms">
+                            <h3><i class="fa-solid fa-eye"></i> Sintomas</h3>
+                            <p><strong>Forma Aguda:</strong> Morte súbita sem sintomas aparentes.<br><strong>Forma Crônica:</strong> Depressão, perda de apetite, diarreia verde-amarelada, inchaço e cianose (coloração azulada) da crista e barbelas, inchaço das articulações e secreção nasal.</p>
+                        </div>
+                        <div class="info-block prevention">
+                            <h3><i class="fa-solid fa-shield-virus"></i> Prevenção</h3>
+                            <p>Vacinação em áreas de risco. Boas práticas de biosseguridade, controle de roedores e aves silvestres. Evitar estresse e isolar aves doentes.</p>
+                        </div>
+                        <div class="info-block treatment">
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
+                            <p>Eficaz se administrado no início da doença. Isolar as aves, manter ambiente aquecido e fornecer vitaminas:</p>
+                            <div class="treatment-box">
+                                <button class="copy-btn" onclick="copyText('Oxitetraciclina 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Oxitetraciclina: 30 mg/kg por 5-7 dias (Via Oral).</code>
+                            </div>
+                            <div class="treatment-box" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyText('Bactrim Veterinário 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Bactrim Veterinário: 30 mg/kg por 5-7 dias (Via Oral).</code>
                             </div>
                         </div>
                     </div>
@@ -942,6 +1035,9 @@
             <!-- Parasitic Diseases -->
             <section id="parasitarias" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Parasitárias</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_parasitarias.jpeg" alt="Doenças Parasitárias" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 
                 <div class="disease-card">
                     <div class="disease-header">
@@ -1081,6 +1177,9 @@
             <!-- Nutritional -->
             <section id="nutricionais" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Condições Nutricionais</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_nutricionais.jpeg" alt="Condições Nutricionais" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 
                 <div class="disease-card">
                     <div class="disease-title">
@@ -1206,6 +1305,9 @@
             <!-- Tables Section -->
             <section id="tabelas" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Tabela de Sintomas x Probabilidades</h3>
+                <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+                    <img src="img_tabelas.png" alt="Tabelas Rápidas" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                </div>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -1351,6 +1453,63 @@
                 </div>
             </section>
 
+            <!-- Conclusion Section -->
+            <section id="conclusao" class="disease-section">
+                <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Conclusão e Recomendações</h3>
+                
+                <div class="disease-card" style="border-top: 4px solid var(--accent-emerald);">
+                    <div class="disease-title">
+                        <h2>A Importância da Prevenção</h2>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 1rem; line-height: 1.8;">
+                        Doenças, uma vez instaladas, geram custos com medicamentos, perdas na produção, sofrimento para as aves e, em muitos casos, mortalidade que poderia ser evitada.<br><br>
+                        Um manejo sanitário rigoroso, uma nutrição balanceada, um ambiente limpo e sem estresse, e um programa de vacinação bem executado não são despesas, mas sim investimentos na saúde e na longevidade do seu plantel.<br><br>
+                        Cada ação preventiva, desde a limpeza diária dos bebedouros até a quarentena de uma nova ave, constrói uma barreira de proteção contra os desafios que inevitavelmente surgirão.
+                    </p>
+                </div>
+
+                <div class="disease-card">
+                    <div class="disease-title">
+                        <h2>Quando Procurar um Veterinário</h2>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 1rem; margin-bottom: 1.5rem;">Procure um médico veterinário sempre que:</p>
+                    <ul style="list-style: none; display: grid; gap: 1rem;">
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-user-doctor" style="color: var(--brand-red); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Você observar sintomas que não consegue identificar ou que não respondem aos tratamentos iniciais.</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-user-doctor" style="color: var(--brand-red); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Houver um surto de doença com alta mortalidade ou disseminação rápida.</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-user-doctor" style="color: var(--brand-red); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Você precisar de um diagnóstico preciso, exames laboratoriais ou prescrição de medicamentos controlados.</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-user-doctor" style="color: var(--brand-red); margin-top: 4px;"></i>
+                            <span style="color: var(--text-secondary);">Para elaborar um calendário de vacinação e vermifugação personalizado para a sua realidade.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="disease-card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(225, 29, 72, 0.05) 100%);">
+                    <div class="disease-title" style="text-align: center; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 2rem; color: var(--text-primary);">Desejamos a você muito sucesso!</h2>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center; line-height: 1.8; max-width: 800px; margin: 0 auto;">
+                        Este e-book foi criado para ser um guia prático, baseado em anos de experiência, para ajudá-lo a tomar as melhores decisões no dia a dia. No entanto, é crucial reconhecer os limites do conhecimento prático e a importância do suporte profissional.<br><br>
+                        <strong>Lembre-se:</strong> a parceria com um profissional qualificado agrega segurança e conhecimento técnico à sua experiência prática, formando a combinação ideal para o sucesso da sua criação.<br><br>
+                        Espero que este guia seja um companheiro valioso em sua jornada. Que ele traga a confiança e a clareza necessárias para você alcançar seus objetivos com suas aves, evitar prejuízos e desfrutar de uma criação próspera e gratificante.
+                    </p>
+                    
+                    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
+                        <img src="galo_doente_novo.png" alt="Galo Antes" style="width: 48%; border-radius: 12px; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
+                        <img src="galo_curado_novo.png" alt="Galo Depois" style="width: 48%; border-radius: 12px; object-fit: cover; border: 2px solid var(--accent-emerald);">
+                    </div>
+                </div>
+            </section>
+
             <footer>
                 <p>&copy; 2026 Protocolo Elite - Galos Mura Brasil Oficial</p>
                 <p style="margin-top: 0.5rem; opacity: 0.6;">Transformando a criação de galinhas com conhecimento prático.</p>
@@ -1396,36 +1555,6 @@
             });
         }
 
-        // --- Search Logic ---
-        const searchInput = document.getElementById('disease-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const cards = document.querySelectorAll('.disease-card');
-                
-                if (term.length > 0) {
-                    // Show all sections that contain a match
-                    document.querySelectorAll('.disease-section').forEach(s => s.classList.add('active'));
-                    
-                    cards.forEach(card => {
-                        const text = card.innerText.toLowerCase();
-                        if (text.includes(term)) {
-                            card.style.display = 'block';
-                            card.style.border = '1px solid var(--brand-red)';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                } else {
-                    // Reset to Home
-                    showSection('home');
-                    cards.forEach(card => {
-                        card.style.display = 'block';
-                        card.style.border = '1px solid var(--border-color)';
-                    });
-                }
-            });
-        }
     </script>
 </body>
 </html>
