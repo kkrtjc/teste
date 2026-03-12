@@ -403,19 +403,8 @@ function trackPixel(eventName, params = {}) {
     }
 }
 
-// Interceptador para Promoção de Elite (Pré-Checkout)
+// Interceptador para Promoção de Elite (Pré-Checkout) - REMOVIDO PARA USAR MURA ENGINE DIRETO
 async function openCheckout(productId, forceBumps = []) {
-    // Se for o guia de doenças, mostra a oferta do combo primeiro
-    if (productId === 'ebook-doencas') {
-        const promoModal = document.getElementById('elite-promo-modal');
-        if (promoModal) {
-            promoModal.classList.add('show');
-            startEliteTimer(300); // 5 minutos
-            return;
-        }
-    }
-
-    // Caso contrário (ou se o modal não existir), segue o fluxo original
     return startCheckoutProcess(productId, forceBumps);
 }
 

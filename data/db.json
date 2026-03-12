@@ -22,6 +22,7 @@
             "title": "Manejo de Pintinhos (Upsell)",
             "price": 49.9,
             "originalPrice": 99,
+            "enabled": true,
             "description": "Manual de Criação",
             "features": [
                 "Incubação Perfeita",
