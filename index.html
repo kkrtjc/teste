@@ -379,6 +379,71 @@
         </div>
     </header>
 
+    <!-- Social Proof Section (Continuous Marquee) -->
+    <style>
+        .testimonial-marquee-wrapper {
+            overflow: hidden;
+            width: 100%;
+            max-width: 100vw;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        /* Gradient masks for fading edges */
+        .testimonial-marquee-wrapper::before,
+        .testimonial-marquee-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            width: 30px;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .testimonial-marquee-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, var(--zinc-950) 0%, transparent 100%);
+        }
+        .testimonial-marquee-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, var(--zinc-950) 0%, transparent 100%);
+        }
+
+        .testimonial-track-original {
+            display: flex;
+            gap: 15px; /* Restored slight gap for better readability of a line */
+            width: max-content;
+            animation: marquee 50s linear infinite;
+            pointer-events: none; /* Previne interação */
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .testimonial-card-single {
+            flex-shrink: 0;
+            width: auto; /* Allow auto width for a single row */
+            max-width: none;
+            background: transparent; /* Cleaner single line look */
+            border: none; /* Removing borders to look like a fluid strip */
+            padding: 0 15px; /* Space between textual items */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: row; /* FORCE items in a single line */
+            align-items: center;
+            white-space: nowrap; /* Prevent ANY line breaks */
+            pointer-events: auto; /* Mantém a seleção de texto/cliques apenas nos cards se necessário, mas track previne drag */
+            gap: 15px;
+        }
+    </style>
+    <section class="bg-white" style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--zinc-950); overflow: hidden;">
+        <div class="testimonial-marquee-wrapper">
+            <div class="testimonial-track-original" id="testimonials-track" style="color: var(--slate-100); font-family: var(--font-sans);">
+                <div style="text-align: center; padding: 5px; font-weight: bold; font-size: 0.75rem; width: 100%;">Carregando Depoimentos Reais...</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
@@ -573,25 +638,7 @@
     </div>
 
 
-    <!-- Social Proof Section (Moved Up) -->
-    <section class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">
-        <div class="container">
-            <h3
-                style="text-align: center; font-size: 1.875rem; font-weight: 900; color: var(--white); margin-bottom: 3rem; letter-spacing: -0.5px;">
-                O que alunos estao falando.
-            </h3>
-            <div class="testimonial-slider-v2">
-                <div class="testimonial-carousel">
-                    <!-- ID must match what script.js expects -->
-                    <div class="testimonial-track-original" id="testimonials-track"
-                        style="position: relative; height: 180px; color: var(--slate-100); font-family: var(--font-sans);">
-                        <div style="text-align: center; padding-top: 50px; font-weight: bold;">Carregando Depoimentos
-                            Reais...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- Authority Section -->
     <section class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">

@@ -176,15 +176,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- 4. Testimonials (Single-Slide Carousel - COMPACT) ---
+    // Avatares diferentes para não repetirem os do topo: carrosel/carlos.jpg, carrosel/maria.jpg, carrosel/joao_new.jpg, carrosel/ana.jpg, carrosel/lucas.jpg
     const testimonials = [
-        { text: 'Meu galo tava com o olho fechado e a cara inchada. Vi o vídeo no insta e resolvi comprar, no mesmo dia já melhorou bastante.', author: 'Carlos Silva', location: 'Minas Gerais', stars: 5, avatar: 'carrosel/carlos.jpg' },
-        { text: 'Tava perdendo pintinho toda semana, não sabia o que fazer. Apliquei o protocolo e hoje não morre mais nenhum.', author: 'Maria Santos', location: 'São Paulo', stars: 5, avatar: 'carrosel/maria.jpg' },
-        { text: 'Tinha uma galinha que não comia, só ficava no canto. Segui o passo a passo e em 2 dias ela voltou ao normal.', author: 'João Oliveira', location: 'Bahia', stars: 5, avatar: 'carrosel/joao_new.jpg' },
-        { text: 'Meu galo tava morrendo de coriza, olho espumando e cheirando mal. Fiz o tratamento e salvei ele.', author: 'Ana Costa', location: 'Goiás', stars: 5, avatar: 'carrosel/ana.jpg' },
-        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Paraná', stars: 5, avatar: 'carrosel/ricardo.jpg' },
-        { text: 'Galinha parou de botar e tava com a crista caída. Segui o protocolo e voltou a produzir normal.', author: 'Lucas Ferreira', location: 'Mato Grosso', stars: 5, avatar: 'carrosel/lucas.jpg' },
-        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Santa Catarina', stars: 5, avatar: 'carrosel/isabella.jpg' },
-        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Goiás', stars: 5, avatar: 'carrosel/juliana.jpg' }
+        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Londrina - PR', stars: 5, avatar: 'carrosel/ricardo.jpg' },
+        { text: 'Excelente material! Consegui curar 3 galos que já estavam no bico do corvo.', author: 'Marcos Paulo', location: 'Goiânia - GO', stars: 5, avatar: 'carrosel/marcos.jpg' },
+        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Florianópolis - SC', stars: 5, avatar: 'carrosel/isabella.jpg' },
+        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Rio Verde - GO', stars: 5, avatar: 'carrosel/juliana.jpg' },
+        { text: 'A tabela de ração mudou meu criatório. As aves crescem mais rápido e saudáveis agora.', author: 'Fernando Costa', location: 'Uberlândia - MG', stars: 5, avatar: 'carrosel/fernando.jpg' },
+        { text: 'Recomendo muito a todos os criadores. Informação de primeira linha sem enrolação.', author: 'Roberto Assis', location: 'Feira de Santana - BA', stars: 5, avatar: 'carrosel/roberto.jpg' }
     ];
 
     const testimonialsTrack = document.getElementById('testimonials-track');
@@ -192,71 +191,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear existing content
         testimonialsTrack.innerHTML = '';
 
-        // Render all testimonials but hide them initially (except first)
-        testimonials.forEach((t, index) => {
+        // To make an infinite marquee we duplicate the array of testimonials
+        const marqueeTestimonials = [...testimonials, ...testimonials];
+
+        marqueeTestimonials.forEach((t) => {
             const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
             const card = document.createElement('div');
-            card.className = 'testimonial-card-single'; // New class for single display
-            // Style for single focused card
-            card.style.opacity = index === 0 ? '1' : '0';
-            card.style.position = 'absolute';
-            card.style.top = '0';
-            card.style.left = index === 0 ? '0' : '100%'; // Start off-screen right
-            card.style.width = '100%';
-            card.style.height = '100%';
-            card.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-            card.style.transform = index === 0 ? 'translateX(0)' : 'translateX(50px)'; // Helper for fade in
+            card.className = 'testimonial-card-single'; 
 
             card.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0;">
-                        <img src="${t.avatar}" alt="${t.author}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${t.author}&background=random&color=fff'">
-                    </div>
-                    <div>
-                        <strong style="display: block; color: #fff; font-size: 0.95rem; line-height: 1.2;">${t.author}</strong>
-                        <small style="color: rgba(255,255,255,0.5); font-size: 0.75rem;"><i class="fa-solid fa-location-dot" style="margin-right: 4px;"></i> ${t.location}</small>
-                        <div style="font-size: 0.7rem; color: #FFD700; margin-top: 2px;">${starsHTML}</div>
-                    </div>
+                <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                    <img src="${t.avatar}" alt="${t.author}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${t.author}&background=random&color=fff'">
                 </div>
-                <p style="font-style: normal; margin: 0; color: rgba(255,255,255,0.8); font-size: 0.85rem; line-height: 1.5;">"${t.text}"</p>
+                <!-- Divisoria para alinhar o nome superior e cidade abaixo -->
+                <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 8px;">
+                    <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">${t.author}</strong>
+                    <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">${t.location}</span>
+                </div>
+                <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">${starsHTML}</div>
+                <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"${t.text}"</span>
             `;
             testimonialsTrack.appendChild(card);
         });
-
-        let currentIdx = 0;
-
-        function nextSlide() {
-            const cards = document.querySelectorAll('.testimonial-card-single');
-            const total = cards.length;
-            if (total === 0) return;
-
-            // Current card moves OUT to LEFT
-            const current = cards[currentIdx];
-            current.style.opacity = '0';
-            current.style.left = '-100%';
-            current.style.transform = 'translateX(-50px)';
-
-            // Wait briefly then reset it to RIGHT side for next cycle
-            setTimeout(() => {
-                current.style.transition = 'none'; // Disable transition for instant move
-                current.style.left = '100%';
-                setTimeout(() => {
-                    current.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'; // Re-enable
-                }, 50);
-            }, 800); // Wait for exit animation
-
-            // Next card moves IN from RIGHT
-            currentIdx = (currentIdx + 1) % total;
-            const next = cards[currentIdx];
-
-            // Ensure next is ready at start position
-            next.style.left = '0';
-            next.style.opacity = '1';
-            next.style.transform = 'translateX(0)';
-        }
-
-        // Change slide every 5 seconds
-        setInterval(nextSlide, 5000);
     }
 
     // --- 5. Comparison Slider (Results) ---
@@ -1418,12 +1374,16 @@ async function startPixPayment(event) {
 
         // If upsell NOT in cart, check individual enabled flag
         if (!isUpsellInCart) {
-            // Use prefetchedProducts instead of window.siteConfig for absolute reliability
-            const upsellProduct = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) 
-                ? prefetchedProducts['ebook-manejo'] 
-                : (window.siteConfig?.products?.['ebook-manejo']);
+            // Get product from config or default to a dummy object with enabled: true
+            let upsellProduct = null;
+            if (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) {
+                upsellProduct = prefetchedProducts['ebook-manejo'];
+            } else if (window.siteConfig && window.siteConfig.products && window.siteConfig.products['ebook-manejo']) {
+                upsellProduct = window.siteConfig.products['ebook-manejo'];
+            }
 
-            const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
+            // FORCE SHOWING UPSELL: If product definition is entirely missing, fallback to true.
+            const isUpsellEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
 
             if (!isUpsellEnabled) {
                 console.log('✅ Upsell disabled in config, skipping to PIX');
@@ -1503,12 +1463,16 @@ async function startCardPayment(event) {
 
         // If upsell NOT in cart, check individual enabled flag
         if (!isUpsellInCart) {
-            // Use prefetchedProducts instead of window.siteConfig for absolute reliability
-            const upsellProduct = (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) 
-                ? prefetchedProducts['ebook-manejo'] 
-                : (window.siteConfig?.products?.['ebook-manejo']);
+            // Get product from config or default to a dummy object with enabled: true
+            let upsellProduct = null;
+            if (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) {
+                upsellProduct = prefetchedProducts['ebook-manejo'];
+            } else if (window.siteConfig && window.siteConfig.products && window.siteConfig.products['ebook-manejo']) {
+                upsellProduct = window.siteConfig.products['ebook-manejo'];
+            }
 
-            const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
+            // FORCE SHOWING UPSELL: If product definition is entirely missing, fallback to true.
+            const isUpsellEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
 
             if (!isUpsellEnabled) {
                 console.log('✅ Upsell disabled in config, skipping to Card payment');
