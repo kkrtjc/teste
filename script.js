@@ -1073,8 +1073,7 @@ async function handlePayment(method) {
             cpf: document.getElementById('payer-cpf').value ? document.getElementById('payer-cpf').value.replace(/\D/g, '') : ''
         };
     } else {
-        // CARD MODE: Use Cardholder Data as Customer Data
-        // CPF now comes from common field (payer-cpf)
+        // CARD MODE
         customer = {
             ...commonData,
             name: document.getElementById('card-holder').value,
@@ -1094,26 +1093,23 @@ async function handlePayment(method) {
 
     const items = [{ id: cart.mainProduct.id, title: cart.mainProduct.title, price: mainPrice }];
 
-    // Adiciona bumps com preços corretos baseados no método de pagamento
+    // Adiciona bumps com preços corretos
     cart.bumps.forEach(id => {
         let b = cart.mainProduct.fullBumps?.find(x => x.id === id);
-
-        // FALLBACK: Se não encontrou em fullBumps, pode ser um produto (upsell)
         if (!b && id.startsWith('ebook-')) {
-            b = {
-                id: id,
-                title: id === 'ebook-manejo' ? 'Manual de Manejo de Pintinhos' : 'Ebook',
-                price: id === 'ebook-manejo' ? 49.90 : 59.90, // UPSSELL EXCLUSIVO PIX
-                priceCard: id === 'ebook-manejo' ? 49.90 : 59.90
-            };
+            const prod = window.siteConfig?.products?.[id] || prefetchedProducts[id];
+            if (prod) {
+                b = {
+                    id: id,
+                    title: prod.title,
+                    price: prod.price,
+                    priceCard: prod.originalPrice || prod.price
+                };
+            }
         }
 
         if (b) {
-            let bumpPrice = b.price;
-
-            if (method === 'card' && b.priceCard) {
-                bumpPrice = b.priceCard;
-            }
+            let bumpPrice = (method === 'card' && b.priceCard) ? b.priceCard : b.price;
             items.push({ id: b.id, title: b.title, price: bumpPrice });
         }
     });
@@ -1133,7 +1129,6 @@ async function handlePayment(method) {
         document.getElementById('pix-receiver-info').classList.add('hidden');
         document.getElementById('btn-copy-pix').style.display = 'none';
 
-        let finalPrice = cart.mainProduct.price; 
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
         const itemIds = items.map(i => i.id).sort().join(',');
 
@@ -1148,7 +1143,6 @@ async function handlePayment(method) {
             const data = await res.json();
 
             if (data.qr_code) {
-                // Save to Persistence
                 localStorage.setItem('active_pix_session', JSON.stringify({
                     data: data,
                     total: totalAmount,
@@ -1156,13 +1150,9 @@ async function handlePayment(method) {
                     timestamp: Date.now()
                 }));
 
-                // 🔴 FIX: Captura abandono IMEDIATAMENTE ao gerar o PIX
-                // Se o usuário não pagar, este registro aparece no painel
                 captureAbandonedLead({ pixGenerated: true, pixId: data.id });
-
                 showPixResult(data, items);
 
-                // UPSELL PÓS-PIX: Mostra o upsell dos pintinhos após gerar o PIX
                 setTimeout(() => {
                     const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
                     const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
@@ -1170,20 +1160,26 @@ async function handlePayment(method) {
                     if (midCheckoutUpsellPending && isUpsellEnabled && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
                         showSlideInUpsell('pix');
                     }
-                }, 2000); // Aguarda 2 segundos após mostrar o QR Code
+                }, 2000);
             } else {
-                // Error from server
                 console.error("Pix Error Response:", data);
-                const errorMsg = data.error || data.message || 'Houve um erro ao gerar o PIX. Verifique seus dados e tente novamente.';
-                alert(errorMsg);
-                btn.disabled = false;
-                btn.innerText = originalText;
+                alert(data.error || data.message || 'Houve um erro ao gerar o PIX.');
+                document.getElementById('checkout-main-view').classList.remove('hidden');
+                pixResult.classList.add('hidden');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
             }
         } catch (e) {
             console.error("Pix Error:", e);
-            alert('Não foi possível gerar o seu PIX agora. Verifique sua conexão e tente novamente.');
-            btn.disabled = false;
-            btn.innerText = originalText;
+            alert('Não foi possível gerar o seu PIX agora.');
+            document.getElementById('checkout-main-view').classList.remove('hidden');
+            pixResult.classList.add('hidden');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         }
     } else {
         // CARD PAYMENT (Restored complex logic)

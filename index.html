@@ -411,14 +411,21 @@
 
         .testimonial-track-original {
             display: flex;
-            gap: 15px; /* Restored slight gap for better readability of a line */
+            gap: 20px;
             width: max-content;
-            animation: marquee 50s linear infinite;
-            pointer-events: none; /* Previne interação */
+            animation: marquee 60s linear infinite;
+            pointer-events: none;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
         }
         @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .testimonial-track-original {
+                animation-duration: 120s;
+            }
         }
         .testimonial-card-single {
             flex-shrink: 0;
