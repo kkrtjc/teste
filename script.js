@@ -1354,9 +1354,6 @@ async function handlePayment(method) {
 async function startPixPayment(event) {
     if (event) event.preventDefault();
 
-    // PIXEL: AddPaymentInfo (Removido por soliciteção do usuário - Purchase será o evento final)
-
-
     console.log('🔵 startPixPayment CALLED');
 
     // NEW: VALIDAÇÃO ANTES DO UPSELL
@@ -1372,21 +1369,12 @@ async function startPixPayment(event) {
 
         console.log('📊 Upsell check:', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
 
-        // If upsell NOT in cart, check individual enabled flag
+        // If upsell NOT in cart, check global enabled flag from siteConfig
         if (!isUpsellInCart) {
-            // Get product from config or default to a dummy object with enabled: true
-            let upsellProduct = null;
-            if (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) {
-                upsellProduct = prefetchedProducts['ebook-manejo'];
-            } else if (window.siteConfig && window.siteConfig.products && window.siteConfig.products['ebook-manejo']) {
-                upsellProduct = window.siteConfig.products['ebook-manejo'];
-            }
-
-            // FORCE SHOWING UPSELL: If product definition is entirely missing, fallback to true.
-            const isUpsellEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
-
+            const isUpsellEnabled = window.siteConfig?.settings?.enableUpsell !== false;
+            
             if (!isUpsellEnabled) {
-                console.log('✅ Upsell disabled in config, skipping to PIX');
+                console.log('✅ Upsell disabled in panel, skipping to PIX generation');
             } else {
                 console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
                 showSlideInUpsell('pix');
@@ -1395,7 +1383,7 @@ async function startPixPayment(event) {
         }
 
         // If upsell already in cart or disabled, proceed directly to generate PIX
-        console.log('✅ Upsell already in cart or disabled, proceeding to PIX generation');
+        console.log('✅ Upsell already in cart, proceeding to PIX generation');
         await processPixPayment();
     } catch (error) {
         console.error('❌ Error in startPixPayment:', error);
@@ -1405,41 +1393,13 @@ async function startPixPayment(event) {
 
 async function processPixPayment() {
     console.log('🔵 processPixPayment CALLED');
-    const name = document.getElementById('payer-name').value;
-    const email = document.getElementById('payer-email').value;
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    console.log('📋 Form values:', { name, email, cpf, phone });
-
-    if (!name || !email || !cpf || !phone) {
-        console.warn('⚠️ Validation failed: Missing required fields');
-        alert('Por favor, preencha todos os campos obrigatórios.');
+    
+    // Use the unified validation
+    if (!validateCheckoutInputs('pix')) {
         return;
     }
 
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return;
-    }
-
-    // If all validations pass, proceed with the original handlePayment('pix') logic
+    console.log('✅ Validation passed! Proceeding to handlePayment(pix)');
     handlePayment('pix');
 }
 
@@ -1461,21 +1421,12 @@ async function startCardPayment(event) {
 
         console.log('📊 Upsell check (Card):', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
 
-        // If upsell NOT in cart, check individual enabled flag
+        // If upsell NOT in cart, check global enabled flag from siteConfig
         if (!isUpsellInCart) {
-            // Get product from config or default to a dummy object with enabled: true
-            let upsellProduct = null;
-            if (typeof prefetchedProducts !== 'undefined' && prefetchedProducts['ebook-manejo']) {
-                upsellProduct = prefetchedProducts['ebook-manejo'];
-            } else if (window.siteConfig && window.siteConfig.products && window.siteConfig.products['ebook-manejo']) {
-                upsellProduct = window.siteConfig.products['ebook-manejo'];
-            }
-
-            // FORCE SHOWING UPSELL: If product definition is entirely missing, fallback to true.
-            const isUpsellEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
+            const isUpsellEnabled = window.siteConfig?.settings?.enableUpsell !== false;
 
             if (!isUpsellEnabled) {
-                console.log('✅ Upsell disabled in config, skipping to Card payment');
+                console.log('✅ Upsell disabled in panel, skipping to Card payment');
             } else {
                 console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
                 showSlideInUpsell('card');
@@ -1484,7 +1435,7 @@ async function startCardPayment(event) {
         }
 
         // If upsell already in cart or disabled, proceed directly to process payment
-        console.log('✅ Upsell already in cart or disabled, proceeding to Card payment');
+        console.log('✅ Upsell already in cart, proceeding to Card payment');
         await processCardPayment();
     } catch (error) {
         console.error('❌ Error in startCardPayment:', error);
@@ -1604,7 +1555,7 @@ async function captureAbandonedLead(extra = {}) {
     const name = document.getElementById('payer-name')?.value?.trim();
     const email = document.getElementById('payer-email')?.value?.trim();
     const phone = document.getElementById('payer-phone')?.value?.trim();
-    const productId = cart.id || (cart.mainProduct && cart.mainProduct.id) || 'unknown';
+    const productId = (cart && cart.id) || (cart && cart.mainProduct && cart.mainProduct.id) || 'unknown';
 
     // Só captura se tiver pelo menos o telefone ou e-mail preenchido
     if ((phone && phone.length > 5) || (email && email.length > 5)) {
