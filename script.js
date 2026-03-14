@@ -471,7 +471,7 @@ function renderOrderBumps(bumps) {
 
         return `
             <div class="order-bump-container" onclick="toggleBump('${bump.id}')" 
-                style="position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 100px; display: flex;">
+                style="position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 125px; display: flex;">
                 
                 <!-- Imagem de Fundo Preenchendo Tudo -->
                 ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">` : ''}
@@ -480,13 +480,17 @@ function renderOrderBumps(bumps) {
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%); z-index: 1;"></div>
 
                 <!-- Conteúdo por cima do fundo -->
-                <div style="position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 10px; width: 100%;">
+                <div style="position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 12px; padding: 12px; width: 100%;">
                     <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} 
-                        style="width: 20px; height: 20px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0;">
+                        style="width: 22px; height: 22px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; margin-top: 4px;">
                     
                     <div class="order-bump-content" style="flex: 1;">
-                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8); line-height: 1.2;">${bump.title}</strong>
-                        <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase;">${bump.tag || 'OFERTA ÚNICA'}</span>
+                        </div>
+                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.95rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8); line-height: 1.2;">${bump.title}</strong>
+                        <p class="order-bump-description" style="color: rgba(255,255,255,0.9); font-size: 0.75rem; margin: 4px 0; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${bump.description || ''}</p>
+                        <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1.1rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
                     </div>
                 </div>
             </div>`;
