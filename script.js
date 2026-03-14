@@ -448,6 +448,12 @@ function renderOrderBumps(bumps) {
 
     // Filtra bumps que não devem aparecer
     const filteredBumps = (bumps || []).filter(bump => {
+        // Se o bump não tem ID mas tem título, tentamos inferir o ID (caso o server tenha falhado)
+        if (!bump.id) {
+            if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) bump.id = 'ebook-manejo';
+            else if (bump.title?.includes('Ração')) bump.id = 'bump-6361';
+        }
+        
         // Respect individual enabled flag
         if (bump.enabled === false) return false;
         
@@ -456,45 +462,61 @@ function renderOrderBumps(bumps) {
     });
 
     // Configura o container para grid se houver mais de um bump
-    area.style.display = 'grid';
-    area.style.gridTemplateColumns = filteredBumps.length > 1 ? 'repeat(auto-fit, minmax(240px, 1fr))' : '1fr';
-    area.style.gap = '10px';
-    area.style.marginTop = '1rem';
+    area.style.display = 'block'; // Usar block para gerenciar o título em cima
+    area.style.marginTop = '1.5rem';
+    area.style.padding = '0.5rem';
+    area.style.background = 'rgba(251, 191, 36, 0.05)';
+    area.style.borderRadius = '12px';
+    area.style.border = '1px solid rgba(251, 191, 36, 0.1)';
 
-    area.innerHTML = filteredBumps.map(bump => {
-        let imgSrc = bump.image;
-        if (!imgSrc) {
-            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
-            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
-            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
-        }
+    const bumpHeader = `
+        <div style="text-align: center; margin-bottom: 12px; padding: 0 5px;">
+            <p style="color: #d97706; font-size: 0.75rem; font-weight: 900; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
+                ⚠️ OFERTAS EXCLUSIVAS PARA CLIENTES<br>
+                <span style="color: #475569; font-weight: 500; font-size: 0.65rem;">VOCÊ NÃO ENCONTRARÁ ESSES VALORES EM OUTRO LUGAR.</span>
+            </p>
+        </div>
+    `;
 
-        return `
-            <div class="order-bump-container" onclick="toggleBump('${bump.id}')" 
-                style="position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 125px; display: flex;">
-                
-                <!-- Imagem de Fundo Preenchendo Tudo -->
-                ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">` : ''}
-                
-                <!-- Overlay Gradiente para Legibilidade -->
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%); z-index: 1;"></div>
+    const gridLayout = `
+        <div style="display: grid; grid-template-columns: ${filteredBumps.length > 1 ? '1fr 1fr' : '1fr'}; gap: 8px;">
+            ${filteredBumps.map(bump => {
+                let imgSrc = bump.image;
+                if (!imgSrc) {
+                    if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
+                    else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
+                    else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
+                }
 
-                <!-- Conteúdo por cima do fundo -->
-                <div style="position: relative; z-index: 2; display: flex; align-items: flex-start; gap: 12px; padding: 12px; width: 100%;">
-                    <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} 
-                        style="width: 22px; height: 22px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; margin-top: 4px;">
-                    
-                    <div class="order-bump-content" style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                            <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase;">${bump.tag || 'OFERTA ÚNICA'}</span>
+                return `
+                    <div class="order-bump-container" onclick="toggleBump('${bump.id}')" 
+                        style="position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 10px; cursor: pointer; transition: transform 0.2s; min-height: 110px; display: flex;">
+                        
+                        <!-- Imagem de Fundo -->
+                        ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">` : ''}
+                        
+                        <!-- Overlay -->
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.85) 100%); z-index: 1;"></div>
+
+                        <!-- Conteúdo -->
+                        <div style="position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px; width: 100%;">
+                            <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px;">
+                                <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} 
+                                    style="width: 18px; height: 18px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; margin-top: 2px;">
+                                <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase;">PROMO</span>
+                            </div>
+                            <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.8rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 2px;">${bump.title}</strong>
+                            <p style="color: rgba(255,255,255,0.85); font-size: 0.65rem; line-height: 1.2; margin: 2px 0 4px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.5); font-weight: 700;">
+                                ${bump.id === 'ebook-manejo' ? '🐣 90% das mortes em pintinhos é por manejo errado. Garanta 95% de sobrevivência.' : '🌾 Economize até 70% na alimentação produzindo sua própria ração.'}
+                            </p>
+                            <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 0.95rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
                         </div>
-                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.95rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8); line-height: 1.2;">${bump.title}</strong>
-                        <p class="order-bump-description" style="color: rgba(255,255,255,0.9); font-size: 0.75rem; margin: 4px 0; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${bump.description || ''}</p>
-                        <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1.1rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
-                    </div>
-                </div>
-            </div>`;
-    }).join('');
+                    </div>`;
+            }).join('')}
+        </div>
+    `;
+
+    area.innerHTML = bumpHeader + gridLayout;
 }
 
 function toggleBump(bumpId) {
@@ -562,15 +584,15 @@ function updateTotal() {
 
     // Adiciona badge de desconto se PIX estiver selecionado e houver desconto
     if (currentPaymentMethod === 'pix' && cardTotal > total) {
-        const discountPercent = Math.round(((cardTotal - total) / cardTotal) * 100);
-        const topPriceDisplay = document.getElementById('checkout-product-price-display');
-        if (topPriceDisplay && topPriceDisplay.parentElement) {
-            const discountBadge = document.createElement('span');
-            discountBadge.className = 'pix-discount-badge';
-            discountBadge.style.cssText = 'display: inline-block; margin-left: 8px; font-size: 0.7rem; color: #10b981; font-weight: 800; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 12px;';
-            discountBadge.innerHTML = `🔥 ${discountPercent}% OFF`;
-            topPriceDisplay.parentElement.appendChild(discountBadge);
-        }
+        document.querySelectorAll('.checkout-total-display').forEach(el => {
+            if (el.parentElement) {
+                const discountBadge = document.createElement('span');
+                discountBadge.className = 'pix-discount-badge';
+                discountBadge.style.cssText = 'display: inline-block; margin-left: 8px; font-size: 0.6rem; color: #10b981; font-weight: 900; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 20px; text-transform: uppercase; vertical-align: middle;';
+                discountBadge.innerHTML = `🔥 27% DE DESCONTO NO PIX`;
+                el.parentElement.appendChild(discountBadge);
+            }
+        });
     }
 
     document.querySelectorAll('.checkout-total-display').forEach(el => {
