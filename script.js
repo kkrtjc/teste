@@ -20,16 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const today = new Date().toISOString().split('T')[0];
     const lastVisit = localStorage.getItem('mura_visita_hoje');
 
-    // Sempre dispara session_start em cada carregamento de página
     trackEvent('session_start');
 
     if (lastVisit !== today) {
         trackEvent('unique_visit');
         localStorage.setItem('mura_visita_hoje', today);
     }
-
-    // 1.1 TIME SPENT 15S TRACKING (REMOVIDO POR SOLICITAÇÃO)
-
 
     // 2. CTA CLICK TRACKING
     document.querySelectorAll('a[href^="#offer"]').forEach(btn => {
@@ -39,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // 3. PIX RECOVERY
     const cached = localStorage.getItem('active_pix_session');
     if (cached) {
         try {
@@ -48,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
                     const sd = await s.json();
                     if (sd.status === 'approved') {
-                        // PIXEL: Purchase (Success from background session)
                         trackPixel('Purchase', {
                             value: session.total || 0,
                             currency: 'BRL',
@@ -60,25 +56,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         localStorage.removeItem('active_pix_session');
                     }
-                } catch (e) { console.warn("Background check failed", e); }
+                } catch (e) { /* Recover silently */ }
             } else {
                 localStorage.removeItem('active_pix_session');
             }
-        } catch (e) {
-            localStorage.removeItem('active_pix_session');
-        }
+        } catch (e) { localStorage.removeItem('active_pix_session'); }
     }
 
-    // --- 5. DYNAMIC PRE-FETCH (Instant Checkout) ---
+    // 4. PRE-FETCH
     const productsToPreload = ['ebook-doencas', 'combo-elite', 'ebook-manejo'];
     productsToPreload.forEach(async (id) => {
         try {
             const response = await fetch(`${API_URL}/api/products/${id}`);
             if (response.ok) {
                 prefetchedProducts[id] = await response.json();
-                console.log(`🚀 [PREFETCH] ${id} carregado`);
-
-                // Update specific price elements if they exist
+                
                 if (id === 'ebook-doencas') {
                     const resp = prefetchedProducts[id];
                     const priceElement = document.getElementById('display-price-value');
@@ -86,22 +78,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                         priceElement.innerText = resp.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                     }
 
-                    // PIXEL: ViewContent (For static page support)
                     trackPixel('ViewContent', {
-                        content_ids: [id],
-                        content_name: resp.title,
-                        content_type: 'product',
-                        value: resp.price,
-                        currency: 'BRL'
+                        content_ids: [id], content_name: resp.title, content_type: 'product',
+                        value: resp.price, currency: 'BRL'
                     });
                 }
             }
-        } catch (e) {
-            console.warn(`[PREFETCH] Falha ao carregar ${id}`, e);
-        }
+        } catch (e) { console.warn(`[PREFETCH] Failed: ${id}`); }
     });
 
-    // 3. LAZY VIDEO LOADING (Intersection Observer)
+    // 5. COMPONENTS INIT
+    initFAQ();
+    initSmoothScroll();
+    initComparisonSlider();
+    initStickyCTA();
+    initLazyLoading();
+    initImageTransitions();
+    initHelpBubbles();
+    setupFields();
+    renderHomeProducts();
+
+    // 6. LAZY VIDEO
     const lazyVideo = document.getElementById('vsl-video');
     if (lazyVideo && 'IntersectionObserver' in window) {
         const videoObserver = new IntersectionObserver((entries, observer) => {
@@ -111,7 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (source && source.dataset.src) {
                         source.src = source.dataset.src;
                         lazyVideo.load();
-                        console.log("🎥 [VIDEO] Lazy Source Loaded");
                     }
                     observer.unobserve(lazyVideo);
                 }
@@ -119,11 +115,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, { rootMargin: '200px' });
         videoObserver.observe(lazyVideo);
     }
+
+    // 7. GLOBAL MOBILE FIXES
+    initMobileFixes();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+// --- COMPONENT INITIALIZERS (Refactored for clarity) ---
 
-    // --- 1. FAQ Accordion Logic ---
+function initFAQ() {
     document.querySelectorAll('.faq-question').forEach(question => {
         question.addEventListener('click', () => {
             const item = question.parentElement;
@@ -132,72 +131,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isOpen) item.classList.add('active');
         });
     });
+}
 
-    // --- 2. Smooth Scroll ---
+function initSmoothScroll() {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
             if (targetId === '#') return;
-
             e.preventDefault();
             const targetElement = document.querySelector(targetId);
 
             if (targetElement) {
-                // Se o alvo for a seção de ofertas, tenta focar no Combo Elite
                 if (targetId === '#offer-focus' || targetId === '#offers') {
                     const comboCard = document.querySelector('.price-card.featured');
                     if (comboCard) {
-                        comboCard.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                            inline: 'center'
-                        });
+                        comboCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
                     }
                 }
-
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-            } else if (targetId === '#offer-focus') {
-                // Fallback for when current card isn't loaded yet
-                const pricingSection = document.getElementById('offers');
-                if (pricingSection) {
-                    window.scrollTo({
-                        top: pricingSection.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
-                }
+                window.scrollTo({ top: targetElement.offsetTop - 80, behavior: 'smooth' });
             }
         });
     });
+}
 
-
-
-    // --- 4. Testimonials (Fully HTML-based for zero flicker on iOS) ---
-    // The testimonials are now hardcoded in index.html to prevent DOM reflows during load.
-
-    // --- 5. Comparison Slider (Results) ---
-    const sliderTrack = document.getElementById('comparison-slider-track');
-    if (sliderTrack) {
-        const nextBtn = document.getElementById('comparison-next');
-        const prevBtn = document.getElementById('comparison-prev');
-        if (nextBtn && prevBtn) {
-            nextBtn.addEventListener('click', () => {
-                sliderTrack.scrollBy({ left: 300, behavior: 'smooth' });
-            });
-            prevBtn.addEventListener('click', () => {
-                sliderTrack.scrollBy({ left: -300, behavior: 'smooth' });
-            });
-        }
-    }
-
-    // --- 5. Initializations ---
-    renderHomeProducts();
-    setupFields();
-
-    // --- 6. Sticky CTA Logic ---
+function initStickyCTA() {
     const stickyCta = document.querySelector('.sticky-cta-bar');
     const heroSection = document.querySelector('.hero');
     if (stickyCta && heroSection) {
@@ -207,35 +165,31 @@ document.addEventListener('DOMContentLoaded', () => {
             else stickyCta.classList.remove('visible');
         });
     }
+}
 
-    // --- 7. Lazy Loading & Layout Stability ---
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                        img.classList.add('loaded');
-                        imageObserver.unobserve(img);
-                    }
+function initLazyLoading() {
+    if (!('IntersectionObserver' in window)) return;
+    const imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.classList.add('loaded');
+                    imageObserver.unobserve(img);
                 }
-            });
-        }, { rootMargin: '50px' });
-
-        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-            if (img.src) {
-                // If it already has src, just mark as loaded
-                img.classList.add('loaded');
-            } else {
-                imageObserver.observe(img);
             }
         });
-    }
+    }, { rootMargin: '50px' });
 
-    // --- 8. Smooth Image Transitions ---
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+        if (img.src) img.classList.add('loaded');
+        else imageObserver.observe(img);
+    });
+}
+
+function initImageTransitions() {
     document.querySelectorAll('img').forEach(img => {
-        // Excluir imagens do carrosel da animação de opacidade para evitar "sumir/aparecer"
         if (img.closest('.testimonial-track-original')) {
             img.style.opacity = '1';
             return;
@@ -244,19 +198,17 @@ document.addEventListener('DOMContentLoaded', () => {
         img.onload = () => img.style.opacity = '1';
         if (!img.complete) img.style.opacity = '0';
     });
+}
 
-    // --- 9. Mobile Vh Fix ---
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-    window.addEventListener('resize', () => {
+function initMobileFixes() {
+    const updateVh = () => {
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
-    });
+    };
+    window.addEventListener('resize', updateVh);
+    updateVh();
 
-    // --- 10. Mobile Checkout: Prevent background horizontal scroll when keyboard opens ---
-    // This is the most reliable fix for iOS/Android horizontal drift
     document.addEventListener('touchmove', (e) => {
-        // Only block if modal is open AND the touch is NOT inside the modal
         if (document.body.classList.contains('modal-open')) {
             const modal = document.querySelector('.modal-overlay');
             if (modal && !modal.contains(e.target)) {
@@ -264,65 +216,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }, { passive: false });
-});
+}
 
 // --- 2. CHECKOUT & API LOGIC ---
 
 // mp is initialized in index.html to avoid duplicate declaration errors
 const checkoutModal = document.getElementById('checkout-modal');
 
-// --- TRACKING ENGINE (resiliente para cold start do Render) ---
+// --- TRACKING ENGINE ---
 async function trackEvent(type, isMobileManual = null, ctaId = null, details = null) {
     const isMobile = isMobileManual !== null ? isMobileManual : (
-        window.innerWidth <= 768 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        ('ontouchstart' in window)
+        window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     );
 
     const body = JSON.stringify({ type, isMobile, ctaId, details });
 
-    // Tenta enviar até 3 vezes para lidar com o cold start do Render
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
         try {
             const resp = await fetch(`${API_URL}/api/track`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body,
-                signal: AbortSignal.timeout(8000) // 8s timeout
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body, signal: AbortSignal.timeout(5000)
             });
-            if (resp.ok) {
-                console.log(`📈 [TRACK OK] ${type} (tentativa ${attempt})`);
-                return; // Sucesso, para de tentar
-            }
+            if (resp.ok) return;
         } catch (e) {
-            if (attempt < 3) {
-                console.warn(`📈 [TRACK] Tentativa ${attempt} falhou (${e.message}), retentando em 3s...`);
-                await new Promise(r => setTimeout(r, 3000)); // aguarda 3s antes de retentar
-            } else {
-                console.warn(`📈 [TRACK] Evento "${type}" descartado após 3 tentativas.`);
-            }
+            if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
         }
     }
 }
 
-// Helper para disparar Pixels com resiliência (espera o fbq estar pronto)
 function trackPixel(eventName, params = {}) {
     if (typeof fbq === 'function') {
         fbq('track', eventName, params);
-        console.log(`📈 [PIXEL OK] ${eventName}`, params);
     } else {
-        // Tenta novamente em 500ms se o Pixel ainda não carregou (max 5 tentativas)
         let attempts = 0;
         const interval = setInterval(() => {
             attempts++;
             if (typeof fbq === 'function') {
                 fbq('track', eventName, params);
-                console.log(`📈 [PIXEL OK] ${eventName} (após espera)`, params);
                 clearInterval(interval);
-            } else if (attempts >= 10) {
-                console.warn(`📈 [PIXEL FAIL] ${eventName} - fbq não inicializado.`);
-                clearInterval(interval);
-            }
+            } else if (attempts >= 10) clearInterval(interval);
         }, 500);
     }
 }
@@ -374,14 +306,11 @@ function declineEliteCombo() {
 }
 
 async function startCheckoutProcess(productId, forceBumps = []) {
-    // Session-based guard for checkout_open to prevent duplicates
     if (!sessionStorage.getItem('mura_checkout_opened')) {
         trackEvent('checkout_open');
         sessionStorage.setItem('mura_checkout_opened', 'true');
     }
     
-    trackEvent('click');
-    sessionStorage.setItem('mura_modal_open', 'true');
     trackEvent('click');
     sessionStorage.setItem('mura_modal_open', 'true');
     // InitiateCheckout will be fired in loadCheckoutData once we have the price and name
@@ -523,8 +452,12 @@ function renderOrderBumps(bumps) {
         // Respect individual enabled flag
         if (bump.enabled === false) return false;
 
-        // Remove Manual de Pintinhos do checkout (deve ser upsell posterior)
-        if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') return false;
+        // SE o Manual de Pintinhos estiver desativado no painel, ele nem entra na lógica de filtragem (some total)
+        if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') {
+            if (!isUpsellEnabled()) return false;
+            return false; // Continua retornando false aqui pois ele é movido para o slide-in posterior
+        }
+        
         // Mantém a Tabela de Ração no checkout
         return true;
     });
@@ -1437,15 +1370,21 @@ async function processCardPayment() {
 // --- VALIDATION AND INTERCEPTION FUNCTIONS ---
 
 function isUpsellEnabled() {
-    // 1. Check global setting
-    const globalEnabled = window.siteConfig?.settings?.enableUpsell !== false;
+    // 1. Check if siteConfig exists at all
+    if (!window.siteConfig) {
+        console.warn('🛡️ [CONFIG] isUpsellEnabled: siteConfig not loaded yet, defaulting to false.');
+        return false;
+    }
+
+    // 2. Check global setting (Default to FALSE if not found or explicitly false)
+    const globalEnabled = window.siteConfig?.settings?.enableUpsell === true;
     
-    // 2. Check specific product setting
+    // 3. Check specific product setting (Defaults to FALSE if product removed or disabled)
     const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
-    const productEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
+    const productEnabled = upsellProduct && upsellProduct.enabled !== false;
     
     const result = globalEnabled && productEnabled;
-    console.log('🛡️ [CONFIG] isUpsellEnabled check:', { globalEnabled, productEnabled, result });
+    console.log('🛡️ [CONFIG] isUpsellEnabled result:', result, { globalEnabled, productEnabled });
     return result;
 }
 // Consolidated into the main function at bottom
@@ -1917,165 +1856,40 @@ function getPaymentMethodId(number) {
     return 'other';
 }
 
-// Comparison Slider Navigation Logic with Boundary Detection
-const comparisonSlider = document.getElementById('comparison-slider-track');
-const prevButton = document.getElementById('comparison-prev');
-const nextButton = document.getElementById('comparison-next');
+// --- 11. INITIALIZATION HELPERS ---
+function initComparisonSlider() {
+    const comparisonSlider = document.getElementById('comparison-slider-track');
+    const prevButton = document.getElementById('comparison-prev');
+    const nextButton = document.getElementById('comparison-next');
 
-if (comparisonSlider && prevButton && nextButton) {
-
-    // Function to update arrow states based on scroll position
-    function updateArrowStates() {
-        const scrollLeft = comparisonSlider.scrollLeft;
-        const maxScroll = comparisonSlider.scrollWidth - comparisonSlider.clientWidth;
-
-        // Disable/enable left arrow
-        if (scrollLeft <= 0) {
-            prevButton.disabled = true;
-            prevButton.style.opacity = '0.3';
-            prevButton.style.cursor = 'not-allowed';
-        } else {
-            prevButton.disabled = false;
-            prevButton.style.opacity = '1';
-            prevButton.style.cursor = 'pointer';
-        }
-
-        // Disable/enable right arrow
-        if (scrollLeft >= maxScroll - 1) { // -1 for rounding tolerance
-            nextButton.disabled = true;
-            nextButton.style.opacity = '0.3';
-            nextButton.style.cursor = 'not-allowed';
-        } else {
-            nextButton.disabled = false;
-            nextButton.style.opacity = '1';
-            nextButton.style.cursor = 'pointer';
-        }
+    if (comparisonSlider && prevButton && nextButton) {
+        const updateArrows = () => {
+            const scrollLeft = comparisonSlider.scrollLeft;
+            const maxScroll = comparisonSlider.scrollWidth - comparisonSlider.clientWidth;
+            prevButton.disabled = scrollLeft <= 0;
+            prevButton.style.opacity = scrollLeft <= 0 ? '0.3' : '1';
+            nextButton.disabled = scrollLeft >= maxScroll - 1;
+            nextButton.style.opacity = scrollLeft >= maxScroll - 1 ? '0.3' : '1';
+        };
+        updateArrows();
+        comparisonSlider.addEventListener('scroll', updateArrows);
+        prevButton.addEventListener('click', () => comparisonSlider.scrollBy({ left: -300, behavior: 'smooth' }));
+        nextButton.addEventListener('click', () => comparisonSlider.scrollBy({ left: 300, behavior: 'smooth' }));
     }
-
-    // Initial state check
-    updateArrowStates();
-
-    // Update on scroll
-    comparisonSlider.addEventListener('scroll', updateArrowStates);
-
-    // Click handlers
-    prevButton.addEventListener('click', () => {
-        if (!prevButton.disabled) {
-            const slideWidth = comparisonSlider.querySelector('.comparison-slide').offsetWidth;
-            comparisonSlider.scrollBy({
-                left: -slideWidth,
-                behavior: 'smooth'
-            });
-        }
-    });
-
-    nextButton.addEventListener('click', () => {
-        if (!nextButton.disabled) {
-            const slideWidth = comparisonSlider.querySelector('.comparison-slide').offsetWidth;
-            comparisonSlider.scrollBy({
-                left: slideWidth,
-                behavior: 'smooth'
-            });
-        }
-    });
-}
-// Mobile Checkout Modal Fix - Apply body class to prevent background scroll
-(function () {
-    // Get any modal elements
-    const modalElements = document.querySelectorAll('[id*="modal"], [id*="checkout"]');
-
-    // Create a MutationObserver to watch for modal display changes
-    const observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                const target = mutation.target;
-                const display = window.getComputedStyle(target).display;
-
-                if (display === 'flex' || display === 'block') {
-                    // Modal is opening
-                    document.body.classList.add('modal-open');
-                } else if (display === 'none') {
-                    // Modal is closing
-                    document.body.classList.remove('modal-open');
-                }
-            }
-        });
-    });
-
-    // Observe each modal for style changes
-    modalElements.forEach(function (modal) {
-        observer.observe(modal, {
-            attributes: true,
-            attributeFilter: ['style']
-        });
-    });
-})();
-
-
-// --- VALIDATION LOGIC ---
-
-function validateCheckoutInputs(method) {
-    let allValid = true;
-    const fieldsToValidate = ['payer-name', 'payer-email', 'payer-phone'];
-
-    if (method === 'pix') {
-        fieldsToValidate.push('payer-cpf');
-    } else if (method === 'card') {
-        fieldsToValidate.push('payer-cpf', 'card-holder', 'card-number', 'card-expiration', 'card-cvv');
-        // Note: 'payer-cpf' is included for card as well, assuming it's needed for general billing/account.
-        // If 'card-cpf' (CPF do titular) is a separate field, it should be added here too.
-        // For now, assuming 'payer-cpf' covers it or is the primary CPF.
-    }
-
-    fieldsToValidate.forEach(id => {
-        const el = document.getElementById(id);
-        // Determine type based on ID for specific validation rules
-        const type = id.includes('email') ? 'email' :
-                     (id.includes('phone') ? 'phone' :
-                     (id.includes('cpf') ? 'cpf' :
-                     (id.includes('number') ? 'card' :
-                     (id.includes('expiration') ? 'date' :
-                     (id.includes('cvv') ? 'cvv' : 'text'))))); // Default to 'text' for others like name, holder
-
-        if (!validateField(el, type)) {
-            allValid = false;
-        }
-    });
-
-    if (!allValid) {
-        // Find first invalid input and focus
-        const firstInvalid = document.querySelector('.input-error, .is-invalid');
-        if (firstInvalid) firstInvalid.focus();
-
-        // Display a toast message for overall validation failure
-        const container = document.getElementById('toast-container');
-        if (container) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-card';
-            toast.style.borderColor = '#e74c3c';
-            toast.innerHTML = `
-                <div style="width: 40px; height: 40px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="toast-content">
-                    <strong>Ops! Quase lá...</strong>
-                    <p>Por favor, preencha corretamente todos os campos destacados em vermelho.</p>
-                </div>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
-        }
-    }
-
-    return allValid;
 }
 
-// Attach listeners for real-time validation removal/success
+function initHelpBubbles() {
+    // Placeholder if logic needs to scale
+}
+
+// Global Listener for Input Effects
 document.addEventListener('DOMContentLoaded', () => {
-    const allInputs = document.querySelectorAll('.form-input');
-    allInputs.forEach(input => {
+    document.querySelectorAll('.form-input').forEach(input => {
         input.addEventListener('input', () => {
-            // Determine type based on ID for specific validation rules
+            if (input.classList.contains('input-error') || input.classList.contains('is-invalid')) {
+                input.classList.remove('input-error', 'is-invalid');
+            }
+            
             const type = input.id.includes('email') ? 'email' :
                          (input.id.includes('phone') ? 'phone' :
                          (input.id.includes('cpf') ? 'cpf' :
@@ -2083,58 +1897,34 @@ document.addEventListener('DOMContentLoaded', () => {
                          (input.id.includes('expiration') ? 'date' :
                          (input.id.includes('cvv') ? 'cvv' : 'text')))));
 
-            // Remove error immediately when typing starts
-            if (input.classList.contains('input-error') || input.classList.contains('is-invalid')) {
-                input.classList.remove('input-error', 'is-invalid');
-                const msg = input.parentElement.querySelector('.error-message');
-                if (msg) msg.remove();
-            }
-
-            // Optional: validate on the fly for green border?
-            // "quadno o cliente começar a esrever de novo, o aviso some" - Done above.
-            // "se o campo estiveer correto, borda verde" - We can check this on blur or debounce.
-            // Let's do a light validation on input for success state if not empty
             if (input.value.trim().length > 0) {
-                // Only set success if it passes basic validation during typing
-                if (validateField(input, type)) {
-                    setInputSuccess(input);
-                } else {
-                    // If it's invalid during typing, don't show error yet, just remove success
-                    input.classList.remove('input-success', 'is-valid');
-                }
+                if (validateField(input, type)) setInputSuccess(input);
+                else input.classList.remove('input-success', 'is-valid');
             } else {
-                // If empty, remove any success/error state
                 input.classList.remove('input-success', 'input-error', 'is-invalid', 'is-valid');
-                const msg = input.parentElement.querySelector('.error-message');
-                if (msg) msg.remove();
             }
         });
 
         input.addEventListener('blur', () => {
-            // Determine type based on ID for specific validation rules
             const type = input.id.includes('email') ? 'email' :
                          (input.id.includes('phone') ? 'phone' :
                          (input.id.includes('cpf') ? 'cpf' :
                          (input.id.includes('number') ? 'card' :
                          (input.id.includes('expiration') ? 'date' :
                          (input.id.includes('cvv') ? 'cvv' : 'text')))));
-
-            // Validate fully on blur
             validateField(input, type);
         });
     });
 
-    // Also setup the new card-cpf mask in smart_fields logic if needed, 
-    // but I can add a simple listener here for the new field mask
     const cardCpf = document.getElementById('card-cpf');
     if (cardCpf) {
         cardCpf.addEventListener('input', (e) => {
             let v = e.target.value.replace(/\D/g, '');
             if (v.length > 11) v = v.slice(0, 11);
-            if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-            else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-            else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-            e.target.value = v;
+            if (v.length > 9) e.target.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+            else if (v.length > 6) e.target.value = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+            else if (v.length > 3) e.target.value = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+            else e.target.value = v;
         });
     }
 });
