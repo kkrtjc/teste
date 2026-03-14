@@ -447,17 +447,21 @@ function renderOrderBumps(bumps) {
     // }
 
     // Filtra bumps que não devem aparecer
+    let manualPresent = false;
+    (bumps || []).forEach(b => {
+        if (b.id === 'ebook-manejo' || b.title?.includes('Pintinhos')) manualPresent = true;
+    });
+
     const filteredBumps = (bumps || []).filter(bump => {
-        // Se o bump não tem ID mas tem título, tentamos inferir o ID (caso o server tenha falhado)
         if (!bump.id) {
             if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) bump.id = 'ebook-manejo';
             else if (bump.title?.includes('Ração')) bump.id = 'bump-6361';
         }
         
-        // Respect individual enabled flag
+        // Se o Manual está presente, escondemos a Tabela individual para forçar o Combo
+        if (manualPresent && bump.id === 'bump-6361') return false;
+
         if (bump.enabled === false) return false;
-        
-        // Mantém todos os bumps configurados
         return true;
     });
 
@@ -505,9 +509,11 @@ function renderOrderBumps(bumps) {
                                     style="width: 18px; height: 18px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; margin-top: 2px;">
                                 <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase;">PROMO</span>
                             </div>
-                            <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.8rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 2px;">${bump.title}</strong>
+                            <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.8rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8); line-height: 1.1; margin-bottom: 2px;">
+                                ${bump.id === 'ebook-manejo' ? 'COMBO: MANUAL DE PINTINHOS + TABELA 🎁' : bump.title}
+                            </strong>
                             <p style="color: rgba(255,255,255,0.85); font-size: 0.65rem; line-height: 1.2; margin: 2px 0 4px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.5); font-weight: 700;">
-                                ${bump.id === 'ebook-manejo' ? '🐣 90% das mortes em pintinhos é por manejo errado. Garanta 95% de sobrevivência.' : '🌾 Economize até 70% na alimentação produzindo sua própria ração.'}
+                                ${bump.id === 'ebook-manejo' ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> com o manejo correto. E leve <span style="color: #fbbf24;"><strong>DE GRAÇA</strong></span> nosso conteúdo (R$ 19,90) para economizar <span style="color: #fbbf24;"><strong>até 70%</strong></span> na alimentação.' : '🌾 Economize até 70% na alimentação produzindo sua própria ração.'}
                             </p>
                             <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 0.95rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
                         </div>
@@ -523,8 +529,17 @@ function toggleBump(bumpId) {
     const idx = cart.bumps.indexOf(bumpId);
     if (idx > -1) {
         cart.bumps.splice(idx, 1);
+        // Se remover o manual, remove a tabela automática do combo
+        if (bumpId === 'ebook-manejo') {
+            const tableIdx = cart.bumps.indexOf('bump-6361');
+            if (tableIdx > -1) cart.bumps.splice(tableIdx, 1);
+        }
     } else {
         cart.bumps.push(bumpId);
+        // Se adicionar o manual, adiciona a tabela automática como parte do combo
+        if (bumpId === 'ebook-manejo') {
+            if (!cart.bumps.includes('bump-6361')) cart.bumps.push('bump-6361');
+        }
     }
 
     const chk = document.getElementById(`bump-chk-${bumpId}`);
@@ -560,21 +575,19 @@ function updateTotal() {
             }
         }
 
-        console.log('ðŸ” DEBUG updateTotal - Bump ID:', id, 'Encontrado:', bump);
-
         if (bump) {
-            // Usa o preço do banco de dados
-            const bumpPriceForPix = bump.price || 0;
-            const bumpPriceForCard = bump.priceCard || bump.price || 0;
+            // Regra Especial de Combo: Se o Manual estiver no carrinho, a Tabela é grátis (R$ 0)
+            let isFreeGift = (id === 'bump-6361' && cart.bumps.includes('ebook-manejo'));
+            
+            const bumpPriceForPix = isFreeGift ? 0 : (bump.price || 0);
+            const bumpPriceForCard = isFreeGift ? 0 : (bump.priceCard || bump.price || 0);
 
-            console.log('💰 Preços do bump:', { pix: bumpPriceForPix, card: bumpPriceForCard });
+            console.log(`💰 Preços do bump (${id}):`, { pix: bumpPriceForPix, card: bumpPriceForCard, isFree: isFreeGift });
 
-
-            // Usa preços do banco de dados (sem regras especiais)
             total += bumpPriceForPix;
             cardTotal += bumpPriceForCard;
         } else {
-            console.error('âŒ Bump não encontrado em fullBumps:', id);
+            console.error('❌ Bump não encontrado em fullBumps:', id);
         }
     });
 
@@ -896,7 +909,10 @@ async function handlePayment(method) {
         }
 
         if (b) {
-            let bumpPrice = (method === 'card' && b.priceCard) ? b.priceCard : b.price;
+            // Regra Especial de Combo: Se o Manual estiver no carrinho, a Tabela é grátis (R$ 0)
+            let isFreeGift = (id === 'bump-6361' && cart.bumps.includes('ebook-manejo'));
+            
+            let bumpPrice = isFreeGift ? 0 : ((method === 'card' && b.priceCard) ? b.priceCard : b.price);
             items.push({ id: b.id, title: b.title, price: bumpPrice });
         }
     });
