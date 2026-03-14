@@ -175,46 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- 4. Testimonials (Optimized for iOS) ---
-    const testimonials = [
-        { text: 'Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico.', author: 'Ricardo Lima', location: 'Londrina - PR', stars: 5, avatar: 'carrosel/ricardo.jpg' },
-        { text: 'Excelente material! Consegui curar 3 galos que já estavam no bico do corvo.', author: 'Marcos Paulo', location: 'Goiânia - GO', stars: 5, avatar: 'carrosel/marcos.jpg' },
-        { text: 'Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito.', author: 'Isabella Lima', location: 'Florianópolis - SC', stars: 5, avatar: 'carrosel/isabella.jpg' },
-        { text: 'Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade.', author: 'Juliana Freitas', location: 'Rio Verde - GO', stars: 5, avatar: 'carrosel/juliana.jpg' },
-        { text: 'A tabela de ração mudou meu criatório. As aves crescem mais rápido e saudáveis agora.', author: 'Fernando Costa', location: 'Uberlândia - MG', stars: 5, avatar: 'carrosel/fernando.jpg' },
-        { text: 'Recomendo muito a todos os criadores. Informação de primeira linha sem enrolação.', author: 'Roberto Assis', location: 'Feira de Santana - BA', stars: 5, avatar: 'carrosel/roberto.jpg' }
-    ];
-
-    const testimonialsTrack = document.getElementById('testimonials-track');
-    if (testimonialsTrack) {
-        // If track already has content (pre-rendered), we just need to append the clones for infinite loop
-        // We only populate if it's empty or has less than the full list
-        if (testimonialsTrack.children.length < testimonials.length * 2) {
-            const fragment = document.createDocumentFragment();
-            // Start from where we left off if some were pre-rendered
-            const existingCount = testimonialsTrack.children.length;
-            const remaining = [...testimonials, ...testimonials].slice(existingCount);
-
-            remaining.forEach((t) => {
-                const starsHTML = '<i class="fa-solid fa-star" style="color: #FFD700;"></i>'.repeat(t.stars);
-                const card = document.createElement('div');
-                card.className = 'testimonial-card-single'; 
-                card.innerHTML = `
-                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
-                        <img src="${t.avatar}" alt="${t.author}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${t.author}&background=random&color=fff'">
-                    </div>
-                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
-                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">${t.author}</strong>
-                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">${t.location}</span>
-                    </div>
-                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">${starsHTML}</div>
-                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"${t.text}"</span>
-                `;
-                fragment.appendChild(card);
-            });
-            testimonialsTrack.appendChild(fragment);
-        }
-    }
+    // --- 4. Testimonials (Fully HTML-based for zero flicker on iOS) ---
+    // The testimonials are now hardcoded in index.html to prevent DOM reflows during load.
 
     // --- 5. Comparison Slider (Results) ---
     const sliderTrack = document.getElementById('comparison-slider-track');

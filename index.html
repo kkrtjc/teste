@@ -426,11 +426,14 @@
                 animation-duration: 120s;
             }
         }
-        /* Fix for flickering in low power mode */
+        /* Fix for flickering and black spots in iOS low power mode */
         .testimonial-track-original {
+            background-color: var(--zinc-950);
             contain: layout paint;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            perspective: 1000px;
+            -webkit-perspective: 1000px;
         }
         .testimonial-card-single {
             flex-shrink: 0;
@@ -451,8 +454,8 @@
     <section class="bg-white" style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--zinc-950); overflow: hidden;">
         <div class="testimonial-marquee-wrapper">
             <div class="testimonial-track-original" id="testimonials-track" style="color: var(--slate-100); font-family: var(--font-sans);">
-                <!-- Pre-render first set of testimonials for instant perceived performance -->
-                <div class="testimonial-card-single">
+                <!-- Set 1: Pre-rendered for instant visibility -->
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
                     <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
                         <img src="carrosel/ricardo.jpg" alt="Ricardo Lima" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
@@ -465,7 +468,7 @@
                     </div>
                     <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico."</span>
                 </div>
-                <div class="testimonial-card-single">
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
                     <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
                         <img src="carrosel/marcos.jpg" alt="Marcos Paulo" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
@@ -478,7 +481,7 @@
                     </div>
                     <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Excelente material! Consegui curar 3 galos que já estavam no bico do corvo."</span>
                 </div>
-                <div class="testimonial-card-single">
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
                     <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
                         <img src="carrosel/isabella.jpg" alt="Isabella Lima" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
@@ -490,6 +493,124 @@
                         <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                     </div>
                     <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/juliana.jpg" alt="Juliana Freitas" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Juliana Freitas</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Rio Verde - GO</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/fernando.jpg" alt="Fernando Costa" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Fernando Costa</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Uberlândia - MG</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"A tabela de ração mudou meu criatório. As aves crescem mais rápido e saudáveis agora."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/roberto.jpg" alt="Roberto Assis" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Roberto Assis</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Feira de Santana - BA</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Recomendo muito a todos os criadores. Informação de primeira linha sem enrolação."</span>
+                </div>
+                <!-- Set 2: Clones for infinite animation -->
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/ricardo.jpg" alt="Ricardo Lima" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Ricardo Lima</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Londrina - PR</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/marcos.jpg" alt="Marcos Paulo" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Marcos Paulo</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Goiânia - GO</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Excelente material! Consegui curar 3 galos que já estavam no bico do corvo."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/isabella.jpg" alt="Isabella Lima" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Isabella Lima</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Florianópolis - SC</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/juliana.jpg" alt="Juliana Freitas" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Juliana Freitas</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Rio Verde - GO</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Perdi 15 aves em um mês antes de comprar. Depois que aprendi o manejo certo, zerou a mortalidade."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/fernando.jpg" alt="Fernando Costa" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Fernando Costa</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Uberlândia - MG</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"A tabela de ração mudou meu criatório. As aves crescem mais rápido e saudáveis agora."</span>
+                </div>
+                <div class="testimonial-card-single" style="background: var(--zinc-950);">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/roberto.jpg" alt="Roberto Assis" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Roberto Assis</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Feira de Santana - BA</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Recomendo muito a todos os criadores. Informação de primeira linha sem enrolação."</span>
                 </div>
             </div>
         </div>
