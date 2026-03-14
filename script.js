@@ -444,23 +444,22 @@ function renderOrderBumps(bumps) {
     // Global check removed to support individual toggles
     // if (window.siteConfig && window.siteConfig.settings && window.siteConfig.settings.enableOrderBump === false) {
     //     area.innerHTML = '';
-    //     return;
     // }
 
     // Filtra bumps que não devem aparecer
     const filteredBumps = (bumps || []).filter(bump => {
         // Respect individual enabled flag
         if (bump.enabled === false) return false;
-
-        // SE o Manual de Pintinhos estiver desativado no painel, ele nem entra na lógica de filtragem (some total)
-        if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') {
-            if (!isUpsellEnabled()) return false;
-            return false; // Continua retornando false aqui pois ele é movido para o slide-in posterior
-        }
         
-        // Mantém a Tabela de Ração no checkout
+        // Mantém todos os bumps configurados
         return true;
     });
+
+    // Configura o container para grid se houver mais de um bump
+    area.style.display = 'grid';
+    area.style.gridTemplateColumns = filteredBumps.length > 1 ? 'repeat(auto-fit, minmax(240px, 1fr))' : '1fr';
+    area.style.gap = '10px';
+    area.style.marginTop = '1rem';
 
     area.innerHTML = filteredBumps.map(bump => {
         let imgSrc = bump.image;
@@ -472,7 +471,7 @@ function renderOrderBumps(bumps) {
 
         return `
             <div class="order-bump-container" onclick="toggleBump('${bump.id}')" 
-                style="margin-top: 1rem; position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 120px; display: flex;">
+                style="position: relative; overflow: hidden; border: 2px solid #d97706; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; min-height: 100px; display: flex;">
                 
                 <!-- Imagem de Fundo Preenchendo Tudo -->
                 ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">` : ''}
@@ -481,19 +480,13 @@ function renderOrderBumps(bumps) {
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 100%); z-index: 1;"></div>
 
                 <!-- Conteúdo por cima do fundo -->
-                <div style="position: relative; z-index: 2; display: flex; align-items: center; gap: 15px; padding: 15px; width: 100%;">
+                <div style="position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 10px; width: 100%;">
                     <input type="checkbox" class="order-bump-checkbox" id="bump-chk-${bump.id}" ${cart.bumps.includes(bump.id) ? 'checked' : ''} 
-                        style="width: 24px; height: 24px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));">
+                        style="width: 20px; height: 20px; cursor: pointer; accent-color: #fbbf24; flex-shrink: 0;">
                     
                     <div class="order-bump-content" style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">${bump.tag || 'OFERTA ÚNICA'}</span>
-                        </div>
-                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 1.05rem; margin-top: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${bump.title}</strong>
-                        <span class="order-bump-description" style="display: block; color: rgba(255,255,255,0.9); font-size: 0.85rem; margin-top: 4px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">${bump.description}</span>
-                        <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 8px;">
-                            <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1.2rem; text-shadow: 0 2px 5px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
-                        </div>
+                        <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8); line-height: 1.2;">${bump.title}</strong>
+                        <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">+ ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}</span>
                     </div>
                 </div>
             </div>`;
@@ -709,149 +702,6 @@ function startFunnel(productId) {
     showUpsellModal();
 }
 
-function showSlideInUpsell(method) {
-    const obModal = document.getElementById('order-bump-modal');
-    if (!obModal) return;
-
-    // Inicia o timer de 5 minutos
-    let duration = 300; // 5 minutos em segundos
-    const timerInterval = setInterval(() => {
-        const timerEl = document.getElementById('upsell-timer');
-        if (!timerEl) {
-            clearInterval(timerInterval);
-            return;
-        }
-
-        const minutes = Math.floor(duration / 60);
-        const seconds = duration % 60;
-        timerEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-        if (--duration < 0) {
-            clearInterval(timerInterval);
-            timerEl.textContent = "0:00";
-        }
-    }, 1000);
-
-    obModal.innerHTML = `
-        <div class="order-bump-slide-content" style="border-top: 3px solid #fbbf24; background: #1a1a1a; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);">
-            <button class="order-bump-close" onclick="declineSlideUpsell('${method}')" style="background: rgba(255,255,255,0.1); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; top: 5px; right: 5px;">
-                <i class="fa-solid fa-xmark" style="font-size: 0.8rem;"></i>
-            </button>
-
-            <div class="order-bump-header" style="text-align: center; padding: 5px 0;">
-                <div style="display: inline-block; background: #e74c3c; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 900; font-size: 0.65rem; margin-bottom: 4px; letter-spacing: 1px;">PROMOÇÃO RELÂMPAGO</div>
-                <h3 style="margin-top: 2px; font-size: 1.05rem; color: #fbbf24; text-transform: uppercase; line-height: 1.1;">
-                    APENAS AGORA<br>
-                    <span style="font-size: 0.8rem; color: #fff; font-weight: 400; opacity: 0.8;">MANUAL DE PINTINHOS DE ELITE</span>
-                </h3>
-            </div>
-
-            <div style="background: rgba(251,191,36,0.1); border: 1px dashed #fbbf24; border-radius: 8px; padding: 6px; margin: 6px 0; text-align: center;">
-                <span style="color: #fff; font-size: 0.75rem;">Expira em: </span>
-                <span id="upsell-timer" style="color: #fbbf24; font-weight: 900; font-size: 1.1rem; font-family: monospace;">05:00</span>
-            </div>
-
-            <div class="order-bump-body" style="text-align: center; padding: 0 5px;">
-                <p style="color: #fff; font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.3; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
-                    <strong style="color: #e74c3c;">8 A CADA 10 PINTINHOS MORREM</strong> POR ERRO DE MANEJO. APRENDA COMO CRIAR PINTINHOS E SE LIVRE DE DOENÇA.<br>
-                    <strong style="color: #fbbf24; display: block; margin-top: 4px;">SE TORNE O CRIADOR COMPLETO</strong>
-                </p>
-                
-                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0.75rem; text-align: left;">
-                    <div style="position: relative;">
-                         <img src="capadospintinhos.jpg" style="width: 75px; border-radius: 12px; border: 1.5px solid #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);">
-                         <div style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; transform: rotate(15deg); border: 1.5px solid #fff;">-35%</div>
-                    </div>
-                    <ul style="color: #fff; font-size: 0.7rem; padding: 0; margin: 0; list-style: none; line-height: 1.3;">
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Sobrevivência de até 98%</li>
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Crescimento 3x mais rápido</li>
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> Ambiente 100% adequado</li>
-                        <li style="margin-bottom: 2px;"><i class="fa-solid fa-check" style="color: #fbbf24; margin-right: 4px;"></i> As principais doenças em pintinhos</li>
-                    </ul>
-                </div>
-
-                <div class="order-bump-price-tag" style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="color: rgba(255,255,255,0.4); text-decoration: line-through; font-size: 0.75rem;">De R$ ${(prefetchedProducts['ebook-manejo']?.originalPrice || 99.90).toFixed(2).replace('.', ',')}</div>
-                    <div style="color: #fbbf24; font-size: 1.8rem; font-weight: 900; line-height: 1;">R$ ${(prefetchedProducts['ebook-manejo']?.price || 49.90).toFixed(2).split('.')[0]}<span style="font-size: 1rem;">,${(prefetchedProducts['ebook-manejo']?.price || 49.90).toFixed(2).split('.')[1]}</span></div>
-                    <div style="color: #fff; font-size: 0.8rem; opacity: 0.9; margin-top: 2px; font-weight: 600;">(4x de R$ ${((prefetchedProducts['ebook-manejo']?.price || 49.90) / 4).toFixed(2).replace('.', ',')} sem juros)</div>
-                </div>
-            </div>
-
-            <div class="order-bump-actions" style="padding: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <button class="btn-accept-bump" onclick="confirmSlideUpsell('${method}')" style="background: #fbbf24; color: #000; width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.9rem; text-transform: uppercase;">
-                    QUERO SALVAR MEUS PINTINHOS
-                </button>
-                <button class="btn-decline-bump" onclick="declineSlideUpsell('${method}')" style="background: none; border: none; color: rgba(255,255,255,0.4); text-decoration: underline; margin-top: 8px; cursor: pointer; display: block; width: 100%; font-size: 0.75rem;">
-                    Não, obrigado.
-                </button>
-            </div>
-        </div>
-    `;
-
-    obModal.classList.add('show');
-}
-
-function confirmSlideUpsell(method) {
-    console.log('✅ User ACCEPTED upsell');
-    midCheckoutUpsellPending = false;
-
-    // Add upsell to cart
-    if (!cart.bumps.includes('ebook-manejo')) {
-        cart.bumps.push('ebook-manejo');
-        updateTotal();
-    }
-
-    // Hide modal
-    const obModal = document.getElementById('order-bump-modal');
-    if (obModal) obModal.classList.remove('show');
-
-    // NOW generate the PIX/Card payment
-    if (method === 'pix') {
-        console.log('🔵 Proceeding to PIX generation after upsell acceptance');
-        processPixPayment();
-    } else {
-        console.log('🔵 Proceeding to Card payment after upsell acceptance');
-        processCardPayment();
-    }
-}
-
-function declineSlideUpsell(method) {
-    console.log('❌ User DECLINED upsell');
-    midCheckoutUpsellPending = false;
-
-    // Hide modal
-    const obModal = document.getElementById('order-bump-modal');
-    if (obModal) obModal.classList.remove('show');
-
-    // Generate PIX/Card payment WITHOUT upsell
-    if (method === 'pix') {
-        console.log('🔵 Proceeding to PIX generation after upsell decline');
-        processPixPayment();
-    } else {
-        console.log('🔵 Proceeding to Card payment after upsell decline');
-        processCardPayment();
-    }
-}
-
-function acceptUpsell() {
-    closeFunnelModal();
-    // Adiciona Pintinhos como Bump e abre checkout de Doenças
-    funnelState.upsellAccepted = true;
-    openCheckout(funnelState.mainId, ['ebook-manejo']);
-}
-
-function acceptDownsell() {
-    closeFunnelModal();
-    // Abre checkout direto do Combo
-    openCheckout('combo-elite');
-}
-
-function rejectFunnel() {
-    closeFunnelModal();
-    // Abre checkout apenas do produto principal
-    openCheckout(funnelState.mainId);
-}
-
 // --- Skeleton Loader Helper ---
 function showSkeletons(container, count = 3) {
     if (!container) return;
@@ -955,7 +805,6 @@ function switchMethod(method) {
 }
 
 
-let midCheckoutUpsellPending = true;
 
 async function handlePayment(method) {
     // UPSELL REMOVIDO: Fluxo direto para pagamento
@@ -1075,11 +924,6 @@ async function handlePayment(method) {
                 captureAbandonedLead({ pixGenerated: true, pixId: data.id });
                 showPixResult(data, items);
 
-                setTimeout(() => {
-                    if (midCheckoutUpsellPending && isUpsellEnabled() && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
-                        showSlideInUpsell('pix');
-                    }
-                }, 2000);
             } else {
                 console.error("Pix Error Response:", data);
                 alert(data.error || data.message || 'Houve um erro ao gerar o PIX.');
@@ -1253,7 +1097,6 @@ async function handlePayment(method) {
             else if (e && e.cause) errDisplay = JSON.stringify(e.cause);
             else if (typeof e === 'string') errDisplay = e;
             else if (typeof e === 'object') errDisplay = JSON.stringify(e);
-
             trackEvent('checkout_error', null, null, `Erro Cartão (JS): ${errDisplay}`);
             alert('Houve um erro ao processar seu cartão.\n\nDetalhe técnico: ' + errDisplay + '\n\nTente novamente ou use o PIX.');
 
@@ -1265,43 +1108,16 @@ async function handlePayment(method) {
     }
 }
 
-// --- 1. PIX PAYMENT (MODIFIED FOR UPSELL INTERCEPTION) ---
+// --- 1. PIX PAYMENT (Simplified) ---
 async function startPixPayment(event) {
     if (event) event.preventDefault();
-
     console.log('🔵 startPixPayment CALLED');
 
-    // NEW: VALIDAÇÃO ANTES DO UPSELL
     if (!validateCheckoutInputs('pix')) {
-        console.warn('⚠️ Validation failed before upsell/pix');
-        return; // Para aqui se estiver inválido
+        return;
     }
 
-    try {
-        // Check if upsell (Manual de Pintinhos) is already in cart
-        const upsellId = 'ebook-manejo';
-        const isUpsellInCart = cart.bumps && cart.bumps.includes(upsellId);
-
-        console.log('📊 Upsell check:', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
-
-        // If upsell NOT in cart, check global enabled flag from siteConfig
-        if (!isUpsellInCart) {
-            if (!isUpsellEnabled()) {
-                console.log('✅ Upsell disabled in panel, skipping to PIX generation');
-            } else {
-                console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
-                showSlideInUpsell('pix');
-                return; // STOP HERE - PIX will be generated when user accepts/rejects upsell
-            }
-        }
-
-        // If upsell already in cart or disabled, proceed directly to generate PIX
-        console.log('✅ Upsell already in cart, proceeding to PIX generation');
-        await processPixPayment();
-    } catch (error) {
-        console.error('❌ Error in startPixPayment:', error);
-        alert('Erro ao processar pagamento PIX: ' + error.message);
-    }
+    await processPixPayment();
 }
 
 async function processPixPayment() {
@@ -1315,42 +1131,16 @@ async function processPixPayment() {
     handlePayment('pix');
 }
 
-// --- 2. CARD PAYMENT (MODIFIED FOR UPSELL INTERCEPTION) ---
+// --- 2. CARD PAYMENT (Simplified) ---
 async function startCardPayment(event) {
     console.log('🔵 startCardPayment CALLED');
     if (event) event.preventDefault();
 
-    // NEW: VALIDAÇÃO ANTES DO UPSELL
     if (!validateCheckoutInputs('card')) {
-        console.warn('⚠️ Validation failed before upsell/card');
-        return; // Para aqui se estiver inválido
+        return;
     }
 
-    try {
-        // Check if upsell (Manual de Pintinhos) is already in cart
-        const upsellId = 'ebook-manejo';
-        const isUpsellInCart = cart.bumps && cart.bumps.includes(upsellId);
-
-        console.log('📊 Upsell check (Card):', { upsellId, isUpsellInCart, cartBumps: cart.bumps });
-
-        // If upsell NOT in cart, check global enabled flag from siteConfig
-        if (!isUpsellInCart) {
-            if (!isUpsellEnabled()) {
-                console.log('✅ Upsell disabled in panel, skipping to Card payment');
-            } else {
-                console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
-                showSlideInUpsell('card');
-                return; // STOP HERE - Card payment will be processed when user accepts/rejects upsell
-            }
-        }
-
-        // If upsell already in cart or disabled, proceed directly to process payment
-        console.log('✅ Upsell already in cart, proceeding to Card payment');
-        await processCardPayment();
-    } catch (error) {
-        console.error('❌ Error in startCardPayment:', error);
-        alert('Erro ao processar pagamento com cartão: ' + error.message);
-    }
+    await processCardPayment();
 }
 
 async function processCardPayment() {
@@ -1369,24 +1159,6 @@ async function processCardPayment() {
 
 // --- VALIDATION AND INTERCEPTION FUNCTIONS ---
 
-function isUpsellEnabled() {
-    // 1. Check if siteConfig exists at all
-    if (!window.siteConfig) {
-        console.warn('🛡️ [CONFIG] isUpsellEnabled: siteConfig not loaded yet, defaulting to false.');
-        return false;
-    }
-
-    // 2. Check global setting (Default to FALSE if not found or explicitly false)
-    const globalEnabled = window.siteConfig?.settings?.enableUpsell === true;
-    
-    // 3. Check specific product setting (Defaults to FALSE if product removed or disabled)
-    const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
-    const productEnabled = upsellProduct && upsellProduct.enabled !== false;
-    
-    const result = globalEnabled && productEnabled;
-    console.log('🛡️ [CONFIG] isUpsellEnabled result:', result, { globalEnabled, productEnabled });
-    return result;
-}
 
 function showToast(title, message, type = 'error') {
     const container = document.getElementById('toast-container');
