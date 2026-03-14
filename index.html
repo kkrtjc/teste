@@ -32,7 +32,6 @@
         /* === PERFORMANCE: Content Visibility for off-screen sections === */
         .guarantee-section,
         .urgency-bar,
-        .testimonial-section,
         .authority-section,
         .vsl-square-section + section {
             content-visibility: auto;
@@ -427,6 +426,12 @@
                 animation-duration: 120s;
             }
         }
+        /* Fix for flickering in low power mode */
+        .testimonial-track-original {
+            contain: layout paint;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
         .testimonial-card-single {
             flex-shrink: 0;
             width: auto; /* Allow auto width for a single row */
@@ -446,7 +451,46 @@
     <section class="bg-white" style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: var(--zinc-950); overflow: hidden;">
         <div class="testimonial-marquee-wrapper">
             <div class="testimonial-track-original" id="testimonials-track" style="color: var(--slate-100); font-family: var(--font-sans);">
-                <div style="text-align: center; padding: 5px; font-weight: bold; font-size: 0.75rem; width: 100%;">Carregando Depoimentos Reais...</div>
+                <!-- Pre-render first set of testimonials for instant perceived performance -->
+                <div class="testimonial-card-single">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/ricardo.jpg" alt="Ricardo Lima" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Ricardo Lima</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Londrina - PR</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico."</span>
+                </div>
+                <div class="testimonial-card-single">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/marcos.jpg" alt="Marcos Paulo" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Marcos Paulo</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Goiânia - GO</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Excelente material! Consegui curar 3 galos que já estavam no bico do corvo."</span>
+                </div>
+                <div class="testimonial-card-single">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; display: inline-block; vertical-align: middle;">
+                        <img src="carrosel/isabella.jpg" alt="Isabella Lima" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="display: inline-flex; flex-direction: column; justify-content: center; vertical-align: middle; margin: 0 10px;">
+                        <strong style="color: #fff; font-size: 0.8rem; line-height: 1;">Isabella Lima</strong>
+                        <span style="color: #9ca3af; font-size: 0.55rem; line-height: 1.2; text-transform: uppercase;">Florianópolis - SC</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #FFD700; display: inline-block; margin-right: 8px;">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <span style="color: rgba(255,255,255,0.85); font-size: 0.85rem; font-style: italic;">"Tinha galo com a perna torta, achei que ia morrer. O tratamento salvou e hoje ele tá perfeito."</span>
+                </div>
             </div>
         </div>
     </section>
