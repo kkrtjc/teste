@@ -1366,7 +1366,6 @@ async function startPixPayment(event) {
 async function processPixPayment() {
     console.log('🔵 processPixPayment CALLED');
     
-    // Use the unified validation
     if (!validateCheckoutInputs('pix')) {
         return;
     }
@@ -1416,52 +1415,16 @@ async function startCardPayment(event) {
 }
 
 async function processCardPayment() {
-    // PIXEL: Purchase will be fired in handlePayment upon success
+    console.log('🔵 processCardPayment CALLED');
 
-
-    const name = document.getElementById('payer-name').value;
-    const email = document.getElementById('payer-email').value;
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    if (!name || !email || !cpf || !phone) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
+    // NEW: Unified Validation instead of manual alerts
+    if (!validateCheckoutInputs('card')) {
+        console.warn('⚠️ Validation failed in processCardPayment');
         return;
     }
 
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return;
-    }
-
-    // Validações específicas para cartão
-    const cardNumber = document.getElementById('card-number')?.value?.trim();
-    const cardExpiration = document.getElementById('card-expiration')?.value?.trim();
-    const cardCvv = document.getElementById('card-cvv')?.value?.trim();
-    const cardHolder = document.getElementById('card-holder')?.value?.trim();
-
-    if (!cardNumber || !cardExpiration || !cardCvv || !cardHolder) {
-        alert('Por favor, preencha todos os dados do cartão.');
-        return false;
-    }
-
-    // If all validations pass, proceed with the original handlePayment('card') logic
+    // If all validations pass, proceed with original handlePayment('card') logic
+    console.log('✅ Validation passed! Proceeding to handlePayment(card)');
     handlePayment('card');
 }
 
