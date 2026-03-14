@@ -1064,6 +1064,8 @@ async function handlePayment(method) {
     // Adiciona bumps com preços corretos
     cart.bumps.forEach(id => {
         let b = cart.mainProduct.fullBumps?.find(x => x.id === id);
+        
+        // CORREÇÃO: Fallback idêntico ao updateTotal para garantir soma correta no PIX
         if (!b && id.startsWith('ebook-')) {
             const prod = window.siteConfig?.products?.[id] || prefetchedProducts[id];
             if (prod) {
@@ -1073,6 +1075,15 @@ async function handlePayment(method) {
                     price: prod.price,
                     priceCard: prod.originalPrice || prod.price
                 };
+            } else {
+                // Fallback de emergência (mesmo do updateTotal)
+                const fallbackPrice = id === 'ebook-manejo' ? 49.9 : 59.9;
+                b = { 
+                    id: id, 
+                    title: id === 'ebook-manejo' ? 'Manual de Pintinhos' : 'Ebook Adicional',
+                    price: fallbackPrice, 
+                    priceCard: id === 'ebook-manejo' ? 49.9 : 99.0 
+                };
             }
         }
 
@@ -1081,6 +1092,8 @@ async function handlePayment(method) {
             items.push({ id: b.id, title: b.title, price: bumpPrice });
         }
     });
+
+    console.log(`📦 [CHECKOUT] Payload Items (${method}):`, items);
 
     if (method === 'pix') {
         const btn = document.getElementById('btn-pay-pix');
@@ -1130,10 +1143,7 @@ async function handlePayment(method) {
                 showPixResult(data, items);
 
                 setTimeout(() => {
-                    const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
-                    const isUpsellEnabled = upsellProduct && upsellProduct.enabled !== false;
-                    
-                    if (midCheckoutUpsellPending && isUpsellEnabled && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
+                    if (midCheckoutUpsellPending && isUpsellEnabled() && !cart.bumps.includes('ebook-manejo') && cart.mainProduct.id !== 'combo-elite' && cart.mainProduct.id !== 'ebook-manejo') {
                         showSlideInUpsell('pix');
                     }
                 }, 2000);
@@ -1343,9 +1353,7 @@ async function startPixPayment(event) {
 
         // If upsell NOT in cart, check global enabled flag from siteConfig
         if (!isUpsellInCart) {
-            const isUpsellEnabled = window.siteConfig?.settings?.enableUpsell !== false;
-            
-            if (!isUpsellEnabled) {
+            if (!isUpsellEnabled()) {
                 console.log('✅ Upsell disabled in panel, skipping to PIX generation');
             } else {
                 console.log('🔔 Showing upsell modal (PIX will be generated after user decision)');
@@ -1394,9 +1402,7 @@ async function startCardPayment(event) {
 
         // If upsell NOT in cart, check global enabled flag from siteConfig
         if (!isUpsellInCart) {
-            const isUpsellEnabled = window.siteConfig?.settings?.enableUpsell !== false;
-
-            if (!isUpsellEnabled) {
+            if (!isUpsellEnabled()) {
                 console.log('✅ Upsell disabled in panel, skipping to Card payment');
             } else {
                 console.log('🔔 Showing upsell modal (Card payment will be processed after user decision)');
@@ -1429,6 +1435,19 @@ async function processCardPayment() {
 }
 
 // --- VALIDATION AND INTERCEPTION FUNCTIONS ---
+
+function isUpsellEnabled() {
+    // 1. Check global setting
+    const globalEnabled = window.siteConfig?.settings?.enableUpsell !== false;
+    
+    // 2. Check specific product setting
+    const upsellProduct = window.siteConfig?.products?.['ebook-manejo'];
+    const productEnabled = upsellProduct ? (upsellProduct.enabled !== false) : true;
+    
+    const result = globalEnabled && productEnabled;
+    console.log('🛡️ [CONFIG] isUpsellEnabled check:', { globalEnabled, productEnabled, result });
+    return result;
+}
 // Consolidated into the main function at bottom
 
 function interceptPaymentButton(callback) {
