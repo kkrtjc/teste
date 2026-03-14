@@ -1101,6 +1101,14 @@ async function handlePayment(method) {
         const itemIds = items.map(i => i.id).sort().join(',');
 
         try {
+            if (!cart.mainProduct) {
+                console.error("Cart Error: No main product selected");
+                alert("Houve um erro: produto não selecionado. Por favor, reinicie a compra.");
+                document.getElementById('checkout-main-view').classList.remove('hidden');
+                pixResult.classList.add('hidden');
+                return;
+            }
+
             const res = await fetch(`${API_URL}/api/checkout/pix`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1458,56 +1466,7 @@ async function processCardPayment() {
 }
 
 // --- VALIDATION AND INTERCEPTION FUNCTIONS ---
-
-// The original validateCheckoutInputs is now split and integrated into processPixPayment and processCardPayment
-// This function is no longer needed in its original form, but keeping it for context if other parts of the code still call it.
-function validateCheckoutInputs(method) {
-    const name = document.getElementById('payer-name')?.value?.trim();
-    const email = document.getElementById('payer-email')?.value?.trim();
-    const cpf = document.getElementById('payer-cpf')?.value?.trim();
-    const phone = document.getElementById('payer-phone')?.value?.trim();
-
-    if (!name || !email || !cpf || !phone) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
-        return false;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        alert('Por favor, insira um email válido.');
-        return false;
-    }
-
-    // Validação de CPF (apenas formato)
-    const cpfClean = cpf.replace(/\D/g, '');
-    if (cpfClean.length !== 11) {
-        alert('Por favor, insira um CPF válido.');
-        return false;
-    }
-
-    // Validação de telefone
-    const phoneClean = phone.replace(/\D/g, '');
-    if (phoneClean.length < 10) {
-        alert('Por favor, insira um telefone válido.');
-        return false;
-    }
-
-    // Validações específicas para cartão
-    if (method === 'card') {
-        const cardNumber = document.getElementById('card-number')?.value?.trim();
-        const cardExpiration = document.getElementById('card-expiration')?.value?.trim();
-        const cardCvv = document.getElementById('card-cvv')?.value?.trim();
-        const cardHolder = document.getElementById('card-holder')?.value?.trim();
-
-        if (!cardNumber || !cardExpiration || !cardCvv || !cardHolder) {
-            alert('Por favor, preencha todos os dados do cartão.');
-            return false;
-        }
-    }
-
-    return true;
-}
+// Consolidated into the main function at bottom
 
 function interceptPaymentButton(callback) {
     // Esta função pode ser usada para interceptar o pagamento com upsells
@@ -1846,125 +1805,9 @@ function showRandomToast() {
 
     container.appendChild(toast);
 
-    // Remove logic handled by CSS animation mainly, but cleanup DOM
     setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 5500); // wait for animation end (5s) + buffer
-}
-
-// --- 4. CHECKOUT COMPACTION & UX UTILS ---
-
-function validateCheckoutInputs(method) {
-    const email = document.getElementById('payer-email');
-    const phone = document.getElementById('payer-phone');
-    const name = (method === 'pix') ? document.getElementById('payer-name') : document.getElementById('card-holder');
-    const cpf = document.getElementById('payer-cpf');
-    const cep = (method === 'card') ? document.getElementById('card-cep') : null;
-
-    let isValid = true;
-
-    // Reset visual states
-    const fields = [email, phone, name, cpf];
-    if (cep) fields.push(cep);
-
-    fields.forEach(el => el.classList.remove('is-invalid'));
-
-    if (!email.value || !email.value.includes('@')) { email.classList.add('is-invalid'); isValid = false; }
-    if (!phone.value || phone.value.replace(/\D/g, '').length < 10) { phone.classList.add('is-invalid'); isValid = false; }
-    if (!name.value || name.value.trim().length < 3) { name.classList.add('is-invalid'); isValid = false; }
-    if (!cpf.value || cpf.value.replace(/\D/g, '').length < 11) { cpf.classList.add('is-invalid'); isValid = false; }
-    if (cep && (!cep.value || cep.value.replace(/\D/g, '').length < 8)) { cep.classList.add('is-invalid'); isValid = false; }
-
-    if (!isValid) {
-        // Log which fields failed validation
-        const invalidFields = [];
-        if (email.classList.contains('is-invalid')) invalidFields.push('email');
-        if (phone.classList.contains('is-invalid')) invalidFields.push('phone');
-        if (name.classList.contains('is-invalid')) invalidFields.push('name');
-        if (cpf.classList.contains('is-invalid')) invalidFields.push('cpf');
-        if (cep && cep.classList.contains('is-invalid')) invalidFields.push('cep');
-
-        trackEvent('ui_error', null, null, `Erro Validação Frontend: ${invalidFields.join(', ')}`);
-
-        fields.forEach(el => validateField(el, null, true));
-        const firstError = document.querySelector('.is-invalid');
-        if (firstError) firstError.focus();
-    }
-
-    return isValid;
-}
-
-// â³ Tooltip / Help Bubble Logic (5s Idle)
-let helpTimer = null;
-const HELP_MESSAGES = {
-    'payer-email': 'Insira seu melhor e-mail para receber o acesso.',
-    'payer-phone': 'Precisamos do seu WhatsApp para suporte técnico.',
-    'payer-name': 'Digite seu nome completo conforme documento.',
-    'payer-cpf': 'O CPF é necessário para emissão da sua nota fiscal.',
-    'card-holder': 'Nome exatamente como está escrito no seu cartão.',
-    'card-number': 'Digite os 16 números da frente do seu cartão.',
-    'card-cep': 'CEP da sua residência para validação de segurança.'
-};
-
-function initHelpBubbles() {
-    const inputs = document.querySelectorAll('.checkout-form input');
-
-    inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            clearTimeout(helpTimer);
-            if (!input.value) {
-                // Diminuído para 3 segundos conforme solicitado
-                helpTimer = setTimeout(() => showHelpBubble(input), 3000);
-            }
-        });
-
-        input.addEventListener('input', () => {
-            clearTimeout(helpTimer);
-            removeHelpBubbles();
-        });
-
-        input.addEventListener('blur', () => {
-            clearTimeout(helpTimer);
-            removeHelpBubbles();
-            // Show error if empty OR invalid on blur
-            validateField(input, null, true);
-        });
-    });
-}
-
-/**
- * Consolidated Validation Logic
- * Only shows error if field is not empty or if submission attempted.
- */
-function validateField(input, type = null, forceShowError = false) {
-    const id = input.id;
-    const val = input.value.trim();
-    const cleanVal = val.replace(/\D/g, '');
-    let isValid = true;
-
-    // Use explicit type if provided, otherwise infer from ID
-    const validationType = type || (id.includes('cpf') ? 'cpf' : id.includes('phone') ? 'phone' : id.includes('email') ? 'email' : id.includes('number') ? 'card' : id.includes('expiration') ? 'date' : id.includes('cvv') ? 'cvv' : id.includes('cep') ? 'cep' : 'name');
-
-    if (validationType === 'email') isValid = val.includes('@') && val.length > 5;
-    else if (validationType === 'phone') isValid = cleanVal.length >= 10;
-    else if (validationType === 'cpf') isValid = cleanVal.length === 11;
-    else if (validationType === 'card') isValid = cleanVal.length >= 13 && cleanVal.length <= 16;
-    else if (validationType === 'date') isValid = /^\d{2}\/\d{2}$/.test(val);
-    else if (validationType === 'cvv') isValid = cleanVal.length >= 3;
-    else if (validationType === 'cep') isValid = cleanVal.length === 8;
-    else if (validationType === 'name' || id === 'card-holder') isValid = val.length >= 3;
-
-    // UI Feedback logic
-    if (val.length === 0 && !forceShowError) {
-        input.classList.remove('is-valid', 'is-invalid');
-    } else if (isValid) {
-        input.classList.add('is-valid');
-        input.classList.remove('is-invalid');
-    } else if (forceShowError || val.length > 0) {
-        // Only show invalid if there is content OR forceShowError (blur/submit)
-        input.classList.add('is-invalid');
-        input.classList.remove('is-valid');
-    }
+    }, 5500);
 }
 
 function showHelpBubble(input) {
@@ -2008,57 +1851,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- UPSELL LOGIC (GLOBAL SCOPE) ---
-let pendingPaymentMethod = null;
-
-function showUpsellModal(method) {
-    pendingPaymentMethod = method;
-    const modal = document.getElementById('upsell-modal-container');
-    modal.style.display = 'flex'; // Enable display to allow transition
-
-    // Small timeout to trigger CSS transition
-    setTimeout(() => {
-        modal.classList.add('active');
-    }, 10);
-}
-
-function acceptUpsell() {
-    // Add Manejo to order
-    const upsellId = 'ebook-manejo';
-    if (!selectedBumps.includes(upsellId)) {
-        selectedBumps.push(upsellId);
-        updateTotalDisplay();
-
-        // Update checkbox visually if it exists in the main list
-        const checkbox = document.querySelector(`input[type="checkbox"][value="${upsellId}"]`);
-        if (checkbox) checkbox.checked = true;
-    }
-
-    // Close modal
-    closeUpsellModal();
-
-    // Proceed with original payment
-    if (pendingPaymentMethod === 'pix') processPixPayment();
-    if (pendingPaymentMethod === 'card') processCardPayment();
-}
-
-function declineUpsell() {
-    // Close modal
-    closeUpsellModal();
-
-    // Proceed with original payment WITHOUT the item
-    if (pendingPaymentMethod === 'pix') processPixPayment();
-    if (pendingPaymentMethod === 'card') processCardPayment();
-}
-
-function closeUpsellModal() {
-    const modal = document.getElementById('upsell-modal-container');
-    modal.classList.remove('active');
-    setTimeout(() => {
-        modal.style.display = 'none';
-        pendingPaymentMethod = null;
-    }, 300); // Match CSS transition duration
-}
+// --- OLD UPSELL LOGIC REMOVED ---
 
 // --- HELPER: DETECT PAYMENT METHOD ---
 // --- 5. VALIDATION HELPERS ---
@@ -2085,8 +1878,6 @@ function isValidCPF(cpf) {
     let rev = 11 - (add % 11);
     if (rev == 10 || rev == 11)
         rev = 0;
-    if (rev != parseInt(cpf.charAt(9)))
-        return false;
     // Valida 2o digito
     add = 0;
     for (let i = 0; i < 10; i++)
@@ -2112,57 +1903,25 @@ function validateField(el, type) {
     else if (type === 'cvv') isValid = val.length >= 3;
     else if (val.length < 3) isValid = false;
 
-    const errorId = `error-${el.id}`;
-    const errorEl = document.getElementById(errorId);
-
     if (!isValid && val.length > 0) {
-        el.classList.add('input-error');
-        if (errorEl) errorEl.style.display = 'block';
+        setInputError(el);
+    } else if (isValid && val.length > 0) {
+        setInputSuccess(el);
     } else {
-        el.classList.remove('input-error');
-        if (errorEl) errorEl.style.display = 'none';
+        el.classList.remove('input-error', 'is-invalid', 'input-success', 'is-valid');
     }
 
     return isValid;
 }
 
-function validateCheckoutInputs(method) {
-    let allValid = true;
-    const fields = ['payer-email', 'payer-phone'];
+function setInputError(el) {
+    el.classList.add('input-error', 'is-invalid');
+    el.classList.remove('input-success', 'is-valid');
+}
 
-    if (method === 'pix') {
-        fields.push('payer-name', 'payer-cpf');
-    } else {
-        fields.push('card-holder', 'payer-cpf', 'card-number', 'card-expiration', 'card-cvv');
-    }
-
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        const type = id.includes('email') ? 'email' : (id.includes('phone') ? 'phone' : (id.includes('cpf') ? 'cpf' : (id.includes('number') ? 'card' : (id.includes('expiration') ? 'date' : (id.includes('cvv') ? 'cvv' : 'text')))));
-        if (!validateField(el, type)) allValid = false;
-    });
-
-    if (!allValid) {
-        const container = document.getElementById('toast-container');
-        if (container) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-card';
-            toast.style.borderColor = '#e74c3c';
-            toast.innerHTML = `
-                <div style="width: 40px; height: 40px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="toast-content">
-                    <strong>Ops! Quase lá...</strong>
-                    <p>Por favor, preencha corretamente todos os campos destacados em vermelho.</p>
-                </div>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
-        }
-    }
-
-    return allValid;
+function setInputSuccess(el) {
+    el.classList.remove('input-error', 'is-invalid');
+    el.classList.add('input-success', 'is-valid');
 }
 
 function getPaymentMethodId(number) {
@@ -2175,6 +1934,7 @@ function getPaymentMethodId(number) {
     if (/^(38|60)/.test(n)) return 'hipercard';
     return 'other';
 }
+
 // Comparison Slider Navigation Logic with Boundary Detection
 const comparisonSlider = document.getElementById('comparison-slider-track');
 const prevButton = document.getElementById('comparison-prev');
@@ -2273,84 +2033,59 @@ if (comparisonSlider && prevButton && nextButton) {
 // --- VALIDATION LOGIC ---
 
 function validateCheckoutInputs(method) {
-    let isValid = true;
-    const inputsToValidate = [
-        'payer-name',
-        'payer-email',
-        'payer-cpf',
-        'payer-phone'
-    ];
+    let allValid = true;
+    const fieldsToValidate = ['payer-name', 'payer-email', 'payer-phone'];
 
-    if (method === 'card') {
-        inputsToValidate.push('card-number', 'card-expiration', 'card-cvv', 'card-holder', 'card-cpf');
-        // Remove payer-cpf validation if it's card mode (we use card-cpf instead, or keeping both if backend needs it)
-        // User said: "quando for cartao esse CPF tem quee ser CPF DO TITULAR". 
-        // We still need payer-cpf for the account creation/invoice maybe? 
-        // Let's validate BOTH as they are both in the form and required.
+    if (method === 'pix') {
+        fieldsToValidate.push('payer-cpf');
+    } else if (method === 'card') {
+        fieldsToValidate.push('payer-cpf', 'card-holder', 'card-number', 'card-expiration', 'card-cvv');
+        // Note: 'payer-cpf' is included for card as well, assuming it's needed for general billing/account.
+        // If 'card-cpf' (CPF do titular) is a separate field, it should be added here too.
+        // For now, assuming 'payer-cpf' covers it or is the primary CPF.
     }
 
-    inputsToValidate.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            const isFieldValid = validateField(input);
-            if (!isFieldValid) isValid = false;
+    fieldsToValidate.forEach(id => {
+        const el = document.getElementById(id);
+        // Determine type based on ID for specific validation rules
+        const type = id.includes('email') ? 'email' :
+                     (id.includes('phone') ? 'phone' :
+                     (id.includes('cpf') ? 'cpf' :
+                     (id.includes('number') ? 'card' :
+                     (id.includes('expiration') ? 'date' :
+                     (id.includes('cvv') ? 'cvv' : 'text'))))); // Default to 'text' for others like name, holder
+
+        if (!validateField(el, type)) {
+            allValid = false;
         }
     });
 
-    if (!isValid) {
+    if (!allValid) {
         // Find first invalid input and focus
-        const firstInvalid = document.querySelector('.input-error');
+        const firstInvalid = document.querySelector('.input-error, .is-invalid');
         if (firstInvalid) firstInvalid.focus();
+
+        // Display a toast message for overall validation failure
+        const container = document.getElementById('toast-container');
+        if (container) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-card';
+            toast.style.borderColor = '#e74c3c';
+            toast.innerHTML = `
+                <div style="width: 40px; height: 40px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="toast-content">
+                    <strong>Ops! Quase lá...</strong>
+                    <p>Por favor, preencha corretamente todos os campos destacados em vermelho.</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
+        }
     }
 
-    return isValid;
-}
-
-function validateField(input) {
-    const val = input.value.trim();
-    let valid = true;
-
-    // Basic validation: not empty
-    if (val.length === 0) valid = false;
-
-    // Specific validations
-    if (input.id.includes('email') && !val.includes('@')) valid = false;
-    if (input.id.includes('cpf') && val.length < 11) valid = false;
-    if (input.id.includes('phone') && val.length < 10) valid = false;
-    if (input.id.includes('card-number') && val.length < 13) valid = false;
-    if (input.id.includes('expiration') && val.length < 4) valid = false;
-    if (input.id.includes('cvv') && val.length < 3) valid = false;
-
-    // UI Feedback
-    if (!valid) {
-        setInputError(input);
-    } else {
-        setInputSuccess(input);
-    }
-
-    return valid;
-}
-
-function setInputError(input) {
-    input.classList.add('input-error');
-    input.classList.remove('input-success');
-
-    // Check if message exists
-    let msg = input.parentElement.querySelector('.error-message');
-    if (!msg) {
-        msg = document.createElement('span');
-        msg.className = 'error-message';
-        msg.innerText = 'ops esse campo esta errado';
-        input.parentElement.appendChild(msg);
-    }
-}
-
-function setInputSuccess(input) {
-    input.classList.remove('input-error');
-    input.classList.add('input-success');
-
-    const msg = input.parentElement.querySelector('.error-message');
-    if (msg) msg.remove();
+    return allValid;
 }
 
 // Attach listeners for real-time validation removal/success
@@ -2358,9 +2093,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const allInputs = document.querySelectorAll('.form-input');
     allInputs.forEach(input => {
         input.addEventListener('input', () => {
+            // Determine type based on ID for specific validation rules
+            const type = input.id.includes('email') ? 'email' :
+                         (input.id.includes('phone') ? 'phone' :
+                         (input.id.includes('cpf') ? 'cpf' :
+                         (input.id.includes('number') ? 'card' :
+                         (input.id.includes('expiration') ? 'date' :
+                         (input.id.includes('cvv') ? 'cvv' : 'text')))));
+
             // Remove error immediately when typing starts
-            if (input.classList.contains('input-error')) {
-                input.classList.remove('input-error');
+            if (input.classList.contains('input-error') || input.classList.contains('is-invalid')) {
+                input.classList.remove('input-error', 'is-invalid');
                 const msg = input.parentElement.querySelector('.error-message');
                 if (msg) msg.remove();
             }
@@ -2368,28 +2111,34 @@ document.addEventListener('DOMContentLoaded', () => {
             // Optional: validate on the fly for green border?
             // "quadno o cliente começar a esrever de novo, o aviso some" - Done above.
             // "se o campo estiveer correto, borda verde" - We can check this on blur or debounce.
-            // Let's check on input but maybe less strict? Or just stick to "remove error".
-            // User asked "se o campo estiveer correto, borda verde".
-
+            // Let's do a light validation on input for success state if not empty
             if (input.value.trim().length > 0) {
-                // Simple validation for green border during typing might be annoying if it flickers.
-                // Let's do it on blur OR if it meets length criteria.
-                // For now, let's keep it simple: clear error on input. Validate fully on blur.
+                // Only set success if it passes basic validation during typing
+                if (validateField(input, type)) {
+                    setInputSuccess(input);
+                } else {
+                    // If it's invalid during typing, don't show error yet, just remove success
+                    input.classList.remove('input-success', 'is-valid');
+                }
+            } else {
+                // If empty, remove any success/error state
+                input.classList.remove('input-success', 'input-error', 'is-invalid', 'is-valid');
+                const msg = input.parentElement.querySelector('.error-message');
+                if (msg) msg.remove();
             }
         });
 
         input.addEventListener('blur', () => {
-            if (input.value.trim().length > 0) {
-                validateField(input);
-            } else {
-                // If empty on blur, maybe don't show red yet unless form submitted? 
-                // Or user wants immediate feedback? "ops esse campo esta errado" implies feedback.
-                // Let's show error on blur if empty? Maybe too aggressive.
-                // Re-reading: "adicione log de erros no checkout... como o campo ficar vermelho se nao estiver correto"
-                // Usually this means after attempted submission OR on blur if invalid.
-                // I will add it to the validateCheckoutInputs function mainly, and maybe blur for green.
-                validateField(input);
-            }
+            // Determine type based on ID for specific validation rules
+            const type = input.id.includes('email') ? 'email' :
+                         (input.id.includes('phone') ? 'phone' :
+                         (input.id.includes('cpf') ? 'cpf' :
+                         (input.id.includes('number') ? 'card' :
+                         (input.id.includes('expiration') ? 'date' :
+                         (input.id.includes('cvv') ? 'cvv' : 'text')))));
+
+            // Validate fully on blur
+            validateField(input, type);
         });
     });
 

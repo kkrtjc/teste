@@ -1091,15 +1091,14 @@
                     /* Para posicionar o tooltip */
 
                     /* Validation Styles */
-                    .form-input.input-error {
+                    .form-input.input-error, .form-input.is-invalid {
                         border-color: #ef4444 !important;
-                        /* Red */
                         background-color: #fef2f2 !important;
+                        box-shadow: 0 0 0 1px #ef4444 inset !important;
                     }
 
-                    .form-input.input-success {
+                    .form-input.input-success, .form-input.is-valid {
                         border-color: #22c55e !important;
-                        /* Green */
                         background-color: #f0fdf4 !important;
                     }
 
@@ -1107,10 +1106,45 @@
                         color: #ef4444;
                         font-size: 0.7rem;
                         font-weight: 700;
-                        margin-top: -4px;
+                        margin-top: 2px;
                         margin-bottom: 4px;
                         display: block;
                         animation: fadeIn 0.3s ease;
+                    }
+
+                    /* Help Bubbles */
+                    .mura-help-bubble {
+                        position: absolute;
+                        background: #1e293b;
+                        color: #fff;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                        font-size: 0.75rem;
+                        bottom: 100%;
+                        left: 50%;
+                        transform: translateX(-50%) translateY(-10px);
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        z-index: 100;
+                        width: max-content;
+                        max-width: 200px;
+                        pointer-events: none;
+                        animation: bubbleFadeIn 0.3s ease forwards;
+                    }
+
+                    .mura-help-bubble::after {
+                        content: '';
+                        position: absolute;
+                        top: 100%;
+                        left: 50%;
+                        margin-left: -6px;
+                        border-width: 6px;
+                        border-style: solid;
+                        border-color: #1e293b transparent transparent transparent;
+                    }
+
+                    @keyframes bubbleFadeIn {
+                        from { opacity: 0; transform: translateX(-50%) translateY(0); }
+                        to { opacity: 1; transform: translateX(-50%) translateY(-10px); }
                     }
 
                     @keyframes fadeIn {
