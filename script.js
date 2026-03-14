@@ -1387,7 +1387,72 @@ function isUpsellEnabled() {
     console.log('🛡️ [CONFIG] isUpsellEnabled result:', result, { globalEnabled, productEnabled });
     return result;
 }
-// Consolidated into the main function at bottom
+
+function showToast(title, message, type = 'error') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-card';
+    if (type === 'success') toast.style.borderColor = '#2ecc71';
+    
+    toast.innerHTML = `
+        <div style="width: 40px; height: 40px; background: ${type === 'success' ? '#2ecc71' : '#ef4444'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+            <i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-triangle-exclamation'}"></i>
+        </div>
+        <div class="toast-content">
+            <h4>${title}</h4>
+            <p>${message}</p>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+}
+
+function validateCheckoutInputs(method) {
+    console.log('🔍 [VALIDATE] Inicando validação para:', method);
+    
+    const name = document.getElementById(method === 'pix' ? 'payer-name' : 'card-holder');
+    const email = document.getElementById('payer-email');
+    const phone = document.getElementById('payer-phone');
+    const cpf = document.getElementById('payer-cpf');
+
+    if (!validateField(name, 'text')) { 
+        showToast('Nome incompleto', 'Por favor, informe seu nome completo para emissão da nota.'); 
+        name.focus();
+        return false; 
+    }
+    if (!validateField(email, 'email')) { 
+        showToast('E-mail inválido', 'Precisamos de um e-mail válido para enviar seu acesso.'); 
+        email.focus();
+        return false; 
+    }
+    if (!validateField(phone, 'phone')) { 
+        showToast('Telefone inválido', 'Informe um telefone com DDD para suporte via WhatsApp.'); 
+        phone.focus();
+        return false; 
+    }
+    if (!validateField(cpf, 'cpf')) { 
+        showToast('CPF Inválido', 'O CPF é obrigatório para processar o pagamento com segurança.'); 
+        cpf.focus();
+        return false; 
+    }
+
+    if (method === 'card') {
+        const number = document.getElementById('card-number');
+        const expiry = document.getElementById('card-expiration');
+        const cvv = document.getElementById('card-cvv');
+        const cep = document.getElementById('card-cep');
+
+        if (!validateField(number, 'card')) { showToast('Cartão Inválido', 'Verifique o número do cartão impresso na frente.'); number.focus(); return false; }
+        if (!validateField(expiry, 'date')) { showToast('Validade Expirada/Incorreta', 'A validade deve estar no formato MM/AA.'); expiry.focus(); return false; }
+        if (!validateField(cvv, 'cvv')) { showToast('Código CVV', 'O código de 3 dígitos atrás do cartão está incorreto.'); cvv.focus(); return false; }
+        if (!validateField(cep, 'cep')) { showToast('CEP Inválido', 'Informe o CEP de cobrança do cartão.'); cep.focus(); return false; }
+    }
+
+    console.log('✅ [VALIDATE] Tudo certo!');
+    return true;
+}
 
 function interceptPaymentButton(callback) {
     // Esta função pode ser usada para interceptar o pagamento com upsells
