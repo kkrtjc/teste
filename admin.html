@@ -628,13 +628,20 @@
             color: #fff;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 600px) {
             #mobile-menu-btn {
                 display: block;
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                width: 55px;
+                height: 55px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                font-size: 1.5rem;
             }
 
             .sidebar {
@@ -642,6 +649,7 @@
                 left: -300px;
                 transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                 box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
+                width: 280px;
             }
 
             .sidebar.mobile-active {
@@ -653,28 +661,76 @@
             }
 
             .main-content {
-                padding: 20px;
+                padding: 15px;
+                overflow-x: hidden;
             }
 
             .dashboard-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .stat-card .value {
+                font-size: 1.8rem;
+            }
+
+            .ai-assistant-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+                padding: 20px;
+                margin-bottom: 25px;
+            }
+
+            .ai-avatar {
+                margin: 0 auto;
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .ai-content {
+                width: 100%;
+            }
+
+            .ai-message {
+                font-size: 0.88rem;
+            }
+
+            .funnel-container {
+                padding: 25px 15px;
             }
 
             .funnel-row {
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 15px;
+            }
+
+            .funnel-circle {
+                width: 50px;
+                height: 50px;
+                font-size: 1.1rem;
+                margin-bottom: 8px;
+            }
+
+            .funnel-val {
+                font-size: 1rem;
             }
 
             .connector-line {
                 width: 2px;
-                height: 30px;
+                height: 25px;
             }
 
             .top-bar {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
+                align-items: stretch;
+                gap: 10px;
             }
 
             .glass-date-picker {
@@ -685,33 +741,17 @@
             .table-container {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                margin: 0 -15px;
+                border-radius: 0;
             }
 
             table {
-                min-width: 600px;
+                min-width: 700px;
             }
 
-            .ai-assistant-card {
-                flex-direction: column;
-                text-align: center;
-                padding: 20px;
-            }
-
-            .ai-avatar {
-                margin: 0 auto;
-            }
-
-            .date-filter-wrapper {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .quick-ranges {
-                justify-content: center;
-            }
-
-            .product-grid {
-                grid-template-columns: 1fr;
+            .login-glass-card {
+                padding: 30px 20px;
+                width: 95%;
             }
         }
 
@@ -2801,20 +2841,21 @@
 
             const startEl = document.getElementById('filter-start');
             const endEl = document.getElementById('filter-end');
-            const now = new Date();
+            const d = new Date();
+            const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             let start = '';
-            let end = now.toISOString().split('T')[0];
+            let end = today;
 
             if (range === 'today') {
                 start = end;
             } else if (range === '7d') {
-                const d = new Date();
-                d.setDate(d.getDate() - 7);
-                start = d.toISOString().split('T')[0];
+                const prev = new Date();
+                prev.setDate(prev.getDate() - 7);
+                start = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
             } else if (range === '30d') {
-                const d = new Date();
-                d.setDate(d.getDate() - 30);
-                start = d.toISOString().split('T')[0];
+                const prev = new Date();
+                prev.setDate(prev.getDate() - 30);
+                start = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
             }
 
             startEl.value = start;
@@ -2849,25 +2890,26 @@
             } else if (dashboardSelect) {
                 range = dashboardSelect.value;
             }
-            const now = new Date();
+            const d = new Date();
+            const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             let start = '';
-            let end = now.toISOString().split('T')[0];
+            let end = today;
 
             if (range === 'today') {
                 start = end;
             } else if (range === 'yesterday') {
-                const d = new Date();
-                d.setDate(d.getDate() - 1);
-                start = d.toISOString().split('T')[0];
+                const y = new Date();
+                y.setDate(y.getDate() - 1);
+                start = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
                 end = start;
             } else if (range === '7d') {
-                const d = new Date();
-                d.setDate(d.getDate() - 7);
-                start = d.toISOString().split('T')[0];
+                const s = new Date();
+                s.setDate(s.getDate() - 7);
+                start = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
             } else if (range === '30d') {
-                const d = new Date();
-                d.setDate(d.getDate() - 30);
-                start = d.toISOString().split('T')[0];
+                const s = new Date();
+                s.setDate(s.getDate() - 30);
+                start = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
             }
             // 'all' leaves start as empty string
 

@@ -433,6 +433,31 @@
             font-size: 0.9rem;
             color: #ffab00;
         }
+
+        /* Watermark Logo */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 55%; /* Centered relative to main content area roughly */
+            transform: translate(-50%, -50%);
+            width: 50vw;
+            height: 50vh;
+            background-image: url('logo.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Chapter Header Image Resize */
+        .chapter-header-image {
+            max-width: 500px !important;
+            margin: 0 auto 2rem auto !important;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -477,7 +502,10 @@
                     <i class="fa-solid fa-bug"></i> Parasitárias
                 </a>
                 <a href="#" class="nav-item" onclick="showSection('nutricionais')">
-                    <i class="fa-solid fa-apple-whole"></i> Nutricionais
+                    <i class="fa-solid fa-apple-whole"></i> Condições Nutricionais
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('peitoseco')">
+                    <i class="fa-solid fa-ribbon"></i> Peito Seco (Quilha)
                 </a>
             </div>
 
@@ -600,7 +628,7 @@
             <section id="respiratorias" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Respiratórias</h3>
                 <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <img src="img_respiratorias.jpeg" alt="Doenças Respiratórias" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                    <img src="img_respiratorias.jpeg" alt="Doenças Respiratórias" class="chapter-header-image" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
                 </div>
                 
                 <div class="disease-card">
@@ -610,22 +638,24 @@
                             <h2>Bronquite Infecciosa (IBV)</h2>
                         </div>
                     </div>
-                    <img src="ibv_disease.png" alt="Sintomas de Bronquite Infecciosa" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem; object-fit: cover; border: 1px solid var(--border-color);">
                     <div class="disease-grid">
                         <div class="info-block symptoms">
                             <h3><i class="fa-solid fa-eye"></i> Sintomas</h3>
-                            <p>Espirros, tosse, respiração ruidosa, secreção nasal e ocular. Em poedeiras: queda na produção, casca mole ou deformada.</p>
+                            <p>Espirros, tosse, respiração ruidosa, secreção nasal e ocular. Em poedeiras: queda na produção e ovos deformados.</p>
                         </div>
                         <div class="info-block prevention">
                             <h3><i class="fa-solid fa-shield-virus"></i> Prevenção</h3>
-                            <p>Vacinação é a principal medida. Biosseguridade rigorosa e evitar contato com aves silvestres.</p>
+                            <p>Vacinação regular e biosseguridade rigorosa. Evitar contato com aves silvestres.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
-                            <p>Tratamento de suporte. Antibióticos para infecções secundárias:</p>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <button class="copy-btn" onclick="copyText('Tilosina 15mg/kg por 3-5 dias')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Tilosina (Tylan): 15mg/kg (via oral) por 3 a 5 dias.</code>
+                                <button class="copy-btn" onclick="copyText('Tilosina (Tylan): 15mg/kg por 3-5 dias (Via Oral)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Tilosina (Tylan): 15mg/kg por 3-5 dias.</code>
+                            </div>
+                            <div class="treatment-box" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyText('Enrofloxacino (Chimetril): 10mg/kg por 5-7 dias (Via Oral)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Enrofloxacino (Chimetril): 10mg/kg por 5-7 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -638,22 +668,24 @@
                             <h2>Coriza Infecciosa</h2>
                         </div>
                     </div>
-                    <img src="coriza_disease.png" alt="Sintomas de Coriza Infecciosa" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem; object-fit: cover; border: 1px solid var(--border-color);">
                     <div class="disease-grid">
                         <div class="info-block symptoms">
                             <h3><i class="fa-solid fa-eye"></i> Sintomas</h3>
-                            <p>Secreção nasal fétida, inchaço severo da face e olhos, lacrimejamento e dificuldade respiratória.</p>
+                            <p>Secreção nasal fétida, inchaço severo da face e olhos, espirros e lacrimejamento intenso.</p>
                         </div>
                         <div class="info-block prevention">
                             <h3><i class="fa-solid fa-shield-virus"></i> Prevenção</h3>
-                            <p>Vacinação em áreas de risco. Isolamento de aves doentes e desinfecção total do galinheiro.</p>
+                            <p>Vacinação em áreas de risco. Isolamento de aves doentes e quarentena para novas aves.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
-                            <p>Antibióticos são eficazes se administrados no início:</p>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <button class="copy-btn" onclick="copyText('Enrofloxacino 10mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Enrofloxacino: 10mg/kg (via oral) por 5 a 7 dias.</code>
+                                <button class="copy-btn" onclick="copyText('Enrofloxacino (Baytril): 10mg/kg por 5-7 dias (Via Oral)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Enrofloxacino (Baytril): 10mg/kg por 5-7 dias.</code>
+                            </div>
+                            <div class="treatment-box" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyText('Tilosina (Tylan): 15mg/kg por 3-5 dias (Via Oral)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Tilosina (Tylan): 15mg/kg por 3-5 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -755,10 +787,14 @@
                             <p>Evitar superlotação. Vacinação considerada para plantéis com histórico.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <button class="copy-btn" onclick="copyText('Enrofloxacina 10mg/kg por 5 dias')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Enrofloxacina (Baytril): 10 mg/kg por 5 dias.</code>
+                                <button class="copy-btn" onclick="copyText('Enrofloxacina (Baytril): 10mg/kg por 5 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Enrofloxacina (Baytril): 10mg/kg por 5 dias.</code>
+                            </div>
+                            <div class="treatment-box" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyText('Doxiciclina: 15mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Doxiciclina: 15mg/kg por 5-7 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -770,7 +806,7 @@
             <section id="virais" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Virais Sistêmicas</h3>
                 <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <img src="img_virais.jpeg" alt="Doenças Virais Sistêmicas" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                    <img src="img_virais.jpeg" alt="Doenças Virais Sistêmicas" class="chapter-header-image" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
                 </div>
                 
                 <div class="disease-card">
@@ -912,7 +948,7 @@
             <section id="bacterianas" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Bacterianas</h3>
                 <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <img src="img_bacterianas.jpeg" alt="Doenças Bacterianas" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                    <img src="img_bacterianas.jpeg" alt="Doenças Bacterianas" class="chapter-header-image" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
                 </div>
                 
                 <div class="disease-card">
@@ -932,13 +968,14 @@
                             <p>Controle de roedores e insetos. Limpeza rigorosa e aquisição de aves de plantéis certificados livres de Salmonella.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
-                            <p>Antibióticos reduzem sintomas, mas a ave pode continuar portadora:</p>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <code>Enrofloxacina: 10mg/kg por 5-7 dias (Via Oral).</code>
+                                <button class="copy-btn" onclick="copyText('Enrofloxacina (Baytril): 10mg/kg por 5-7 dias (Via Oral)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Enrofloxacina (Baytril): 10mg/kg por 5-7 dias.</code>
                             </div>
                             <div class="treatment-box" style="margin-top: 5px;">
-                                <code>Bactrim Veterinário: 30mg/kg por 5-7 dias (Via Oral).</code>
+                                <button class="copy-btn" onclick="copyText('Sulfametoxazol + Trimetoprim (Bactrim): 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Sulfametoxazol + Trimetoprim: 30mg/kg por 5-7 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -961,15 +998,14 @@
                             <p>Vacinação em áreas de risco. Boas práticas de biosseguridade, controle de roedores e aves silvestres. Evitar estresse e isolar aves doentes.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
-                            <p>Eficaz se administrado no início da doença. Isolar as aves, manter ambiente aquecido e fornecer vitaminas:</p>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <button class="copy-btn" onclick="copyText('Oxitetraciclina 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Oxitetraciclina: 30 mg/kg por 5-7 dias (Via Oral).</code>
+                                <button class="copy-btn" onclick="copyText('Oxitetraciclina (Terramicina): 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Oxitetraciclina: 30mg/kg por 5-7 dias.</code>
                             </div>
                             <div class="treatment-box" style="margin-top: 5px;">
-                                <button class="copy-btn" onclick="copyText('Bactrim Veterinário 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Bactrim Veterinário: 30 mg/kg por 5-7 dias (Via Oral).</code>
+                                <button class="copy-btn" onclick="copyText('Sulfametoxazol + Trimetoprim (Bactrim): 30mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Sulfametoxazol + Trimetoprim: 30mg/kg por 5-7 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -992,10 +1028,14 @@
                             <p>Qualidade da água, ventilação e controle de amônia/poeira no ambiente.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <button class="copy-btn" onclick="copyText('Gentamicina 5mg/kg por 3 dias (Via Muscular)')"><i class="fa-solid fa-copy"></i></button>
-                                <code>Gentamicina: 5mg/kg por 3 dias (Via Intramuscular).</code>
+                                <button class="copy-btn" onclick="copyText('Enrofloxacina (Baytril): 10mg/kg por 5-7 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Enrofloxacina (Baytril): 10mg/kg por 5-7 dias.</code>
+                            </div>
+                            <div class="treatment-box" style="margin-top: 5px;">
+                                <button class="copy-btn" onclick="copyText('Gentamicina: 5mg/kg por 3 dias (Via Muscular)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Gentamicina: 5mg/kg por 3 dias (Injetável).</code>
                             </div>
                         </div>
                     </div>
@@ -1031,12 +1071,40 @@
                     </div>
                 </div>
             </section>
+            <!-- Peito Seco Chapter (Separate as requested) -->
+            <section id="peitoseco" class="disease-section">
+                <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Peito Seco (Atrofia Muscular)</h3>
+                <div class="disease-card">
+                    <div class="disease-header">
+                        <div class="disease-title">
+                            <span class="category-badge">Sintoma Grave</span>
+                            <h2>Peito Seco (Quilha)</h2>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <img src="peito_seco_page_34.png" alt="Sintoma de Peito Seco" style="max-width: 350px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-premium);">
+                    </div>
+                    <div class="info-block symptoms">
+                        <h3><i class="fa-solid fa-triangle-exclamation"></i> O que é?</h3>
+                        <p>O "peito seco" não é uma doença em si, mas um sintoma grave de que a ave está definhando. O osso do peito (quilha) torna-se saliente e a musculatura atrofia devido à desnutrição ou infecções crônicas.</p>
+                    </div>
+                    <div class="info-block treatment" style="margin-top: 1rem;">
+                        <h3><i class="fa-solid fa-list-check"></i> Causas Comuns (Busque Tratar a Causa!)</h3>
+                        <ul style="color: var(--text-secondary); padding-left: 1.5rem;">
+                            <li>Coccidiose severa (Eimeria)</li>
+                            <li>Verminoses pesadas (Heterakis, Capillaria)</li>
+                            <li>Micoplasmose crônica (DRC)</li>
+                            <li>Má nutrição ou água contaminada</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
 
             <!-- Parasitic Diseases -->
             <section id="parasitarias" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Doenças Parasitárias</h3>
                 <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <img src="img_parasitarias.jpeg" alt="Doenças Parasitárias" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                    <img src="img_parasitarias.jpeg" alt="Doenças Parasitárias" class="chapter-header-image" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
                 </div>
                 
                 <div class="disease-card">
@@ -1084,12 +1152,14 @@
                             <p>Vermifugação regular. Rotação de princípios ativos para evitar resistência.</p>
                         </div>
                         <div class="info-block treatment">
-                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamento</h3>
+                            <h3><i class="fa-solid fa-kit-medical"></i> Tratamentos (Experiência Prática)</h3>
                             <div class="treatment-box">
-                                <code>Levamisol (Ripercol): 20-25mg/kg (Dose Única).</code>
+                                <button class="copy-btn" onclick="copyText('Levamisol (Ripercol): 20-25mg/kg (Dose Única)')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 1: Levamisol (Ripercol): 20-25mg/kg (Dose Única).</code>
                             </div>
                             <div class="treatment-box" style="margin-top: 5px;">
-                                <code>Fenbendazol (Panacur): 10-20mg/kg por 3-5 dias.</code>
+                                <button class="copy-btn" onclick="copyText('Fenbendazol (Panacur): 10-20mg/kg por 3-5 dias')"><i class="fa-solid fa-copy"></i></button>
+                                <code>Opção 2: Fenbendazol (Panacur): 10-20mg/kg por 3-5 dias.</code>
                             </div>
                         </div>
                     </div>
@@ -1178,7 +1248,7 @@
             <section id="nutricionais" class="disease-section">
                 <h3 style="font-family: var(--font-outfit); font-size: 2rem; margin-bottom: 2rem;">Condições Nutricionais</h3>
                 <div class="disease-card" style="padding: 0; background: transparent; border: none; box-shadow: none;">
-                    <img src="img_nutricionais.jpeg" alt="Condições Nutricionais" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
+                    <img src="img_nutricionais.jpeg" alt="Condições Nutricionais" class="chapter-header-image" style="width: 100%; border-radius: 1.5rem; object-fit: cover; box-shadow: var(--shadow-premium);">
                 </div>
                 
                 <div class="disease-card">
@@ -1282,22 +1352,11 @@
                 <div class="disease-card">
                     <div class="disease-header">
                         <div class="disease-title">
-                            <span class="category-badge" style="background: rgba(255, 171, 0, 0.2); color: #ffab00; border: 1px solid rgba(255, 171, 0, 0.3);">Sintoma / Alerta de Manejo</span>
-                            <h2>"Peito Seco" (Atrofia Muscular)</h2>
+                            <span class="category-badge" style="background: rgba(255, 171, 0, 0.2); color: #ffab00; border: 1px solid rgba(255, 171, 0, 0.3);">Sintomático</span>
+                            <h2>Informação Importante</h2>
                         </div>
                     </div>
-                    
-                    <div class="image-placeholder">
-                        <i class="fa-solid fa-image"></i>
-                        <p>Ilustração: Musculatura Atrofiada</p>
-                    </div>
-
-                    <p style="color: var(--text-secondary); margin: 1rem 0;">Atenção: Peito Seco não é a doença em si, mas um <strong>sintoma crônico</strong> de desnutrição severa resultante de outras enfermidades que impedem a ave de comer ou absorver nutrientes.</p>
-                    <div class="info-block prevention">
-                        <h3><i class="fa-solid fa-magnifying-glass"></i> Investigação Recomendada</h3>
-                        <p>Principal causa primária na avicultura caipira: <strong>Coccidiose e Verminoses Severas.</strong></p>
-                        <p>Procure tratar os parasitas primários para que a ave volte a ganhar massa e suplemente o plantel vitamínicos.</p>
-                    </div>
+                    <p style="color: var(--text-secondary); margin: 1rem 0;">Atenção: Para detalhes completos sobre o tratamento de suporte e recuperação de aves debilitadas, consulte o novo **Capítulo de Peito Seco** no menu lateral.</p>
                 </div>
             </section>
 
