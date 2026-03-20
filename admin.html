@@ -1738,6 +1738,9 @@
             .main-content {
                 padding: calc(20px + env(safe-area-inset-top)) 15px calc(20px + env(safe-area-inset-bottom));
                 overflow-x: initial;
+                width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
             }
 
             .glass-header {
@@ -1777,16 +1780,56 @@
                 grid-template-columns: 1fr;
             }
 
+            .table-controls {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 15px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .search-wrapper {
+                min-width: 0 !important;
+                width: 100% !important;
+                flex: none !important;
+            }
+
             .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                margin: 0 -15px;
-                padding: 0 15px;
-                border-radius: 0;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                margin: 0 -15px !important;
+                padding: 0 15px !important;
+                border-radius: 0 !important;
+                border-right: none !important;
+                border-left: none !important;
+                position: relative;
+            }
+
+            /* Visual hint that the table is scrollable */
+            .table-container::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                width: 30px;
+                height: 100%;
+                background: linear-gradient(to left, rgba(0,0,0,0.5), transparent);
+                pointer-events: none;
+                opacity: 0.5;
             }
 
             table {
-                min-width: 800px;
+                min-width: 1000px !important;
+                border-spacing: 0 !important;
+            }
+
+            th, td {
+                padding: 12px 10px !important;
+                font-size: 0.75rem !important;
+            }
+
+            .content-card {
+                padding: 15px !important;
+                border-radius: 16px !important;
             }
 
             #mobile-menu-btn {
@@ -2212,7 +2255,7 @@
                 <div style="color:var(--text-dim); font-size:0.9rem;">Total: <span id="leadsCount"
                         style="color:#fff; font-weight:bold;">0</span></div>
             </div>
-            <div style="overflow-x:auto;">
+            <div class="table-container">
                 <table id="leadsTable">
                     <thead>
                         <tr>
@@ -2247,7 +2290,7 @@
                 <div style="color:var(--text-dim); font-size:0.9rem;">Total: <span id="abandonsCount"
                         style="color:#fff; font-weight:bold;">0</span></div>
             </div>
-            <div style="overflow-x:auto;">
+            <div class="table-container">
                 <table id="abandonsTable">
                     <thead>
                         <tr>
@@ -2499,6 +2542,7 @@
             if (window.innerWidth <= 900) {
                 toggleSidebar(false);
             }
+            window.scrollTo(0, 0);
         }
 
         async function loadLeads() {
