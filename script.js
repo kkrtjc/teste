@@ -488,7 +488,7 @@ function renderOrderBumps(bumps) {
                 const isManejo = (bump.id === 'ebook-manejo');
                 const title = isManejo ? 'COMBO: MANUAL DE PINTINHOS + TABELA 🎁' : bump.title;
                 const desc = isManejo 
-                    ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span>. E leve <span style="color: #fbbf24; font-weight: 900;">GRÁTIS</span> a Tabela de Ração.' 
+                    ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span>. E leve <span style="color: #fbbf24; font-weight: 900;">GRÁTIS</span> a Tabela de Ração (Economia de <span style="color: #fbbf24; font-weight: 900;">65% na alimentação</span> em todas as idades).' 
                     : '🌾 Economize até 70% na alimentação produzindo sua própria ração.';
 
                 return `
