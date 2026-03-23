@@ -495,10 +495,10 @@ function renderOrderBumps(bumps) {
                     <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')">
                         
                         <!-- Background Image with Darker Overlay -->
-                        ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.4;">` : ''}
+                        ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.65;">` : ''}
                         
                         <!-- Gradient Overlay for Contrast -->
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, #0f172a 35%, rgba(15, 23, 42, 0.7) 100%); z-index: 1;"></div>
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, #0f172a 25%, rgba(15, 23, 42, 0.4) 100%); z-index: 1;"></div>
 
                         <!-- Content -->
                         <div style="position: relative; z-index: 2; display: flex; align-items: center; padding: 12px; width: 100%; gap: 12px;">
@@ -513,7 +513,7 @@ function renderOrderBumps(bumps) {
 
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                                    <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase;">95% LEVARAM</span>
+                                    <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase;">95% LEVARAM</span>
                                     ${isManejo ? '<span class="order-bump-free-tag order-bump-badge-pulse">🎁 + TABELA GRÁTIS</span>' : ''}
                                 </div>
                                 
