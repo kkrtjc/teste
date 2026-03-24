@@ -788,7 +788,7 @@
                         style="display: block; font-size: 0.85rem; color: var(--slate-400); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">POR
                         APENAS</span>
                     <span style="display: block; font-size: 1.5rem; color: var(--white); font-weight: 900;">R$ <span
-                            id="display-price-value">119,90</span> no pix</span>
+                            id="display-price-value">109,90</span> no pix</span>
                     <span
                         style="font-size: 0.75rem; color: #10b981; font-weight: 800; display: block; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px; display: inline-block;">🔥
                         27% DE DESCONTO NO PIX</span>
@@ -807,28 +807,28 @@
     </section>
 
     <!-- Social Proof Bar -->
-    <div class="social-proof-bar">
+    <div class="social-proof-bar" style="background: var(--slate-900) !important; border-top: 1px solid var(--slate-800); border-bottom: 1px solid var(--slate-800);">
         <div class="container">
             <div class="stat-grid">
                 <div class="stat-item">
-                    <i class="fa-solid fa-users"></i>
+                    <i class="fa-solid fa-users" style="background: rgba(225,29,72,0.1); color: var(--brand-red);"></i>
                     <div class="stat-text">
-                        <strong>+12.000 Pessoas</strong>
-                        acompanham meu trabalho
+                        <strong style="color: var(--white);">+12.000 Pessoas</strong>
+                        <span style="color: var(--slate-400);">acompanham meu trabalho</span>
                     </div>
                 </div>
                 <div class="stat-item">
-                    <i class="fa-solid fa-graduation-cap"></i>
+                    <i class="fa-solid fa-graduation-cap" style="background: rgba(225,29,72,0.1); color: var(--brand-red);"></i>
                     <div class="stat-text">
-                        <strong>+1.600 Alunos</strong>
-                        que já salvaram suas galinhas
+                        <strong style="color: var(--white);">+1.600 Alunos</strong>
+                        <span style="color: var(--slate-400);">que já salvaram suas galinhas</span>
                     </div>
                 </div>
                 <div class="stat-item">
-                    <i class="fa-solid fa-circle-check"></i>
+                    <i class="fa-solid fa-circle-check" style="background: rgba(225,29,72,0.1); color: var(--brand-red);"></i>
                     <div class="stat-text">
-                        <strong>Método Comprovado</strong>
-                        resultados reais e garantidos
+                        <strong style="color: var(--white);">Método Comprovado</strong>
+                        <span style="color: var(--slate-400);">resultados reais e garantidos</span>
                     </div>
                 </div>
             </div>
@@ -935,6 +935,73 @@
         document.addEventListener('DOMContentLoaded', tick);
     })();
     </script>
+
+    <!-- FAQ Section -->
+    <section class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">
+        <div class="container" style="max-width: 42rem;">
+            <h3 style="text-align: center; font-size: 1.875rem; font-weight: 900; color: var(--white); margin-bottom: 2.5rem; letter-spacing: -0.5px;">
+                <i class="fa-solid fa-circle-question" style="color: var(--brand-red);"></i> Perguntas Frequentes
+            </h3>
+
+            <style>
+                .faq-item { border: 1px solid var(--slate-800); border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: rgba(30,41,59,0.3); transition: 0.3s; }
+                .faq-item:hover { border-color: var(--slate-600); }
+                .faq-q { padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.95rem; color: var(--white); }
+                .faq-q i { font-size: 0.75rem; color: var(--slate-400); transition: transform 0.3s; }
+                .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease; padding: 0 18px; color: var(--slate-400); font-size: 0.9rem; line-height: 1.6; }
+                .faq-item.open .faq-a { max-height: 300px; padding: 0 18px 14px; }
+                .faq-item.open .faq-q i { transform: rotate(180deg); }
+            </style>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Recebo o ebook na hora?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Sim! Após a confirmação do pagamento (PIX é instantâneo), você recebe o acesso direto no seu e-mail em poucos segundos.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Funciona para qualquer tipo de galinha?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Sim. O protocolo cobre doenças que afetam galinhas caipiras, de granja, ornamentais, e outras aves domésticas. Os tratamentos são universais.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Preciso ter experiência para usar?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Não. O guia foi feito para criadores iniciantes e avançados. Tudo é explicado passo a passo, com linguagem simples e direta.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    E se eu não gostar?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Você tem 7 dias de garantia incondicional. Se por qualquer motivo não ficar satisfeito, devolvemos 100% do seu dinheiro sem perguntas.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    O pagamento é seguro?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Totalmente. O pagamento é processado pelo Mercado Pago, uma das maiores plataformas de pagamento do Brasil, com criptografia de ponta.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Onde encontro os remédios indicados?
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="faq-a">Todos os medicamentos indicados são encontrados facilmente em agro-petárias ou lojas online. O guia indica nomes comerciais e genéricos.</div>
+            </div>
+        </div>
+    </section>
 
     <!-- Final CTA -->
     <section class="bg-white" style="padding: 4rem 0;">
