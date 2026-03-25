@@ -693,12 +693,12 @@
             </p>
             
             <!-- Page Timer -->
-            <div style="margin-bottom: 1.5rem; color: #fbbf24; text-align: center; font-weight: 800; text-transform: uppercase;">
-                <p style="margin: 0 0 5px 0; font-size: 0.95rem; letter-spacing: 0.5px;">Aproveite o desconto no PIX, poucas vagas com desconto.</p>
+            <div style="margin-bottom: 1.5rem; color: #ef4444; text-align: center; font-weight: 800; text-transform: uppercase;">
+                <p style="margin: 0 0 5px 0; font-size: 0.95rem; letter-spacing: 0.5px; color: #fff;">Aproveite o desconto no PIX, poucas vagas <span style="color: #ef4444; border-bottom: 2px solid #ef4444;">com desconto.</span></p>
                 <div style="font-size: 2.2rem; font-family: monospace; text-shadow: 0 2px 8px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; gap: 8px;">
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-h">10</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">HORAS</span></div><span style="margin-bottom: 12px; color: #fff;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-m">00</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">MIN</span></div><span style="margin-bottom: 12px; color: #fff;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-s">00</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">SEG</span></div>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-h" style="color: #ef4444;">10</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">HORAS</span></div><span style="margin-bottom: 12px; color: #fff;">:</span>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-m" style="color: #ef4444;">00</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">MIN</span></div><span style="margin-bottom: 12px; color: #fff;">:</span>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-s" style="color: #ef4444;">00</span><span style="font-size: 0.55rem; color: #fff; font-family: var(--font-sans); letter-spacing: 1px;">SEG</span></div>
                 </div>
             </div>
             <div
@@ -912,34 +912,7 @@
         </div>
     </section>
 
-    <!-- Urgency -->
-    <section class="urgency-bar">
-        <div class="container urgency-content">
-            <div class="urgency-pill"><i class="fa-solid fa-triangle-exclamation"></i> Oferta Por Tempo Limitado</div>
-            <p style="font-size: 1.5rem; font-weight: 700;">⏰ Economize R$ 40 hoje — preço sobe em breve!</p>
-            <p style="font-size: 1.8rem; font-weight: 900; letter-spacing: 2px; font-family: monospace;" id="urgency-countdown">23:59:59</p>
-        </div>
-    </section>
-    <script>
-    (function(){
-        var key = 'urgency_end';
-        var end = localStorage.getItem(key);
-        if (!end || Date.now() > parseInt(end)) {
-            end = Date.now() + 24 * 60 * 60 * 1000;
-            localStorage.setItem(key, end);
-        }
-        function tick() {
-            var diff = Math.max(0, parseInt(end) - Date.now());
-            var h = Math.floor(diff / 3600000);
-            var m = Math.floor((diff % 3600000) / 60000);
-            var s = Math.floor((diff % 60000) / 1000);
-            var el = document.getElementById('urgency-countdown');
-            if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-            if (diff > 0) setTimeout(tick, 1000);
-        }
-        document.addEventListener('DOMContentLoaded', tick);
-    })();
-    </script>
+
 
     <!-- FAQ Section -->
     <section class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">
@@ -1027,10 +1000,16 @@
         <div class="modal-content">
             <div id="checkout-main-view" style="position: relative;">
 
-                <!-- Checkout Timer -->
-                <div style="padding: 10px 0 5px 0; color: #374151; text-align: center;">
-                    <p style="margin: 0 0 2px 0; font-size: 0.85rem; font-weight: 700;">Sua oferta está reservada e expira em <span id="checkout-timer" style="color: #ef4444; font-weight: 900; font-size: 1rem; font-family: monospace;">10:00</span></p>
-                    <p style="margin: 0; font-size: 0.75rem; color: #ef4444; font-weight: 800; text-transform: uppercase;">Não perca sua vaga!</p>
+                <!-- Checkout Timer Premium -->
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; margin-top: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px; color: #ef4444; font-weight: 900; font-size: 1.1rem;">
+                        <i class="fa-regular fa-clock fa-spin-pulse" style="font-size: 0.95rem;"></i> 
+                        <span style="text-transform: uppercase; font-size: 0.82rem; letter-spacing: 0.5px; color: #374151;">Oferta expira em:</span>
+                        <span id="checkout-timer" style="font-family: monospace; letter-spacing: 1px; width: 58px; text-align: left;">10:00</span>
+                    </div>
+                    <div style="height: 4px; width: 100%; max-width: 250px; background: #e5e7eb; border-radius: 4px; margin-top: 5px; overflow: hidden; position: relative;">
+                        <div id="checkout-timer-bar" style="position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: #ef4444; transition: width 1s linear; border-radius: 4px;"></div>
+                    </div>
                 </div>
 
                 <!-- Bloco de oferta e garantia no topo do checkout -->
@@ -1830,9 +1809,11 @@
                 }
             }, 1000);
 
-            // Checkout Timer (10 min)
+            // Checkout Timer Premium (10 min)
             let ct_span = document.getElementById('checkout-timer');
-            let checkoutTimerVal = localStorage.getItem('checkoutTimerVal') ? parseInt(localStorage.getItem('checkoutTimerVal')) : 10 * 60;
+            let ct_bar = document.getElementById('checkout-timer-bar');
+            let checkoutTotalVal = 10 * 60;
+            let checkoutTimerVal = localStorage.getItem('checkoutTimerVal') ? parseInt(localStorage.getItem('checkoutTimerVal')) : checkoutTotalVal;
             let ctInterval = null;
             
             function updateCT() {
@@ -1840,6 +1821,10 @@
                 localStorage.setItem('checkoutTimerVal', checkoutTimerVal);
                 if(ct_span) {
                     ct_span.innerText = String(Math.floor(checkoutTimerVal / 60)).padStart(2, '0') + ':' + String(checkoutTimerVal % 60).padStart(2, '0');
+                }
+                if(ct_bar) {
+                    let pct = (checkoutTimerVal / checkoutTotalVal) * 100;
+                    ct_bar.style.width = pct + '%';
                 }
             }
             
