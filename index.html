@@ -693,12 +693,12 @@
             </p>
             
             <!-- Page Timer -->
-            <div style="margin-bottom: 1.5rem; color: #ef4444; text-align: center; font-weight: 800; text-transform: uppercase;">
-                <p style="margin: 0 0 5px 0; font-size: 0.95rem; letter-spacing: 0.5px; color: #ef4444;">Aproveite o desconto no PIX, poucas vagas com desconto.</p>
-                <div style="font-size: 2.2rem; font-family: monospace; text-shadow: 0 2px 8px rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; gap: 8px; color: #ef4444;">
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-h">10</span><span style="font-size: 0.55rem; font-family: var(--font-sans); letter-spacing: 1px;">HORAS</span></div><span style="margin-bottom: 12px;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-m">00</span><span style="font-size: 0.55rem; font-family: var(--font-sans); letter-spacing: 1px;">MIN</span></div><span style="margin-bottom: 12px;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-s">00</span><span style="font-size: 0.55rem; font-family: var(--font-sans); letter-spacing: 1px;">SEG</span></div>
+            <div style="margin-bottom: 1.5rem; text-align: center; font-weight: 800; text-transform: uppercase;">
+                <p style="margin: 0 0 5px 0; font-size: 0.95rem; letter-spacing: 0.5px; color: #fff;">Aproveite o desconto no PIX, desconto <span style="border-bottom: 2px solid #ff0000 !important; color: #ff0000 !important;">por tempo limitado!</span></p>
+                <div style="font-size: 2.5rem; font-weight: 900; font-family: monospace; text-shadow: 0 0 15px rgba(255,0,0,0.6); display: flex; justify-content: center; align-items: center; gap: 8px; color: #ff0000 !important;">
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-h" style="color: #ff0000 !important;">10</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">HORAS</span></div><span style="margin-bottom: 12px; color: #ff0000 !important;">:</span>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-m" style="color: #ff0000 !important;">00</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">MIN</span></div><span style="margin-bottom: 12px; color: #ff0000 !important;">:</span>
+                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-s" style="color: #ff0000 !important;">00</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">SEG</span></div>
                 </div>
             </div>
             <div
@@ -1000,14 +1000,13 @@
         <div class="modal-content">
             <div id="checkout-main-view" style="position: relative;">
 
-                <!-- Checkout Timer Premium -->
-                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; margin-top: 5px;">
-                    <div style="font-size: 0.75rem; color: #6b7280; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px;">
-                        Garanta sua vaga antes do timer
+                <!-- Checkout Timer Premium Compact -->
+                <div style="margin: 4px 0 8px 0; display: flex; flex-direction: column; align-items: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 700; color: #4b5563; font-size: 0.8rem; line-height: 1;">
+                        Garanta sua vaga antes que seja tarde <i class="fa-regular fa-clock fa-spin-pulse" style="color: #ef4444; font-size: 0.85rem; margin-left: 2px;"></i> <span id="checkout-timer" style="color: #ef4444; font-weight: 900; font-family: monospace; font-size: 0.95rem; width: 44px; text-align: left;">10:00</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 6px; color: #ef4444; font-weight: 700; font-size: 1.1rem;">
-                        <i class="fa-regular fa-clock fa-spin-pulse" style="font-size: 0.9rem;"></i> 
-                        <span id="checkout-timer" style="font-family: monospace; letter-spacing: 1.5px;">10:00</span>
+                    <div style="height: 3px; width: 100%; max-width: 260px; background: #e5e7eb; border-radius: 3px; margin-top: 4px; overflow: hidden; position: relative;">
+                        <div id="checkout-timer-bar" style="position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: #ef4444; transition: width 1s linear; border-radius: 3px;"></div>
                     </div>
                 </div>
 
@@ -1800,6 +1799,7 @@
             
             setInterval(() => {
                 if(pageTimerVal > 0) pageTimerVal--;
+                else pageTimerVal = 10 * 3600; // Reset
                 localStorage.setItem('pageTimerVal', pageTimerVal);
                 if(pt_h && pt_m && pt_s) {
                     pt_h.innerText = String(Math.floor(pageTimerVal / 3600)).padStart(2, '0');
@@ -1817,6 +1817,7 @@
             
             function updateCT() {
                 if(checkoutTimerVal > 0) checkoutTimerVal--;
+                else checkoutTimerVal = checkoutTotalVal; // Reset
                 localStorage.setItem('checkoutTimerVal', checkoutTimerVal);
                 if(ct_span) {
                     ct_span.innerText = String(Math.floor(checkoutTimerVal / 60)).padStart(2, '0') + ':' + String(checkoutTimerVal % 60).padStart(2, '0');
