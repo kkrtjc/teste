@@ -34,7 +34,7 @@ body.modal-open {
     position: relative !important;
     margin: auto !important; /* Center vertically when there's space */
     border-radius: 20px !important;
-    background: #ffffff !important;
+    background: #e6dac3 !important; /* Fundo terra agradável, não escuro */
     color: var(--slate-900) !important;
     box-shadow: 0 0 40px rgba(0,0,0,0.6) !important;
     border: none !important;

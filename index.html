@@ -753,13 +753,45 @@
                     }
                     .authority-gallery-item img {
                         width: 100%;
-                        aspect-ratio: 4 / 3; /* Formato 4:3 proporciona um excelente equilíbrio entre largura e altura */
-                        object-fit: cover; /* Faz o "zoom" preenchendo o container e removendo barras pretas */
-                        object-position: center; /* Centraliza a foto no crop */
-                        transform: scale(1.03); /* Leve zoom extra na própria foto */
+                        aspect-ratio: 3 / 2; /* Um pouco mais largo que 4:3, afastando a foto para não cortar dos lados */
+                        object-fit: cover; 
+                        object-position: center; 
                         background: #020617;
                         display: block;
-                        border-bottom: 1px solid #22c55e;
+                    }
+                    .image-wrapper {
+                        position: relative;
+                        width: 100%;
+                        overflow: hidden;
+                        border-bottom: 2px solid #22c55e;
+                    }
+                    .antes-depois-bar {
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        display: flex;
+                        justify-content: space-between;
+                        pointer-events: none;
+                    }
+                    .badge-antes, .badge-depois {
+                        width: 50%;
+                        text-align: center;
+                        font-family: inherit;
+                        font-size: 0.75rem;
+                        font-weight: 900;
+                        color: #ffffff;
+                        padding: 4px 0;
+                        text-shadow: 0 1px 3px rgba(0,0,0,1);
+                        letter-spacing: 0.5px;
+                        z-index: 10;
+                    }
+                    .badge-antes {
+                        background: rgba(180, 30, 30, 0.95);
+                    }
+                    .badge-depois {
+                        background: rgba(22, 130, 55, 0.95);
+                        border-left: 2px solid #111;
                     }
                     .authority-gallery-label {
                         padding: 6px 4px;
@@ -825,25 +857,49 @@
                     <div class="authority-gallery-track">
                         <!-- Card 1 -->
                         <div class="authority-gallery-item">
-                            <img src="autoridade/coriza.jpg" alt="Coriza Infecciosa" loading="lazy">
+                            <div class="image-wrapper">
+                                <img src="autoridade/coriza.png" alt="Coriza Infecciosa" loading="lazy">
+                                <div class="antes-depois-bar">
+                                    <span class="badge-antes">ANTES</span>
+                                    <span class="badge-depois">DEPOIS</span>
+                                </div>
+                            </div>
                             <div class="authority-gallery-label"><i class="fa-solid fa-shield-virus"></i> Coriza Infecciosa</div>
                         </div>
                         
                         <!-- Card 2 -->
                         <div class="authority-gallery-item">
-                            <img src="autoridade/coccidiose.jpg" alt="Coccidiose" loading="lazy">
+                            <div class="image-wrapper">
+                                <img src="autoridade/coccidiose.jpg" alt="Coccidiose" loading="lazy">
+                                <div class="antes-depois-bar">
+                                    <span class="badge-antes">ANTES</span>
+                                    <span class="badge-depois">DEPOIS</span>
+                                </div>
+                            </div>
                             <div class="authority-gallery-label"><i class="fa-solid fa-shield-virus"></i> Coccidiose / Peito Seco</div>
                         </div>
                         
                         <!-- Card 3 -->
                         <div class="authority-gallery-item">
-                            <img src="autoridade/bouba.jpg" alt="Bouba Aviária" loading="lazy">
+                            <div class="image-wrapper">
+                                <img src="autoridade/bouba.png" alt="Bouba Aviária" loading="lazy">
+                                <div class="antes-depois-bar">
+                                    <span class="badge-antes">ANTES</span>
+                                    <span class="badge-depois">DEPOIS</span>
+                                </div>
+                            </div>
                             <div class="authority-gallery-label"><i class="fa-solid fa-shield-virus"></i> Bouba Aviária / Gogo</div>
                         </div>
                         
                         <!-- Card 4 -->
                         <div class="authority-gallery-item">
-                            <img src="autoridade/vermes.jpg" alt="Vermes" loading="lazy">
+                            <div class="image-wrapper">
+                                <img src="autoridade/vermes.jpg" alt="Vermes" loading="lazy">
+                                <div class="antes-depois-bar">
+                                    <span class="badge-antes">ANTES</span>
+                                    <span class="badge-depois">DEPOIS</span>
+                                </div>
+                            </div>
                             <div class="authority-gallery-label"><i class="fa-solid fa-shield-virus"></i> Verminose</div>
                         </div>
                     </div>
@@ -1242,9 +1298,9 @@
                         padding: 6px 9px !important;
                         font-size: 0.82rem !important;
                         height: auto !important;
-                        background: #fff !important;
+                        background: #fdfbf7 !important; /* Creme super claro terra para campos */
                         color: #111827 !important;
-                        border: 1px solid #d1d5db !important;
+                        border: 1px solid #d5c8ad !important; /* Borda cor da terra um pouco mais escura */
                         border-radius: 6px !important;
                     }
                     
@@ -1253,13 +1309,13 @@
                     }
                     
                     .radio-item {
-                        background: #fff !important;
-                        border: 1px solid #d1d5db !important;
+                        background: #fdfbf7 !important; 
+                        border: 1px solid #d5c8ad !important;
                         color: #1f2937 !important;
                     }
                     
                     .radio-item.selected {
-                        background: #f8fafc !important;
+                        background: #ebdcc2 !important; /* Fundo selecionado no mesmo tema */
                         border-color: #0f172a !important;
                         box-shadow: 0 0 0 1px #0f172a inset !important;
                     }
@@ -1561,7 +1617,7 @@
                     .checkout-trust-badge { flex: 1; border-radius: 8px; padding: 7px 4px; text-align: center; }
 
                     /* Mini Testimonial */
-                    .checkout-mini-review { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+                    .checkout-mini-review { display: flex; align-items: center; gap: 10px; background: #e0d2b7; border: 1px solid #c7b695; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
                     .checkout-mini-avatars { display: flex; flex-shrink: 0; }
                     .checkout-mini-avatars img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 
