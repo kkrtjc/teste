@@ -1017,6 +1017,13 @@
         <div class="modal-content">
             <div id="checkout-main-view" style="position: relative;">
 
+                <!-- Urgency Banner -->
+                <div class="checkout-urgency" id="checkout-urgency-banner">
+                    <p style="margin: 0; font-size: 0.78rem; color: #fecaca; font-weight: 700; letter-spacing: 0.3px;">
+                        🔥 Sua vaga está reservada por <span id="checkout-reservation-timer" style="color: #fff; font-weight: 900; font-size: 0.95rem; font-family: monospace;">10:00</span> — oferta por tempo limitado
+                    </p>
+                </div>
+
                 <!-- Bloco de oferta e garantia no topo do checkout -->
                 <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #fbbf24; border-radius: 10px; padding: 10px 40px 10px 15px; margin-bottom: 12px; text-align: left;">
                     <p style="margin: 0; font-size: 0.75rem; color: #cbd5e1; line-height: 1.4;">
@@ -1415,16 +1422,34 @@
 
                     /* Mobile Optimization for Bump Card */
                     @media (max-width: 480px) {
-                        .order-bump-title {
-                            font-size: 0.85rem !important;
-                        }
-                        .order-bump-description {
-                            font-size: 0.75rem !important;
-                        }
-                        .order-bump-price {
-                            font-size: 1rem !important;
-                        }
+                        .order-bump-title { font-size: 0.85rem !important; }
+                        .order-bump-description { font-size: 0.75rem !important; }
+                        .order-bump-price { font-size: 1rem !important; }
                     }
+
+                    /* === CHECKOUT 2-STEP === */
+                    .checkout-step-indicator { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 14px; }
+                    .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 900; background: #e2e8f0; color: #94a3b8; transition: all 0.3s; }
+                    .step-dot.active { background: #22c55e; color: #fff; box-shadow: 0 0 12px rgba(34,197,94,0.35); }
+                    .step-dot.completed { background: #22c55e; color: #fff; }
+                    .step-line { width: 50px; height: 3px; background: #e2e8f0; margin: 0 6px; border-radius: 2px; transition: all 0.3s; }
+                    .step-line.active { background: #22c55e; }
+
+                    /* Urgency Banner */
+                    @keyframes urgencyPulse { 0%,100%{ opacity:1; } 50%{ opacity:0.88; } }
+                    .checkout-urgency { background: linear-gradient(90deg, #7f1d1d, #991b1b, #7f1d1d); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: center; animation: urgencyPulse 3s infinite; }
+
+                    /* Trust Badges */
+                    .checkout-trust-row { display: flex; gap: 10px; margin: 10px 0; }
+                    .checkout-trust-badge { flex: 1; border-radius: 8px; padding: 7px 4px; text-align: center; }
+
+                    /* Mini Testimonial */
+                    .checkout-mini-review { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+                    .checkout-mini-avatars { display: flex; flex-shrink: 0; }
+                    .checkout-mini-avatars img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+                    /* Step transition */
+                    #checkout-step-1, #checkout-step-2 { animation: fadeIn 0.3s ease; }
                 </style>
 
                 <!-- 1. Resumo do Pedido (Compacto) -->
@@ -1448,135 +1473,168 @@
                     </div>
                 </div>
 
+                <!-- Trust Badges -->
+                <div class="checkout-trust-row">
+                    <div class="checkout-trust-badge" style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2);">
+                        <i class="fa-solid fa-shield-halved" style="color: #22c55e; font-size: 1.1rem; display: block; margin-bottom: 2px;"></i>
+                        <span style="font-size: 0.6rem; font-weight: 800; color: #166534; text-transform: uppercase;">Compra Segura</span>
+                    </div>
+                    <div class="checkout-trust-badge" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2);">
+                        <i class="fa-solid fa-lock" style="color: #3b82f6; font-size: 1.1rem; display: block; margin-bottom: 2px;"></i>
+                        <span style="font-size: 0.6rem; font-weight: 800; color: #1e40af; text-transform: uppercase;">Certificado SSL</span>
+                    </div>
+                </div>
+
+                <!-- Mini Testimonial -->
+                <div class="checkout-mini-review">
+                    <div class="checkout-mini-avatars">
+                        <img src="carrosel/ricardo.jpg" alt="Aluno">
+                        <img src="carrosel/maria.jpg" alt="Aluna">
+                        <img src="carrosel/pedro.jpg" alt="Aluno">
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 1px;">
+                            <span style="color: #f59e0b; font-size: 0.65rem;">★★★★★</span>
+                            <span style="font-size: 0.72rem; font-weight: 900; color: #111827;">4.9/5</span>
+                            <span style="font-size: 0.58rem; color: #64748b;">(1.647 avaliações)</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.68rem; color: #475569; font-style: italic; line-height: 1.3;">"Material que salvou minha criação inteira" — Ricardo L.</p>
+                    </div>
+                </div>
+
                 <form id="payment-form">
-                    <div class="radio-group-top" style="margin-bottom: 10px;">
-                        <label class="form-label" style="display: block; margin-bottom: 5px;">ESCOLHA A FORMA DE
-                            PAGAMENTO</label>
-                        <div class="payment-methods-grid">
-                            <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
-                                <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
-                                <div class="radio-label">
-                                    <span class="radio-title">PIX</span>
-                                    <span class="radio-desc">Acesso imediato</span>
+                    <!-- ========== STEP 1: Dados Básicos ========== -->
+                    <div id="checkout-step-1">
+                        <div class="checkout-step-indicator">
+                            <div class="step-dot active">1</div>
+                            <div class="step-line"></div>
+                            <div class="step-dot">2</div>
+                        </div>
+                        <div class="form-section-title">SEUS DADOS DE ACESSO</div>
+                        <div class="form-group">
+                            <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
+                                data-tip="Digite seu nome e sobrenome completo para o certificado.">
+                            <div class="field-tooltip">Digite seu nome completo</div>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="payer-email" class="form-input" placeholder="EMAIL (opcional)"
+                                data-tip="Seu melhor email onde receberá o acesso ao guia.">
+                            <div class="field-tooltip">Onde você receberá o acesso</div>
+                        </div>
+                        <button type="button" onclick="goToStep2()" class="btn-primary" style="width: 100%; padding: 14px; font-size: 1.1rem; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            CONTINUAR <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <p style="text-align: center; margin-top: 6px; font-size: 0.68rem; color: #64748b;">
+                            <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estão protegidos
+                        </p>
+                    </div>
+
+                    <!-- ========== STEP 2: Pagamento ========== -->
+                    <div id="checkout-step-2" style="display: none;">
+                        <div class="checkout-step-indicator">
+                            <div class="step-dot completed"><i class="fa-solid fa-check" style="font-size: 0.6rem;"></i></div>
+                            <div class="step-line active"></div>
+                            <div class="step-dot active">2</div>
+                        </div>
+
+                        <div class="radio-group-top" style="margin-bottom: 10px;">
+                            <label class="form-label" style="display: block; margin-bottom: 5px;">ESCOLHA A FORMA DE PAGAMENTO</label>
+                            <div class="payment-methods-grid">
+                                <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
+                                    <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
+                                    <div class="radio-label">
+                                        <span class="radio-title">PIX</span>
+                                        <span class="radio-desc">Acesso imediato</span>
+                                    </div>
+                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" alt="Pix">
                                 </div>
-                                <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png"
-                                    style="height: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" alt="Pix">
-                            </div>
-
-                            <div class="radio-item" onclick="selectPaymentMethod('card')">
-                                <input type="radio" name="paymentMethod" id="method-card" value="card">
-                                <div class="radio-label">
-                                    <span class="radio-title">CARTÃO</span>
-                                    <span class="radio-desc">Até 4x</span>
-                                </div>
-                                <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
-                                    <img src="https://logospng.org/download/visa/logo-visa-256.png"
-                                        style="height: 18px;" alt="Visa">
-                                    <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
-                                        style="height: 18px;" alt="Mastercard">
-                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png"
-                                        style="height: 18px;" alt="Pix">
+                                <div class="radio-item" onclick="selectPaymentMethod('card')">
+                                    <input type="radio" name="paymentMethod" id="method-card" value="card">
+                                    <div class="radio-label">
+                                        <span class="radio-title">CARTÃO</span>
+                                        <span class="radio-desc">Até 4x</span>
+                                    </div>
+                                    <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
+                                        <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 18px;" alt="Visa">
+                                        <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 18px;" alt="Mastercard">
+                                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 18px;" alt="Pix">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-section-title">SEUS DADOS DE ACESSO</div>
-                    <div class="form-group">
-                        <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
-                            data-tip="Digite seu nome e sobrenome completo para o certificado.">
-                        <div class="field-tooltip">Digite seu nome completo</div>
-                    </div>
-                    <div class="form-group">
-                        <input type="tel" id="payer-phone" class="form-input" placeholder="WHATSAPP (DDD + Número)" required
-                            data-tip="Para suporte e avisos importantes (DDD + Número).">
-                        <div class="field-tooltip">DDD + Número</div>
-                    </div>
-                    <div class="form-group">
-                        <input type="email" id="payer-email" class="form-input" placeholder="EMAIL" required
-                            data-tip="Seu melhor email onde receberá o acesso ao guia.">
-                        <div class="field-tooltip">Onde você receberá o acesso</div>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" id="payer-cpf" class="form-input" placeholder="CPF (apenas números)" required
-                            data-tip="Necessário para emitir a nota fiscal (apenas números).">
-                        <div class="field-tooltip">Apenas números do CPF</div>
-                    </div>
-
-                    <!-- Card Details Area -->
-                    <div id="card-area"
-                        style="display: none; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 0.5rem; background: #f8fafc;">
+                        <div class="form-section-title">COMPLETE SEUS DADOS</div>
                         <div class="form-group">
-                            <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO"
-                                data-tip="Os 16 números na frente do cartão.">
-                            <div class="field-tooltip">Digite os números do cartão</div>
+                            <input type="tel" id="payer-phone" class="form-input" placeholder="WHATSAPP (DDD + Número)" required
+                                data-tip="Para suporte e avisos importantes (DDD + Número).">
+                            <div class="field-tooltip">DDD + Número</div>
                         </div>
-                        <div style="display: flex; gap: 1rem;">
-                            <div class="form-group" style="flex: 1.5;">
-                                <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE"
-                                    data-tip="Mês e Ano de vencimento (Ex: 12/28).">
-                                <div class="field-tooltip">MM/AA</div>
+                        <div class="form-group">
+                            <input type="text" id="payer-cpf" class="form-input" placeholder="CPF (apenas números)" required
+                                data-tip="Necessário para emitir a nota fiscal (apenas números).">
+                            <div class="field-tooltip">Apenas números do CPF</div>
+                        </div>
+
+                        <!-- Card Details Area -->
+                        <div id="card-area" style="display: none; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 0.5rem; background: #f8fafc;">
+                            <div class="form-group">
+                                <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO" data-tip="Os 16 números na frente do cartão.">
+                                <div class="field-tooltip">Digite os números do cartão</div>
                             </div>
-                            <div class="form-group" style="flex: 1;">
-                                <input type="text" id="card-cvv" class="form-input" placeholder="CVV"
-                                    data-tip="3 dígitos no verso do cartão.">
-                                <div class="field-tooltip">3 dígitos no verso</div>
+                            <div style="display: flex; gap: 1rem;">
+                                <div class="form-group" style="flex: 1.5;">
+                                    <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE" data-tip="Mês e Ano de vencimento (Ex: 12/28).">
+                                    <div class="field-tooltip">MM/AA</div>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <input type="text" id="card-cvv" class="form-input" placeholder="CVV" data-tip="3 dígitos no verso do cartão.">
+                                    <div class="field-tooltip">3 dígitos no verso</div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO" data-tip="Nome exatamente como impresso no cartão.">
+                                <div class="field-tooltip">Igual impresso no cartão</div>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR" data-tip="CPF do dono do cartão (apenas números).">
+                                <div class="field-tooltip">CPF do Dono do Cartão</div>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="card-cep" class="form-input" placeholder="CEP" data-tip="CEP do endereço de cobrança.">
+                                <div class="field-tooltip">CEP de cobrança</div>
+                            </div>
+                            <div class="form-group">
+                                <select id="installments-select" class="form-input"></select>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO"
-                                data-tip="Nome exatamente como impresso no cartão.">
-                            <div class="field-tooltip">Igual impresso no cartão</div>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR"
-                                data-tip="CPF do dono do cartão (apenas números).">
-                            <div class="field-tooltip">CPF do Dono do Cartão</div>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" id="card-cep" class="form-input" placeholder="CEP"
-                                data-tip="CEP do endereço de cobrança.">
-                            <div class="field-tooltip">CEP de cobrança</div>
-                        </div>
-                        <div class="form-group">
-                            <select id="installments-select" class="form-input"></select>
-                        </div>
-                    </div>
 
-                    <!-- Order Bump Area -->
-                    <div id="order-bump-area"></div>
+                        <!-- Order Bump Area -->
+                        <div id="order-bump-area"></div>
 
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <div class="price-summary-box"
-                            style="margin-bottom: 1rem; background: var(--slate-50); border: 1px dashed var(--slate-400); padding: 0.75rem; border-radius: 0.5rem;">
-                            <div
-                                style="display: flex; justify-content: space-between; font-weight: 700; color: var(--slate-900);">
-                                <span>Total a pagar:</span>
-                                <span class="checkout-total-display">R$ --,--</span>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <div class="price-summary-box" style="margin-bottom: 1rem; background: var(--slate-50); border: 1px dashed var(--slate-400); padding: 0.75rem; border-radius: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--slate-900);">
+                                    <span>Total a pagar:</span>
+                                    <span class="checkout-total-display">R$ --,--</span>
+                                </div>
+                                <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
                             </div>
-                            <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
+
+                            <button type="button" id="btn-pay-pix" class="btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX</button>
+                            <button type="button" id="btn-pay-card" class="btn-primary" style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar Pagamento</button>
+
+                            <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                                <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 24px;" alt="Visa">
+                                <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 24px;" alt="Mastercard">
+                                <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 20px;" alt="Pix">
+                                <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" style="height: 24px;" alt="Mercado Pago">
+                            </div>
+                            <p style="font-size: 0.7rem; color: #166534; margin-top: 0.75rem; font-weight: 600;"><i class="fa-solid fa-lock"></i> Pagamento 100% Seguro</p>
                         </div>
 
-                        <button type="button" id="btn-pay-pix" class="btn-primary"
-                            style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX</button>
-                        <button type="button" id="btn-pay-card" class="btn-primary"
-                            style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar
-                            Pagamento</button>
-
-
-                        <div
-                            style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
-                            <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 24px;"
-                                alt="Visa">
-                            <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png"
-                                style="height: 24px;" alt="Mastercard">
-                            <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 20px;"
-                                alt="Pix">
-                            <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-                                style="height: 24px;" alt="Mercado Pago">
-                        </div>
-                        <p style="font-size: 0.7rem; color: #166534; margin-top: 0.75rem; font-weight: 600;"><i
-                                class="fa-solid fa-lock"></i> Pagamento 100% Seguro</p>
+                        <button type="button" onclick="backToStep1()" style="width: 100%; margin-top: 8px; background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; color: #64748b; font-size: 0.82rem; cursor: pointer; font-weight: 600;">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar para etapa anterior
+                        </button>
                     </div>
                 </form>
             </div>
