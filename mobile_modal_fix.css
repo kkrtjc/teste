@@ -21,7 +21,9 @@ body.modal-open {
     align-items: flex-end !important; /* Anchor to bottom on mobile */
     justify-content: center !important;
     overflow-y: auto !important; /* Allow scroll if content overflows */
+    overflow-x: hidden !important; /* TRAVA O BALANÇO LATERAL DA TELA INTEIRA */
     padding: 20px 0 !important; /* Dá uma folga em cima e embaixo */
+    touch-action: pan-y !important; /* Diz ao celular que SÓ é permitido deslizar pra cima ou pra baixo, não pros lados */
 }
 
 /* Modal Content: Stability and centered scaling */
@@ -39,9 +41,10 @@ body.modal-open {
     color: var(--slate-900) !important;
     box-shadow: 0 0 40px rgba(0,0,0,0.6) !important;
     border: none !important;
-    -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch !important;
     box-sizing: border-box !important;
     padding: 20px !important; /* Garante que os números e o X não peguem na borda e cortem */
+    touch-action: pan-y !important; /* TRAVA o interior do modal brutalmente contra arrastes laterais */
 }
 
 /* Mobile specific overrides */
