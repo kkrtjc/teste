@@ -841,6 +841,11 @@ function goToStep2() {
     }
     nameInput.classList.remove('input-error');
 
+    // Injetar primeiro nome no banner de urgência
+    const firstName = nameInput.value.trim().split(' ')[0];
+    const nameDisplay = document.getElementById('checkout-payer-firstname');
+    if (nameDisplay) nameDisplay.textContent = firstName.toLowerCase();
+
     const step1 = document.getElementById('checkout-step-1');
     const step2 = document.getElementById('checkout-step-2');
     if (step1) step1.style.display = 'none';
