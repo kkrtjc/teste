@@ -753,9 +753,11 @@
                     }
                     .authority-gallery-item img {
                         width: 100%;
-                        aspect-ratio: 16 / 9; /* Formato retangular natural para fotos de antes e depois */
-                        object-fit: contain; /* Encaixa a foto inteira sem cortar nenhuma borda */
-                        background: #020617; /* Fundo super escuro caso a imagem não preencha 100% */
+                        aspect-ratio: 4 / 3; /* Formato 4:3 proporciona um excelente equilíbrio entre largura e altura */
+                        object-fit: cover; /* Faz o "zoom" preenchendo o container e removendo barras pretas */
+                        object-position: center; /* Centraliza a foto no crop */
+                        transform: scale(1.03); /* Leve zoom extra na própria foto */
+                        background: #020617;
                         display: block;
                         border-bottom: 1px solid #22c55e;
                     }
@@ -798,7 +800,7 @@
                             display: none;
                         }
                         .authority-gallery-item {
-                            width: 42%; /* Ficam pequenas e cabem mais de duas na tela do celular */
+                            width: 85%; /* Container imponente no celular: Ocupa quase a tela inteira com as bordas aparecendo */
                             flex-shrink: 0;
                             scroll-snap-align: center;
                         }
@@ -812,7 +814,7 @@
                             font-weight: 600;
                         }
                         .authority-gallery-title {
-                            font-size: 1rem;
+                            font-size: 1.15rem;
                         }
                     }
                 </style>
