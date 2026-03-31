@@ -238,31 +238,6 @@ function logSale(customer, items, paymentId, method) {
     history.push(sale);
     saveHistory(history);
     console.log(`📝 [HISTORY] Venda registrada: ${sale.id} - ${sale.items.length} itens`);
-
-    // NOVIDADE: Marcar cliente como "pago" na tabela de abandonos para tirá-lo do funil negativo
-    try {
-        const abandons = getAbandons();
-        let changed = false;
-        
-        abandons.forEach(a => {
-            if (!a.paid && 
-                ((customer.email && customer.email.trim() !== '' && String(a.email).toLowerCase() === String(customer.email).toLowerCase()) ||
-                 (customer.phone && customer.phone.trim() !== '' && String(a.phone).replace(/\D/g, '') === String(customer.phone).replace(/\D/g, '')))) {
-                
-                a.paid = true;
-                a.paidAt = new Date().toISOString();
-                a.paymentId = paymentId;
-                changed = true;
-                console.log(`✅ [ABANDON CLEARED] Cliente comprou! Removendo do painel de Abandonos: ${a.email || a.phone}`);
-            }
-        });
-
-        if (changed) {
-            saveAbandons(abandons);
-        }
-    } catch (e) {
-        console.error("Erro ao limpar abandono após venda:", e.message);
-    }
 }
 
 function debugWebhook(data) {

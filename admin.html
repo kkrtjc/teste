@@ -35,6 +35,10 @@
             --font-heading: 'Outfit', sans-serif;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
         .tab-content {
             display: none;
         }
@@ -1611,11 +1615,11 @@
         /* TAB LOGIC FIX */
         .tab-content {
             display: none;
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .tab-content.active {
             display: block;
-            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideUpFade {

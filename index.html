@@ -691,16 +691,6 @@
                 style="font-size: 1.25rem; color: #ffffff; margin-bottom: 1rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">
                 Descubra o tratamento certo para sua galinha.
             </p>
-            
-            <!-- Page Timer -->
-            <div style="margin-bottom: 1.5rem; text-align: center; font-weight: 800; text-transform: uppercase;">
-                <p style="margin: 0 0 5px 0; font-size: 0.95rem; letter-spacing: 0.5px; color: #fff;">Aproveite o desconto no PIX, desconto <span style="border-bottom: 2px solid #ff0000 !important; color: #ff0000 !important;">por tempo limitado!</span></p>
-                <div style="font-size: 2.5rem; font-weight: 900; font-family: monospace; text-shadow: 0 0 15px rgba(255,0,0,0.6); display: flex; justify-content: center; align-items: center; gap: 8px; color: #ff0000 !important;">
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-h" style="color: #ff0000 !important;">10</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">HORAS</span></div><span style="margin-bottom: 12px; color: #ff0000 !important;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-m" style="color: #ff0000 !important;">00</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">MIN</span></div><span style="margin-bottom: 12px; color: #ff0000 !important;">:</span>
-                    <div style="display: flex; flex-direction: column; align-items: center; line-height: 1;"><span id="pt-s" style="color: #ff0000 !important;">00</span><span style="font-size: 0.65rem; color: #ff0000 !important; font-family: var(--font-sans); letter-spacing: 1px;">SEG</span></div>
-                </div>
-            </div>
             <div
                 style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.5rem; margin: 0 auto 2rem; max-width: 800px; backdrop-filter: blur(8px); box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
                 <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 1rem;">
@@ -912,7 +902,34 @@
         </div>
     </section>
 
-
+    <!-- Urgency -->
+    <section class="urgency-bar">
+        <div class="container urgency-content">
+            <div class="urgency-pill"><i class="fa-solid fa-triangle-exclamation"></i> Oferta Por Tempo Limitado</div>
+            <p style="font-size: 1.5rem; font-weight: 700;">⏰ Economize R$ 40 hoje — preço sobe em breve!</p>
+            <p style="font-size: 1.8rem; font-weight: 900; letter-spacing: 2px; font-family: monospace;" id="urgency-countdown">23:59:59</p>
+        </div>
+    </section>
+    <script>
+    (function(){
+        var key = 'urgency_end';
+        var end = localStorage.getItem(key);
+        if (!end || Date.now() > parseInt(end)) {
+            end = Date.now() + 24 * 60 * 60 * 1000;
+            localStorage.setItem(key, end);
+        }
+        function tick() {
+            var diff = Math.max(0, parseInt(end) - Date.now());
+            var h = Math.floor(diff / 3600000);
+            var m = Math.floor((diff % 3600000) / 60000);
+            var s = Math.floor((diff % 60000) / 1000);
+            var el = document.getElementById('urgency-countdown');
+            if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+            if (diff > 0) setTimeout(tick, 1000);
+        }
+        document.addEventListener('DOMContentLoaded', tick);
+    })();
+    </script>
 
     <!-- FAQ Section -->
     <section class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">
@@ -999,16 +1016,6 @@
     <div id="checkout-modal" class="modal-overlay">
         <div class="modal-content">
             <div id="checkout-main-view" style="position: relative;">
-
-                <!-- Checkout Timer Premium Compact -->
-                <div style="margin: 4px 0 8px 0; display: flex; flex-direction: column; align-items: center;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 700; color: #4b5563; font-size: 0.8rem; line-height: 1;">
-                        Garanta sua vaga antes que seja tarde <i class="fa-regular fa-clock fa-spin-pulse" style="color: #ef4444; font-size: 0.85rem; margin-left: 2px;"></i> <span id="checkout-timer" style="color: #ef4444; font-weight: 900; font-family: monospace; font-size: 0.95rem; width: 44px; text-align: left;">10:00</span>
-                    </div>
-                    <div style="height: 3px; width: 100%; max-width: 260px; background: #e5e7eb; border-radius: 3px; margin-top: 4px; overflow: hidden; position: relative;">
-                        <div id="checkout-timer-bar" style="position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: #ef4444; transition: width 1s linear; border-radius: 3px;"></div>
-                    </div>
-                </div>
 
                 <!-- Bloco de oferta e garantia no topo do checkout -->
                 <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #fbbf24; border-radius: 10px; padding: 10px 40px 10px 15px; margin-bottom: 12px; text-align: left;">
@@ -1788,58 +1795,6 @@
                 document.getElementById('checkout-modal').classList.remove('active');
             }
         }
-
-        // Setup Timers
-        document.addEventListener('DOMContentLoaded', () => {
-            // Page Timer (10 horas)
-            let pt_h = document.getElementById('pt-h');
-            let pt_m = document.getElementById('pt-m');
-            let pt_s = document.getElementById('pt-s');
-            let pageTimerVal = localStorage.getItem('pageTimerVal') ? parseInt(localStorage.getItem('pageTimerVal')) : 10 * 3600;
-            
-            setInterval(() => {
-                if(pageTimerVal > 0) pageTimerVal--;
-                else pageTimerVal = 10 * 3600; // Reset
-                localStorage.setItem('pageTimerVal', pageTimerVal);
-                if(pt_h && pt_m && pt_s) {
-                    pt_h.innerText = String(Math.floor(pageTimerVal / 3600)).padStart(2, '0');
-                    pt_m.innerText = String(Math.floor((pageTimerVal % 3600) / 60)).padStart(2, '0');
-                    pt_s.innerText = String(pageTimerVal % 60).padStart(2, '0');
-                }
-            }, 1000);
-
-            // Checkout Timer Premium (10 min)
-            let ct_span = document.getElementById('checkout-timer');
-            let ct_bar = document.getElementById('checkout-timer-bar');
-            let checkoutTotalVal = 10 * 60;
-            let checkoutTimerVal = localStorage.getItem('checkoutTimerVal') ? parseInt(localStorage.getItem('checkoutTimerVal')) : checkoutTotalVal;
-            let ctInterval = null;
-            
-            function updateCT() {
-                if(checkoutTimerVal > 0) checkoutTimerVal--;
-                else checkoutTimerVal = checkoutTotalVal; // Reset
-                localStorage.setItem('checkoutTimerVal', checkoutTimerVal);
-                if(ct_span) {
-                    ct_span.innerText = String(Math.floor(checkoutTimerVal / 60)).padStart(2, '0') + ':' + String(checkoutTimerVal % 60).padStart(2, '0');
-                }
-                if(ct_bar) {
-                    let pct = (checkoutTimerVal / checkoutTotalVal) * 100;
-                    ct_bar.style.width = pct + '%';
-                }
-            }
-            
-            // Watch for modal open
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((m) => {
-                    if(m.target.classList.contains('active') && !ctInterval) {
-                        ctInterval = setInterval(updateCT, 1000);
-                        updateCT();
-                    }
-                });
-            });
-            let cModal = document.getElementById('checkout-modal');
-            if(cModal) observer.observe(cModal, { attributes: true, attributeFilter: ['class'] });
-        });
     </script>
 </body>
 
