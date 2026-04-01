@@ -14,6 +14,29 @@ let currentPaymentMethod = 'pix'; // Default
 // --- PERFORMANCE: PRE-FETCHING ---
 const prefetchedProducts = {};
 
+// --- DYNAMIC PRICING UPDATER ---
+function applyDynamicPrices(productData) {
+    if (!productData || !productData.price) return;
+    
+    const price = productData.price;
+    const baseOriginal = productData.originalPrice || 149.90;
+    
+    const fmt = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    if (baseOriginal > price) {
+        let discountStr = Math.round(((baseOriginal - price) / baseOriginal) * 100).toString();
+        document.querySelectorAll('.dyn-discount-percent').forEach(el => el.innerText = discountStr);
+    }
+    
+    const instStr = `4x de R$ ${fmt(price / 4)} sem juros`;
+
+    document.querySelectorAll('.dyn-price-main').forEach(el => el.innerText = fmt(price));
+    document.querySelectorAll('.dyn-installments').forEach(el => el.innerText = instStr);
+    document.querySelectorAll('.dyn-checkout-original').forEach(el => el.innerText = `R$ ${fmt(baseOriginal)}`);
+    document.querySelectorAll('.dyn-checkout-pix').forEach(el => el.innerText = `R$ ${fmt(price)} no PIX`);
+    document.querySelectorAll('.dyn-cta-pix').forEach(el => el.innerText = `R$ ${fmt(price)} no PIX`);
+}
+
 // --- INIT: CHECK PENDING PIX (Recover Logic) ---
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. UNIQUE VISITOR + SESSÃO TRACKING
@@ -73,9 +96,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (id === 'ebook-doencas') {
                     const resp = prefetchedProducts[id];
-                    const priceElement = document.getElementById('display-price-value');
-                    if (priceElement && resp.price) {
-                        priceElement.innerText = resp.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    
+                    if (typeof applyDynamicPrices === 'function') {
+                        applyDynamicPrices(resp);
                     }
 
                     trackPixel('ViewContent', {
@@ -467,10 +490,10 @@ function renderOrderBumps(bumps) {
     }
 
     area.style.display = 'block';
-    area.style.marginTop = '1.2rem';
+    area.style.marginTop = '0.5rem';
 
     const bumpHeader = `
-        <div style="text-align: center; margin-bottom: 10px;">
+        <div style="text-align: center; margin-bottom: 4px;">
             <p style="color: #d97706; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; margin: 0;">
                 📢 OFERTAS EXCLUSIVAS PARA ESTE PEDIDO
             </p>
@@ -478,7 +501,7 @@ function renderOrderBumps(bumps) {
     `;
 
     const gridLayout = `
-        <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
             ${filteredBumps.map(bump => {
                 const isSelected = cart.bumps.includes(bump.id);
                 let imgSrc = bump.image;
@@ -492,7 +515,7 @@ function renderOrderBumps(bumps) {
                 const title = isManejo ? 'MANUAL DE PINTINHOS' : bump.title;
                 const desc = isManejo 
                     ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> nos pintinhos com o manual de elite.' 
-                    : '🌾 Economize até 70% na alimentação produzindo sua própria ração.';
+                    : '💸 <span style="color: #fca5a5;"><strong>O maior prejuízo na criação</strong></span> está na ração comercial. <span style="color: #4ade80;"><strong>Aprenda a produzir sua própria ração balanceada</strong></span> e economize até 65% na alimentação.';
 
                 return `
                     <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')">
@@ -504,32 +527,34 @@ function renderOrderBumps(bumps) {
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, #0f172a 25%, rgba(15, 23, 42, 0.4) 100%); z-index: 1;"></div>
 
                         <!-- Content -->
-                        <div style="position: relative; z-index: 2; display: flex; align-items: center; padding: 12px; width: 100%; gap: 12px;">
+                        <div style="position: relative; z-index: 2; display: flex; align-items: center; padding: 8px 10px; width: 100%; gap: 8px;">
                             
                             <!-- Checkbox and Social Proof -->
-                            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                                <div class="bump-check-wrapper" style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'transparent'}; transition: all 0.3s;">
-                                    ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.9rem;"></i>' : ''}
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div class="bump-check-wrapper" style="width: 20px; height: 20px; border-radius: 6px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'transparent'}; transition: all 0.3s;">
+                                    ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.7rem;"></i>' : ''}
                                 </div>
                                 <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
                             </div>
 
                             <div style="flex: 1;">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                                    <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase;">95% LEVARAM</span>
+                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px; flex-wrap: wrap;">
+                                    <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 900; text-transform: uppercase;">
+                                        ${isManejo ? '80% dos alunos levaram o manual dos pintinhos e já diminuíram as perdas.' : '95% dos alunos levaram a tabela de ração e estão economizando todo mês.'}
+                                    </span>
                                 </div>
                                 
-                                <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.95rem; line-height: 1.2; margin-bottom: 4px; font-weight: 800;">
+                                <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.85rem; line-height: 1.1; margin-bottom: 2px; font-weight: 800;">
                                     ${title}
                                 </strong>
                                 
-                                <p class="order-bump-description" style="color: #cbd5e1; font-size: 0.75rem; line-height: 1.3; margin: 0; font-weight: 500;">
+                                <p class="order-bump-description" style="color: #cbd5e1; font-size: 0.7rem; line-height: 1.2; margin: 0; font-weight: 500;">
                                     ${desc}
                                 </p>
 
-                                <div style="margin-top: 6px; display: flex; align-items: center;">
-                                    <span class="order-bump-old-price">R$ 79,90</span>
-                                    <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                                <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <span class="order-bump-old-price" style="text-decoration: line-through; color: #94a3b8; font-size: 0.7rem;">${isManejo ? 'R$ 99,90' : 'R$ 59,90'}</span>
+                                    <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
                                         + ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}
                                     </span>
                                 </div>
