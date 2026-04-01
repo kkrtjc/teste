@@ -356,7 +356,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     const fallbackData = {
         'ebook-doencas': {
             title: 'Protocolo Elite: A Cura das Aves',
-            price: 109.90,
+            price: 79.90,
             originalPrice: 149.90,
             cover: 'capadasdoencas.jpg',
             fullBumps: [
@@ -451,18 +451,12 @@ function renderOrderBumps(bumps) {
     if (!area) return;
 
     // Filtra bumps que não devem aparecer
-    let manualPresent = false;
-    (bumps || []).forEach(b => {
-        if (b.id === 'ebook-manejo' || b.title?.includes('Pintinhos')) manualPresent = true;
-    });
-
     const filteredBumps = (bumps || []).filter(bump => {
         if (!bump.id) {
             if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) bump.id = 'ebook-manejo';
             else if (bump.title?.includes('Ração')) bump.id = 'bump-6361';
         }
         
-        if (manualPresent && bump.id === 'bump-6361') return false;
         if (bump.enabled === false) return false;
         return true;
     });
@@ -495,9 +489,9 @@ function renderOrderBumps(bumps) {
                 }
 
                 const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
-                const title = isManejo ? 'COMBO: MANUAL DE PINTINHOS + TABELA 🎁' : bump.title;
+                const title = isManejo ? 'MANUAL DE PINTINHOS' : bump.title;
                 const desc = isManejo 
-                    ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência, nos pintinhos com o manual de elite</strong></span>. E leve <span style="color: #fbbf24; font-weight: 900;">GRÁTIS</span> a Tabela de Ração (Economia de <span style="color: #fbbf24; font-weight: 900;">65% na alimentação</span> em todas as idades).' 
+                    ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> nos pintinhos com o manual de elite.' 
                     : '🌾 Economize até 70% na alimentação produzindo sua própria ração.';
 
                 return `
@@ -523,7 +517,6 @@ function renderOrderBumps(bumps) {
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                                     <span class="order-bump-tag" style="background: #ef4444; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase;">95% LEVARAM</span>
-                                    ${isManejo ? '<span class="order-bump-free-tag order-bump-badge-pulse">🎁 + TABELA GRÁTIS</span>' : ''}
                                 </div>
                                 
                                 <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.95rem; line-height: 1.2; margin-bottom: 4px; font-weight: 800;">
@@ -554,15 +547,8 @@ function toggleBump(bumpId) {
     const idx = cart.bumps.indexOf(bumpId);
     if (idx > -1) {
         cart.bumps.splice(idx, 1);
-        if (bumpId === 'ebook-manejo') {
-            const tableIdx = cart.bumps.indexOf('bump-6361');
-            if (tableIdx > -1) cart.bumps.splice(tableIdx, 1);
-        }
     } else {
         cart.bumps.push(bumpId);
-        if (bumpId === 'ebook-manejo') {
-            if (!cart.bumps.includes('bump-6361')) cart.bumps.push('bump-6361');
-        }
     }
 
     // Atualiza classes visuais sem renderizar tudo de novo (para não quebrar animações)
@@ -619,13 +605,10 @@ function updateTotal() {
         }
 
         if (bump) {
-            // Regra Especial de Combo: Se o Manual estiver no carrinho, a Tabela é grátis (R$ 0)
-            let isFreeGift = (id === 'bump-6361' && cart.bumps.includes('ebook-manejo'));
-            
-            const bumpPriceForPix = isFreeGift ? 0 : (bump.price || 0);
-            const bumpPriceForCard = isFreeGift ? 0 : (bump.priceCard || bump.price || 0);
+            const bumpPriceForPix = bump.price || 0;
+            const bumpPriceForCard = bump.priceCard || bump.price || 0;
 
-            console.log(`💰 Preços do bump (${id}):`, { pix: bumpPriceForPix, card: bumpPriceForCard, isFree: isFreeGift });
+            console.log(`💰 Preços do bump (${id}):`, { pix: bumpPriceForPix, card: bumpPriceForCard });
 
             total += bumpPriceForPix;
             cardTotal += bumpPriceForCard;
@@ -645,7 +628,7 @@ function updateTotal() {
                 const discountBadge = document.createElement('span');
                 discountBadge.className = 'pix-discount-badge';
                 discountBadge.style.cssText = 'display: inline-block; margin-left: 8px; font-size: 0.6rem; color: #10b981; font-weight: 900; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 20px; text-transform: uppercase; vertical-align: middle;';
-                discountBadge.innerHTML = `🔥 27% DE DESCONTO NO PIX`;
+                discountBadge.innerHTML = `🔥 46% DE DESCONTO NO PIX`;
                 el.parentElement.appendChild(discountBadge);
             }
         });
