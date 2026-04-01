@@ -759,6 +759,11 @@
                         background: #020617;
                         display: block;
                     }
+                    .authority-gallery-item.wide-card img {
+                        object-fit: contain;
+                        transform: scale(1.15); /* Zoom leve pedido pelo usuario */
+                        transform-origin: center center;
+                    }
                     .image-wrapper {
                         position: relative;
                         width: 100%;
@@ -842,6 +847,8 @@
                         .authority-gallery-item.wide-card img {
                             object-fit: contain !important; /* Salva a imagem matematicamente de cortes laterais forçando um zoom out na moldura alta */
                             background: #020617; /* Fundo invisível estético */
+                            transform: scale(1.15); /* Pequeno zoom interno sem cortar as laterais */
+                            transform-origin: center center; /* Faz o zoom nascer certinho do meio da foto */
                         }
                         .mobile-scroll-hint {
                             display: block;
