@@ -839,6 +839,10 @@
                         .authority-gallery-item.wide-card {
                             width: 96%; /* Laterais aumentadas SOMENTE para estas duas, sem desalinhar a altura */
                         }
+                        .authority-gallery-item.wide-card img {
+                            object-fit: contain !important; /* Salva a imagem matematicamente de cortes laterais forçando um zoom out na moldura alta */
+                            background: #020617; /* Fundo invisível estético */
+                        }
                         .mobile-scroll-hint {
                             display: block;
                             text-align: center;
