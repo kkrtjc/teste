@@ -1019,10 +1019,7 @@ async function handlePayment(method) {
         }
 
         if (b) {
-            // Regra Especial de Combo: Se o Manual estiver no carrinho, a Tabela é grátis (R$ 0)
-            let isFreeGift = (id === 'bump-6361' && cart.bumps.includes('ebook-manejo'));
-            
-            let bumpPrice = isFreeGift ? 0 : ((method === 'card' && b.priceCard) ? b.priceCard : b.price);
+            let bumpPrice = (method === 'card' && b.priceCard) ? b.priceCard : b.price;
             items.push({ id: b.id, title: b.title, price: bumpPrice });
         }
     });
