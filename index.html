@@ -753,7 +753,7 @@
                     }
                     .authority-gallery-item img {
                         width: 100%;
-                        aspect-ratio: 3 / 2; /* Um pouco mais largo que 4:3, afastando a foto para não cortar dos lados */
+                        height: 250px; /* Altura exata travada para que todas fiquem alinhadas sem depender da largura */
                         object-fit: cover; 
                         object-position: center; 
                         background: #020617;
@@ -832,9 +832,12 @@
                             display: none;
                         }
                         .authority-gallery-item {
-                            width: 85%; /* Container imponente no celular: Ocupa quase a tela inteira com as bordas aparecendo */
+                            width: 82%; /* Largura padrão */
                             flex-shrink: 0;
                             scroll-snap-align: center;
+                        }
+                        .authority-gallery-item.wide-card {
+                            width: 96%; /* Laterais aumentadas SOMENTE para estas duas, sem desalinhar a altura */
                         }
                         .mobile-scroll-hint {
                             display: block;
@@ -868,7 +871,7 @@
                         </div>
                         
                         <!-- Card 2 -->
-                        <div class="authority-gallery-item">
+                        <div class="authority-gallery-item wide-card">
                             <div class="image-wrapper">
                                 <img src="autoridade/coccidiose.jpg" alt="Coccidiose" loading="lazy">
                                 <div class="antes-depois-bar">
@@ -892,7 +895,7 @@
                         </div>
                         
                         <!-- Card 4 -->
-                        <div class="authority-gallery-item">
+                        <div class="authority-gallery-item wide-card">
                             <div class="image-wrapper">
                                 <img src="autoridade/vermes.jpg" alt="Vermes" loading="lazy">
                                 <div class="antes-depois-bar">
