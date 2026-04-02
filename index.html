@@ -1667,11 +1667,11 @@
                             <img src="capadasdoencas.jpg" alt="Capa" style="width: 55px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;" loading="eager">
                             <div style="flex: 1; min-width: 0;">
                                 <p style="margin: 0 0 3px 0; font-size: 0.82rem; font-weight: 900; color: #f1f5f9;">Protocolo Elite: A Cura das Aves</p>
-                                <p style="margin: 0 0 5px 0; font-size: 0.7rem; color: #ef4444; font-weight: 700;"><i class="fa-solid fa-skull-crossbones" style="margin-right: 3px;"></i> Sua galinha não vai esperar — trate antes que seja tarde</p>
+                                <p style="margin: 0 0 2px 0; font-size: 0.7rem; color: #ef4444; font-weight: 700;"><i class="fa-solid fa-skull-crossbones" style="margin-right: 3px;"></i> Sua galinha não vai esperar — trate antes que seja tarde</p>
+                                <p style="margin: 0 0 5px 0; font-size: 0.65rem; color: #94a3b8; line-height: 1.3;">O tratamento das principais doenças que mais matam galinhas no Brasil, na palma da sua mão.</p>
                                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                     <span class="dyn-checkout-original" style="font-size: 0.68rem; color: #64748b; text-decoration: line-through;">R$ 149,90</span>
-                                    <span class="dyn-checkout-pix" style="font-size: 1rem; font-weight: 900; color: #22c55e;">R$ 79,90</span>
-                                    <span style="font-size: 0.58rem; background: #22c55e; color: #fff; padding: 1px 5px; border-radius: 3px; font-weight: 800;">PIX</span>
+                                    <span class="dyn-checkout-pix" style="font-size: 1rem; font-weight: 900; color: #22c55e;">R$ 79,90 no PIX</span>
                                 </div>
                                 <span style="font-size: 0.62rem; color: #fbbf24; font-weight: 700; display: block; margin-top: 2px;"><i class="fa-solid fa-gift"></i> + Tabela de vacinação GRÁTIS</span>
                             </div>
@@ -1681,17 +1681,7 @@
                         <span id="checkout-payer-firstname" style="display:none;"></span>
                         <span id="checkout-reservation-timer" style="display:none;"></span>
 
-                        <!-- Trust Badges -->
-                        <div class="checkout-trust-row" style="margin: 5px 0;">
-                            <div class="checkout-trust-badge" style="background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); display: flex; align-items: center; justify-content: center; gap: 5px; padding: 4px;">
-                                <i class="fa-solid fa-shield-halved" style="color: #22c55e; font-size: 0.9rem;"></i>
-                                <span style="font-size: 0.6rem; font-weight: 800; color: #166534; text-transform: uppercase;">Compra Segura</span>
-                            </div>
-                            <div class="checkout-trust-badge" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); display: flex; align-items: center; justify-content: center; gap: 5px; padding: 4px;">
-                                <i class="fa-solid fa-lock" style="color: #3b82f6; font-size: 0.9rem;"></i>
-                                <span style="font-size: 0.6rem; font-weight: 800; color: #1e40af; text-transform: uppercase;">Certificado SSL</span>
-                            </div>
-                        </div>
+
 
 
                         <div class="radio-group-top" style="margin-bottom: 6px;">
@@ -1721,6 +1711,7 @@
                         </div>
 
                         <div class="form-section-title" style="text-transform: none; font-size: 0.9rem !important; margin-top: 15px;">Complete seus dados:</div>
+                        <div id="pix-fields">
                         <div class="form-group" style="margin-bottom: 4px !important;">
                             <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
                                 data-tip="Digite seu nome e sobrenome completo para o certificado."
@@ -1742,40 +1733,50 @@
                                 data-tip="Necessário para emitir a nota fiscal (apenas números)." inputmode="numeric" pattern="[0-9]*">
                             <div class="field-tooltip">Apenas números do CPF</div>
                         </div>
+                        </div>
                         
                         <p style="text-align: center; margin-top: 6px; font-size: 0.68rem; color: #64748b; margin-bottom: 15px;">
-                            <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estão protegidos
+                            <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estão protegidos com criptografia de ponta.
                         </p>
 
                         <div id="card-area" style="display: none; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; background: #f8fafc;">
-                            <div class="form-group">
-                                <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO" data-tip="Os 16 números na frente do cartão.">
-                                <div class="field-tooltip">Digite os números do cartão</div>
-                            </div>
-                            <div style="display: flex; gap: 1rem;">
-                                <div class="form-group" style="flex: 1.5;">
-                                    <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE" data-tip="Mês e Ano de vencimento (Ex: 12/28).">
-                                    <div class="field-tooltip">MM/AA</div>
-                                </div>
-                                <div class="form-group" style="flex: 1;">
-                                    <input type="text" id="card-cvv" class="form-input" placeholder="CVV" data-tip="3 dígitos no verso do cartão.">
-                                    <div class="field-tooltip">3 dígitos no verso</div>
-                                </div>
-                            </div>
-                            <div class="form-group">
+                            <div class="form-group" style="margin-bottom: 4px !important;">
                                 <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO" data-tip="Nome exatamente como impresso no cartão.">
                                 <div class="field-tooltip">Igual impresso no cartão</div>
                             </div>
-                            <div class="form-group">
-                                <input type="tel" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR" data-tip="CPF do dono do cartão (apenas números)." inputmode="numeric" pattern="[0-9]*">
-                                <div class="field-tooltip">CPF do Dono do Cartão</div>
+                            <div class="form-group" style="margin-bottom: 4px !important;">
+                                <input type="email" id="card-email" class="form-input" placeholder="EMAIL" required inputmode="email"
+                                    data-tip="Seu melhor email onde receberá o acesso.">
+                                <div class="field-tooltip">Onde você receberá o acesso</div>
                             </div>
-                            <div class="form-group">
-                                <input type="tel" id="card-cep" class="form-input" placeholder="CEP" data-tip="CEP do endereço de cobrança." inputmode="numeric" pattern="[0-9]*">
-                                <div class="field-tooltip">CEP de cobrança</div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 4px !important;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                                    <input type="tel" id="card-phone" class="form-input" placeholder="WHATSAPP" inputmode="numeric" pattern="[0-9]*"
+                                        data-tip="DDD + Número para suporte.">
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                                    <input type="tel" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR" data-tip="CPF do dono do cartão." inputmode="numeric" pattern="[0-9]*">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <select id="installments-select" class="form-input"></select>
+                            <div class="form-group" style="margin-bottom: 4px !important;">
+                                <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO" data-tip="Os 16 números na frente do cartão.">
+                                <div class="field-tooltip">Digite os números do cartão</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 4px !important;">
+                                <div class="form-group" style="flex: 1.5; margin-bottom: 0 !important;">
+                                    <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE (MM/AA)" data-tip="Mês e Ano de vencimento.">
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                                    <input type="text" id="card-cvv" class="form-input" placeholder="CVV" data-tip="3 dígitos no verso.">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                                    <input type="tel" id="card-cep" class="form-input" placeholder="CEP" data-tip="CEP de cobrança." inputmode="numeric" pattern="[0-9]*">
+                                </div>
+                                <div class="form-group" style="flex: 1.5; margin-bottom: 0 !important;">
+                                    <select id="installments-select" class="form-input"></select>
+                                </div>
                             </div>
                         </div>
 
@@ -1957,6 +1958,15 @@
 
             <button onclick="attemptCloseCheckout()"
                 style="position: absolute; top: 0.5rem; right: 0.5rem; border: none; background: rgba(0,0,0,0.25); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 1.5rem; z-index: 10;">&times;</button>
+
+            <!-- WhatsApp Help Bubble -->
+            <a href="https://wa.me/5538999832950?text=Olá,%20preciso%20de%20ajuda%20com%20minha%20compra" target="_blank" id="checkout-wpp-bubble"
+                style="position: fixed; bottom: 18px; right: 18px; z-index: 1000010; display: flex; align-items: center; gap: 8px; background: #25d366; color: #fff; padding: 8px 14px; border-radius: 50px; text-decoration: none; box-shadow: 0 4px 15px rgba(37,211,102,0.4); font-size: 0.72rem; font-weight: 700; transition: transform 0.2s, box-shadow 0.2s;"
+                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(37,211,102,0.5)'"
+                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(37,211,102,0.4)'">
+                <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i>
+                <span style="line-height: 1.2;">Precisa de ajuda?<br><span style="font-weight: 400; font-size: 0.62rem; opacity: 0.9;">Fale com um atendente</span></span>
+            </a>
         </div>
     </div>
 
