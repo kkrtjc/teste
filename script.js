@@ -454,9 +454,8 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             if (secureOverlay) secureOverlay.classList.remove('active');
             checkoutModal.style.display = 'block';
             checkoutModal.classList.add('active');
-            setTimeout(function() {
-                checkoutModal.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            checkoutModal.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
             document.body.classList.add('modal-open');
         }, delay);
 
@@ -499,7 +498,7 @@ function renderOrderBumps(bumps) {
     `;
 
     const gridLayout = `
-        <div class="order-bump-grid-view" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div class="order-bump-grid-view" style="gap: 8px;">
             ${filteredBumps.map(bump => {
                 const isSelected = cart.bumps.includes(bump.id);
                 let imgSrc = bump.image;
