@@ -381,35 +381,38 @@
     </style>
 
     <style>
-        /* A pedido do usuário: Força o checkout a ficar lado a lado no celular, igual ao computador */
-        #checkout-page .ck-grid {
-            display: grid !important;
-            grid-template-columns: 6.5fr 5.5fr !important;
-            gap: 12px !important;
-        }
-
-        /* Correções vitais para viabilizar esse esmagamento no celular =/ */
+        
+    <style>
+        /* A pedido do usuário: Força o checkout a ficar lado a lado no celular, igual ao computador, escalando para caber! */
         @media (max-width: 768px) {
             #checkout-page .ck-main {
-                padding: 10px 4px !important;
-                max-width: 100vw !important;
+                width: 768px !important;      /* Força a largura de Desktop/Tablet */
+                max-width: 768px !important;
+                zoom: 0.48 !important;        /* Reduz toda a divisao para caber em telas ~360px */
+                margin: 0 auto !important;
+                overflow: hidden !important;  /* Evita que elementos filhos causem scroll horizontal */
+                padding: 10px !important;
             }
-            #checkout-page .ck-form-row,
-            #checkout-page .order-bump-grid-view {
-                grid-template-columns: 1fr !important;
+            #checkout-page .ck-grid {
+                /* Força o grid original do desktop a funcionar - BLINDADO COM FLEX */
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 768px !important;
+                gap: 16px !important;
             }
-            #checkout-page .ck-section-title {
-                font-size: 14px !important;
+
+            #checkout-page .ck-grid > div {
+                flex: 1 !important;
+                width: 50% !important;
+                max-width: 50% !important;
             }
-            #checkout-page .form-input {
-                font-size: 13px !important;
-                padding: 8px !important;
-            }
-            #checkout-page .ck-package-price {
-                font-size: 1.2rem !important;
+
+            #checkout-page {
+                overflow-x: hidden !important; 
             }
         }
-        
+
         /* Garantir rolagem iOS Safari */
         #checkout-page {
             bottom: 0;
@@ -420,6 +423,7 @@
         }
     </style>
 </head>
+
 
 
 <body>
