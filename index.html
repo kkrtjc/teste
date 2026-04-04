@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta charset="UTF-8">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-430QD56D2K"></script>
     <script>
@@ -377,7 +379,48 @@
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
     </style>
+
+    <style>
+        /* A pedido do usuário: Força o checkout a ficar lado a lado no celular, igual ao computador */
+        #checkout-page .ck-grid {
+            display: grid !important;
+            grid-template-columns: 6.5fr 5.5fr !important;
+            gap: 12px !important;
+        }
+
+        /* Correções vitais para viabilizar esse esmagamento no celular =/ */
+        @media (max-width: 768px) {
+            #checkout-page .ck-main {
+                padding: 10px 4px !important;
+                max-width: 100vw !important;
+            }
+            #checkout-page .ck-form-row,
+            #checkout-page .order-bump-grid-view {
+                grid-template-columns: 1fr !important;
+            }
+            #checkout-page .ck-section-title {
+                font-size: 14px !important;
+            }
+            #checkout-page .form-input {
+                font-size: 13px !important;
+                padding: 8px !important;
+            }
+            #checkout-page .ck-package-price {
+                font-size: 1.2rem !important;
+            }
+        }
+        
+        /* Garantir rolagem iOS Safari */
+        #checkout-page {
+            bottom: 0;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain;
+            height: auto !important;
+        }
+    </style>
 </head>
+
 
 <body>
     <!-- Google Tag Manager (noscript) -->
