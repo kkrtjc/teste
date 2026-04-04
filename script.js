@@ -231,9 +231,12 @@ function initMobileFixes() {
     window.addEventListener('resize', updateVh);
     updateVh();
 
-    document.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', (e) => {
+        // Se estiver rolando dentro do checkout, nunca previna!
+        if (e.target.closest('#checkout-page')) return;
+        
         if (document.body.classList.contains('modal-open')) {
-            const modal = document.querySelector('.modal-overlay');
+            const modal = document.querySelector('.modal-overlay.active');
             if (modal && !modal.contains(e.target)) {
                 e.preventDefault();
             }
