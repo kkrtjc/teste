@@ -1227,656 +1227,966 @@
         </div>
     </section>
 
-    <!-- Checkout Modal (Restored White Design) -->
-    <div id="checkout-modal" class="modal-overlay">
-        <div class="modal-content" style="background-color: #fdfbf7 !important; width: 88%; max-width: 375px !important; margin: 0 auto; padding: 15px !important;">
-            <div id="checkout-main-view" style="position: relative;">
+    
+    <!-- ============================================ -->
+    <!-- CHECKOUT INLINE (Substituiu o modal antigo) -->
+    <!-- ============================================ -->
+    <div id="checkout-page" style="display: none;">
+    <style>
+        /* === CHECKOUT PAGE - ESCOPO ISOLADO === */
+        #checkout-page {
+            background-color: #f9fafb;
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            padding-top: 0;
+        }
 
+        #checkout-page * {
+            box-sizing: border-box;
+        }
 
+        /* Header do Checkout */
+        .ck-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
 
+        .ck-header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-                <!-- CSS Otimizado para Checkout Compacto e Tooltips -->
-                <style>
-                    .checkout-summary {
-                        display: flex;
-                        background: #0f172a;
-                        border: 1px solid #1e293b;
-                        border-radius: 10px;
-                        margin-bottom: 10px;
-                        align-items: stretch;
-                        overflow: hidden;
-                        min-height: 0;
-                        position: relative;
-                    }
+        .ck-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+            color: #1f2937;
+        }
 
-                    .summary-img-wrap {
-                        position: relative;
-                        flex-shrink: 0;
-                        width: 85px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        overflow: hidden;
-                        padding: 8px 0 8px 8px;
-                    }
+        .ck-logo-elite { color: #b91c1c; }
 
-                    .summary-img {
-                        width: 80px;
-                        height: auto;
-                        max-height: 120px;
-                        object-fit: cover;
-                        border-radius: 6px;
-                        border: 1px solid rgba(255,255,255,0.15);
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-                        display: block;
-                    }
+        .ck-security-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #16a34a;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-                    .summary-details {
-                        padding: 8px 10px 8px 6px;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        flex: 1;
-                    }
+        .ck-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 14px;
+            cursor: pointer;
+            background: none;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
 
-                    .summary-details h4 {
-                        font-size: 0.8rem;
-                        color: #f8fafc;
-                        margin: 0 0 4px 0;
-                        font-weight: 800;
-                    }
+        .ck-back-btn:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
 
-                    .summary-features {
-                        list-style: none;
-                        padding: 0;
-                        margin: 0;
-                        font-size: 0.72rem;
-                        color: #94a3b8;
-                    }
+        /* Timer de Urgência */
+        .ck-urgency-banner {
+            text-align: center;
+            margin-bottom: 32px;
+        }
 
-                    .summary-features li {
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                        margin-bottom: 1px;
-                    }
+        .ck-timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 700;
+            animation: ckPulse 2s infinite;
+        }
 
-                    .summary-features i {
-                        color: #059669;
-                        font-size: 0.65rem;
-                    }
+        @keyframes ckPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
 
-                    /* Compactação do Form */
-                    .form-group {
-                        margin-bottom: 3px !important;
-                    }
+        /* Main Container */
+        .ck-main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 16px;
+        }
 
-                    .form-label {
-                        text-transform: uppercase;
-                        font-size: 0.7rem !important;
-                        font-weight: 800 !important;
-                        color: #374151 !important;
-                        margin-bottom: 1px !important;
-                    }
+        /* Grid Layout */
+        .ck-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            margin-bottom: 48px;
+        }
 
-                    .form-input {
-                        padding: 4px 8px !important; /* Reduzindo altura vertical */
-                        font-size: 0.73rem !important;
-                        height: auto !important;
-                        background: #ffffff !important; /* Fundo branco e não mais bege */
-                        color: #111827 !important;
-                        border: 1px solid #cbd5e1 !important; /* Borda slate */
-                        border-radius: 6px !important;
-                    }
-                    
-                    .form-input::placeholder {
-                        color: #9ca3af !important;
-                    }
-                    
-                    .radio-item {
-                        background: #ffffff !important; 
-                        border: 1px solid #cbd5e1 !important;
-                        color: #1f2937 !important;
-                        padding: 6px 10px !important; /* Reduzindo tamanho do card */
-                        height: 48px !important; /* Fixando um tamanho menor */
-                        display: flex !important;
-                        align-items: center !important;
-                    }
-                    
-                    .radio-item.selected {
-                        background: #f1f5f9 !important; /* Fundo selecionado slate */
-                        border-color: #0f172a !important;
-                        box-shadow: 0 0 0 1px #0f172a inset !important;
-                    }
+        @media (min-width: 1024px) {
+            .ck-grid {
+                grid-template-columns: 7fr 5fr;
+            }
+        }
 
-                    .form-section-title {
-                        font-size: 0.78rem !important;
-                        margin: 6px 0 5px !important;
-                        font-weight: 800;
-                        text-transform: uppercase;
-                        color: #374151;
-                        letter-spacing: 0.5px;
-                    }
+        /* Seções */
+        .ck-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #f3f4f6;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
 
-                    /* Tooltip de Ociosidade */
-                    .field-tooltip {
-                        position: absolute;
-                        background: #1f2937;
-                        color: #fff;
-                        padding: 6px 10px;
-                        border-radius: 6px;
-                        font-size: 0.75rem;
-                        bottom: 100%;
-                        right: 0;
-                        margin-bottom: 5px;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                        opacity: 0;
-                        transform: translateY(5px);
-                        transition: all 0.3s ease;
-                        pointer-events: none;
-                        z-index: 10;
-                        white-space: nowrap;
-                    }
+        .ck-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
 
-                    .field-tooltip.active {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+        .ck-section-number {
+            background-color: #b91c1c;
+            color: #ffffff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
 
-                    .field-tooltip::after {
-                        content: '';
-                        position: absolute;
-                        top: 100%;
-                        right: 15px;
-                        border-width: 5px;
-                        border-style: solid;
-                        border-color: #1f2937 transparent transparent transparent;
-                    }
+        .ck-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+        }
 
-                    .form-group {
-                        position: relative;
-                    }
+        /* Formulário */
+        #checkout-page .ck-form-group {
+            margin-bottom: 16px;
+        }
 
-                    /* Para posicionar o tooltip */
+        #checkout-page .ck-form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
 
-                    /* Validation Styles */
-                    .form-input.input-error, .form-input.is-invalid {
-                        border-color: #ef4444 !important;
-                        background-color: #fef2f2 !important;
-                        box-shadow: 0 0 0 1px #ef4444 inset !important;
-                    }
+        #checkout-page .form-input,
+        #checkout-page .ck-input {
+            width: 100%;
+            padding: 12px 16px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #ffffff !important;
+            color: #1f2937 !important;
+            height: auto !important;
+        }
 
-                    .form-input.input-success, .form-input.is-valid {
-                        border-color: #22c55e !important;
-                        background-color: #f0fdf4 !important;
-                    }
+        #checkout-page .form-input:focus,
+        #checkout-page .ck-input:focus {
+            outline: none;
+            border-color: #b91c1c !important;
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1) !important;
+        }
 
-                    .error-message {
-                        color: #ef4444;
-                        font-size: 0.7rem;
-                        font-weight: 700;
-                        margin-top: 2px;
-                        margin-bottom: 4px;
-                        display: block;
-                        animation: fadeIn 0.3s ease;
-                    }
+        #checkout-page .form-input::placeholder,
+        #checkout-page .ck-input::placeholder {
+            color: #9ca3af !important;
+        }
 
-                    /* Help Bubbles */
-                    .mura-help-bubble {
-                        position: absolute;
-                        background: #1e293b;
-                        color: #fff;
-                        padding: 8px 12px;
-                        border-radius: 8px;
-                        font-size: 0.75rem;
-                        bottom: 100%;
-                        left: 50%;
-                        transform: translateX(-50%) translateY(-10px);
-                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                        z-index: 100;
-                        width: max-content;
-                        max-width: 200px;
-                        pointer-events: none;
-                        animation: bubbleFadeIn 0.3s ease forwards;
-                    }
+        .ck-form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
 
-                    .mura-help-bubble::after {
-                        content: '';
-                        position: absolute;
-                        top: 100%;
-                        left: 50%;
-                        margin-left: -6px;
-                        border-width: 6px;
-                        border-style: solid;
-                        border-color: #1e293b transparent transparent transparent;
-                    }
+        @media (min-width: 768px) {
+            .ck-form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
 
-                    @keyframes bubbleFadeIn {
-                        from { opacity: 0; transform: translateX(-50%) translateY(0); }
-                        to { opacity: 1; transform: translateX(-50%) translateY(-10px); }
-                    }
+        /* Abas de Pagamento */
+        #checkout-page .radio-item {
+            flex: 1;
+            padding: 16px !important;
+            font-weight: 700;
+            text-align: center;
+            background: #ffffff !important;
+            border: 2px solid #e5e7eb !important;
+            cursor: pointer;
+            color: #9ca3af !important;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 8px !important;
+            height: auto !important;
+        }
 
-                    @keyframes fadeIn {
-                        from { opacity: 0; transform: translateY(10px); }
-                        to { opacity: 1; transform: translateY(0); }
-                    }
+        #checkout-page .radio-item.selected {
+            color: #b91c1c !important;
+            border-color: #b91c1c !important;
+            background: #fef2f2 !important;
+            box-shadow: 0 0 0 1px #b91c1c inset !important;
+        }
 
-                    /* Toast Notification System */
-                    #toast-container {
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        z-index: 1000002;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                        pointer-events: none;
-                    }
+        #checkout-page .radio-title {
+            color: inherit !important;
+            font-weight: 700;
+        }
 
-                    .toast-card {
-                        background: #fff;
-                        color: #1f2937;
-                        padding: 12px 16px;
-                        border-radius: 12px;
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-                        display: flex;
-                        align-items: center;
-                        gap: 12px;
-                        min-width: 280px;
-                        max-width: 350px;
-                        border-left: 4px solid #e11d48;
-                        animation: toastSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                        pointer-events: auto;
-                        transition: opacity 0.5s ease;
-                    }
+        #checkout-page .radio-desc {
+            font-size: 12px;
+            color: #6b7280 !important;
+        }
 
-                    .toast-content h4 {
-                        margin: 0;
-                        font-size: 0.9rem;
-                        font-weight: 800;
-                        color: #111827;
-                    }
+        /* Order Bump */
+        #checkout-page .order-bump-container {
+            background: #fef3c7 !important;
+            border: 2px dashed #fcd34d !important;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            min-height: auto;
+            margin-bottom: 12px;
+        }
 
-                    .toast-content p {
-                        margin: 2px 0 0;
-                        font-size: 0.8rem;
-                        color: #4b5563;
-                        line-height: 1.3;
-                    }
+        #checkout-page .order-bump-container.selected {
+            border-color: #22c55e !important;
+            background: #f0fdf4 !important;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.15) !important;
+        }
 
-                    .toast-stars {
-                        color: #f59e0b;
-                        font-size: 0.7rem;
-                        margin: 2px 0;
-                    }
+        #checkout-page .order-bump-container:not(.selected) {
+            animation: none;
+        }
 
-                    .toast-avatar {
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50%;
-                        object-fit: cover;
-                    }
+        /* Botão Principal */
+        .ck-btn-checkout {
+            width: 100%;
+            padding: 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(185, 28, 28, 0.2);
+            margin-bottom: 16px;
+            font-family: inherit;
+        }
 
-                    @keyframes toastSlideIn {
-                        from { transform: translateX(120%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
+        .ck-btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(185, 28, 28, 0.3);
+        }
 
-                    @media (max-width: 768px) {
-                        #toast-container {
-                            top: 10px;
-                            right: 10px;
-                            left: 10px;
-                            align-items: center;
-                        }
-                        .toast-card {
-                            width: 100%;
-                            min-width: 0;
-                        }
-                    }
+        .ck-btn-checkout:active {
+            transform: translateY(0);
+        }
 
-                    @keyframes fadeIn {
-                        from { opacity: 0; transform: translateY(10px); }
-                        to { opacity: 1; transform: translateY(0); }
-                    }
+        /* Trust Badges */
+        .ck-trust-badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            padding: 16px 0;
+        }
 
-                    /* --- Optimized Order Bump Styles --- */
-                    #order-bump-area {
-                        margin-top: 1.5rem;
-                        padding: 0;
-                        border-radius: 12px;
-                        overflow: hidden;
-                    }
+        .ck-trust-badge-item {
+            width: 32px;
+            height: 32px;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            filter: grayscale(100%);
+        }
 
-                    .order-bump-container {
-                        position: relative;
-                        overflow: hidden;
-                        border: 2px solid #d97706;
-                        border-radius: 12px;
-                        cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        min-height: 120px;
-                        display: flex;
-                        margin-bottom: 10px;
-                        background: #0f172a;
-                        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                    }
+        .ck-trust-badge-item:hover {
+            opacity: 1;
+            filter: grayscale(0%);
+        }
 
-                    .order-bump-container.selected {
-                        border-color: #10b981;
-                        background: rgba(16, 185, 129, 0.05);
-                        box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
-                    }
+        /* Resumo do Pedido (Sidebar) */
+        .ck-order-summary {
+            position: sticky;
+            top: 100px;
+        }
 
-                    .order-bump-container::before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        border: 2px solid transparent;
-                        border-radius: 10px;
-                        z-index: 5;
-                        pointer-events: none;
-                        transition: all 0.3s;
-                    }
+        .ck-product-card {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
 
-                    .order-bump-container:not(.selected) {
-                        animation: goldenGlow 3s infinite;
-                    }
+        .ck-product-image {
+            width: 80px;
+            height: 100px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
 
-                    @keyframes goldenGlow {
-                        0% { box-shadow: 0 0 5px rgba(217, 119, 6, 0.3); border-color: #d97706; }
-                        50% { box-shadow: 0 0 15px rgba(217, 119, 6, 0.6); border-color: #fbbf24; }
-                        100% { box-shadow: 0 0 5px rgba(217, 119, 6, 0.3); border-color: #d97706; }
-                    }
+        .ck-product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-                    .order-bump-badge-pulse {
-                        animation: badgePulse 2s infinite;
-                    }
+        .ck-product-info h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1.4;
+            color: #1f2937;
+        }
 
-                    @keyframes badgePulse {
-                        0% { transform: scale(1); }
-                        50% { transform: scale(1.1); }
-                        100% { transform: scale(1); }
-                    }
+        .ck-product-info p {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
 
-                    .order-bump-free-tag {
-                        background: #10b981;
-                        color: #fff;
-                        padding: 2px 8px;
-                        border-radius: 4px;
-                        font-size: 0.7rem;
-                        font-weight: 900;
-                        text-transform: uppercase;
-                        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-                        display: inline-block;
-                        margin-left: 5px;
-                    }
+        .ck-price-original {
+            text-decoration: line-through;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 500;
+        }
 
-                    .order-bump-old-price {
-                        text-decoration: line-through;
-                        color: rgba(255,255,255,0.4);
-                        font-size: 0.7rem;
-                        margin-right: 5px;
-                    }
+        .ck-price-current {
+            color: #b91c1c;
+            font-weight: 700;
+            font-size: 16px;
+        }
 
-                    /* Mobile Optimization for Bump Card */
-                    @media (max-width: 480px) {
-                        .order-bump-title { font-size: 0.85rem !important; }
-                        .order-bump-description { font-size: 0.75rem !important; }
-                        .order-bump-price { font-size: 1rem !important; }
-                    }
+        /* Resumo de Preços */
+        .ck-price-breakdown {
+            font-size: 13px;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 16px;
+        }
 
-                    /* === CHECKOUT 2-STEP === */
-                    .checkout-step-indicator { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 14px; }
-                    .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 900; background: #e2e8f0; color: #94a3b8; transition: all 0.3s; }
-                    .step-dot.active { background: #22c55e; color: #fff; box-shadow: 0 0 12px rgba(34,197,94,0.35); }
-                    .step-dot.completed { background: #22c55e; color: #fff; }
-                    .step-line { width: 50px; height: 3px; background: #e2e8f0; margin: 0 6px; border-radius: 2px; transition: all 0.3s; }
-                    .step-line.active { background: #22c55e; }
+        .ck-price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: #6b7280;
+        }
 
-                    /* Urgency Banner */
-                    @keyframes urgencyPulse { 0%,100%{ opacity:1; } 50%{ opacity:0.88; } }
-                    .checkout-urgency { background: linear-gradient(90deg, #7f1d1d, #991b1b, #7f1d1d); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; text-align: center; animation: urgencyPulse 3s infinite; }
+        .ck-price-row.discount { color: #16a34a; font-weight: 500; }
 
-                    /* Trust Badges */
-                    .checkout-trust-row { display: flex; gap: 10px; margin: 10px 0; }
-                    .checkout-trust-badge { flex: 1; border-radius: 8px; padding: 7px 4px; text-align: center; }
+        .ck-price-row.total {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 12px;
+            margin-top: 12px;
+        }
 
-                    /* Mini Testimonial */
-                    .checkout-mini-review { display: flex; align-items: center; gap: 10px; background: #e0d2b7; border: 1px solid #c7b695; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
-                    .checkout-mini-avatars { display: flex; flex-shrink: 0; }
-                    .checkout-mini-avatars img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+        /* Garantia */
+        .ck-guarantee-box {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-top: 32px;
+        }
 
-                    /* Step transition */
-                    #checkout-step-1, #checkout-step-2 { animation: fadeIn 0.3s ease; }
-                </style>
+        .ck-guarantee-icon { font-size: 32px; flex-shrink: 0; }
 
+        .ck-guarantee-content p:first-child {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1f2937;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 4px 0;
+        }
 
-                <form id="payment-form">
-                    <!-- ========== CHECKOUT ÚNICO ========== -->
-                    <div id="checkout-single-step">
+        .ck-guarantee-content p:last-child {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 0;
+        }
 
+        /* Prova Social */
+        .ck-social-proof { margin-top: 32px; }
 
+        .ck-proof-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
 
+        .ck-testimonial-box {
+            background-color: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #4b5563;
+            font-style: italic;
+            position: relative;
+            margin-bottom: 12px;
+        }
 
-                        <!-- Bloco de oferta e garantia no topo do checkout -->
-                        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #fbbf24; border-radius: 10px; padding: 8px 14px; margin-bottom: 10px; text-align: left;">
-                            <p style="margin: 0; font-size: 0.75rem; color: #cbd5e1; line-height: 1.4;">
-                                <i class="fa-solid fa-shield-halved" style="color: #22c55e;"></i> <strong style="color: #fff;">Sem risco:</strong> 7 dias de garantia — não gostou, devolvemos 100% do seu dinheiro.
-                            </p>
-                        </div>
+        .ck-testimonial-box:before {
+            content: '"';
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 32px;
+            color: #e5e7eb;
+            font-style: normal;
+        }
 
-                        <div class="modal-header" style="margin-bottom: 4px;">
-                            <h3 class="modal-title" style="margin-bottom: 2px; font-size: 1.05rem;">Finalize Sua Compra</h3>
-                        </div>
+        .ck-testimonial-author {
+            margin-top: 8px;
+            font-weight: 700;
+            color: #1f2937;
+            font-style: normal;
+            font-size: 12px;
+        }
 
-                        <!-- Resumo do Pedido - COMPACTO e IMPACTANTE -->
-                        <div style="display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #0c1220 0%, #1a2332 100%); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px; margin-bottom: 8px;">
-                            <img src="capadasdoencas.webp" alt="Capa" style="width: 55px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;" loading="eager">
-                            <div style="flex: 1; min-width: 0;">
-                                <p style="margin: 0 0 3px 0; font-size: 0.82rem; font-weight: 900; color: #f1f5f9;">Protocolo Elite: A Cura das Aves</p>
-                                <p style="margin: 0 0 2px 0; font-size: 0.7rem; color: #ef4444; font-weight: 700;"><i class="fa-solid fa-skull-crossbones" style="margin-right: 3px;"></i> Sua galinha não vai esperar — trate antes que seja tarde</p>
-                                <p style="margin: 0 0 5px 0; font-size: 0.65rem; color: #94a3b8; line-height: 1.3;">O tratamento das principais doenças que mais matam galinhas no Brasil, na palma da sua mão.<br><br><span style="font-weight: 700;">Por apenas</span></p>
-                                <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 2px;">
-                                    <span class="dyn-checkout-original" style="font-size: 0.68rem; color: #64748b; text-decoration: line-through;">R$ 149,90</span>
-                                    <span class="dyn-checkout-pix" style="font-size: 1.1rem; font-weight: 900; color: #22c55e; line-height: 1;">R$ 79,90 no PIX</span>
-                                </div>
-                                <span style="font-size: 0.62rem; color: #ef4444; font-weight: 700; display: block; margin-top: 2px;">por tempo limitado</span>
+        .ck-stars {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .ck-star { color: #fbbf24; }
+
+        .ck-rating-text {
+            color: #6b7280;
+            font-weight: 700;
+            margin-left: 8px;
+            font-size: 13px;
+        }
+
+        /* Footer Checkout */
+        .ck-footer {
+            background-color: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            padding: 32px 16px;
+            text-align: center;
+        }
+
+        .ck-footer p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .ck-footer a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 12px;
+            margin: 0 16px;
+            transition: color 0.3s ease;
+        }
+
+        .ck-footer a:hover { color: #b91c1c; text-decoration: underline; }
+
+        /* Error styles */
+        #checkout-page .form-input.input-error,
+        #checkout-page .form-input.is-invalid {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        #checkout-page .form-input.input-success,
+        #checkout-page .form-input.is-valid {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4 !important;
+        }
+
+        #checkout-page .error-message {
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* PIX Result inside checkout page */
+        #checkout-page #pix-result {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        #checkout-page #payment-pending-view {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        /* Tooltip */
+        #checkout-page .field-tooltip {
+            position: absolute;
+            background: #1f2937;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            bottom: 100%;
+            right: 0;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(5px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        #checkout-page .field-tooltip.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .ck-order-summary {
+                position: static;
+                top: auto;
+            }
+            .ck-btn-checkout {
+                font-size: 16px;
+                padding: 16px;
+            }
+            .ck-section {
+                padding: 16px;
+            }
+        }
+
+        /* Price summary box */
+        #checkout-page .price-summary-box {
+            background: #f9fafb !important;
+            border: 1px dashed #d1d5db !important;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #checkout-page .price-summary-box span {
+            color: #1f2937 !important;
+        }
+
+        /* Hidden utility */
+        #checkout-page .hidden {
+            display: none !important;
+        }
+
+        /* Card area */
+        #checkout-page #card-area {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        /* WhatsApp link in checkout */
+        #checkout-page .ck-wpp-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #25d366;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 4px 10px rgba(37,211,102,0.3);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Order bump area */
+        #checkout-page #order-bump-area {
+            margin-top: 1.5rem;
+            padding: 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* Help bubbles */
+        #checkout-page .mura-help-bubble {
+            position: absolute;
+            background: #1e293b;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+            width: max-content;
+            max-width: 200px;
+            pointer-events: none;
+            animation: ckBubbleFadeIn 0.3s ease forwards;
+        }
+
+        @keyframes ckBubbleFadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(0); }
+            to { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        #checkout-page .form-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+    </style>
+
+        <!-- Checkout Header -->
+        <div class="ck-header">
+            <div class="ck-header-container">
+                <button class="ck-back-btn" onclick="attemptCloseCheckout()">
+                    &#8592; Voltar
+                </button>
+                <div class="ck-logo">
+                    <span style="font-size: 24px;">&#x1F414;</span>
+                    <span>PROTOCOLO <span class="ck-logo-elite">ELITE</span></span>
+                </div>
+                <div class="ck-security-badge">
+                    <span>&#x1F512;</span>
+                    <span>Ambiente 100% Seguro</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ck-main">
+            <!-- Timer de Urgencia -->
+            <div class="ck-urgency-banner">
+                <div class="ck-timer-badge">
+                    <span>&#x23F0;</span>
+                    <span>Oferta expira em: <span id="ck-timer">14:59</span></span>
+                </div>
+            </div>
+
+            <!-- CHECKOUT MAIN VIEW -->
+            <div id="checkout-main-view">
+                <div class="ck-grid">
+
+                    <!-- Coluna Esquerda: Formulario -->
+                    <div>
+
+                        <!-- Dados Pessoais -->
+                        <div class="ck-section">
+                            <div class="ck-section-header">
+                                <div class="ck-section-number">1</div>
+                                <h2 class="ck-section-title">Dados Pessoais</h2>
                             </div>
+
+                            <form id="payment-form">
+                                <div id="pix-fields">
+                                    <div class="ck-form-group form-group">
+                                        <label for="payer-name">Nome Completo</label>
+                                        <input type="text" id="payer-name" class="form-input ck-input" placeholder="Como no seu documento" required
+                                            data-tip="Digite seu nome e sobrenome completo."
+                                            oninput="if(document.getElementById('checkout-payer-firstname')) document.getElementById('checkout-payer-firstname').textContent = this.value.trim().split(' ')[0].toLowerCase()">
+                                        <div class="field-tooltip">Digite seu nome completo</div>
+                                    </div>
+
+                                    <div class="ck-form-row">
+                                        <div class="ck-form-group form-group">
+                                            <label for="payer-email">E-mail (Onde recebera o acesso)</label>
+                                            <input type="email" id="payer-email" class="form-input ck-input" placeholder="seu@email.com" required inputmode="email"
+                                                data-tip="Seu melhor email onde recebera o acesso ao guia.">
+                                            <div class="field-tooltip">Onde voce recebera o acesso</div>
+                                        </div>
+                                        <div class="ck-form-group form-group">
+                                            <label for="payer-phone">WhatsApp</label>
+                                            <input type="tel" id="payer-phone" class="form-input ck-input" placeholder="(00) 00000-0000" required inputmode="numeric" pattern="[0-9]*"
+                                                data-tip="Para suporte e avisos importantes (DDD + Numero).">
+                                            <div class="field-tooltip">DDD + Numero</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ck-form-group form-group">
+                                        <label for="payer-cpf">CPF</label>
+                                        <input type="tel" id="payer-cpf" class="form-input ck-input" placeholder="000.000.000-00" required inputmode="numeric" pattern="[0-9]*"
+                                            data-tip="Necessario para emitir a nota fiscal (apenas numeros).">
+                                        <div class="field-tooltip">Apenas numeros do CPF</div>
+                                    </div>
+                                </div>
                         </div>
-                        <!-- Hidden spans for JS compatibility -->
-                        <span id="checkout-urgency-banner" style="display:none;"></span>
-                        <span id="checkout-payer-firstname" style="display:none;"></span>
-                        <span id="checkout-reservation-timer" style="display:none;"></span>
 
+                        <!-- Pagamento -->
+                        <div class="ck-section" style="margin-top: 24px;">
+                            <div class="ck-section-header">
+                                <div class="ck-section-number">2</div>
+                                <h2 class="ck-section-title">Forma de Pagamento</h2>
+                            </div>
 
-
-
-                        <div class="radio-group-top" style="margin-bottom: 6px;">
-                            <label class="form-label" style="display: block; margin-bottom: 5px;">ESCOLHA A FORMA DE PAGAMENTO</label>
-                            <div class="payment-methods-grid">
+                            <!-- Metodos -->
+                            <div class="payment-methods-grid" style="display: flex; gap: 12px; margin-bottom: 24px;">
                                 <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
-                                    <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked>
+                                    <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked style="display:none;">
                                     <div class="radio-label">
                                         <span class="radio-title">PIX</span>
                                         <span class="radio-desc">Acesso imediato</span>
                                     </div>
-                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" alt="Pix">
+                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px;" alt="Pix">
                                 </div>
                                 <div class="radio-item" onclick="selectPaymentMethod('card')">
-                                    <input type="radio" name="paymentMethod" id="method-card" value="card">
+                                    <input type="radio" name="paymentMethod" id="method-card" value="card" style="display:none;">
                                     <div class="radio-label">
-                                        <span class="radio-title">CARTÃO</span>
-                                        <span class="radio-desc">Até 4x</span>
+                                        <span class="radio-title">CARTAO</span>
+                                        <span class="radio-desc">Ate 4x s/ juros</span>
                                     </div>
-                                    <div class="payment-flags" style="display: flex; gap: 5px; align-items: center;">
+                                    <div style="display: flex; gap: 5px; align-items: center;">
                                         <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 18px;" alt="Visa">
                                         <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 18px;" alt="Mastercard">
-                                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 18px;" alt="Pix">
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="form-section-title" style="text-transform: none; font-size: 0.9rem !important; margin-top: 15px;">Complete seus dados:</div>
-                        <div id="pix-fields">
-                        <div class="form-group" style="margin-bottom: 4px !important;">
-                            <input type="text" id="payer-name" class="form-input" placeholder="NOME COMPLETO" required
-                                data-tip="Digite seu nome e sobrenome completo para o certificado."
-                                oninput="document.getElementById('checkout-payer-firstname').textContent = this.value.trim().split(' ')[0].toLowerCase()">
-                            <div class="field-tooltip">Digite seu nome completo</div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 4px !important;">
-                            <input type="email" id="payer-email" class="form-input" placeholder="EMAIL" required inputmode="email"
-                                data-tip="Seu melhor email onde receberá o acesso ao guia.">
-                            <div class="field-tooltip">Onde você receberá o acesso</div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 4px !important;">
-                            <input type="tel" id="payer-phone" class="form-input" placeholder="WHATSAPP (DDD + Número)" required
-                                data-tip="Para suporte e avisos importantes (DDD + Número)." inputmode="numeric" pattern="[0-9]*">
-                            <div class="field-tooltip">DDD + Número</div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 12px !important;">
-                            <input type="tel" id="payer-cpf" class="form-input" placeholder="CPF (apenas números)" required
-                                data-tip="Necessário para emitir a nota fiscal (apenas números)." inputmode="numeric" pattern="[0-9]*">
-                            <div class="field-tooltip">Apenas números do CPF</div>
-                        </div>
-                        </div>
-                        
-                        <p style="text-align: center; margin-top: 6px; font-size: 0.68rem; color: #64748b; margin-bottom: 15px;">
-                            <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estão protegidos com criptografia de ponta.
-                        </p>
-
-                        <div id="card-area" style="display: none; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; background: #f8fafc;">
-                            <div class="form-group" style="margin-bottom: 4px !important;">
-                                <input type="text" id="card-holder" class="form-input" placeholder="NOME NO CARTÃO" data-tip="Nome exatamente como impresso no cartão.">
-                                <div class="field-tooltip">Igual impresso no cartão</div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 4px !important;">
-                                <input type="email" id="card-email" class="form-input" placeholder="EMAIL" required inputmode="email"
-                                    data-tip="Seu melhor email onde receberá o acesso.">
-                                <div class="field-tooltip">Onde você receberá o acesso</div>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 4px !important;">
-                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                                    <input type="tel" id="card-phone" class="form-input" placeholder="WHATSAPP" inputmode="numeric" pattern="[0-9]*"
-                                        data-tip="DDD + Número para suporte.">
+                            <!-- Card Area -->
+                            <div id="card-area" style="display: none;">
+                                <div class="ck-form-group form-group">
+                                    <label>Nome no Cartao</label>
+                                    <input type="text" id="card-holder" class="form-input ck-input" placeholder="Como impresso no cartao" data-tip="Nome exatamente como impresso no cartao.">
+                                    <div class="field-tooltip">Igual impresso no cartao</div>
                                 </div>
-                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                                    <input type="tel" id="card-cpf" class="form-input" placeholder="CPF DO TITULAR" data-tip="CPF do dono do cartão." inputmode="numeric" pattern="[0-9]*">
+                                <div class="ck-form-group form-group">
+                                    <label>E-mail</label>
+                                    <input type="email" id="card-email" class="form-input ck-input" placeholder="seu@email.com" required inputmode="email">
                                 </div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 4px !important;">
-                                <input type="text" id="card-number" class="form-input" placeholder="NÚMERO DO CARTÃO" data-tip="Os 16 números na frente do cartão.">
-                                <div class="field-tooltip">Digite os números do cartão</div>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 4px !important;">
-                                <div class="form-group" style="flex: 1.5; margin-bottom: 0 !important;">
-                                    <input type="text" id="card-expiration" class="form-input" placeholder="VALIDADE (MM/AA)" data-tip="Mês e Ano de vencimento.">
-                                </div>
-                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                                    <input type="text" id="card-cvv" class="form-input" placeholder="CVV" data-tip="3 dígitos no verso.">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                                    <input type="tel" id="card-cep" class="form-input" placeholder="CEP" data-tip="CEP de cobrança." inputmode="numeric" pattern="[0-9]*">
-                                </div>
-                                <div class="form-group" style="flex: 1.5; margin-bottom: 0 !important;">
-                                    <select id="installments-select" class="form-input"></select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Order Bump Area -->
-                        <div id="order-bump-area"></div>
-
-                        <div style="text-align: center; margin-top: 1rem;">
-                            <div class="price-summary-box" style="margin-bottom: 1rem; background: var(--slate-50); border: 1px dashed var(--slate-400); padding: 0.75rem; border-radius: 0.5rem;">
-                                <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--slate-900);">
-                                    <span>Total a pagar:</span>
-                                    <span class="checkout-total-display">R$ --,--</span>
-                                </div>
-                                <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
-                            </div>
-
-                            <button type="button" id="btn-pay-pix" class="btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1.125rem;">Gerar PIX</button>
-                            <button type="button" id="btn-pay-card" class="btn-primary" style="display: none; width: 100%; padding: 0.75rem; font-size: 1.125rem;">Finalizar Pagamento</button>
-
-                            <!-- Social Proof - Below Payment Button -->
-                            <div style="margin-top: 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 12px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                    <div class="checkout-mini-avatars" style="display: flex; flex-shrink: 0;">
-                                        <img src="carrosel/ricardo.webp" alt="Aluno" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
-                                        <img src="carrosel/maria.jpg" alt="Aluna" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
-                                        <img src="carrosel/pedro.webp" alt="Aluno" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
-                                        <img src="carrosel/juliana.jpg" alt="Aluna" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                                <div class="ck-form-row">
+                                    <div class="ck-form-group form-group">
+                                        <label>WhatsApp</label>
+                                        <input type="tel" id="card-phone" class="form-input ck-input" placeholder="(00) 00000-0000" inputmode="numeric" pattern="[0-9]*">
                                     </div>
-                                    <div>
-                                        <div style="display: flex; align-items: center; gap: 4px;">
-                                            <span style="color: #f59e0b; font-size: 0.7rem; letter-spacing: -1px;">★★★★★</span>
-                                            <span style="font-size: 0.78rem; font-weight: 900; color: #166534;">4.9/5</span>
-                                            <span style="font-size: 0.62rem; color: #15803d; font-weight: 600;">(1.647 avaliações)</span>
-                                        </div>
+                                    <div class="ck-form-group form-group">
+                                        <label>CPF do Titular</label>
+                                        <input type="tel" id="card-cpf" class="form-input ck-input" placeholder="000.000.000-00" inputmode="numeric" pattern="[0-9]*">
                                     </div>
                                 </div>
-                                <div style="display: flex; flex-direction: column; gap: 5px;">
-                                    <p style="margin: 0; font-size: 0.73rem; color: #166534; font-style: italic; line-height: 1.35; padding-left: 8px; border-left: 2px solid #86efac;">"Material que salvou minha criação inteira" <strong style="font-style: normal;">— Ricardo L.</strong></p>
-                                    <p style="margin: 0; font-size: 0.73rem; color: #166534; font-style: italic; line-height: 1.35; padding-left: 8px; border-left: 2px solid #86efac;">"Gastava fortuna em remédio. Descobri que tava errando no básico." <strong style="font-style: normal;">— Marcos P.</strong></p>
+                                <div class="ck-form-group form-group">
+                                    <label>Numero do Cartao</label>
+                                    <input type="text" id="card-number" class="form-input ck-input" placeholder="0000 0000 0000 0000">
+                                    <div class="field-tooltip">Digite os numeros do cartao</div>
+                                </div>
+                                <div class="ck-form-row">
+                                    <div class="ck-form-group form-group">
+                                        <label>Validade</label>
+                                        <input type="text" id="card-expiration" class="form-input ck-input" placeholder="MM/AA">
+                                    </div>
+                                    <div class="ck-form-group form-group">
+                                        <label>CVV</label>
+                                        <input type="text" id="card-cvv" class="form-input ck-input" placeholder="123">
+                                    </div>
+                                </div>
+                                <div class="ck-form-row">
+                                    <div class="ck-form-group form-group">
+                                        <label>CEP</label>
+                                        <input type="tel" id="card-cep" class="form-input ck-input" placeholder="00000-000" inputmode="numeric" pattern="[0-9]*">
+                                    </div>
+                                    <div class="ck-form-group form-group">
+                                        <label>Parcelas</label>
+                                        <select id="installments-select" class="form-input ck-input"></select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                            <!-- Order Bump Area -->
+                            <div id="order-bump-area"></div>
+
+                            <!-- Total -->
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <div class="price-summary-box">
+                                    <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                                        <span>Total a pagar:</span>
+                                        <span class="checkout-total-display">R$ --,--</span>
+                                    </div>
+                                    <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
+                                </div>
+
+                                <button type="button" id="btn-pay-pix" class="ck-btn-checkout">FINALIZAR COMPRA - GERAR PIX</button>
+                                <button type="button" id="btn-pay-card" class="ck-btn-checkout" style="display: none;">FINALIZAR PAGAMENTO</button>
+
+                                <p style="text-align: center; font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                                    <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estao protegidos com criptografia de ponta.
+                                </p>
+                            </div>
+
+                            <!-- Trust Badges -->
+                            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;">
                                 <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 22px;" alt="Visa">
                                 <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 22px;" alt="Mastercard">
                                 <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 18px;" alt="Pix">
                                 <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" style="height: 22px;" alt="Mercado Pago">
                             </div>
                             <div style="display: flex; justify-content: center; gap: 12px; margin-top: 8px; align-items: center;">
-                                <span style="font-size: 0.6rem; color: #166534; font-weight: 700;"><i class="fa-solid fa-lock"></i> Compra Segura</span>
-                                <span style="font-size: 0.6rem; color: #166534;">|</span>
-                                <span style="font-size: 0.6rem; color: #166534; font-weight: 700;"><i class="fa-solid fa-shield-halved"></i> SSL 256-bit</span>
-                                <span style="font-size: 0.6rem; color: #166534;">|</span>
-                                <span style="font-size: 0.6rem; color: #166534; font-weight: 700;"><i class="fa-solid fa-check-double"></i> Garantia 7 dias</span>
+                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-lock"></i> Compra Segura</span>
+                                <span style="font-size: 0.7rem; color: #d1d5db;">|</span>
+                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-shield-halved"></i> SSL 256-bit</span>
+                                <span style="font-size: 0.7rem; color: #d1d5db;">|</span>
+                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-check-double"></i> Garantia 7 dias</span>
                             </div>
-                            <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+
+                            <!-- WhatsApp + CNPJ -->
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 1rem;">
                                 <div style="text-align: right; border-right: 1px solid #e2e8f0; padding-right: 15px;">
-                                    <p style="font-size: 0.6rem; color: #64748b; margin: 0; font-weight: 700;">GALOS MURA BRASIL OFICIAL</p>
-                                    <p style="font-size: 0.58rem; color: #94a3b8; margin: 2px 0 0 0;">CNPJ: 63.665.824/0001-09</p>
+                                    <p style="font-size: 0.65rem; color: #6b7280; margin: 0; font-weight: 700;">GALOS MURA BRASIL OFICIAL</p>
+                                    <p style="font-size: 0.6rem; color: #9ca3af; margin: 2px 0 0 0;">CNPJ: 63.665.824/0001-09</p>
                                 </div>
-                                <a href="https://api.whatsapp.com/send?phone=5538999832950&text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20compra" id="checkout-wpp-bubble"
-                                    style="display: flex; align-items: center; gap: 8px; background: #25d366; color: #fff; padding: 6px 12px; border-radius: 50px; text-decoration: none; box-shadow: 0 4px 10px rgba(37,211,102,0.3); font-size: 0.65rem; font-weight: 700; transition: transform 0.2s, box-shadow 0.2s;"
-                                    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 15px rgba(37,211,102,0.4)'"
-                                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 10px rgba(37,211,102,0.3)'">
+                                <a href="https://api.whatsapp.com/send?phone=5538999832950&text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20compra"
+                                    class="ck-wpp-link" target="_blank">
                                     <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
-                                    <span style="line-height: 1.2;">Precisa de ajuda?<br><span style="font-weight: 500; font-size: 0.55rem; opacity: 0.9;">Fale com um atendente</span></span>
+                                    Precisa de ajuda?
                                 </a>
                             </div>
-                            <div style="display: flex; justify-content: center; gap: 16px; margin-top: 8px;">
-                                <a href="https://www.instagram.com/galosmurabrasill/" target="_blank" style="color: #94a3b8; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#E1306C'" onmouseout="this.style.color='#94a3b8'"><i class="fa-brands fa-instagram"></i></a>
-                                <a href="https://www.facebook.com/profile.php?id=61578338141942" target="_blank" style="color: #94a3b8; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#1877F2'" onmouseout="this.style.color='#94a3b8'"><i class="fa-brands fa-facebook"></i></a>
-                                <a href="https://www.tiktok.com/@galosmurabrasil" target="_blank" style="color: #94a3b8; font-size: 0.95rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'"><i class="fa-brands fa-tiktok"></i></a>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Resumo -->
+                    <div>
+                        <div class="ck-section ck-order-summary">
+                            <h2 class="ck-section-title" style="margin-bottom: 24px;">Resumo do Pedido</h2>
+
+                            <!-- Produto -->
+                            <div class="ck-product-card">
+                                <div class="ck-product-image" id="ck-product-cover">
+                                    <img src="capadasdoencas.webp" alt="Capa">
+                                </div>
+                                <div class="ck-product-info">
+                                    <h3 id="checkout-product-name">Protocolo Elite: A Cura das Aves</h3>
+                                    <p>Acesso Vitalicio + Atualizacoes</p>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span class="ck-price-original dyn-checkout-original">R$ 149,90</span>
+                                        <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Breakdown de Precos -->
+                            <div class="ck-price-breakdown">
+                                <div class="ck-price-row">
+                                    <span>Subtotal</span>
+                                    <span class="checkout-total-display">R$ 79,90</span>
+                                </div>
+                                <div class="ck-price-row discount">
+                                    <span>Desconto PIX Aplicado</span>
+                                    <span>- R$ 70,00</span>
+                                </div>
+                                <div class="ck-price-row total">
+                                    <span>Total</span>
+                                    <span class="checkout-total-display">R$ 79,90</span>
+                                </div>
+                            </div>
+
+                            <!-- Garantia -->
+                            <div class="ck-guarantee-box">
+                                <div class="ck-guarantee-icon">&#x2705;</div>
+                                <div class="ck-guarantee-content">
+                                    <p>Garantia Blindada</p>
+                                    <p>7 dias para testar. Se nao gostar, devolvemos 100% do valor.</p>
+                                </div>
+                            </div>
+
+                            <!-- Prova Social -->
+                            <div class="ck-social-proof">
+                                <p class="ck-proof-label">O que dizem os alunos</p>
+                                <div class="ck-testimonial-box">
+                                    O material e excelente! Consegui curar 3 galos que ja estavam no bico do corvo. Vale cada centavo.
+                                    <p class="ck-testimonial-author">&#8212; Marcos Paulo, Goiania - GO</p>
+                                </div>
+                                <div class="ck-testimonial-box">
+                                    Gastava uma fortuna em remedio e as galinhas continuavam morrendo. Descobri que tava errando no basico.
+                                    <p class="ck-testimonial-author">&#8212; Ricardo Lima, Londrina - PR</p>
+                                </div>
+                                <div class="ck-stars">
+                                    <span class="ck-star">&#9733;</span>
+                                    <span class="ck-star">&#9733;</span>
+                                    <span class="ck-star">&#9733;</span>
+                                    <span class="ck-star">&#9733;</span>
+                                    <span class="ck-star">&#9733;</span>
+                                    <span class="ck-rating-text">4.9/5 (1.647 avaliacoes)</span>
+                                </div>
                             </div>
                         </div>
-
                     </div>
-                </form>
+                </div>
             </div>
 
+            <!-- PIX Result (hidden) -->
             <div id="pix-result" class="hidden" style="text-align: center;">
-                <h3 class="modal-title">Quase lá!</h3>
-                <p style="font-size: 0.9rem; color: var(--gray-600); margin: 0.5rem 0;">Escaneie o QR Code ou copie
-                    o
-                    código abaixo.</p>
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Quase la!</h3>
+                <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Escaneie o QR Code ou copie o codigo abaixo.</p>
 
                 <div class="qr-container" style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 260px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 260px; position: relative;">
-                    <!-- Loader Spinner -->
                     <div id="qr-loader" class="hidden" style="position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-shield-halved fa-beat" style="font-size: 2.5rem; color: #10b981;"></i>
-                        <p style="font-size: 0.85rem; color: #0f172a; font-weight: 800; text-align: center;">CONECTANDO AO BANCO...<br><span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Gerando PIX com segurança</span></p>
+                        <p style="font-size: 0.85rem; color: #0f172a; font-weight: 800; text-align: center;">CONECTANDO AO BANCO...<br><span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">Gerando PIX com seguranca</span></p>
                     </div>
                     <img id="qr-code-img" src="" alt="QR Code PIX" style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 8px; image-rendering: pixelated;">
                 </div>
@@ -1885,102 +2195,92 @@
                     <p style="text-align: center; margin: 2px 0 10px 0; font-size: 1.1rem; color: #0f172a; font-weight: 900; text-transform: uppercase;">JOAO PAULO SANTOS CAMARGO</p>
                 </div>
 
-                <button id="btn-copy-pix" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
-                    <i class="fa-regular fa-copy"></i> COPIAR CÓDIGO PIX
+                <button id="btn-copy-pix" class="ck-btn-checkout" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+                    <i class="fa-regular fa-copy"></i> COPIAR CODIGO PIX
                 </button>
                 <textarea id="pix-copy-paste" readonly style="opacity: 0; position: absolute; z-index: -1;"></textarea>
 
-                <div
-                    style="text-align: left; font-size: 0.85rem; color: var(--gray-600); line-height: 1.6; background: #f8fafc; padding: 1rem; border-radius: 0.5rem;">
+                <div style="text-align: left; font-size: 0.85rem; color: #6b7280; line-height: 1.6; background: #f8fafc; padding: 1rem; border-radius: 0.5rem;">
                     <p>1. Abra o app do seu banco e escolha <strong>Pix</strong>.</p>
                     <p>2. Selecione <strong>Pix Copia e Cola</strong> ou <strong>Ler QR Code</strong>.</p>
-                    <p>3. Cole o código ou escaneie a imagem acima.</p>
+                    <p>3. Cole o codigo ou escaneie a imagem acima.</p>
                 </div>
 
                 <div style="margin-top: 1.5rem; font-size: 0.85rem;">
-                    Dúvidas? <a href="https://wa.me/5538999832950" target="_blank"
-                        style="color: #25d366; font-weight: 700;"><i class="fa-brands fa-whatsapp"></i> Chame no
-                        WhatsApp</a>
+                    Duvidas? <a href="https://wa.me/5538999832950" target="_blank"
+                        style="color: #25d366; font-weight: 700;"><i class="fa-brands fa-whatsapp"></i> Chame no WhatsApp</a>
                 </div>
 
-                <!-- Security Reinforcement (Ultra-Confiança) -->
-                <div class="pix-security-reinforcement"
-                    style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
-                    <div
-                        style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-bottom: 15px;">
+                <div style="margin-top: 1.5rem; border-top: 1px dashed #e5e7eb; padding-top: 1.5rem;">
+                    <div style="display: flex; justify-content: center; gap: 15px; align-items: center; margin-bottom: 15px;">
                         <i class="fa-solid fa-lock" style="color: #16a34a; font-size: 1.2rem;"></i>
-                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px;"
-                            alt="Pix">
-                        <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-                            style="height: 22px;" alt="Mercado Pago">
+                        <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px;" alt="Pix">
+                        <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" style="height: 22px;" alt="Mercado Pago">
                     </div>
 
-                    <div
-                        style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                        <p
-                            style="color: #166534; font-weight: 800; font-size: 0.9rem; margin-bottom: 4px; text-transform: uppercase;">
-                            <i class="fa-solid fa-shield-check"></i> 7 Dias de Garantia
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                        <p style="color: #166534; font-weight: 800; font-size: 0.9rem; margin: 0 0 4px 0; text-transform: uppercase;">
+                            <i class="fa-solid fa-shield-halved"></i> 7 Dias de Garantia
                         </p>
-                        <p style="color: #15803d; font-size: 0.8rem; line-height: 1.3;">
-                            Se o protocolo não funcionar, nós devolvemos 100% do seu dinheiro sem burocracia.
+                        <p style="color: #15803d; font-size: 0.8rem; line-height: 1.3; margin: 0;">
+                            Se o protocolo nao funcionar, nos devolvemos 100% do seu dinheiro sem burocracia.
                         </p>
                     </div>
 
                     <div style="color: #64748b; font-size: 0.75rem; font-weight: 500;">
-                        <p>GALOS MURA BRASIL OFICIAL</p>
-                        <p>CNPJ: 63.665.824/0001-09</p>
+                        <p style="margin: 0;">GALOS MURA BRASIL OFICIAL</p>
+                        <p style="margin: 0;">CNPJ: 63.665.824/0001-09</p>
                     </div>
                 </div>
 
-                <button
-                    onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');"
-                    style="margin-top: 1rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer;">Voltar</button>
+                <button onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');"
+                    style="margin-top: 1rem; background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-family: inherit;">Voltar</button>
             </div>
 
-            <!-- Payment Pending View (New) -->
+            <!-- Payment Pending View -->
             <div id="payment-pending-view" class="hidden" style="text-align: center; padding: 1rem 0;">
                 <div style="font-size: 4rem; color: #f59e0b; margin-bottom: 1rem;">
-                    <i class="fa-solid fa-shield-halved fa-beat-normal"></i>
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <h3 class="modal-title" style="color: #92400e;">Pagamento em Análise</h3>
-                <p style="font-size: 0.95rem; color: var(--gray-600); margin: 1rem 0; line-height: 1.5;">
-                    Sua transação está sendo processada com segurança pelo Mercado Pago. <br>
-                    <strong>Não se preocupe, isso é um procedimento normal.</strong>
+                <h3 style="color: #92400e; font-size: 1.3rem; font-weight: 700;">Pagamento em Analise</h3>
+                <p style="font-size: 0.95rem; color: #6b7280; margin: 1rem 0; line-height: 1.5;">
+                    Sua transacao esta sendo processada com seguranca pelo Mercado Pago. <br>
+                    <strong>Nao se preocupe, isso e um procedimento normal.</strong>
                 </p>
 
-                <div
-                    style="background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 0.75rem; text-align: left; margin-bottom: 1.5rem;">
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 0.75rem; text-align: left; margin-bottom: 1.5rem;">
                     <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #92400e;">
-                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso será enviado
-                            para
-                            o seu e-mail assim que aprovado.</li>
-                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de análise: de
-                            alguns
-                            minutos até 48h.</li>
-                        <li style="color: #b91c1c; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> IMPORTANTE: Verifique sempre sua pasta de SPAM e Lixo Eletrônico. O e-mail costuma cair lá!
-                        </li>
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-envelope"></i> O acesso sera enviado para o seu e-mail assim que aprovado.</li>
+                        <li style="margin-bottom: 8px;"><i class="fa-solid fa-clock"></i> Prazo de analise: de alguns minutos ate 48h.</li>
+                        <li style="color: #b91c1c; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> IMPORTANTE: Verifique sempre sua pasta de SPAM e Lixo Eletronico.</li>
                     </ul>
                 </div>
 
-                <a href="https://wa.me/5538999832950?text=Olá,%20meu%20pagamento%20ficou%20em%20análise.%20Pode%20me%20ajudar?"
-                    target="_blank" class="btn-primary"
-                    style="width: 100%; background: #25d366; border-color: #25d366; text-decoration: none; display: inline-block;">
+                <a href="https://wa.me/5538999832950?text=Ol%C3%A1,%20meu%20pagamento%20ficou%20em%20an%C3%A1lise.%20Pode%20me%20ajudar?"
+                    target="_blank" class="ck-btn-checkout" style="display: inline-block; text-decoration: none; background: #25d366;">
                     <i class="fa-brands fa-whatsapp"></i> FALAR COM SUPORTE
                 </a>
 
                 <button onclick="closeCheckout()"
-                    style="margin-top: 1.5rem; background: none; border: none; color: var(--gray-400); text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                    style="margin-top: 1.5rem; background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-size: 0.85rem; font-family: inherit; display: block; margin-left: auto; margin-right: auto;">
                     Entendi, fechar checkout
                 </button>
             </div>
-
-
-            <button onclick="attemptCloseCheckout()"
-                style="position: absolute; top: 0.5rem; right: 0.5rem; border: none; background: rgba(0,0,0,0.25); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 1.5rem; z-index: 10;">&times;</button>
-
-
         </div>
+
+        <!-- Checkout Footer -->
+        <div class="ck-footer">
+            <p>&copy; 2026 PROTOCOLO ELITE - Todos os direitos reservados.</p>
+            <p>CNPJ: 63.665.824/0001-09 | Londrina - PR</p>
+        </div>
+
+        <!-- Hidden spans for JS compatibility -->
+        <span id="checkout-urgency-banner" style="display:none;"></span>
+        <span id="checkout-payer-firstname" style="display:none;"></span>
+        <span id="checkout-reservation-timer" style="display:none;"></span>
+        <span id="product-icon-container" style="display:none;"></span>
     </div>
+
 
     <!-- Official Footer -->
     <footer style="background: var(--zinc-950); padding: 3rem 0; border-top: 1px solid var(--slate-800); text-align: center;">
@@ -2010,9 +2310,9 @@
     <div id="secure-loading" style="display:none;"></div>
     <div id="toast-container" class="float-toast-container"></div>
     <div id="checkout-logo-overlay" style="display:none;"></div>
-    <div id="checkout-product-name" style="display:none;"></div>
-    <div id="checkout-product-price-display" style="display:none;"></div>
-    <div id="product-icon-container" style="display:none;"></div>
+    
+    
+    
 
     <div id="floating-cta" class="floating-cta-bar">
         <div class="floating-cta-content">
@@ -2083,6 +2383,104 @@
             }
         }
     </script>
+
+    <script>
+        // === CHECKOUT PAGE TIMER ===
+        (function() {
+            var CK_TIMER_KEY = 'ck_timer_end';
+            var CK_TIMER_DURATION = 15 * 60; // 15 minutes in seconds
+            var ckTimerInterval = null;
+
+            function startCkTimer() {
+                var endTime = sessionStorage.getItem(CK_TIMER_KEY);
+                if (!endTime) {
+                    endTime = Date.now() + (CK_TIMER_DURATION * 1000);
+                    sessionStorage.setItem(CK_TIMER_KEY, endTime);
+                }
+                endTime = parseInt(endTime);
+
+                function updateCkTimer() {
+                    var now = Date.now();
+                    var remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+                    var m = Math.floor(remaining / 60);
+                    var s = remaining % 60;
+                    var display = document.getElementById('ck-timer');
+                    if (display) {
+                        display.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+                    }
+                    if (remaining <= 0) {
+                        // Reset timer
+                        endTime = Date.now() + (CK_TIMER_DURATION * 1000);
+                        sessionStorage.setItem(CK_TIMER_KEY, endTime);
+                    }
+                }
+
+                updateCkTimer();
+                if (ckTimerInterval) clearInterval(ckTimerInterval);
+                ckTimerInterval = setInterval(updateCkTimer, 1000);
+            }
+
+            // Start timer when checkout page becomes visible
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        var el = document.getElementById('checkout-page');
+                        if (el && el.classList.contains('active')) {
+                            startCkTimer();
+                        }
+                    }
+                });
+            });
+
+            var checkoutPage = document.getElementById('checkout-page');
+            if (checkoutPage) {
+                observer.observe(checkoutPage, { attributes: true });
+            }
+
+            // Also start if checkout is already shown
+            if (checkoutPage && checkoutPage.style.display !== 'none') {
+                startCkTimer();
+            }
+        })();
+    </script>
+
+    <!-- Checkout Exit Intent Modal -->
+    <div id="checkout-exit-modal" class="modal-overlay" style="z-index: 1000003;">
+        <div class="modal-content" style="text-align: center; max-width: 320px; padding: 25px 20px; border: 2px solid #ef4444;">
+            <div style="font-size: 3rem; color: #ef4444; margin-bottom: 10px;">
+                <i class="fa-solid fa-triangle-exclamation fa-beat"></i>
+            </div>
+            <h3 style="color: #ef4444; font-size: 1.3rem; margin-bottom: 15px; text-transform: uppercase; font-weight: 900;">Aten&#231;&#227;o</h3>
+            <p style="font-size: 0.95rem; color: #334155; margin-bottom: 20px; line-height: 1.4; font-weight: 600;">
+                Suas galinhas precisam da sua ajuda agora,<br>n&#227;o deixe para amanh&#227;, para sua galinha amanh&#227; pode ser tarde demais
+            </p>
+            <button onclick="document.getElementById('checkout-exit-modal').classList.remove('active')" class="btn-primary" style="width: 100%; margin-bottom: 10px; font-size: 1rem; padding: 12px; background: #22c55e;">
+                FINALIZAR A COMPRA
+            </button>
+            <button onclick="confirmCloseCheckout()" style="background: none; border: none; color: #94a3b8; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
+                Sair mesmo assim
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function attemptCloseCheckout() {
+            var exitModal = document.getElementById('checkout-exit-modal');
+            if(exitModal) exitModal.classList.add('active');
+        }
+        function confirmCloseCheckout() {
+            var exitModal = document.getElementById('checkout-exit-modal');
+            if(exitModal) exitModal.classList.remove('active');
+            if(typeof closeCheckout === 'function') {
+                closeCheckout();
+            } else {
+                var ckPage = document.getElementById('checkout-page');
+                if(ckPage) { ckPage.style.display = 'none'; ckPage.classList.remove('active'); }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    </script>
+
 </body>
 
 </html>

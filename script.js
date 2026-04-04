@@ -244,7 +244,7 @@ function initMobileFixes() {
 // --- 2. CHECKOUT & API LOGIC ---
 
 // mp is initialized in index.html to avoid duplicate declaration errors
-const checkoutModal = document.getElementById('checkout-modal');
+const checkoutModal = document.getElementById('checkout-page');
 
 // --- TRACKING ENGINE ---
 async function trackEvent(type, isMobileManual = null, ctaId = null, details = null) {
@@ -452,7 +452,11 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         const delay = (productData && productData.fullBumps) ? 10 : 250;
         setTimeout(() => {
             if (secureOverlay) secureOverlay.classList.remove('active');
+            checkoutModal.style.display = 'block';
             checkoutModal.classList.add('active');
+            setTimeout(function() {
+                checkoutModal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
             document.body.classList.add('modal-open');
         }, delay);
 
@@ -796,8 +800,12 @@ function showSkeletons(container, count = 3) {
 
 // --- GLOBALS ---
 function closeCheckout() {
-    const checkoutModal = document.getElementById('checkout-modal');
-    if (checkoutModal) checkoutModal.classList.remove('active');
+    const checkoutModal = document.getElementById('checkout-page');
+    if (checkoutModal) {
+        checkoutModal.classList.remove('active');
+        checkoutModal.style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     document.body.style.overflow = '';
     document.body.classList.remove('modal-open');
     sessionStorage.removeItem('mura_modal_open');
