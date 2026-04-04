@@ -455,7 +455,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             checkoutModal.style.display = 'block';
             checkoutModal.classList.add('active');
             checkoutModal.scrollTop = 0;
-            document.body.style.overflow = 'hidden';
+            // document.body.style.overflow = 'hidden'; // Fixed iOS Safari bug
             document.body.classList.add('modal-open');
         }, delay);
 
@@ -805,7 +805,7 @@ function closeCheckout() {
         checkoutModal.style.display = 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    document.body.style.overflow = '';
+    // document.body.style.overflow = ''; // Fixed iOS Safari bug
     document.body.classList.remove('modal-open');
     sessionStorage.removeItem('mura_modal_open');
     document.documentElement.style.overflow = '';
@@ -1393,7 +1393,7 @@ document.querySelector('.close-modal')?.addEventListener('click', async () => {
     }
 
     checkoutModal.classList.remove('active');
-    document.body.style.overflow = '';
+    // document.body.style.overflow = ''; // Fixed iOS Safari bug
     document.documentElement.style.overflow = '';
 
     // RESET BUTTONS STATE (Critical Fix)
