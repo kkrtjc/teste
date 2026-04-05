@@ -261,7 +261,7 @@ async function trackEvent(type, isMobileManual = null, ctaId = null, details = n
         try {
             const resp = await fetch(`${API_URL}/api/track`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body, signal: AbortSignal.timeout(5000)
+                body
             });
             if (resp.ok) return;
         } catch (e) {
@@ -1025,8 +1025,7 @@ async function handlePayment(method) {
             const res = await fetch(`${API_URL}/api/checkout/pix`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items, customer }),
-                signal: AbortSignal.timeout(20000) 
+                body: JSON.stringify({ items, customer })
             });
 
             const data = await res.json();
@@ -1513,11 +1512,15 @@ function showPixResult(data, items) {
     qrImg.src = `data:image/png;base64,${data.qr_code_base64}`;
     document.getElementById('pix-copy-paste').value = data.qr_code;
 
+    // Fallback: Exibir UI imediatamente (evita ficar preso no "Conectando" se a imagem falhar)
+    qrLoader.classList.add('hidden');
+    qrImg.style.opacity = '1';
+    if (receiverInfo) receiverInfo.classList.remove('hidden');
+    if (copyBtn) copyBtn.style.display = 'block';
+
     qrImg.onload = () => {
-        qrLoader.classList.add('hidden');
-        qrImg.style.opacity = '1';
-        if (receiverInfo) receiverInfo.classList.remove('hidden');
-        if (copyBtn) copyBtn.style.display = 'block';
+        // Imagem carregou com sucesso
+        qrImg.style.display = 'block';
     };
 
     if (copyBtn) {
