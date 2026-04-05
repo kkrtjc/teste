@@ -1014,6 +1014,17 @@ async function handlePayment(method) {
         const pixResult = document.getElementById('pix-result');
         pixResult.classList.remove('hidden');
         
+        // Set personalized name IMMEDIATELY (before QR loads)
+        const nameInput = document.getElementById('payer-name');
+        if (nameInput && nameInput.value) {
+            const firstName = nameInput.value.trim().split(' ')[0];
+            const greetingEl = document.getElementById('pix-greeting');
+            if (greetingEl && firstName.length > 1) {
+                const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+                greetingEl.innerText = `Quase lá, ${formattedName}!`;
+            }
+        }
+        
         // Scroll to absolute top so "Quase lá" heading is visible
         setTimeout(() => {
             const ckPage = document.getElementById('checkout-page');
