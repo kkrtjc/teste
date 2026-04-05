@@ -650,10 +650,7 @@ function updateTotal() {
         el.innerText = formatBRL(finalDisplayPrice);
     });
 
-    const topPriceDisplay = document.getElementById('checkout-product-price-display');
-    if (topPriceDisplay) {
-        topPriceDisplay.innerText = formatBRL(finalDisplayPrice);
-    }
+    
 
     updateInstallments(finalDisplayPrice);
 }

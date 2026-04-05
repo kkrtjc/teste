@@ -1979,12 +1979,14 @@
 
             <!-- CHECKOUT MAIN VIEW -->
             
+            
             <div id="checkout-main-view">
-    <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
-        
-        <!-- 1. Header do Produto e Garantia -->
-        <div class="ck-section">
-            <div class="ck-product-card">
+                <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+                    
+                    <!-- 1 e 2. Produto e Garantia -->
+                    <div class="ck-section">
+                        <!-- Produto -->
+                            <div class="ck-product-card">
                                 <div class="ck-product-image" id="ck-product-cover">
                                     <img src="capadasdoencas.webp" alt="Capa">
                                 </div>
@@ -1996,11 +1998,8 @@
                                         <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span> <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; transform: translateY(-2px); display: inline-block; margin-left: 5px;">-46% OFF</span>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Breakdown
-            <div style="margin-top: 16px;">
-                                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 15px; margin-bottom: 12px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 15px; margin-bottom: 12px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
                                 <div style="display: flex; margin-right: 5px; flex-shrink: 0;">
                                     <img src="carrosel/carlos.jpg" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -10px; z-index: 3;">
                                     <img src="carrosel/maria.jpg" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -10px; z-index: 2;">
@@ -2011,6 +2010,7 @@
                                     Chegou a sua vez, nao perca essa oportunidade por tempo limitado.
                                 </div>
                             </div>
+
 <!-- Garantia -->
                             <div class="ck-guarantee-box">
                                 <div class="ck-guarantee-icon">&#x2705;</div>
@@ -2021,230 +2021,54 @@
                             </div>
 
                             <!-- Prova
-            </div>
-        </div>
-
-        <!-- 3. Ofertas Exclusivas -->
-        <div class="ck-section">
-            <h2 class="ck-section-title" style="margin-bottom: 15px; color: #dc2626; text-transform: uppercase;">&#x1F4E2; Ofertas Exclusivas Para Este Pedido</h2>
-            <div id="order-bump-area"></div>
-        </div>
-
-        <form id="payment-form">
-            <!-- 4. Dados Pessoais -->
-            <!-- Dados Pessoais -->
-                        <div class="ck-section">
-                            <div class="ck-section-header">
-                                <div class="ck-section-number">1</div>
-                                <h2 class="ck-section-title">Dados Pessoais</h2>
-                            </div>
-
-                            
-                                <div id="pix-fields">
-                                    <div class="ck-form-group form-group">
-                                        <label for="payer-name">Nome Completo</label>
-                                        <input type="text" id="payer-name" class="form-input ck-input" placeholder="Como no seu documento" required
-                                            data-tip="Digite seu nome e sobrenome completo."
-                                            oninput="if(document.getElementById('checkout-payer-firstname')) document.getElementById('checkout-payer-firstname').textContent = this.value.trim().split(' ')[0].toLowerCase()">
-                                        <div class="field-tooltip">Digite seu nome completo</div>
-                                    </div>
-
-                                    <div class="ck-form-row">
-                                        <div class="ck-form-group form-group">
-                                            <label for="payer-email">E-mail (Onde recebera o acesso)</label>
-                                            <input type="email" id="payer-email" class="form-input ck-input" placeholder="seu@email.com" required inputmode="email"
-                                                data-tip="Seu melhor email onde recebera o acesso ao guia.">
-                                            <div class="field-tooltip">Onde voce recebera o acesso</div>
-                                        </div>
-                                        <div class="ck-form-group form-group">
-                                            <label for="payer-phone">WhatsApp</label>
-                                            <input type="tel" id="payer-phone" class="form-input ck-input" placeholder="(00) 00000-0000" required inputmode="numeric" pattern="[0-9]*"
-                                                data-tip="Para suporte e avisos importantes (DDD + Numero).">
-                                            <div class="field-tooltip">DDD + Numero</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="ck-form-group form-group">
-                                        <label for="payer-cpf">CPF</label>
-                                        <input type="tel" id="payer-cpf" class="form-input ck-input" placeholder="000.000.000-00" required inputmode="numeric" pattern="[0-9]*"
-                                            data-tip="Necessario para emitir a nota fiscal (apenas numeros).">
-                                        <div class="field-tooltip">Apenas numeros do CPF</div>
-                                    </div>
-                                </div>
-                        </div>
-
-                        <!-- Pagamento -->
-
-            <!-- 5. Forma de Pagamento e Botoes -->
-            <!-- Pagamento -->
-                        <div class="ck-section" style="margin-top: 24px;">
-                            <div class="ck-section-header">
-                                <div class="ck-section-number">2</div>
-                                <h2 class="ck-section-title">Forma de Pagamento</h2>
-                            </div>
-
-                            <!-- Metodos -->
-                            <div class="payment-methods-grid" style="display: flex; gap: 12px; margin-bottom: 24px;">
-                                <div class="radio-item selected" onclick="selectPaymentMethod('pix')">
-                                    <input type="radio" name="paymentMethod" id="method-pix" value="pix" checked style="display:none;">
-                                    <div class="radio-label">
-                                        <span class="radio-title">PIX</span>
-                                        <span class="radio-desc">Acesso imediato</span>
-                                    </div>
-                                    <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 24px;" alt="Pix">
-                                </div>
-                                <div class="radio-item" onclick="selectPaymentMethod('card')">
-                                    <input type="radio" name="paymentMethod" id="method-card" value="card" style="display:none;">
-                                    <div class="radio-label">
-                                        <span class="radio-title">CARTAO</span>
-                                        <span class="radio-desc">Ate 4x s/ juros</span>
-                                    </div>
-                                    <div style="display: flex; gap: 5px; align-items: center;">
-                                        <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 18px;" alt="Visa">
-                                        <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 18px;" alt="Mastercard">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Card Area -->
-            <!-- Card Area -->
-                            <div id="card-area" style="display: none;">
-                                <div class="ck-form-group form-group">
-                                    <label>Nome no Cartao</label>
-                                    <input type="text" id="card-holder" class="form-input ck-input" placeholder="Como impresso no cartao" data-tip="Nome exatamente como impresso no cartao.">
-                                    <div class="field-tooltip">Igual impresso no cartao</div>
-                                </div>
-                                <div class="ck-form-group form-group">
-                                    <label>E-mail</label>
-                                    <input type="email" id="card-email" class="form-input ck-input" placeholder="seu@email.com" required inputmode="email">
-                                </div>
-                                <div class="ck-form-row">
-                                    <div class="ck-form-group form-group">
-                                        <label>WhatsApp</label>
-                                        <input type="tel" id="card-phone" class="form-input ck-input" placeholder="(00) 00000-0000" inputmode="numeric" pattern="[0-9]*">
-                                    </div>
-                                    <div class="ck-form-group form-group">
-                                        <label>CPF do Titular</label>
-                                        <input type="tel" id="card-cpf" class="form-input ck-input" placeholder="000.000.000-00" inputmode="numeric" pattern="[0-9]*">
-                                    </div>
-                                </div>
-                                <div class="ck-form-group form-group">
-                                    <label>Numero do Cartao</label>
-                                    <input type="text" id="card-number" class="form-input ck-input" placeholder="0000 0000 0000 0000">
-                                    <div class="field-tooltip">Digite os numeros do cartao</div>
-                                </div>
-                                <div class="ck-form-row">
-                                    <div class="ck-form-group form-group">
-                                        <label>Validade</label>
-                                        <input type="text" id="card-expiration" class="form-input ck-input" placeholder="MM/AA">
-                                    </div>
-                                    <div class="ck-form-group form-group">
-                                        <label>CVV</label>
-                                        <input type="text" id="card-cvv" class="form-input ck-input" placeholder="123">
-                                    </div>
-                                </div>
-                                <div class="ck-form-row">
-                                    <div class="ck-form-group form-group">
-                                        <label>CEP</label>
-                                        <input type="tel" id="card-cep" class="form-input ck-input" placeholder="00000-000" inputmode="numeric" pattern="[0-9]*">
-                                    </div>
-                                    <div class="ck-form-group form-group">
-                                        <label>Parcelas</label>
-                                        <select id="installments-select" class="form-input ck-input"></select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Order
-            
-            <div style="margin-top: 24px;">
-                <!-- Total -->
-                            <div style="text-align: center; margin-top: 1.5rem;">
-                                <div class="price-summary-box">
-                                    <div style="display: flex; justify-content: space-between; font-weight: 700;">
-                                        <span>Total a pagar:</span>
-                                        <span class="checkout-total-display">R$ --,--</span>
-                                    </div>
-                                    <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
-                                </div>
-
-                                <button type="button" id="btn-pay-pix" class="ck-btn-checkout">Finalizar meu acesso.</button>
-                                <button type="button" id="btn-pay-card" class="ck-btn-checkout" style="display: none;">FINALIZAR PAGAMENTO</button>
-
-                                <p style="text-align: center; font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                                    <i class="fa-solid fa-lock" style="color: #22c55e;"></i> Seus dados estao protegidos com criptografia de ponta.
-                                </p>
-                            </div>
-
-                            <!-- Trust
-                <!-- Trust Badges -->
-                            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;">
-                                <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 22px;" alt="Visa">
-                                <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 22px;" alt="Mastercard">
-                                <img src="https://logospng.org/download/pix/logo-pix-icone-1024.png" style="height: 18px;" alt="Pix">
-                                <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" style="height: 22px;" alt="Mercado Pago">
-                            </div>
-                            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 8px; align-items: center;">
-                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-lock"></i> Compra Segura</span>
-                                <span style="font-size: 0.7rem; color: #d1d5db;">|</span>
-                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-shield-halved"></i> SSL 256-bit</span>
-                                <span style="font-size: 0.7rem; color: #d1d5db;">|</span>
-                                <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-check-double"></i> Garantia 7 dias</span>
-                            </div>
-
-                            <!-- WhatsApp
-            </div>
-        </form>
-
-        <!-- 6. Prova Social -->
-        <div class="ck-section">
-            <!-- Prova Social -->
-                            <div class="ck-social-proof">
-                                <p class="ck-proof-label">O que dizem os alunos</p>
-                                <div class="ck-testimonial-box">
-                                    O material e excelente! Consegui curar 3 galos que ja estavam no bico do corvo. Vale cada centavo.
-                                    <p class="ck-testimonial-author">&#8212; Marcos Paulo, Goiania - GO</p>
-                                </div>
-                                <div class="ck-testimonial-box">
-                                    Gastava uma fortuna em remedio e as galinhas continuavam morrendo. Descobri que tava errando no basico.
-                                    <p class="ck-testimonial-author">&#8212; Ricardo Lima, Londrina - PR</p>
-                                </div>
-                                <div class="ck-stars">
-                                    <span class="ck-star">&#9733;</span>
-                                    <span class="ck-star">&#9733;</span>
-                                    <span class="ck-star">&#9733;</span>
-                                    <span class="ck-star">&#9733;</span>
-                                    <span class="ck-star">&#9733;</span>
-                                    <span class="ck-rating-text">4.9/5 (1.647 avaliacoes)</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+
+                    
+                    <!-- 3. Ofertas Exclusivas (Order Bumps) -->
+                    <div class="ck-section">
+                        <h2 class="ck-section-title" style="margin-bottom: 15px; color: #dc2626; text-transform: uppercase;">&#x1F4E2; Ofertas Exclusivas Para Este Pedido</h2>
+                        <div id="order-bump-area"></div>
+                    </div>
+
+
+                    <!-- 4, 5 e 6. Formulário de Dados e Pagamento -->
+                    <form id="payment-form">
+                        <div class="ck-section">
+                            MISSING
+                        </div>
+                        
+                        <div class="ck-section" style="padding: 24px; text-align: center; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; margin-top: 10px;">
+                            MISSING
+                        </div>
+                    </form>
+                    
+                    <!-- 7. O que dizem os alunos -->
+                    MISSING
+                    
+                    <!-- 8. Footer Seguro -->
+                    
+<!-- Footer Start -->
+<div class="ck-section" style="background: transparent; border: none; box-shadow: none; padding: 0; margin-top: 15px; text-align: center;">
+    <p style="font-size: 0.75rem; color: #10b981; margin-bottom: 8px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-lock"></i> Seus dados estão protegidos com criptografia de ponta.
+    </p>
+    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; filter: grayscale(100%) opacity(0.6);">
+        <i class="fa-brands fa-cc-visa" style="font-size: 1.5rem;"></i>
+        <i class="fa-brands fa-cc-mastercard" style="font-size: 1.5rem;"></i>
+        <i class="fa-brands fa-pix" style="font-size: 1.5rem;"></i>
+        <i class="fa-regular fa-credit-card" style="font-size: 1.5rem;"></i>
+    </div>
+    <div style="margin-bottom: 12px; font-size: 0.75rem; color: #64748b;">
+        <i class="fa-solid fa-shield-halved"></i> Compra Segura &nbsp;|&nbsp; SSL 256-bit &nbsp;|&nbsp; Garantia 7 dias
+    </div>
+    <p style="font-size: 0.7rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">GALOS MURA BRASIL OFICIAL</p>
+    <p style="font-size: 0.65rem; color: #94a3b8; margin-top: 4px;">CNPJ: 63.665.824/0001-09</p>
+</div>
+
+                    
                 </div>
             </div>
 
-            <!-- PIX
-        </div>
-
-        <!-- 7. Footer -->
-        <div class="ck-section" style="background-color: transparent; border: none; box-shadow: none;">
-            <!-- WhatsApp + CNPJ -->
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 1rem;">
-                                <div style="text-align: right; border-right: 1px solid #e2e8f0; padding-right: 15px;">
-                                    <p style="font-size: 0.65rem; color: #6b7280; margin: 0; font-weight: 700;">GALOS MURA BRASIL OFICIAL</p>
-                                    <p style="font-size: 0.6rem; color: #9ca3af; margin: 2px 0 0 0;">CNPJ: 63.665.824/0001-09</p>
-                                </div>
-                                <a href="https://api.whatsapp.com/send?phone=5538999832950&text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20compra"
-                                    class="ck-wpp-link" target="_blank">
-                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
-                                    Precisa de ajuda?
-                                </a>
-                            </div>
-                            
-        </div>
-
-    </div>
-</div>
             <!-- PIX Result (hidden) -->
             <div id="pix-result" class="hidden" style="text-align: center;">
                 <h3 style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Quase la!</h3>
