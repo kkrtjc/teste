@@ -1596,7 +1596,7 @@
             .ck-section {
                 background-color: #ffffff;
                 border-radius: 12px;
-                padding: 16px;
+                padding: 12px;
                 border: 1px solid #e5e7eb;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
             }
@@ -1645,7 +1645,7 @@
 
             /* Formulario */
             #checkout-page .ck-form-group {
-                margin-bottom: 12px;
+                margin-bottom: 8px;
             }
 
             #checkout-page .ck-form-group label {
@@ -2302,7 +2302,7 @@
 
 
             <div id="checkout-main-view">
-                <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+                <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;">
 
                     <!-- 1. Header do Produto e Garantia -->
                     <div class="ck-section">
@@ -2517,6 +2517,8 @@
                                 <!-- Total -->
                                 <div style="text-align: center; margin-top: 1.5rem;">
                                     <div class="price-summary-box">
+                                        <div id="checkout-order-summary" style="display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 8px; text-align: left; font-size: 0.85rem; color: #4b5563;">
+                                        </div>
                                         <div style="display: flex; justify-content: space-between; font-weight: 700;">
                                             <span>Total a pagar:</span>
                                             <span class="checkout-total-display">R$ --,--</span>
@@ -2587,7 +2589,7 @@
 
             <!-- PIX Result (hidden) -->
             <div id="pix-result" class="hidden" style="text-align: center;">
-                <h3 style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Quase lá!</h3>
+                <h3 id="pix-greeting" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Quase lá!</h3>
                 <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Escaneie o QR Code ou copie o código abaixo.</p>
 
                 <div class="qr-container" style="background: #fff; padding: 1rem; border-radius: 1.2rem; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 260px; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 260px; position: relative;">
@@ -2634,10 +2636,6 @@
                         </p>
                     </div>
 
-                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 500;">
-                        <p style="margin: 0;">GALOS MURA BRASIL OFICIAL</p>
-                        <p style="margin: 0;">CNPJ: 63.665.824/0001-09</p>
-                    </div>
                 </div>
 
                 <button onclick="document.getElementById('pix-result').classList.add('hidden'); document.getElementById('checkout-main-view').classList.remove('hidden');" style="margin-top: 1rem; background: none; border: none; color: #9ca3af; text-decoration: underline; cursor: pointer; font-family: inherit;">Voltar</button>
@@ -2695,7 +2693,7 @@
 
         <div class="ck-footer" style="padding-bottom: 30px;">
             <p>&copy; 2026 PROTOCOLO ELITE - Todos os direitos reservados.</p>
-            <p>CNPJ: 63.665.824/0001-09 | Londrina - PR</p>
+            <p>CNPJ: 63.665.824/0001-09</p>
         </div>
 
         <!-- Hidden spans for JS compatibility -->

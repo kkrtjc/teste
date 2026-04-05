@@ -639,6 +639,27 @@ function updateTotal() {
 
     const finalDisplayPrice = currentPaymentMethod === 'pix' ? total : cardTotal;
 
+    // Atualiza Resumo Dinâmico do Pedido (Minimalista)
+    let summaryHtml = `<div style="display: flex; justify-content: space-between;"><span>Protocolo Elite</span><span>${formatBRL(currentPaymentMethod === 'pix' ? basePrice : cardPrice)}</span></div>`;
+    
+    cart.bumps.forEach(id => {
+        let bump = cart.mainProduct.fullBumps?.find(b => b.id === id);
+        if (!bump && window.siteConfig) bump = window.siteConfig.products[id];
+        
+        let bumpTitle = bump?.title || 'Oferta Adicional';
+        if (id === 'ebook-doencas' || id === 'bump-doencas') bumpTitle = 'Guia de Doenças';
+        if (id === 'bump-6361') bumpTitle = 'Tabela de Ração';
+        if (id === 'ebook-manejo' || id.includes('manejo')) bumpTitle = 'Manual de Pintinhos';
+        
+        const priceForMethod = currentPaymentMethod === 'pix' ? (bump?.price || 0) : (bump?.priceCard || bump?.price || 0);
+        summaryHtml += `<div style="display: flex; justify-content: space-between; color: #16a34a; font-weight: 500;"><span>+ ${bumpTitle}</span><span>${formatBRL(priceForMethod)}</span></div>`;
+    });
+
+    const summaryEl = document.getElementById('checkout-order-summary');
+    if (summaryEl) {
+        summaryEl.innerHTML = summaryHtml;
+    }
+
     // Adiciona badge de desconto se PIX estiver selecionado e houver desconto
     if (currentPaymentMethod === 'pix' && cardTotal > total) {
         document.querySelectorAll('.checkout-total-display').forEach(el => {
@@ -655,8 +676,6 @@ function updateTotal() {
     document.querySelectorAll('.checkout-total-display').forEach(el => {
         el.innerText = formatBRL(finalDisplayPrice);
     });
-
-    
 
     updateInstallments(finalDisplayPrice);
 }
@@ -1508,6 +1527,16 @@ function showPixResult(data, items) {
     const qrLoader = document.getElementById('qr-loader');
     const receiverInfo = document.getElementById('pix-receiver-info');
     const copyBtn = document.getElementById('btn-copy-pix');
+    
+    const nameInput = document.getElementById('payer-name');
+    if (nameInput && nameInput.value) {
+        const firstName = nameInput.value.trim().split(' ')[0];
+        const greetingEl = document.getElementById('pix-greeting');
+        if (greetingEl && firstName.length > 1) {
+            const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            greetingEl.innerText = `Quase lá, ${formattedName}!`;
+        }
+    }
 
     qrImg.src = `data:image/png;base64,${data.qr_code_base64}`;
     document.getElementById('pix-copy-paste').value = data.qr_code;
