@@ -2288,10 +2288,13 @@
         <!-- Main Content -->
         <div class="ck-main">
             <!-- Timer de Urgencia -->
-            <div class="ck-urgency-banner">
+            <div class="ck-urgency-banner" style="display: flex; flex-direction: column; align-items: center;">
                 <div class="ck-timer-badge">
                     <span>&#x23F0;</span>
                     <span>Oferta expira em: <span id="ck-timer">14:59</span></span>
+                </div>
+                <div style="font-size: 0.75rem; color: #059669; font-weight: 700; background: #d1fae5; padding: 6px 14px; border-radius: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; border: 1px solid #a7f3d0; text-align: center; line-height: 1.2;">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Receba o acesso na palma da sua mão imediatamente após o pagamento.
                 </div>
             </div>
 
@@ -2532,28 +2535,52 @@
                             </div>
                     </form>
 
-                    <!-- 6. Prova Social -->
+            <!-- 6. Prova Social -->
                     <div class="ck-section">
                         <!-- Prova Social -->
                         <div class="ck-social-proof">
                             <p class="ck-proof-label">O que dizem os alunos</p>
-                            <div class="ck-testimonial-box">
-                                O material e excelente! Consegui curar 3 galos que ja estavam no bico do corvo. Vale
-                                cada centavo.
-                                <p class="ck-testimonial-author">&#8212; Marcos Paulo, Goiania - GO</p>
+                            
+                            <div class="ck-testimonial-box" style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                                <img src="carrosel/carlos.jpg" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0;" alt="Marcos">
+                                <div>
+                                    <div style="color: #fbbf24; font-size: 0.65rem; margin-bottom: 2px;">
+                                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                    </div>
+                                    <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: #334155; line-height: 1.4;">"O material é excelente! Consegui curar 3 galos que já estavam no bico do corvo. Vale cada centavo."</p>
+                                    <p class="ck-testimonial-author" style="margin: 0; font-weight: 700; color: #0f172a; border-top: none; padding-top: 0; text-align: left;">Marcos Paulo <span style="font-weight: 400; color: #64748b; font-size: 0.75rem; border-left: 1px solid #cbd5e1; padding-left: 6px; margin-left: 6px;">Goiânia - GO</span></p>
+                                </div>
                             </div>
-                            <div class="ck-testimonial-box">
-                                Gastava uma fortuna em remedio e as galinhas continuavam morrendo. Descobri que tava
-                                errando no basico.
-                                <p class="ck-testimonial-author">&#8212; Ricardo Lima, Londrina - PR</p>
+                            
+                            <div class="ck-testimonial-box" style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                                <img src="carrosel/maria.jpg" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0;" alt="Ricardo">
+                                <div>
+                                    <div style="color: #fbbf24; font-size: 0.65rem; margin-bottom: 2px;">
+                                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                    </div>
+                                    <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: #334155; line-height: 1.4;">"Gastava uma fortuna em remédio e as galinhas continuavam morrendo. Descobri que tava errando no básico do manejo."</p>
+                                    <p class="ck-testimonial-author" style="margin: 0; font-weight: 700; color: #0f172a; border-top: none; padding-top: 0; text-align: left;">Silvia Lima <span style="font-weight: 400; color: #64748b; font-size: 0.75rem; border-left: 1px solid #cbd5e1; padding-left: 6px; margin-left: 6px;">Londrina - PR</span></p>
+                                </div>
                             </div>
-                            <div class="ck-stars">
+
+                            <div class="ck-testimonial-box" style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                                <img src="carrosel/joao_new.webp" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0;" alt="João">
+                                <div>
+                                    <div style="color: #fbbf24; font-size: 0.65rem; margin-bottom: 2px;">
+                                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                                    </div>
+                                    <p style="margin: 0 0 6px 0; font-size: 0.85rem; color: #334155; line-height: 1.4;">"Entrega muito rápida. Paguei no PIX e em menos de 1 minuto o acesso chegou certinho no meu WhatsApp, recomendo!"</p>
+                                    <p class="ck-testimonial-author" style="margin: 0; font-weight: 700; color: #0f172a; border-top: none; padding-top: 0; text-align: left;">João Batista <span style="font-weight: 400; color: #64748b; font-size: 0.75rem; border-left: 1px solid #cbd5e1; padding-left: 6px; margin-left: 6px;">Campinas - SP</span></p>
+                                </div>
+                            </div>
+
+                            <div class="ck-stars" style="margin-top: 15px;">
                                 <span class="ck-star">&#9733;</span>
                                 <span class="ck-star">&#9733;</span>
                                 <span class="ck-star">&#9733;</span>
                                 <span class="ck-star">&#9733;</span>
                                 <span class="ck-star">&#9733;</span>
-                                <span class="ck-rating-text">4.9/5 (1.647 avaliacoes)</span>
+                                <span class="ck-rating-text">4.9/5 (1.647 avaliações)</span>
                             </div>
                         </div>
                     </div>
