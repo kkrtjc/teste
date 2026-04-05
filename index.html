@@ -2216,11 +2216,35 @@
                     grid-template-columns: 1fr !important;
                 }
 
-                /* FORCE ORDER BUMPS TO STACK VERTICALLY */
+                /* FORCE ORDER BUMPS TO BE SIDE-BY-SIDE ON MOBILE */
                 #checkout-page .order-bump-grid-view {
-                    display: flex !important;
-                    flex-direction: column !important;
-                    gap: 15px !important;
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 10px !important;
+                }
+
+                #checkout-page .order-bump-grid-view .order-bump-title {
+                    font-size: 0.7rem !important;
+                    line-height: 1.1 !important;
+                }
+
+                #checkout-page .order-bump-grid-view .order-bump-description {
+                    font-size: 0.55rem !important;
+                    line-height: 1.2 !important;
+                    margin: 4px 0 !important;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+
+                #checkout-page .order-bump-grid-view .order-bump-price {
+                    font-size: 0.7rem !important;
+                }
+
+                #checkout-page .order-bump-grid-view .order-bump-old-price {
+                    font-size: 0.55rem !important;
                 }
 
                 /* PROVA SOCIAL VERTICAL E CENTRALIZADA */
