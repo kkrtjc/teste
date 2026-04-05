@@ -504,11 +504,13 @@ function renderOrderBumps(bumps) {
         <div class="order-bump-grid-view" style="gap: 8px;">
             ${filteredBumps.map(bump => {
                 const isSelected = cart.bumps.includes(bump.id);
-                let imgSrc = bump.image;
-                if (!imgSrc) {
+                let imgSrc = bump.image || '';
+                if (!imgSrc || imgSrc.trim() === '') {
                     if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
                     else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
                     else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
+                    else if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) imgSrc = 'capadospintinhos.jpg';
+                    else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.jpg';
                 }
 
                 const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
