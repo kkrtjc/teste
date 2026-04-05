@@ -383,45 +383,7 @@
     <style>
         
     <style>
-        /* A pedido do usuário: Força o checkout a ficar lado a lado no celular, igual ao computador, escalando para caber! */
-        @media (max-width: 768px) {
-            #checkout-page .ck-main {
-                width: 768px !important;      /* Força a largura de Desktop/Tablet */
-                max-width: 768px !important;
-                zoom: 0.48 !important;        /* Reduz toda a divisao para caber em telas ~360px */
-                margin: 0 auto !important;
-                overflow: hidden !important;  /* Evita que elementos filhos causem scroll horizontal */
-                padding: 10px !important;
-            }
-            #checkout-page .ck-grid {
-                /* Força o grid original do desktop a funcionar - BLINDADO COM FLEX */
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                width: 768px !important;
-                gap: 16px !important;
-            }
-
-            #checkout-page .ck-grid > div {
-                flex: 1 !important;
-                width: 50% !important;
-                max-width: 50% !important;
-            }
-
-            #checkout-page {
-                overflow-x: hidden !important; 
-            }
-        }
-
-        /* Garantir rolagem iOS Safari */
-        #checkout-page {
-            bottom: 0;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            overscroll-behavior-y: contain;
-            height: auto !important;
-        }
-    </style>
+        </style>
 </head>
 
 
@@ -1979,7 +1941,33 @@
                 border-radius: 10px;
             }
         }
-    </style>
+    
+        /* MOBILE CHECKOUT LINEAR FULL-WIDTH OVERRIDES */
+        @media (max-width: 768px) {
+            #checkout-page .ck-form-row {
+                grid-template-columns: 1fr !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            #checkout-page .order-bump-grid-view {
+                grid-template-columns: 1fr !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            #checkout-page .payment-methods-grid {
+                flex-direction: column !important;
+            }
+            #checkout-page .ck-grid {
+                display: block !important;
+            }
+            #checkout-main-view > div {
+                display: block !important; /* Remove flex column wrapper gap if it causes issues, but keep display flex column */
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 16px !important;
+            }
+        }
+</style>
 
         <!-- Checkout Header -->
         <div class="ck-header">
@@ -2009,20 +1997,57 @@
             </div>
 
             <!-- CHECKOUT MAIN VIEW -->
+            
             <div id="checkout-main-view">
-                <div class="ck-grid">
+    <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- 1. Header do Produto e Garantia -->
+        <div class="ck-section">
+            <div class="ck-product-card">
+                                <div class="ck-product-image" id="ck-product-cover">
+                                    <img src="capadasdoencas.webp" alt="Capa">
+                                </div>
+                                <div class="ck-product-info">
+                                    <h3 id="checkout-product-name">Protocolo Elite: A Cura das Aves</h3>
+                                    <p>Acesso Vitalicio + Atualizacoes</p>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span class="ck-price-original dyn-checkout-original">R$ 149,90</span>
+                                        <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <!-- Coluna Esquerda: Formulario -->
-                    <div>
+                            <!-- Breakdown
+            <div style="margin-top: 16px;">
+                <!-- Garantia -->
+                            <div class="ck-guarantee-box">
+                                <div class="ck-guarantee-icon">&#x2705;</div>
+                                <div class="ck-guarantee-content">
+                                    <p>Garantia Blindada</p>
+                                    <p>7 dias para testar. Se nao gostar, devolvemos 100% do valor.</p>
+                                </div>
+                            </div>
 
-                        <!-- Dados Pessoais -->
+                            <!-- Prova
+            </div>
+        </div>
+
+        <!-- 3. Ofertas Exclusivas -->
+        <div class="ck-section">
+            <h2 class="ck-section-title" style="margin-bottom: 15px; color: #dc2626; text-transform: uppercase;">&#x1F4E2; Ofertas Exclusivas Para Este Pedido</h2>
+            <div id="order-bump-area"></div>
+        </div>
+
+        <form id="payment-form">
+            <!-- 4. Dados Pessoais -->
+            <!-- Dados Pessoais -->
                         <div class="ck-section">
                             <div class="ck-section-header">
                                 <div class="ck-section-number">1</div>
                                 <h2 class="ck-section-title">Dados Pessoais</h2>
                             </div>
 
-                            <form id="payment-form">
+                            
                                 <div id="pix-fields">
                                     <div class="ck-form-group form-group">
                                         <label for="payer-name">Nome Completo</label>
@@ -2057,6 +2082,9 @@
                         </div>
 
                         <!-- Pagamento -->
+
+            <!-- 5. Forma de Pagamento e Botoes -->
+            <!-- Pagamento -->
                         <div class="ck-section" style="margin-top: 24px;">
                             <div class="ck-section-header">
                                 <div class="ck-section-number">2</div>
@@ -2087,6 +2115,7 @@
                             </div>
 
                             <!-- Card Area -->
+            <!-- Card Area -->
                             <div id="card-area" style="display: none;">
                                 <div class="ck-form-group form-group">
                                     <label>Nome no Cartao</label>
@@ -2134,10 +2163,10 @@
                                 </div>
                             </div>
 
-                            <!-- Order Bump Area -->
-                            <div id="order-bump-area"></div>
-
-                            <!-- Total -->
+                            <!-- Order
+            
+            <div style="margin-top: 24px;">
+                <!-- Total -->
                             <div style="text-align: center; margin-top: 1.5rem;">
                                 <div class="price-summary-box">
                                     <div style="display: flex; justify-content: space-between; font-weight: 700;">
@@ -2155,7 +2184,8 @@
                                 </p>
                             </div>
 
-                            <!-- Trust Badges -->
+                            <!-- Trust
+                <!-- Trust Badges -->
                             <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;">
                                 <img src="https://logospng.org/download/visa/logo-visa-256.png" style="height: 22px;" alt="Visa">
                                 <img src="https://logospng.org/download/mastercard/logo-mastercard-256.png" style="height: 22px;" alt="Mastercard">
@@ -2170,68 +2200,13 @@
                                 <span style="font-size: 0.7rem; color: #16a34a; font-weight: 700;"><i class="fa-solid fa-check-double"></i> Garantia 7 dias</span>
                             </div>
 
-                            <!-- WhatsApp + CNPJ -->
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 1rem;">
-                                <div style="text-align: right; border-right: 1px solid #e2e8f0; padding-right: 15px;">
-                                    <p style="font-size: 0.65rem; color: #6b7280; margin: 0; font-weight: 700;">GALOS MURA BRASIL OFICIAL</p>
-                                    <p style="font-size: 0.6rem; color: #9ca3af; margin: 2px 0 0 0;">CNPJ: 63.665.824/0001-09</p>
-                                </div>
-                                <a href="https://api.whatsapp.com/send?phone=5538999832950&text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20compra"
-                                    class="ck-wpp-link" target="_blank">
-                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
-                                    Precisa de ajuda?
-                                </a>
-                            </div>
-                            </form>
-                        </div>
-                    </div>
+                            <!-- WhatsApp
+            </div>
+        </form>
 
-                    <!-- Coluna Direita: Resumo -->
-                    <div>
-                        <div class="ck-section ck-order-summary">
-                            <h2 class="ck-section-title" style="margin-bottom: 24px;">Resumo do Pedido</h2>
-
-                            <!-- Produto -->
-                            <div class="ck-product-card">
-                                <div class="ck-product-image" id="ck-product-cover">
-                                    <img src="capadasdoencas.webp" alt="Capa">
-                                </div>
-                                <div class="ck-product-info">
-                                    <h3 id="checkout-product-name">Protocolo Elite: A Cura das Aves</h3>
-                                    <p>Acesso Vitalicio + Atualizacoes</p>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <span class="ck-price-original dyn-checkout-original">R$ 149,90</span>
-                                        <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Breakdown de Precos -->
-                            <div class="ck-price-breakdown">
-                                <div class="ck-price-row">
-                                    <span>Subtotal</span>
-                                    <span class="checkout-total-display">R$ 79,90</span>
-                                </div>
-                                <div class="ck-price-row discount">
-                                    <span>Desconto PIX Aplicado</span>
-                                    <span>- R$ 70,00</span>
-                                </div>
-                                <div class="ck-price-row total">
-                                    <span>Total</span>
-                                    <span class="checkout-total-display">R$ 79,90</span>
-                                </div>
-                            </div>
-
-                            <!-- Garantia -->
-                            <div class="ck-guarantee-box">
-                                <div class="ck-guarantee-icon">&#x2705;</div>
-                                <div class="ck-guarantee-content">
-                                    <p>Garantia Blindada</p>
-                                    <p>7 dias para testar. Se nao gostar, devolvemos 100% do valor.</p>
-                                </div>
-                            </div>
-
-                            <!-- Prova Social -->
+        <!-- 6. Prova Social -->
+        <div class="ck-section">
+            <!-- Prova Social -->
                             <div class="ck-social-proof">
                                 <p class="ck-proof-label">O que dizem os alunos</p>
                                 <div class="ck-testimonial-box">
@@ -2256,6 +2231,28 @@
                 </div>
             </div>
 
+            <!-- PIX
+        </div>
+
+        <!-- 7. Footer -->
+        <div class="ck-section" style="background-color: transparent; border: none; box-shadow: none;">
+            <!-- WhatsApp + CNPJ -->
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 1rem;">
+                                <div style="text-align: right; border-right: 1px solid #e2e8f0; padding-right: 15px;">
+                                    <p style="font-size: 0.65rem; color: #6b7280; margin: 0; font-weight: 700;">GALOS MURA BRASIL OFICIAL</p>
+                                    <p style="font-size: 0.6rem; color: #9ca3af; margin: 2px 0 0 0;">CNPJ: 63.665.824/0001-09</p>
+                                </div>
+                                <a href="https://api.whatsapp.com/send?phone=5538999832950&text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20minha%20compra"
+                                    class="ck-wpp-link" target="_blank">
+                                    <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i>
+                                    Precisa de ajuda?
+                                </a>
+                            </div>
+                            
+        </div>
+
+    </div>
+</div>
             <!-- PIX Result (hidden) -->
             <div id="pix-result" class="hidden" style="text-align: center;">
                 <h3 style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Quase la!</h3>
