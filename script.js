@@ -359,7 +359,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     // RESET PIX BUTTON AND UPSELL STATE
     const btnPix = document.getElementById('btn-pay-pix');
     if (btnPix) {
-        btnPix.innerText = 'Gerar PIX';
+        btnPix.innerText = 'Finalizar meu acesso.';
         btnPix.disabled = false;
         btnPix.style.opacity = '1';
     }
@@ -518,33 +518,29 @@ function renderOrderBumps(bumps) {
                     : '💸 <span style="color: #fca5a5;"><strong>O maior prejuízo na criação</strong></span> está na ração comercial. <span style="color: #4ade80;"><strong>Aprenda a produzir sua própria ração balanceada</strong></span> e economize até 65% na alimentação.';
 
                 return `
-                    <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 130px; padding: 0;">
+                    <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; padding: 0; background: #fff; border: 1px solid #e5e7eb; overflow: hidden; display: flex; flex-direction: column;">
                         
-                        <!-- Background Image -->
-                        ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0; opacity: 0.85;">` : ''}
+                        <!-- Top Image -->
+                        ${imgSrc ? `<div style="width: 100%; height: 80px; overflow: hidden; background: #f3f4f6;"><img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'};"></div>` : ''}
                         
-                        <!-- Gradient Overlay -->
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.95) 100%); z-index: 1;"></div>
-
                         <!-- Content -->
-                        <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 8px; width: 100%; height: 100%; justify-content: flex-end;">
-                            
-                            <div style="position: absolute; top: 6px; right: 6px;" class="bump-check-wrapper-container">
-                                <div class="bump-check-wrapper" style="width: 18px; height: 18px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'transparent'};">
-                                    ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.6rem;"></i>' : ''}
+                        <div style="position: relative; display: flex; flex-direction: column; padding: 8px; flex-grow: 1;">
+                            <div style="position: absolute; top: 8px; right: 8px;" class="bump-check-wrapper-container">
+                                <div class="bump-check-wrapper" style="width: 16px; height: 16px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'transparent'};">
+                                    ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.5rem;"></i>' : ''}
                                 </div>
                             </div>
                             <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
                             
-                            <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.72rem; line-height: 1.1; margin-bottom: 3px; font-weight: 800; padding-right: 18px;">
+                            <strong class="order-bump-title" style="display: block; color: #1e293b; font-size: 0.72rem; line-height: 1.1; margin-bottom: 3px; font-weight: 800; padding-right: 18px;">
                                 ${title}
                             </strong>
                             
-                            <p class="order-bump-description" style="color: #cbd5e1; font-size: 0.62rem; line-height: 1.25; margin: 0; font-weight: 500;">
+                            <p class="order-bump-description" style="color: #64748b; font-size: 0.62rem; line-height: 1.25; margin: 0; font-weight: 500;">
                                 ${desc}
                             </p>
 
-                            <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 4px;">
+                            <div style="margin-top: 6px; display: flex; align-items: center; gap: 4px; margin-top: auto;">
                                 <span class="order-bump-old-price" style="text-decoration: line-through; color: #94a3b8; font-size: 0.55rem;">${isManejo ? 'R$ 99' : 'R$ 59'}</span>
                                 <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 0.85rem;">
                                     + ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}
@@ -826,7 +822,7 @@ function closeCheckout() {
     // RESET STATES ON CLOSE
     const btnPix = document.getElementById('btn-pay-pix');
     if (btnPix) {
-        btnPix.innerText = 'Gerar PIX';
+        btnPix.innerText = 'Finalizar meu acesso.';
         btnPix.disabled = false;
         btnPix.style.opacity = '1';
     }

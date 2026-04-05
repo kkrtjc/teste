@@ -1470,16 +1470,10 @@
             }
         }
         
-        #checkout-page .order-bump-grid-view {
-            display: grid !important;
-            grid-template-columns: 1fr !important;
-            gap: 10px !important;
-        }
+        #checkout-page .order-bump-grid-view { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
         
         @media (min-width: 480px) {
-            #checkout-page .order-bump-grid-view {
-                grid-template-columns: 1fr 1fr !important;
-            }
+            #checkout-page .order-bump-grid-view { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
         }
 
         /* Abas de Pagamento */
@@ -1611,17 +1605,10 @@
         }
 
         /* GRID dos bumps - lado a lado no checkout puro */
-        #checkout-page .order-bump-grid-view {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 10px !important;
-        }
+        #checkout-page .order-bump-grid-view { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
 
         @media (min-width: 480px) {
-            #checkout-page .order-bump-grid-view {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-            }
+            #checkout-page .order-bump-grid-view { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
         }
 
         /* Botao Principal */
@@ -1949,14 +1936,8 @@
                 display: flex !important;
                 flex-direction: column !important;
             }
-            #checkout-page .order-bump-grid-view {
-                grid-template-columns: 1fr !important;
-                display: flex !important;
-                flex-direction: column !important;
-            }
-            #checkout-page .payment-methods-grid {
-                flex-direction: column !important;
-            }
+            #checkout-page .order-bump-grid-view { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+            #checkout-page .payment-methods-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; flex-direction: row !important; }
             #checkout-page .ck-grid {
                 display: block !important;
             }
@@ -2009,17 +1990,28 @@
                                 </div>
                                 <div class="ck-product-info">
                                     <h3 id="checkout-product-name">Protocolo Elite: A Cura das Aves</h3>
-                                    <p>Acesso Vitalicio + Atualizacoes</p>
+                                    <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 4px;">Acesso Vitalicio + Atualizacoes<br><span style="color: #16a34a; font-weight: 700;">+ Tabela de vacinacao gratuita inclusa</span></p>
                                     <div style="display: flex; gap: 8px; align-items: center;">
                                         <span class="ck-price-original dyn-checkout-original">R$ 149,90</span>
-                                        <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span>
+                                        <span class="ck-price-current dyn-checkout-pix" id="checkout-product-price-display">R$ 79,90</span> <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; transform: translateY(-2px); display: inline-block; margin-left: 5px;">-46% OFF</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Breakdown
             <div style="margin-top: 16px;">
-                <!-- Garantia -->
+                                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 15px; margin-bottom: 12px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                <div style="display: flex; margin-right: 5px; flex-shrink: 0;">
+                                    <img src="carrosel/carlos.jpg" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -10px; z-index: 3;">
+                                    <img src="carrosel/maria.jpg" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-right: -10px; z-index: 2;">
+                                    <img src="carrosel/joao_new.webp" style="width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; z-index: 1;">
+                                </div>
+                                <div style="font-size: 0.65rem; color: #4b5563; line-height: 1.2;">
+                                    <strong style="color: #111;">Mais de 1635 alunos ja estao salvando suas aves.</strong><br>
+                                    Chegou a sua vez, nao perca essa oportunidade por tempo limitado.
+                                </div>
+                            </div>
+<!-- Garantia -->
                             <div class="ck-guarantee-box">
                                 <div class="ck-guarantee-icon">&#x2705;</div>
                                 <div class="ck-guarantee-content">
@@ -2176,7 +2168,7 @@
                                     <div id="pix-bonus-status" style="margin-top: 4px; display: none;"></div>
                                 </div>
 
-                                <button type="button" id="btn-pay-pix" class="ck-btn-checkout">FINALIZAR COMPRA - GERAR PIX</button>
+                                <button type="button" id="btn-pay-pix" class="ck-btn-checkout">Finalizar meu acesso.</button>
                                 <button type="button" id="btn-pay-card" class="ck-btn-checkout" style="display: none;">FINALIZAR PAGAMENTO</button>
 
                                 <p style="text-align: center; font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
