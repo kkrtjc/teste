@@ -378,10 +378,10 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             title: 'Protocolo Elite: A Cura das Aves',
             price: 79.90,
             originalPrice: 149.90,
-            cover: 'capadasdoencas.jpg',
+            cover: 'capadasdoencas.webp',
             fullBumps: [
-                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.jpg', description: 'Crie pintinhos fortes e saudáveis.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentaçao correta em todas as fases da sua criaçao. Economize na raçao e acelere o crescimento das suas aves com o balanceamento ideal.', tag: 'OFERTA ÚNICA' }
+                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.webp', description: 'Crie pintinhos fortes e saudáveis.' },
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentaçao correta em todas as fases da sua criaçao. Economize na raçao e acelere o crescimento das suas aves com o balanceamento ideal.', tag: 'OFERTA ÚNICA' }
             ]
         },
         'combo-elite': {
@@ -390,7 +390,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             originalPrice: 169.80,
             cover: 'combo',
             fullBumps: [
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.jpg', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
             ]
         }
     };
@@ -434,8 +434,8 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             if (productData.cover === 'combo') {
                 iconContainer.innerHTML = `
                     <div style="display: flex; gap: 5px; align-items: center;">
-                        <img src="capadospintinhos.jpg" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                        <img src="capadasdoencas.jpg" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadospintinhos.webp" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="capadasdoencas.webp" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
                     </div>`;
             } else {
                 iconContainer.innerHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px;">`;
@@ -504,11 +504,11 @@ function renderOrderBumps(bumps) {
         const isSelected = cart.bumps.includes(bump.id);
         let imgSrc = bump.image || '';
         if (!imgSrc || imgSrc.trim() === '') {
-            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
-            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
-            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
-            else if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) imgSrc = 'capadospintinhos.jpg';
-            else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.jpg';
+            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.webp';
+            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.webp';
+            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.webp';
+            else if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) imgSrc = 'capadospintinhos.webp';
+            else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.webp';
         }
 
         const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
@@ -1632,13 +1632,13 @@ function showPixResult(data, items) {
 
 // --- 5. FLOATING TOASTS LOGIC ---
 const toastData = [
-    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.jpg' },
-    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.jpg' },
-    { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.jpg' },
-    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.jpg' },
-    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.jpg' },
+    { name: 'Ricardo S.', city: 'PR', text: 'Comprei e não me arrependo, conteúdo excelente!', avatar: 'carrosel/ricardo.webp' },
+    { name: 'Ana Costa', city: 'GO', text: 'Meus pintinhos pararam de morrer.', avatar: 'carrosel/ana.webp' },
+    { name: 'João O.', city: 'BA', text: 'O suporte foi muito atencioso.', avatar: 'carrosel/joao_new.webp' },
+    { name: 'Carlos M.', city: 'MG', text: 'Material super completo, valeu a pena.', avatar: 'carrosel/carlos.webp' },
+    { name: 'Fernanda L.', city: 'SP', text: 'Recuperei meu galo favorito com o guia!', avatar: 'carrosel/fernanda.webp' },
     { name: 'Roberto J.', city: 'RS', text: 'Entrega imediata, já estou estudando.', avatar: 'https://ui-avatars.com/api/?name=Roberto+J&background=random' },
-    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.jpg' }
+    { name: 'Maria S.', city: 'SC', text: 'Muito bem explicado, parabéns.', avatar: 'carrosel/maria.webp' }
 ];
 
 let toastInterval = null;
