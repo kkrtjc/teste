@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta charset="UTF-8">
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-430QD56D2K"></script>
     <script>
@@ -24,7 +24,36 @@
                     'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
         })(window, document, 'script', 'dataLayer', 'GTM-WVBJNXCQ');</script>
     <!-- End Google Tag Manager -->
-    <meta charset="UTF-8">
+    <!-- Meta Pixel Code -->
+    <script>
+        !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1346740157465853');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=1346740157465853&ev=PageView&noscript=1" />
+    </noscript>
+    <!-- End Meta Pixel Code -->
+    <!-- TikTok Pixel Code -->
+    <script>
+        !function (w, d, t) {
+            w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || []; ttq.methods = ["page", "track", "identify", "instances", "load", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"], ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < ttq.methods.length; i++)ttq.setAndDefer(ttq, ttq.methods[i]); ttq.instance = function (t) { for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++)ttq.setAndDefer(e, ttq.methods[n]); return e }, ttq.load = function (e, n) { var i = "https://analytics.tiktok.com/i18n/pixel/events.js"; ttq._i = ttq._i || {}, ttq._i[e] = [], ttq._i[e]._u = i, ttq._t = ttq._t || {}, ttq._t[e] = +new Date, ttq._o = ttq._o || {}, ttq._o[e] = n || {}; var o = d.createElement("script"); o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + t; var a = d.getElementsByTagName("script")[0]; a.parentNode.insertBefore(o, a) };
+            ttq.load('D4VFSO3C77U98L8KBEF0');
+            ttq.page();
+        }(window, document, 'ttq');
+    </script>
+    <!-- End TikTok Pixel Code -->
     <title>PROTOCOLO ELITE: A Cura das Aves | O Segredo das Galinhas</title>
 
     <!-- Performance Optimizations -->
@@ -2893,49 +2922,9 @@
         })();
     </script>
 
-    <!-- Checkout Exit Intent Modal -->
-    <div id="checkout-exit-modal" class="modal-overlay" style="z-index: 1000003;">
-        <div class="modal-content"
-            style="text-align: center; max-width: 320px; padding: 25px 20px; border: 2px solid #ef4444;">
-            <div style="font-size: 3rem; color: #ef4444; margin-bottom: 10px;">
-                <i class="fa-solid fa-triangle-exclamation fa-beat"></i>
-            </div>
-            <h3
-                style="color: #ef4444; font-size: 1.3rem; margin-bottom: 15px; text-transform: uppercase; font-weight: 900;">
-                Aten&#231;&#227;o</h3>
-            <p style="font-size: 0.95rem; color: #334155; margin-bottom: 20px; line-height: 1.4; font-weight: 600;">
-                Suas galinhas precisam da sua ajuda agora,<br>n&#227;o deixe para amanh&#227;, para sua galinha
-                amanh&#227; pode ser tarde demais
-            </p>
-            <button onclick="document.getElementById('checkout-exit-modal').classList.remove('active')"
-                class="btn-primary"
-                style="width: 100%; margin-bottom: 10px; font-size: 1rem; padding: 12px; background: #22c55e;">
-                FINALIZAR A COMPRA
-            </button>
-            <button onclick="confirmCloseCheckout()"
-                style="background: none; border: none; color: #94a3b8; text-decoration: underline; cursor: pointer; font-size: 0.85rem;">
-                Sair mesmo assim
-            </button>
-        </div>
-    </div>
 
-    <script>
-        function attemptCloseCheckout() {
-            var exitModal = document.getElementById('checkout-exit-modal');
-            if (exitModal) exitModal.classList.add('active');
-        }
-        function confirmCloseCheckout() {
-            var exitModal = document.getElementById('checkout-exit-modal');
-            if (exitModal) exitModal.classList.remove('active');
-            if (typeof closeCheckout === 'function') {
-                closeCheckout();
-            } else {
-                var ckPage = document.getElementById('checkout-page');
-                if (ckPage) { ckPage.style.display = 'none'; ckPage.classList.remove('active'); }
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-    </script>
+
+
 
 </body>
 
