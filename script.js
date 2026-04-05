@@ -640,7 +640,11 @@ function updateTotal() {
     const finalDisplayPrice = currentPaymentMethod === 'pix' ? total : cardTotal;
 
     // Atualiza Resumo Dinâmico do Pedido (Minimalista)
-    let summaryHtml = `<div style="display: flex; justify-content: space-between;"><span>Protocolo Elite</span><span>${formatBRL(currentPaymentMethod === 'pix' ? basePrice : cardPrice)}</span></div>`;
+    let eliteHtml = currentPaymentMethod === 'pix' 
+        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span>Protocolo Elite</span><span style="text-align: right;"><span style="text-decoration: line-through; color: #9ca3af; font-size: 0.75rem; margin-right: 4px;">R$ 149,90</span> por ${formatBRL(basePrice)}<br><span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">com 46% de desconto</span></span></div>`
+        : `<div style="display: flex; justify-content: space-between;"><span>Protocolo Elite</span><span>${formatBRL(cardPrice)}</span></div>`;
+        
+    let summaryHtml = eliteHtml;
     
     cart.bumps.forEach(id => {
         let bump = cart.mainProduct.fullBumps?.find(b => b.id === id);
@@ -658,19 +662,6 @@ function updateTotal() {
     const summaryEl = document.getElementById('checkout-order-summary');
     if (summaryEl) {
         summaryEl.innerHTML = summaryHtml;
-    }
-
-    // Adiciona badge de desconto se PIX estiver selecionado e houver desconto
-    if (currentPaymentMethod === 'pix' && cardTotal > total) {
-        document.querySelectorAll('.checkout-total-display').forEach(el => {
-            if (el.parentElement) {
-                const discountBadge = document.createElement('span');
-                discountBadge.className = 'pix-discount-badge';
-                discountBadge.style.cssText = 'display: inline-block; margin-left: 8px; font-size: 0.6rem; color: #10b981; font-weight: 900; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 20px; text-transform: uppercase; vertical-align: middle;';
-                discountBadge.innerHTML = `🔥 46% DE DESCONTO NO PIX`;
-                el.parentElement.appendChild(discountBadge);
-            }
-        });
     }
 
     document.querySelectorAll('.checkout-total-display').forEach(el => {
