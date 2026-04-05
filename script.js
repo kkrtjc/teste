@@ -1014,6 +1014,11 @@ async function handlePayment(method) {
         const pixResult = document.getElementById('pix-result');
         pixResult.classList.remove('hidden');
         
+        // Scroll to top so QR code is visible immediately
+        const ckPage = document.getElementById('checkout-page');
+        if (ckPage) ckPage.scrollTop = 0;
+        pixResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
         // Show loader and hide content until ready
         document.getElementById('qr-loader').classList.remove('hidden');
         document.getElementById('qr-code-img').style.opacity = '0';
