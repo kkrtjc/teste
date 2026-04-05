@@ -500,65 +500,65 @@ function renderOrderBumps(bumps) {
         </div>
     `;
 
-    const gridLayout = `
-        <div class="order-bump-grid-view" style="gap: 8px;">
-            ${filteredBumps.map(bump => {
-                const isSelected = cart.bumps.includes(bump.id);
-                let imgSrc = bump.image || '';
-                if (!imgSrc || imgSrc.trim() === '') {
-                    if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
-                    else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
-                    else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
-                    else if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) imgSrc = 'capadospintinhos.jpg';
-                    else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.jpg';
-                }
+    const bumpHtml = filteredBumps.map(bump => {
+        const isSelected = cart.bumps.includes(bump.id);
+        let imgSrc = bump.image || '';
+        if (!imgSrc || imgSrc.trim() === '') {
+            if (bump.id === 'ebook-doencas' || bump.id === 'bump-doencas') imgSrc = 'capadasdoencas.jpg';
+            else if (bump.id === 'ebook-manejo' || bump.id === 'bump-manejo') imgSrc = 'capadospintinhos.jpg';
+            else if (bump.id === 'bump-6361') imgSrc = 'tabela_racao_bump.jpg';
+            else if (bump.title?.includes('Pintinhos') || bump.title?.includes('Manejo')) imgSrc = 'capadospintinhos.jpg';
+            else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.jpg';
+        }
 
-                const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
-                const title = isManejo ? 'MANUAL DE PINTINHOS' : bump.title;
-                const desc = isManejo 
-                    ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> nos pintinhos com o manual de elite.' 
-                    : '💸 <span style="color: #fca5a5;"><strong>O maior prejuízo na criação</strong></span> está na ração comercial. <span style="color: #4ade80;"><strong>Aprenda a produzir sua própria ração balanceada</strong></span> e economize até 65% na alimentação.';
+        const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
+        const title = isManejo ? 'MANUAL DE PINTINHOS' : bump.title;
+        const desc = isManejo 
+            ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> nos pintinhos com o manual de elite.' 
+            : '💸 <span style="color: #fca5a5;"><strong>O maior prejuízo na criação</strong></span> está na ração comercial. <span style="color: #4ade80;"><strong>Aprenda a produzir sua própria ração balanceada</strong></span> e economize até 65% na alimentação.';
 
-                return `
-                    <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer;">
-                        
-                        <!-- Background Image -->
-                        ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0;">` : ''}
-                        
-                        <!-- Gradient Overlay -->
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
+        return `
+            <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer;">
+                
+                <!-- Background Image -->
+                ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0;">` : ''}
+                
+                <!-- Gradient Overlay -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
 
-                        <!-- Content -->
-                        <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 8px; width: 100%; height: 100%; justify-content: flex-end; min-height: 140px;">
-                            
-                            <div style="position: absolute; top: 6px; right: 6px;" class="bump-check-wrapper-container">
-                                <div class="bump-check-wrapper" style="width: 18px; height: 18px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.4)'};">
-                                    ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.6rem;"></i>' : ''}
-                                </div>
-                            </div>
-                            <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
-                            
-                            <strong class="order-bump-title" style="display: block; color: #fff; font-size: 0.72rem; line-height: 1.1; margin-bottom: 3px; font-weight: 800; padding-right: 18px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                                ${title}
-                            </strong>
-                            
-                            <p class="order-bump-description" style="color: #e2e8f0; font-size: 0.58rem; line-height: 1.2; margin: 0; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                                ${desc}
-                            </p>
-
-                            <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 4px;">
-                                <span class="order-bump-old-price" style="text-decoration: line-through; color: #94a3b8; font-size: 0.55rem;">${isManejo ? 'R$ 99' : 'R$ 59'}</span>
-                                <span class="order-bump-price" style="color: #fbbf24; font-weight: 900; font-size: 0.85rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                                    + ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}
-                                </span>
-                            </div>
+                <!-- Content -->
+                <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 8px; width: 100%; height: 100%; justify-content: flex-end; min-height: 140px;">
+                    
+                    <div style="position: absolute; top: 6px; right: 6px;" class="bump-check-wrapper-container">
+                        <div class="bump-check-wrapper" style="width: 18px; height: 18px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.4)'};">
+                            ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.6rem;"></i>' : ''}
                         </div>
-                    </div>`;
-            }).join('')}
+                    </div>
+                    <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
+                    
+                    <strong class="order-bump-title">
+                        ${title}
+                    </strong>
+                    
+                    <p class="order-bump-description">
+                        ${desc}
+                    </p>
+
+                    <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px; position: relative; z-index: 5;">
+                        <span class="order-bump-old-price">${isManejo ? 'R$ 99' : 'R$ 59'}</span>
+                        <span class="order-bump-price">
+                            + ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}
+                        </span>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+
+    area.innerHTML = bumpHeader + `
+        <div class="order-bump-grid-view">
+            ${bumpHtml}
         </div>
     `;
-
-    area.innerHTML = bumpHeader + gridLayout;
 }
 
 function toggleBump(bumpId) {
