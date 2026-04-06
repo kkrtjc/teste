@@ -640,9 +640,11 @@ function updateTotal() {
     const finalDisplayPrice = currentPaymentMethod === 'pix' ? total : cardTotal;
 
     // Atualiza Resumo Dinâmico do Pedido (Minimalista)
+    const pInstPix = formatBRL(basePrice / 4);
+    const pInstCard = formatBRL(cardPrice / 4);
     let eliteHtml = currentPaymentMethod === 'pix' 
-        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span>Protocolo Elite</span><span style="text-align: right;"><span style="text-decoration: line-through; color: #9ca3af; font-size: 0.75rem; margin-right: 4px;">R$ 149,90</span> por ${formatBRL(basePrice)}<br><span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">com 46% de desconto</span></span></div>`
-        : `<div style="display: flex; justify-content: space-between;"><span>Protocolo Elite</span><span>${formatBRL(cardPrice)}</span></div>`;
+        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstPix} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no PIX</span></span></div>`
+        : `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #10b981; font-size: 0.85rem; font-weight: 800;">4x de ${pInstCard}</span><br><span style="font-size: 0.75rem; color: #64748b;">(ou ${formatBRL(cardPrice)} à vista)</span></span></div>`;
         
     let summaryHtml = eliteHtml;
     
