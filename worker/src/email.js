@@ -55,7 +55,11 @@ export async function sendEmail(env, customer, items, paymentId = null) {
         const payload = {
             to: customer.email,
             subject: '✅ Seu Acesso Chegou! - O Segredo das Galinhas',
-            html: htmlContent
+            html: htmlContent,
+            text: `Olá ${customer.name}, seu acesso foi liberado!\n\nPara baixar seus materiais, acesse o link abaixo:\n${downloadLink}\n\nSe tiver qualquer dúvida, me mande uma mensagem no WhatsApp:\nhttps://wa.me/5538999832950?text=Ol%C3%A1,%20preciso%20de%20ajuda%20com%20meu%20acesso\n\nAtt,\nProtocolo Elite`,
+            download_link: downloadLink,
+            customer_name: customer.name,
+            whatsapp_link: 'https://wa.me/5538999832950?text=Ol%C3%A1,%20preciso%20de%20ajuda%20com%20meu%20acesso'
         };
 
         const res = await fetch(webhookUrl, {
