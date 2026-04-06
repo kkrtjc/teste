@@ -22,7 +22,7 @@ export async function sendEmail(env, customer, items, paymentId = null) {
 </head>
 <body>
   <div class="header">
-    <img src="https://teste-dl7.pages.dev/logo.webp" alt="Logo" style="height:50px;margin-bottom:15px;">
+    <img src="https://teste-dl7.pages.dev/logo.webp" alt="Logo" style="max-width:180px;height:auto;margin-bottom:15px;">
     <h1 style="color:#FFD700;margin:0;font-size:26px;">ACESSO LIBERADO! 🚀</h1>
   </div>
   <div class="content">
@@ -32,13 +32,7 @@ export async function sendEmail(env, customer, items, paymentId = null) {
       <a href="${downloadLink}" class="btn">ACESSAR MEUS MATERIAIS ➔</a>
       <p style="color:#666;font-size:13px;margin-top:15px;">O acesso é vitalício. Guarde este e-mail.</p>
     </div>
-    <h3 style="color:#000;font-size:16px;border-bottom:1px solid #ddd;padding-bottom:10px;">ITENS DO SEU PEDIDO:</h3>
-    ${items.map(item => `
-      <div class="item-card">
-        <span class="badge">APROVADO</span>
-        <div style="margin-top:5px;font-weight:bold;color:#1a1a1a;">${item.title}</div>
-      </div>
-    `).join('')}
+
     <div style="margin-top:30px;">
       <p><strong>PRECISA DE AJUDA?</strong></p>
       <a href="https://wa.me/5538999832950?text=Ol%C3%A1,%20preciso%20de%20ajuda%20com%20meu%20acesso"
