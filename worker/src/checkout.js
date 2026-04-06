@@ -159,7 +159,7 @@ checkoutRoutes.post('/card', async (c) => {
 
     if (result.status === 'approved') {
         await logSale(c.env, customer, items, result.id, 'cartão');
-        sendEmail(c.env, customer, items, result.id); // fire-and-forget
+        await sendEmail(c.env, customer, items, result.id); 
         const dlToken = await generateDownloadToken(customer.email, items, result.id, c.env);
         return c.json({ status: 'approved', id: result.id, redirectToken: dlToken });
     } else if (result.status === 'in_process' || result.status === 'pending') {

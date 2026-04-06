@@ -50,8 +50,8 @@ webhookRoutes.post('/mercadopago', async (c) => {
                     await saveAbandons(c.env, abandons);
                 }
 
-                // Envia e-mail (fire-and-forget no contexto do webhook)
-                c.executionCtx?.waitUntil(sendEmail(c.env, customer, items, paymentId));
+                // Envia e-mail
+                await sendEmail(c.env, customer, items, paymentId);
             }
         } catch (e) {
             console.error('[WEBHOOK ERROR]', e.message);
