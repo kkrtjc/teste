@@ -428,6 +428,11 @@ async function startCheckoutProcess(productId, forceBumps = []) {
 
         document.getElementById('checkout-product-name').innerText = productData.title;
         document.getElementById('checkout-product-price-display').innerText = formatBRL(productData.price);
+        
+        const topCardPriceEl = document.getElementById('top-checkout-card-price');
+        const topCardInstEl = document.getElementById('top-checkout-card-installment');
+        if (topCardPriceEl) topCardPriceEl.innerText = formatBRL(productData.originalPrice || (productData.price * 2));
+        if (topCardInstEl) topCardInstEl.innerText = `4x de ${formatBRL((productData.originalPrice || (productData.price * 2)) / 4)}`;
 
         const iconContainer = document.getElementById('product-icon-container');
         if (iconContainer) {
@@ -643,7 +648,7 @@ function updateTotal() {
     const pInstPix = formatBRL(basePrice / 4);
     const pInstCard = formatBRL(cardPrice / 4);
     let eliteHtml = currentPaymentMethod === 'pix' 
-        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstPix} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no PIX</span></span></div>`
+        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstCard} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no PIX</span></span></div>`
         : `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #10b981; font-size: 0.85rem; font-weight: 800;">4x de ${pInstCard}</span><br><span style="font-size: 0.75rem; color: #64748b;">(ou ${formatBRL(cardPrice)} à vista)</span></span></div>`;
         
     let summaryHtml = eliteHtml;
