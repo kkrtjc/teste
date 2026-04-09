@@ -380,8 +380,8 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             originalPrice: 149.90,
             cover: 'capadasdoencas.webp',
             fullBumps: [
-                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.webp', description: 'Crie pintinhos fortes e saudáveis.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentaçao correta em todas as fases da sua criaçao. Economize na raçao e acelere o crescimento das suas aves com o balanceamento ideal.', tag: 'OFERTA ÚNICA' }
+                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.webp', description: '90% das mortes ocorrem antes dos 20 dias. O manual ensina temperatura, ração e manejo correto para garantir a sobrevivência dos seus pintinhos.' },
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Corte até R$ 80/mês no gasto com ração. Aprenda a montar sua própria ração balanceada e nutritiva sem depender de marca cara.', tag: 'OFERTA ÚNICA' }
             ]
         },
         'combo-elite': {
@@ -498,9 +498,10 @@ function renderOrderBumps(bumps) {
     area.style.marginTop = '0.5rem';
 
     const bumpHeader = `
-        <div style="text-align: center; margin-bottom: 4px;">
-            <p style="color: #d97706; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; margin: 0;">
-                📢 OFERTAS EXCLUSIVAS PARA ESTE PEDIDO
+        <div style="text-align: center; margin-bottom: 6px; padding: 8px 10px; background: rgba(239,68,68,0.08); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
+            <p style="color: #ef4444; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0; line-height: 1.6;">
+                ⚡ ADICIONE AGORA ESSAS OFERTAS IMPERDÍVEIS!<br>
+                <span style="color: #fbbf24;">ELAS NÃO APARECEM EM OUTRO LUGAR — ESSA É SUA ÚNICA CHANCE.</span>
             </p>
         </div>
     `;
@@ -517,43 +518,50 @@ function renderOrderBumps(bumps) {
         }
 
         const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
-        const title = isManejo ? 'MANUAL DE PINTINHOS' : bump.title;
+        const title = isManejo ? '🐣 SALVE SEUS PINTINHOS' : '💰 CORTE SUA CONTA DE RAÇÃO';
         const desc = isManejo 
-            ? '🐣 <span style="color: #fca5a5;"><strong>90% das mortes</strong></span> em pintinhos é por manejo errado. <span style="color: #4ade80;"><strong>Garanta 95% de sobrevivência</strong></span> nos pintinhos com o manual de elite.' 
-            : '💸 <span style="color: #fca5a5;"><strong>O maior prejuízo na criação</strong></span> está na ração comercial. <span style="color: #4ade80;"><strong>Aprenda a produzir sua própria ração balanceada</strong></span> e economize até 65% na alimentação.';
+            ? '<span style="color: #fca5a5;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, bico molhado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.' 
+            : '<span style="color: #fca5a5;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até R$ 80/mês</strong> no seu plantel.';
+
+        const bumpLabel = isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO';
 
         return `
-            <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer;">
-                
-                <!-- Background Image -->
-                ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0;">` : ''}
-                
-                <!-- Gradient Overlay -->
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
-
-                <!-- Content -->
-                <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 8px; width: 100%; height: 100%; justify-content: flex-end; min-height: 140px;">
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center;">
+                <span style="font-size: 0.72rem; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: 1.2px; line-height: 1.1; min-height: 26px; display: flex; align-items: center; justify-content: center; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.5);">
+                    ${bumpLabel}
+                </span>
+                <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer; width: 100%;">
                     
-                    <div style="position: absolute; top: 6px; right: 6px;" class="bump-check-wrapper-container">
-                        <div class="bump-check-wrapper" style="width: 18px; height: 18px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.4)'};">
-                            ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.6rem;"></i>' : ''}
+                    <!-- Background Image -->
+                    ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0;">` : ''}
+                    
+                    <!-- Gradient Overlay -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
+
+                    <!-- Content -->
+                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 8px; width: 100%; height: 100%; justify-content: flex-end; min-height: 140px;">
+                        
+                        <div style="position: absolute; top: 6px; right: 6px;" class="bump-check-wrapper-container">
+                            <div class="bump-check-wrapper" style="width: 18px; height: 18px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.4)'};">
+                                ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.6rem;"></i>' : ''}
+                            </div>
                         </div>
-                    </div>
-                    <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
-                    
-                    <strong class="order-bump-title">
-                        ${title}
-                    </strong>
-                    
-                    <p class="order-bump-description">
-                        ${desc}
-                    </p>
+                        <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
+                        
+                        <strong class="order-bump-title">
+                            ${title}
+                        </strong>
+                        
+                        <p class="order-bump-description">
+                            ${desc}
+                        </p>
 
-                    <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px; position: relative; z-index: 5;">
-                        <span class="order-bump-old-price">${isManejo ? 'R$ 99' : 'R$ 59'}</span>
-                        <span class="order-bump-price">
-                            + ${formatBRL(currentPaymentMethod === 'pix' ? bump.price : (bump.priceCard || bump.price))}
-                        </span>
+                        <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px; position: relative; z-index: 5;">
+                            <span class="order-bump-old-price">${isManejo ? 'R$ 99,90' : 'R$ 49,90'}</span>
+                            <span class="order-bump-price">
+                                + ${formatBRL((currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? bump.price : (bump.priceCard || bump.price))}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -642,13 +650,13 @@ function updateTotal() {
 
     document.querySelectorAll('.pix-discount-badge').forEach(b => b.remove());
 
-    const finalDisplayPrice = currentPaymentMethod === 'pix' ? total : cardTotal;
+    const finalDisplayPrice = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? total : cardTotal;
 
     // Atualiza Resumo Dinâmico do Pedido (Minimalista)
     const pInstPix = formatBRL(basePrice / 4);
     const pInstCard = formatBRL(cardPrice / 4);
-    let eliteHtml = currentPaymentMethod === 'pix' 
-        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstCard} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no PIX</span></span></div>`
+    let eliteHtml = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') 
+        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstCard} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no ${currentPaymentMethod === 'pix' ? 'PIX' : 'Boleto'}</span></span></div>`
         : `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #10b981; font-size: 0.85rem; font-weight: 800;">4x de ${pInstCard}</span><br><span style="font-size: 0.75rem; color: #64748b;">(ou ${formatBRL(cardPrice)} à vista)</span></span></div>`;
         
     let summaryHtml = eliteHtml;
@@ -662,7 +670,7 @@ function updateTotal() {
         if (id === 'bump-6361') bumpTitle = 'Tabela de Ração';
         if (id === 'ebook-manejo' || id.includes('manejo')) bumpTitle = 'Manual de Pintinhos';
         
-        const priceForMethod = currentPaymentMethod === 'pix' ? (bump?.price || 0) : (bump?.priceCard || bump?.price || 0);
+        const priceForMethod = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? (bump?.price || 0) : (bump?.priceCard || bump?.price || 0);
         summaryHtml += `<div style="display: flex; justify-content: space-between; color: #16a34a; font-weight: 500;"><span>+ ${bumpTitle}</span><span>${formatBRL(priceForMethod)}</span></div>`;
     });
 
@@ -908,13 +916,14 @@ function switchMethod(method) {
     const cardArea = document.getElementById('card-area');
     const btnPix = document.getElementById('btn-pay-pix');
     const btnCard = document.getElementById('btn-pay-card');
+    const btnBoleto = document.getElementById('btn-pay-boleto');
 
     if (method === 'pix') {
         if (pixArea) { pixArea.style.display = 'block'; }
         if (cardArea) { cardArea.style.display = 'none'; }
         if (btnPix) btnPix.style.display = 'block';
         if (btnCard) btnCard.style.display = 'none';
-        // Mostrar campos PIX
+        if (btnBoleto) btnBoleto.style.display = 'none';
         const pixFields = document.getElementById('pix-fields');
         if (pixFields) pixFields.style.display = 'block';
 
@@ -923,9 +932,18 @@ function switchMethod(method) {
         if (cardArea) { cardArea.style.display = 'block'; }
         if (btnPix) btnPix.style.display = 'none';
         if (btnCard) btnCard.style.display = 'block';
-        // Esconder campos PIX (cartão tem os próprios)
+        if (btnBoleto) btnBoleto.style.display = 'none';
         const pixFields = document.getElementById('pix-fields');
         if (pixFields) pixFields.style.display = 'none';
+        
+    } else if (method === 'boleto') {
+        if (pixArea) { pixArea.style.display = 'block'; } // reaproveita os mesmos campos do pix
+        if (cardArea) { cardArea.style.display = 'none'; }
+        if (btnPix) btnPix.style.display = 'none';
+        if (btnCard) btnCard.style.display = 'none';
+        if (btnBoleto) btnBoleto.style.display = 'block';
+        const pixFields = document.getElementById('pix-fields');
+        if (pixFields) pixFields.style.display = 'block';
     }
 
     // RECALCULATE TOTAL WHEN SWITCHING
@@ -951,7 +969,7 @@ async function handlePayment(method) {
             : (document.getElementById('payer-phone')?.value || '').replace(/\D/g, '')
     };
 
-    if (method === 'pix') {
+    if (method === 'pix' || method === 'boleto') {
         customer = {
             ...commonData,
             name: document.getElementById('payer-name').value,
@@ -1012,45 +1030,27 @@ async function handlePayment(method) {
 
     console.log(`📦 [CHECKOUT] Payload Items (${method}):`, items);
 
-    if (method === 'pix') {
-        const btn = document.getElementById('btn-pay-pix');
-        const originalText = (btn) ? btn.innerText : 'Gerar PIX';
+    if (method === 'pix' || method === 'boleto') {
+        const isBoleto = method === 'boleto';
+        const btn = document.getElementById(isBoleto ? 'btn-pay-boleto' : 'btn-pay-pix');
+        const originalText = (btn) ? btn.innerText : (isBoleto ? 'Gerar Boleto' : 'Gerar PIX');
 
         // --- INSTANT UI FEEDBACK ---
         document.getElementById('checkout-main-view').classList.add('hidden');
-        const pixResult = document.getElementById('pix-result');
-        pixResult.classList.remove('hidden');
+        const resultView = document.getElementById(isBoleto ? 'boleto-result' : 'pix-result');
+        resultView.classList.remove('hidden');
         
-        // Set personalized name IMMEDIATELY (before QR loads)
-        const nameInput = document.getElementById('payer-name');
-        if (nameInput && nameInput.value) {
-            const firstName = nameInput.value.trim().split(' ')[0];
-            const greetingEl = document.getElementById('pix-greeting');
-            if (greetingEl && firstName.length > 1) {
-                const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-                greetingEl.innerText = `Quase lá, ${formattedName}!`;
-            }
+        // Mostrar "Gerando..." ou loader equivalente?
+        if (!isBoleto) {
+            document.getElementById('qr-loader').classList.remove('hidden');
+            document.getElementById('qr-code-img').style.opacity = '0';
+            document.getElementById('pix-receiver-info').classList.add('hidden');
+            document.getElementById('btn-copy-pix').style.display = 'none';
+        } else {
+            document.getElementById('boleto-barcode-display').innerText = 'Gerando código...';
+            document.getElementById('btn-copy-boleto').style.display = 'none';
+            document.getElementById('btn-pdf-boleto').style.display = 'none';
         }
-        
-        // Scroll to absolute top so "Quase lá" heading is visible
-        setTimeout(() => {
-            const ckPage = document.getElementById('checkout-page');
-            if (ckPage) {
-                ckPage.scrollTop = 0;
-                // Also reset parent containers (modal-overlay / modal-content)
-                const overlay = ckPage.closest('.modal-overlay');
-                if (overlay) overlay.scrollTop = 0;
-                const content = ckPage.closest('.modal-content');
-                if (content) content.scrollTop = 0;
-            }
-            window.scrollTo(0, 0);
-        }, 50);
-        
-        // Show loader and hide content until ready
-        document.getElementById('qr-loader').classList.remove('hidden');
-        document.getElementById('qr-code-img').style.opacity = '0';
-        document.getElementById('pix-receiver-info').classList.add('hidden');
-        document.getElementById('btn-copy-pix').style.display = 'none';
 
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
         const itemIds = items.map(i => i.id).sort().join(',');
@@ -1064,7 +1064,8 @@ async function handlePayment(method) {
                 return;
             }
 
-            const res = await fetch(`${API_URL}/api/checkout/pix`, {
+            const endpointVar = isBoleto ? '/api/checkout/boleto' : '/api/checkout/pix';
+            const res = await fetch(`${API_URL}${endpointVar}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items, customer })
@@ -1072,7 +1073,7 @@ async function handlePayment(method) {
 
             const data = await res.json();
 
-            if (data.qr_code) {
+            if (!isBoleto && data.qr_code) {
                 localStorage.setItem('active_pix_session', JSON.stringify({
                     data: data,
                     total: totalAmount,
@@ -1083,21 +1084,24 @@ async function handlePayment(method) {
                 captureAbandonedLead({ pixGenerated: true, pixId: data.id });
                 showPixResult(data, items);
 
+            } else if (isBoleto && data.barcode) {
+                captureAbandonedLead({ pixGenerated: true, pixId: data.id });
+                showBoletoResult(data, items);
             } else {
-                console.error("Pix Error Response:", data);
-                alert(data.error || data.message || 'Houve um erro ao gerar o PIX.');
+                console.error("Payment Error Response:", data);
+                alert(data.error || data.message || 'Houve um erro ao processar o pagamento.');
                 document.getElementById('checkout-main-view').classList.remove('hidden');
-                pixResult.classList.add('hidden');
+                resultView.classList.add('hidden');
                 if (btn) {
                     btn.disabled = false;
                     btn.innerText = originalText;
                 }
             }
         } catch (e) {
-            console.error("Pix Error:", e);
-            alert('Não foi possível gerar o seu PIX agora.');
+            console.error("Payment Error:", e);
+            alert('Não foi possível processar seu pagamento agora.');
             document.getElementById('checkout-main-view').classList.remove('hidden');
-            pixResult.classList.add('hidden');
+            resultView.classList.add('hidden');
             if (btn) {
                 btn.disabled = false;
                 btn.innerText = originalText;
@@ -1290,6 +1294,19 @@ async function processPixPayment() {
     handlePayment('pix');
 }
 
+// --- 1.5 BOLETO PAYMENT ---
+async function startBoletoPayment(event) {
+    if (event) event.preventDefault();
+    console.log('🔵 startBoletoPayment CALLED');
+
+    if (!validateCheckoutInputs('boleto')) {
+        return;
+    }
+
+    console.log('✅ Validation passed! Proceeding to handlePayment(boleto)');
+    handlePayment('boleto');
+}
+
 // --- 2. CARD PAYMENT (Simplified) ---
 async function startCardPayment(event) {
     console.log('🔵 startCardPayment CALLED');
@@ -1343,10 +1360,11 @@ function showToast(title, message, type = 'error') {
 function validateCheckoutInputs(method) {
     console.log('🔍 [VALIDATE] Inicando validação para:', method);
     
-    const name = document.getElementById(method === 'pix' ? 'payer-name' : 'card-holder');
-    const email = document.getElementById(method === 'pix' ? 'payer-email' : 'card-email');
-    const phone = document.getElementById(method === 'pix' ? 'payer-phone' : 'card-phone');
-    const cpf = document.getElementById(method === 'pix' ? 'payer-cpf' : 'card-cpf');
+    const isPixOrBoleto = method === 'pix' || method === 'boleto';
+    const name = document.getElementById(isPixOrBoleto ? 'payer-name' : 'card-holder');
+    const email = document.getElementById(isPixOrBoleto ? 'payer-email' : 'card-email');
+    const phone = document.getElementById(isPixOrBoleto ? 'payer-phone' : 'card-phone');
+    const cpf = document.getElementById(isPixOrBoleto ? 'payer-cpf' : 'card-cpf');
 
     if (!validateField(name, 'text')) { 
         showToast('Nome incompleto', 'Por favor, informe seu nome completo para emissão da nota.'); 
@@ -1354,7 +1372,7 @@ function validateCheckoutInputs(method) {
         return false; 
     }
     if (!validateField(email, 'email')) { 
-        showToast('E-mail inválido', 'Precisamos de um e-mail válido para enviar seu acesso.'); 
+        showToast('E-mail inválido', 'Se preenchido, informe um e-mail válido.'); 
         email.focus();
         return false; 
     }
@@ -1421,6 +1439,7 @@ async function captureAbandonedLead(extra = {}) {
 
 // Event Listeners with Order Bump Interception
 document.getElementById('btn-pay-pix')?.addEventListener('click', startPixPayment);
+document.getElementById('btn-pay-boleto')?.addEventListener('click', startBoletoPayment);
 document.getElementById('btn-pay-card')?.addEventListener('click', startCardPayment);
 document.getElementById('btn-pay-card-direct')?.addEventListener('click', processCardPayment);
 
@@ -1445,6 +1464,11 @@ document.querySelector('.close-modal')?.addEventListener('click', async () => {
         btnPix.disabled = false;
         btnPix.innerText = 'GERAR PIX AGORA'; // Or original text
     }
+    const btnBoleto = document.getElementById('btn-pay-boleto');
+    if (btnBoleto) {
+        btnBoleto.disabled = false;
+        btnBoleto.innerText = 'GERAR BOLETO';
+    }
     const btnCard = document.getElementById('btn-pay-card');
     if (btnCard) {
         btnCard.disabled = false;
@@ -1455,6 +1479,8 @@ document.querySelector('.close-modal')?.addEventListener('click', async () => {
     setTimeout(() => {
         document.getElementById('checkout-main-view').classList.remove('hidden');
         document.getElementById('pix-result').classList.add('hidden');
+        const boletoResult = document.getElementById('boleto-result');
+        if (boletoResult) boletoResult.classList.add('hidden');
         if (window.activePixPoll) {
             clearInterval(window.activePixPoll);
             window.activePixPoll = null;
@@ -1681,6 +1707,42 @@ function showPixResult(data, items) {
     window.activePixPoll = setTimeout(pollLogic, 1000);
 }
 
+function showBoletoResult(data, items) {
+    const copyBtn = document.getElementById('btn-copy-boleto');
+    const pdfBtn = document.getElementById('btn-pdf-boleto');
+    const displayEl = document.getElementById('boleto-barcode-display');
+    
+    // Mostra barra
+    if (displayEl && data.barcode) {
+        displayEl.innerText = data.barcode;
+    }
+
+    // Copiar
+    if (copyBtn && data.barcode) {
+        copyBtn.style.display = 'block';
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(data.barcode);
+            showToast('Código Copiado', 'Cole no app do seu banco para pagar.', 'success');
+        };
+    }
+
+    // PDF
+    if (pdfBtn && data.external_resource_url) {
+        pdfBtn.style.display = 'flex';
+        pdfBtn.href = data.external_resource_url;
+    }
+
+    // Tenta PIXEL de Gerar Boleto Equivalent -> Inicializando Checkout completado ou Gerado
+    try {
+        const totalVal = document.querySelector('.checkout-total-display').innerText.replace(/[^\d,]/g, '').replace(',', '.');
+        trackPixel('AddPaymentInfo', {
+            value: Number(totalVal) || cart.total || 0,
+            currency: 'BRL',
+            payment_type: 'boleto'
+        });
+    } catch(e) {}
+}
+
 
 // --- 5. FLOATING TOASTS LOGIC ---
 const toastData = [
@@ -1826,7 +1888,7 @@ function validateField(el, type) {
     const val = el.value.trim();
     let isValid = true;
 
-    if (type === 'email') isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    if (type === 'email') isValid = val.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     else if (type === 'phone') isValid = val.replace(/\D/g, '').length >= 10;
     else if (type === 'cpf') isValid = isValidCPF(val);
     else if (type === 'card') isValid = val.replace(/\D/g, '').length >= 15;
