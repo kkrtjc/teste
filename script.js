@@ -1037,8 +1037,14 @@ async function handlePayment(method) {
 
         // --- INSTANT UI FEEDBACK ---
         document.getElementById('checkout-main-view').classList.add('hidden');
+        document.getElementById('pix-result').classList.add('hidden');
+        document.getElementById('boleto-result').classList.add('hidden');
+
         const resultView = document.getElementById(isBoleto ? 'boleto-result' : 'pix-result');
         resultView.classList.remove('hidden');
+        
+        // Rolar imediatamente para o topo (onde o QR Code / Boleto vai aparecer)
+        setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
         
         // Mostrar "Gerando..." ou loader equivalente?
         if (!isBoleto) {
