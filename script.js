@@ -1044,7 +1044,11 @@ async function handlePayment(method) {
         resultView.classList.remove('hidden');
         
         // Rolar imediatamente para o topo (onde o QR Code / Boleto vai aparecer)
-        setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
+        setTimeout(() => { 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            const cp = document.getElementById('checkout-page');
+            if (cp) cp.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
         
         // Mostrar "Gerando..." ou loader equivalente?
         if (!isBoleto) {
@@ -1579,7 +1583,11 @@ function setupFields() {
 
 function showPixResult(data, items) {
     // Scrolla para o topo para garantir que o cliente veja o QRCode
-    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+    setTimeout(() => { 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        const cp = document.getElementById('checkout-page');
+        if (cp) cp.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
 
     const qrImg = document.getElementById('qr-code-img');
     const qrLoader = document.getElementById('qr-loader');
@@ -1718,7 +1726,11 @@ function showPixResult(data, items) {
 
 function showBoletoResult(data, items) {
     // Scrolla para o topo para focar no boleto
-    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+    setTimeout(() => { 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const cp = document.getElementById('checkout-page');
+        if (cp) cp.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
 
     const copyBtn = document.getElementById('btn-copy-boleto');
     const pdfBtn = document.getElementById('btn-pdf-boleto');
