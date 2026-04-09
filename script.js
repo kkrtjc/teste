@@ -1572,6 +1572,9 @@ function setupFields() {
 // function validateField was moved and consolidated below.
 
 function showPixResult(data, items) {
+    // Scrolla para o topo para garantir que o cliente veja o QRCode
+    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+
     const qrImg = document.getElementById('qr-code-img');
     const qrLoader = document.getElementById('qr-loader');
     const receiverInfo = document.getElementById('pix-receiver-info');
@@ -1708,6 +1711,9 @@ function showPixResult(data, items) {
 }
 
 function showBoletoResult(data, items) {
+    // Scrolla para o topo para focar no boleto
+    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+
     const copyBtn = document.getElementById('btn-copy-boleto');
     const pdfBtn = document.getElementById('btn-pdf-boleto');
     const displayEl = document.getElementById('boleto-barcode-display');
@@ -1717,19 +1723,43 @@ function showBoletoResult(data, items) {
         displayEl.innerText = data.barcode;
     }
 
-    // Copiar
-    if (copyBtn && data.barcode) {
+    const handleBoletoAction = () => {
+        // Copiar o código
+        if (data.barcode) {
+            navigator.clipboard.writeText(data.barcode).then(() => {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast-card';
+                toast.style.borderColor = '#2ecc71';
+                toast.innerHTML = `
+                    <div style="width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="toast-content">
+                        <h4>Código de Barras Copiado!</h4>
+                        <p>Foi copiado com sucesso.</p>
+                    </div>
+                `;
+                container.appendChild(toast);
+                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5000);
+            }).catch(e => console.warn(e));
+        }
+        
+        // Abrir o PDF
+        if (data.external_resource_url) {
+            window.open(data.external_resource_url, '_blank');
+        }
+    };
+
+    // Aplica a mesma função para os dois botões
+    if (copyBtn) {
         copyBtn.style.display = 'block';
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(data.barcode);
-            showToast('Código Copiado', 'Cole no app do seu banco para pagar.', 'success');
-        };
+        copyBtn.onclick = handleBoletoAction;
     }
 
-    // PDF
-    if (pdfBtn && data.external_resource_url) {
-        pdfBtn.style.display = 'flex';
-        pdfBtn.href = data.external_resource_url;
+    if (pdfBtn) {
+        pdfBtn.style.display = 'block';
+        pdfBtn.onclick = handleBoletoAction;
     }
 
     // Tenta PIXEL de Gerar Boleto Equivalent -> Inicializando Checkout completado ou Gerado

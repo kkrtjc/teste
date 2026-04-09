@@ -2745,29 +2745,33 @@
             </div>
 
             <!-- BOLETO Result (hidden) -->
-            <div id="boleto-result" class="hidden" style="text-align: center;">
+            <div id="boleto-result" class="hidden" style="text-align: center; max-width: 500px; margin: 1rem auto; padding: 1.5rem 1rem; background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
                 <h3 id="boleto-greeting" style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">Boleto Gerado!</h3>
-                <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Copie o código de barras ou acesse o PDF para pagar.</p>
+                <p style="font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0;">Copie o código de barras ou pague o boleto em formato PDF.</p>
 
-                <div class="qr-container" style="background: #fff; padding: 1.5rem; border-radius: 1.2rem; margin: 1.5rem auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                    <i class="fa-solid fa-barcode" style="font-size: 3.5rem; color: #1f2937; margin-bottom: 10px;"></i>
-                    <p style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Código de Barras</p>
-                    <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; word-break: break-all; font-family: monospace; font-size: 0.9rem; font-weight: 700; color: #0f172a;" id="boleto-barcode-display">
+                <div class="qr-container" style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin: 1.5rem auto; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" style="height: 20px;" alt="Mercado Pago">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #334155; text-transform: uppercase;">MERCADO PAGO</span>
+                    </div>
+
+                    <p style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Código de Barras</p>
+                    <div style="background: #fff; padding: 12px 10px; border-radius: 8px; border: 1px dashed #cbd5e1; word-break: break-all; font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;" id="boleto-barcode-display">
                         Aguardando...
                     </div>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
-                    <button id="btn-copy-boleto" class="ck-btn-checkout" style="width: 100%; max-width: 260px; background: linear-gradient(135deg, #22c55e, #16a34a);">
-                        <i class="fa-regular fa-copy"></i> COPIAR CÓDIGO
+                    <button id="btn-copy-boleto" class="ck-btn-checkout" style="width: 100%; max-width: 300px; background: #3b82f6; transition: 0.2s;">
+                        <i class="fa-solid fa-copy"></i> COPIAR CÓDIGO DE BARRAS
                     </button>
-                    <a id="btn-pdf-boleto" href="#" target="_blank" class="ck-btn-checkout" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 260px; background: #3b82f6; text-decoration: none;">
-                        <i class="fa-solid fa-file-pdf"></i> VER BOLETO (PDF)
-                    </a>
+                    <button id="btn-pdf-boleto" class="ck-btn-checkout" style="width: 100%; max-width: 300px; background: linear-gradient(135deg, #22c55e, #16a34a); transition: 0.2s;">
+                        <i class="fa-solid fa-barcode"></i> PAGAR BOLETO
+                    </button>
                 </div>
 
-                <div style="text-align: left; font-size: 0.85rem; color: #6b7280; line-height: 1.6; background: #fefce8; border: 1px solid #fef08a; padding: 1rem; border-radius: 0.5rem; margin-top: 15px;">
-                    <p><i class="fa-solid fa-circle-exclamation" style="color: #ca8a04;"></i> Seu acesso será liberado em até <strong>48 horas úteis</strong> após o pagamento do boleto.</p>
+                <div style="text-align: left; font-size: 0.8rem; color: #6b7280; line-height: 1.5; background: #fefce8; border: 1px solid #fef08a; padding: 1rem; border-radius: 0.5rem; margin-top: 15px;">
+                    <p style="margin: 0;"><i class="fa-solid fa-circle-exclamation" style="color: #ca8a04;"></i> Seu acesso será enviado automaticamente para seu e-mail assim que o pagamento for compensado (em até <strong>48 horas úteis</strong>).</p>
                 </div>
 
                 <div style="margin-top: 1.5rem; font-size: 0.85rem;">
