@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Converte ebook_text.txt (extraído do ebook_doencas.pdf) em diseases.json para o PWA.
-Saída padrão: ../client/public/diseases.json e ../client/public/version.json
+Converte o HTML premium gerado do ebook_doencas.pdf em diseases.json para o PWA.
+Preserva introdução, doenças e guias (tabela de vacinação/vermifugação etc).
 """
 import json
 import os
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
-INPUT_TXT = os.path.join(SCRIPT_DIR, "ebook_text.txt")
+INPUT_HTML = os.path.join(SCRIPT_DIR, "ebook_doencas_premium.html")
 OUT_DISEASES = os.path.join(REPO_ROOT, "client", "public", "diseases.json")
 OUT_VERSION = os.path.join(REPO_ROOT, "client", "public", "version.json")
 
@@ -119,97 +119,107 @@ def strip_prefix(text: str) -> str:
     return text.strip()
 
 
-def load_lines():
-    if not os.path.isfile(INPUT_TXT):
-        raise SystemExit("ebook_text.txt não encontrado. Rode extract_ebook_from_pdf.py primeiro.")
-    raw = open(INPUT_TXT, 'r', encoding='utf-8').read().splitlines()
-    cleaned = []
-    for line in raw:
-        s = line.strip()
-        if not s:
-            continue
-        if s.startswith('--- PAGE'):
-            continue
-        if s in ('GALOS MURA', 'BRASIL', 'Sumário'):
-            continue
-        if re.match(r'^\\d{1,2}$', s):
-            continue
-        cleaned.append(s.lstrip('\u200b \t'))
-    return cleaned
+def html_to_text(html):
+    txt = re.sub(r'<br\\s*/?>', '\n', html, flags=re.I)
+    txt = re.sub(r'</(p|h1|h2|h3|h4|li|summary|details|div)>', '\n', txt, flags=re.I)
+    txt = re.sub(r'<[^>]+>', ' ', txt)
+    txt = re.sub(r'\\s+\\n', '\n', txt)
+    txt = re.sub(r'\\n{3,}', '\n\n', txt)
+    txt = re.sub(r'[ \\t]{2,}', ' ', txt)
+    return txt.strip()
 
 
-def merge_paragraphs(lines):
-    starts = (
-        'Sintomas:', 'Sintoma(s)', 'Prevenção:', 'Tratamento', 'Antibióticos:',
-        'Anticoccidianos:', 'Vermífugos:', 'Medicamentos:', 'Produtos para',
-        'Primeiros Socorros:', 'Lesões ', 'Suporte:', 'Suplementação:', 'Lubrificação',
-        'Aviso:', 'Causas:', 'Identificação', 'Isolamento', 'Vitamina ',
-        'CAPÍTULO', 'Capítulo', 'CONCLUSÃO', 'GUIAS', 'Calendário', 'Protocolos',
-        'Checklist', 'Nota:', 'Aves Jovens', 'Aves Adultas', 'Rotação',
-        'Período de Carência', 'Manhã:', 'Tarde:', 'Final do Dia:', '[ ]'
-    )
-    merged = []
-    buf = ''
-    for line in lines:
-        is_start = any(line.startswith(s) for s in starts) or is_disease_title(line) or any(m in line for m, _ in SECTION_MARKERS)
-        if buf and is_start:
-            merged.append(buf.strip())
-            buf = line
-        else:
-            buf = (buf + ' ' + line) if buf else line
-    if buf.strip():
-        merged.append(buf.strip())
-    return merged
+def extract_section_blocks(html):
+    ids = [
+        'inicio', 'capitulo-1', 'respiratorias', 'virais', 'bacterianas',
+        'parasitas', 'nutricionais', 'capitulo-2', 'checklist',
+        'vacinacao', 'vermifugacao', 'conclusao'
+    ]
+    points = []
+    for sid in ids:
+        marker = f'<div id="{sid}" class="section-content'
+        i = html.find(marker)
+        if i >= 0:
+            points.append((sid, i))
+    points.sort(key=lambda x: x[1])
+    blocks = {}
+    for idx, (sid, start) in enumerate(points):
+        end = points[idx + 1][1] if idx + 1 < len(points) else len(html)
+        blocks[sid] = html[start:end]
+    return blocks
+
+
+def map_categoria(section_id, nome):
+    if section_id == 'virais':
+        return 'Doenças virais'
+    if section_id == 'bacterianas':
+        return 'Doenças bacterianas sistemicas'
+    if section_id == 'respiratorias':
+        return 'Doenças bacterianas respiratorias'
+    if section_id == 'nutricionais':
+        if any(x in nome.lower() for x in ['peito seco', 'retenção de ovo', 'ferimentos']):
+            return 'Casos isolados'
+        return 'Problemas de nutrição'
+    if section_id in ('parasitas',):
+        return 'Casos isolados'
+    return 'Casos isolados'
 
 
 def build():
-    lines = load_lines()
-    merged = merge_paragraphs(lines)
+    if not os.path.isfile(INPUT_HTML):
+        raise SystemExit("ebook_doencas_premium.html não encontrado. Rode build_html_ebook.py primeiro.")
+    html = open(INPUT_HTML, 'r', encoding='utf-8').read()
+    blocks = extract_section_blocks(html)
 
-    section = 'inicio'
     diseases = []
-    current = None
+    for sid in ('respiratorias', 'virais', 'bacterianas', 'parasitas', 'nutricionais'):
+        block = blocks.get(sid, '')
+        for m in re.finditer(
+            r'<details class="disease-card">\\s*<summary>(.*?)</summary>(.*?)</details>',
+            block,
+            flags=re.S,
+        ):
+            nome = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            tail = m.group(2)
+            dm = re.search(r'<div class="disease-content">(.*)</div>\\s*$', tail, flags=re.S)
+            body_html = (dm.group(1) if dm else tail).strip()
+            body_text = html_to_text(body_html)
+            diseases.append({
+                "id": slugify(nome),
+                "nome": nome,
+                "categoria": map_categoria(sid, nome),
+                "section": sid,
+                "resumo": body_text[:280],
+                "html": body_html,
+                "texto": body_text,
+                "tags": [sid, map_categoria(sid, nome)],
+            })
 
-    def close_current():
-        nonlocal current
-        if current:
-            diseases.append(current)
-        current = None
-
-    for p in merged:
-        # section marker
-        for marker, sid in SECTION_MARKERS:
-            if marker in p:
-                close_current()
-                section = sid
-                break
-
-        if is_disease_title(p) and section not in ('capitulo-2', 'vacinacao', 'checklist'):
-            close_current()
-            name = p.strip()
-            current = {
-                "id": slugify(name),
-                "nome": name,
-                "fields": [],
-                "section": section,
-                "tags": [section],
-            }
-            continue
-
-        kind = field_kind(p)
-        if kind and current:
-            current["fields"].append({"kind": kind, "text": strip_prefix(p)})
-        else:
-            # generic text
-            if current:
-                current["fields"].append({"kind": "intro", "text": p.strip()})
-
-    close_current()
+    intro_text = html_to_text(blocks.get('inicio', ''))
+    guides = []
+    guide_titles = {
+        'capitulo-2': 'Tabela de Sintomas x Doenças',
+        'checklist': 'Checklist de Manejo Diário',
+        'vacinacao': 'Tabela de Vacinação',
+        'vermifugacao': 'Tabela de Vermifugação',
+        'conclusao': 'Conclusão e Recomendações',
+    }
+    for gid in ('capitulo-2', 'checklist', 'vacinacao', 'vermifugacao', 'conclusao'):
+        if gid in blocks:
+            guides.append({
+                "id": gid,
+                "titulo": guide_titles[gid],
+                "html": blocks[gid],
+                "texto": html_to_text(blocks[gid]),
+            })
 
     versao = "1.0.0"
     out = {
         "versao": versao,
         "totalDoencas": len(diseases),
+        "coverImage": "/cover-ebook.png",
+        "intro": intro_text,
+        "guides": guides,
         "diseases": diseases,
     }
     os.makedirs(os.path.dirname(OUT_DISEASES), exist_ok=True)
