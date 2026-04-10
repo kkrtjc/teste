@@ -1,5 +1,7 @@
 --- PAGE 0 ---
 1
+
+
 --- PAGE 1 ---
 Apresentação
 Olá, amigo criador!
@@ -33,6 +35,8 @@ Para criadores que já enfrentaram perdas devido a doenças e buscam evitar reco
 Para todos que acreditam que a prevenção e o conhecimento são as melhores
 ferramentas na criação
 2
+
+
 --- PAGE 2 ---
 Sumário
  Conclusão e Recomendações
@@ -50,6 +54,8 @@ Doenças Bacterianas Sistêmicas / Entéricas
 Doenças Parasitárias / Protozoárias / Intestinais
 Condições Nutricionais e Problemas Comuns
 3
+
+
 --- PAGE 3 ---
 Introdução
 Clareza para identificar sintomas e entender como cada doença age no
@@ -79,6 +85,8 @@ utilizadas na prática de campo
 ⚠ 
 Aviso importante
 O objetivo deste material é oferecer a você:
+
+
 --- PAGE 4 ---
 CAPÍTULO 1
 DOENÇAS EM GALINHAS E
@@ -89,6 +97,8 @@ As doenças respiratória ssão comunsemgalinhas e podemcausar grandes prejuízo
 produção e à saúde do plantel. A identificação precoce dos sintomas e a aplicação de medidas
 preventivas são cruciais para o controle
 5
+
+
 --- PAGE 5 ---
 Bronquite Infecciosa (IBV)
 A Bronquite Infecciosa é uma doença viral aguda e altamente contagiosa que afeta o
@@ -116,6 +126,8 @@ o uso é por conta e risco do criador.
 6
 GALOS MURA
  BRASIL
+
+
 --- PAGE 6 ---
 Laringotraqueíte Infecciosa (ILT)
 Sintomas: Dificuldade respiratória severa, tosse com eliminação de muco sanguinolento,
@@ -141,6 +153,8 @@ especialmente em aves jovens.
 7
 GALOS MURA
  BRASIL
+
+
 --- PAGE 7 ---
 Metapneumovirose Aviária (aMPV)
 Sintomas: Espirros, tosse, secreção nasal, inchaço da cabeça e dos seios infraorbitários,
@@ -166,6 +180,8 @@ poedeiras, causando problemas respiratórios e reprodutivos
 8
 GALOS MURA
  BRASIL
+
+
 --- PAGE 8 ---
 Sintomas: Espirros, tosse, secreção nasal, dificuldade respiratória, inchaço dos seios da
 face, conjuntivite e lacrimejamento. Em casos crônicos, pode haver emagrecimento e
@@ -191,6 +207,8 @@ perdas significativas na produção de ovos e carne.
 9
 GALOS MURA
  BRASIL
+
+
 --- PAGE 9 ---
 Sintomas: Secreção nasal fétida, inchaço da face e dos seios infraorbitários, conjuntivite,
 lacrimejamento, espirros e dificuldade respiratória. Pode haver queda na produção de
@@ -215,6 +233,8 @@ galinhas jovens e adultas
 10
 GALOS MURA
  BRASIL
+
+
 --- PAGE 10 ---
 Sintomas: Espirros, tosse, secreção nasal, dificuldade respiratória, inchaço da cabeça e
 dos seios da face. Pode haver queda na produção de ovos e lesões nas articulações.
@@ -238,12 +258,16 @@ mortalidade. É frequentemente associada a outras infecções respiratórias.
 11
 GALOS MURA
  BRASIL
+
+
 --- PAGE 11 ---
 Doenças Virais Sistêmicas
 As doenças virais sistêmicas afetam múltiplos órgãos e sistemas do corpo das galinhas,
 podendo causar alta mortalidade e grandes perdas econômicas. A prevenção é a chave, pois a
 maioria não possui tratamento específico. 
 12
+
+
 --- PAGE 12 ---
 Sintomas: Os sintomas variam dependendo da cepa do vírus, mas podem incluir sinais
 respiratórios (espirros, tosse, dificuldade respiratória), digestivos (diarreia aquosa e
@@ -271,6 +295,8 @@ morbidade e mortalidade.
 13
 GALOS MURA
  BRASIL
+
+
 --- PAGE 13 ---
 Doença de Marek
 A Doença de Marek é uma doença viral linfoproliferativa que causa tumores em diversos
@@ -293,6 +319,8 @@ medicamentos não reverte a doença. O uso é por conta e risco do criador.
 14
 GALOS MURA
  BRASIL
+
+
 --- PAGE 14 ---
  Doença de Gumboro (IBDV / Bursite Infecciosa)
 A Doença de Gumboro, ou Bursite Infecciosa, é uma doença viral altamente contagiosa que
@@ -320,6 +348,8 @@ apresentadas são baseadas em experiência prática e o uso é por conta e risco
 15
 GALOS MURA
  BRASIL
+
+
 --- PAGE 15 ---
 Influenza Aviária (IA)
 Sintomas: Os sintomas variam, mas podem incluir depressão severa, perda de apetite,
@@ -346,6 +376,8 @@ mortalidade massiva e são de grande preocupação para a saúde pública e a ec
 16
 GALOS MURA
  BRASIL
+
+
 --- PAGE 16 ---
  Varíola Aviária (Bouba Aviária)
 A doença pode se apresentar em duas formas:
@@ -378,12 +410,16 @@ ovos e o ganho de peso.
 17
 GALOS MURA
  BRASIL
+
+
 --- PAGE 17 ---
 Doenças Bacterianas Sistêmicas / Entéricas
 As doenças bacterianas podem afetar diversos sistemas do corpo das galinhas, incluindo o
 digestório, e são frequentemente tratáveis com antibióticos, desde que diagnosticadas e
 tratadas precocemente
 18
+
+
 --- PAGE 18 ---
 Sintomas: Os sintomas variam com a idade e o tipo de Salmonella. Em pintos, pode haver
 diarreia esbranquiçada, prostração, asas caídas e alta mortalidade. Em aves adultas,
@@ -413,6 +449,8 @@ produção em aves adultas.
 19
 GALOS MURA
  BRASIL
+
+
 --- PAGE 19 ---
 Cólera Aviária (Pasteurelose)
 Sintomas: Na forma aguda, as aves podem morrer subitamente sem apresentar
@@ -438,6 +476,8 @@ mortalidade em aves de todas as idades.
 20
 GALOS MURA
  BRASIL
+
+
 --- PAGE 20 ---
 Colibacilose (E. coli
 Sintomas: Os sintomas variam amplamente, incluindo sinais respiratórios (espirros,
@@ -463,6 +503,8 @@ problemas respiratórios, digestivos, reprodutivos e sistêmicos.
 21
 GALOS MURA
  BRASIL
+
+
 --- PAGE 21 ---
 Enterite Necrótica (Clostridium perfringens)
 A Enterite Necrótica é uma doença intestinal aguda causada pela bactéria Clostridium
@@ -486,12 +528,16 @@ e o uso é por conta e risco do criador.
 22
 GALOS MURA
  BRASIL
+
+
 --- PAGE 22 ---
  Doenças Parasitárias / Protozoárias / Intestinais
 Parasitas internos e externos podem comprometer seriamente a saúde e a produtividade das
 galinhas, causando desde desconforto até doenças graves e morte. O controle e a prevenção
 são contínuos.
 23
+
+
 --- PAGE 23 ---
 Coccidiose (Eimeria spp.) 
 Sintomas: Diarreia (às vezes com sangue), penas arrepiadas, prostração, perda de peso,
@@ -517,6 +563,8 @@ mucosa e prejudicando a absorção de nutrientes.
 24
 GALOS MURA
  BRASIL
+
+
 --- PAGE 24 ---
 Suporte: Oferecer vitaminas e eletrólitos na água de bebida. Manter a higiene do
 galinheiro para reduzir a reinfestação. 
@@ -542,6 +590,8 @@ Heterakis gallinarum (cecal) e Capillaria spp. (capilares), além de tênias.
 25
 GALOS MURA
  BRASIL
+
+
 --- PAGE 25 ---
  Histomoníase (Doença da Cabeça Negra)
 A Histomoníase, ou Doença da Cabeça Negra, é causada pelo protozoário Histomonas
@@ -565,6 +615,8 @@ experiência prática e o uso é por conta e risco do criador.
 26
 GALOS MURA
  BRASIL
+
+
 --- PAGE 26 ---
 Tricomoníase (Trichomonas gallinae
 A Tricomoníase é uma doença causada pelo protozoário Trichomonas gallinae, que afeta o
@@ -588,6 +640,8 @@ experiência prática e o uso é por conta e risco do criador.
 27
 GALOS MURA
  BRASIL
+
+
 --- PAGE 27 ---
 Criptosporidiose
 Sintomas: Os sintomas variam dependendo do local da infecção. Na forma respiratória,
@@ -613,12 +667,16 @@ Pode causar problemas respiratórios e diarreia.
 28
 GALOS MURA
  BRASIL
+
+
 --- PAGE 28 ---
  Condições Nutricionais e Problemas Comuns
 Além das doenças infecciosas e parasitárias, as galinhas podem sofrer com problemas
 relacionados à nutrição e ao manejo, que afetam diretamente sua saúde e produtividade. A
 identificação e correção desses problemas são essenciais. 
 29
+
+
 --- PAGE 29 ---
 Deficiência de Cálcio / Problemas de Casca
 Sintomas: Ovos com casca fina, mole, áspera, quebradiça ou ausente. Aves podem
@@ -644,6 +702,8 @@ poedeiras e afeta diretamente a qualidade da casca dos ovos e a saúde óssea da
 30
 GALOS MURA
  BRASIL
+
+
 --- PAGE 30 ---
 Aviso: A correção da dieta é fundamental para evitar novas deficiências. O uso de
 medicamentos e suplementos deve ser feito com cautela e, idealmente, sob orientação de
@@ -675,6 +735,8 @@ um papel vital, e sua falta pode levar a uma série de problemas de saúde.
 31
 GALOS MURA
  BRASIL
+
+
 --- PAGE 31 ---
 Sintomas: A galinha fica prostrada, com dificuldade para andar (andar de pinguim),
 esforço para defecar, perda de apetite, inchaço e dor na região abdominal. Pode haver
@@ -701,6 +763,8 @@ uma condição grave que pode ser fatal se não for tratada rapidamente.
 32
 GALOS MURA
  BRASIL
+
+
 --- PAGE 32 ---
 Ferimentos, Bicagem e Canibalismo 
 Ferimentos, bicagem excessiva e canibalismo são problemas comportamentais que
@@ -728,6 +792,8 @@ em experiência prática e o uso é por conta e risco do criador.
 33
 GALOS MURA
  BRASIL
+
+
 --- PAGE 33 ---
 Ectoparasitoses (ácaros, piolhos, carrapatos)
 Ectoparasitas, como ácaros, piolhos e carrapatos, vivem na superfície do corpo das
@@ -755,6 +821,8 @@ profissional. As dosagens aqui apresentadas são baseadas em experiência práti
 34
 GALOS MURA
  BRASIL
+
+
 --- PAGE 34 ---
 Peito seco  ( Atrofiamento do musculo peitoral)
 Peito seco é um sintoma, não uma doença. A ave fica magra, com o osso do peito (quilha)
@@ -762,6 +830,8 @@ muito aparente, pouca musculatura e perda de peso. Normalmente acontece quando a
 galinha para de comer direito por causa de alguma doença, levando à desnutrição e
 fraqueza.
 35
+
+
 --- PAGE 35 ---
 Principais Problemas
 que causam peito seco
@@ -788,6 +858,8 @@ mucosa e prejudicando a absorção de nutrientes.
 36
 GALOS MURA
  BRASIL
+
+
 --- PAGE 36 ---
 Suporte: Oferecer vitaminas e eletrólitos na água de bebida. Manter a higiene do
 galinheiro para reduzir a reinfestação. 
@@ -813,6 +885,8 @@ Heterakis gallinarum (cecal) e Capillaria spp. (capilares), além de tênias.
 37
 GALOS MURA
  BRASIL
+
+
 --- PAGE 37 ---
 Sintomas: Espirros, tosse, secreção nasal, dificuldade respiratória, inchaço dos seios da
 face, conjuntivite e lacrimejamento. Em casos crônicos, pode haver emagrecimento e
@@ -838,6 +912,8 @@ perdas significativas na produção de ovos e carne.
 38
 GALOS MURA
  BRASIL
+
+
 --- PAGE 38 ---
 CAPÍTULO 2
 GUIAS E TABELAS RÁPIDAS
@@ -885,6 +961,8 @@ Lembre-se que o diagnóstico definitivo deve ser feito por um profissional.
 39
 GALOS MURA
  BRASIL
+
+
 --- PAGE 39 ---
 Paralisia, dificuldade de
 locomoção, torcicolo
@@ -953,6 +1031,8 @@ vitamínico.
 40
 GALOS MURA
  BRASIL
+
+
 --- PAGE 40 ---
 Morte súbita 
 Cólera Aviária,
@@ -1025,6 +1105,8 @@ Tiamulina. Histomoníase:
 Metronidazol. 
 GALOS MURA
  BRASIL
+
+
 --- PAGE 41 ---
  Checklist de Manejo Diário 
 Utilize este checklist para garantir que todas as tarefas essenciais do manejo diário sejam
@@ -1046,6 +1128,8 @@ Final do Dia:
 42
 GALOS MURA
  BRASIL
+
+
 --- PAGE 42 ---
 1º dia
 7º dia
@@ -1094,6 +1178,8 @@ um veterinário, com base nos desafios sanitários da sua região
 43
 GALOS MURA
  BRASIL
+
+
 --- PAGE 43 ---
 Doença de Newcastle
 e Bronquite Infecciosa
@@ -1140,6 +1226,8 @@ da asa
 44
 GALOS MURA
  BRASIL
+
+
 --- PAGE 44 ---
 Protocolos de Vermifugação
 Nota: Este é um guia de referência rápida. A frequência e o tipo de medicamento podem
@@ -1159,6 +1247,8 @@ Consulte um veterinário para a escolha do vermífugo e a frequência ideal
 45
 GALOS MURA
  BRASIL
+
+
 --- PAGE 45 ---
 CONCLUSÃO E RECOMENDAÇÕES
 A Importância da Prevenção
@@ -1186,6 +1276,8 @@ Lembre-se: a parceria com um profissional qualificado agrega segurança e
 conhecimento técnico à sua experiência prática, formando a combinação ideal
 para o sucesso da sua criação.
 46
+
+
 --- PAGE 46 ---
 Desejamos a você muito sucesso!
 Espero que este guia seja um companheiro valioso em sua jornada. Que ele traga a confiança e
@@ -1193,3 +1285,4 @@ a clareza necessárias para você alcançar seus objetivos com suas aves, evitar
 desfrutar de uma criação próspera e gratificante. 
 GALOS MURA
  BRASIL
+

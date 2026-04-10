@@ -3,12 +3,17 @@
 """
 Build HTML E-Book Premium — Galos Mura Brasil
 V4 — Corrige estrutura invertida do PDF (Sintomas vem ANTES do titulo da doenca)
+
+Fonte oficial do conteúdo: ebook_doencas.pdf (raiz do repositório).
+Gere ebook_text.txt com: python extract_ebook_from_pdf.py
 """
 import re
 import os
+import sys
 
-INPUT_FILE  = os.path.join(os.path.dirname(__file__), 'ebook_text.txt')
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), 'ebook_doencas_premium.html')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT_FILE = os.path.join(SCRIPT_DIR, 'ebook_text.txt')
+OUTPUT_FILE = os.path.join(SCRIPT_DIR, 'ebook_doencas_premium.html')
 
 # Títulos de doença conhecidos
 DISEASE_PREFIXES = [
@@ -91,6 +96,28 @@ def is_disease_title(text):
     # Titles must be relatively short — long paragraphs that mention a disease name are not titles
     if len(clean) > 80:
         return False
+    # Linhas da tabela do Cap. 2 (ex.: "Bronquite Infecciosa:", "Coccidiose: Toltrazuril")
+    if clean.endswith(','):
+        return False
+    if ', pois ' in clean or ', que ' in clean or '. O ' in clean:
+        return False
+    if re.search(r'\b(das|dos|do|da)\s*$', clean, re.I):
+        return False
+    treatment_after_colon = (
+        'Suporte', 'Enroflox', 'Tilosina', 'Limpeza', 'Toltrazuril', 'Amprolium',
+        'Metronidazol', 'Oxitetraciclina', 'Amoxicilina', 'Bacitracina', 'Levamisol',
+        'Fenbendazol', 'Complexo', 'Observaç', 'Retirar', 'Oferecer', 'Suplementação',
+        'Sulfametoxazol', 'Doxiciclina', 'Tiamulina', 'Notificação', 'notificação',
+    )
+    if ':' in clean:
+        i = clean.index(':')
+        if i < 58:
+            after = clean[i + 1:].strip()
+            if after and any(after.startswith(w) for w in treatment_after_colon):
+                return False
+    # "Coriza Infecciosa:" sozinho (célula de tabela)
+    if clean.endswith(':'):
+        return False
     for dp in DISEASE_PREFIXES:
         if clean.startswith(dp):
             return True
@@ -116,6 +143,15 @@ def is_disease_field(text):
 
 
 def load_and_clean(path):
+    if not os.path.isfile(path):
+        print(
+            '[ERRO] Não existe %s\n'
+            'Extraia do PDF original com:\n'
+            '  python extract_ebook_from_pdf.py\n'
+            '(ebook_doencas.pdf na raiz do projeto ou EBOOK_DOENCAS_PDF=...)' % path,
+            file=sys.stderr,
+        )
+        sys.exit(1)
     with open(path, 'r', encoding='utf-8') as f:
         raw = f.readlines()
     cleaned = []
@@ -344,9 +380,16 @@ def build_html():
                 current_section = sec_id
                 
         elif token[0] == 'disease_title':
+            ttl = token[1].strip()
+            # Cap. 2 (tabelas) e calendário de vacinação: nomes de doenças são células, não capítulos
+            if current_section in ('capitulo-2', 'vacinacao', 'checklist'):
+                close_disease()
+                sections.setdefault(current_section, '')
+                sections[current_section] += format_text_block(ttl)
+                continue
             close_disease()
             in_disease = True
-            disease_title = token[1]
+            disease_title = ttl
             # Pre-fill body with orphan fields that appeared BEFORE this title
             disease_body = ''
             for of in orphan_fields:
@@ -612,4 +655,10 @@ HTML_TEMPLATE = r'''<!DOCTYPE html>
 '''
 
 if __name__ == '__main__':
+    if '--from-pdf' in sys.argv:
+        import subprocess
+        ext = os.path.join(SCRIPT_DIR, 'extract_ebook_from_pdf.py')
+        r = subprocess.run([sys.executable, ext], cwd=SCRIPT_DIR)
+        if r.returncode != 0:
+            sys.exit(r.returncode)
     build_html()

@@ -5,6 +5,9 @@
   "scripts": {
     "start": "node server.js",
     "build:boleto": "node scripts/build-boleto-preview.js",
+    "ebook:extract": "python pdfs_secure_12x9a/extract_ebook_from_pdf.py",
+    "ebook:html": "python pdfs_secure_12x9a/build_html_ebook.py",
+    "ebook:build": "python pdfs_secure_12x9a/extract_ebook_from_pdf.py && python pdfs_secure_12x9a/build_html_ebook.py",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
