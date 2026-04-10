@@ -98,8 +98,8 @@ checkoutRoutes.post('/boleto', async (c) => {
     const cleanCPF = (customer.cpf || '').replace(/\D/g, '');
     if (cleanCPF.length !== 11) return c.json({ error: 'CPF deve ter 11 dígitos.' }, 400);
 
-    // Vencimento de 48 horas (calculando MS e convertendo para ISO)
-    const expirationDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    // Vencimento de 72 horas
+    const expirationDate = new Date(Date.now() + 72 * 60 * 60 * 1000);
     // Ajusta para o formato exigido pelo Mercado Pago (ISO com timezone)
     const offset = expirationDate.getTimezoneOffset();
     const dateOffset = new Date(expirationDate.getTime() - (offset*60*1000));
