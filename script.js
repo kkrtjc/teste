@@ -1060,6 +1060,14 @@ async function handlePayment(method) {
             document.getElementById('boleto-barcode-display').innerText = 'Gerando código...';
             document.getElementById('btn-copy-boleto').style.display = 'none';
             document.getElementById('btn-download-boleto').style.display = 'none';
+            const boletoPdfLoading = document.getElementById('boleto-pdf-loading');
+            const boletoPdfView = document.getElementById('boleto-pdf-view');
+            const boletoPdfFrame = document.getElementById('boleto-pdf-frame');
+            const boletoPdfHint = document.getElementById('boleto-pdf-hint');
+            if (boletoPdfFrame) boletoPdfFrame.src = 'about:blank';
+            if (boletoPdfView) boletoPdfView.classList.add('hidden');
+            if (boletoPdfHint) boletoPdfHint.classList.add('hidden');
+            if (boletoPdfLoading) boletoPdfLoading.classList.remove('hidden');
         }
 
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
@@ -1723,6 +1731,50 @@ function showPixResult(data, items) {
     window.activePixPoll = setTimeout(pollLogic, 1000);
 }
 
+function normalizeBoletoDigitableLine(data) {
+    if (!data || data.barcode == null) return '';
+    const b = data.barcode;
+    if (typeof b === 'object' && b.content != null) return String(b.content).trim();
+    return String(b).trim();
+}
+
+function copyPlainTextToClipboard(text) {
+    const value = String(text || '');
+    if (!value) return Promise.resolve(false);
+
+    const tryLegacy = () => {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = value;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '0';
+            ta.style.left = '0';
+            ta.style.width = '2px';
+            ta.style.height = '2px';
+            ta.style.padding = '0';
+            ta.style.border = 'none';
+            ta.style.outline = 'none';
+            ta.style.boxShadow = 'none';
+            ta.style.background = 'transparent';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            ta.setSelectionRange(0, value.length);
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(value).then(() => true).catch(() => tryLegacy());
+    }
+    return Promise.resolve(tryLegacy());
+}
+
 function showBoletoResult(data) {
     setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1733,30 +1785,52 @@ function showBoletoResult(data) {
     const barcodeEl = document.getElementById('boleto-barcode-display');
     const copyBtn = document.getElementById('btn-copy-boleto');
     const downloadBtn = document.getElementById('btn-download-boleto');
+    const pdfLoading = document.getElementById('boleto-pdf-loading');
+    const pdfView = document.getElementById('boleto-pdf-view');
+    const pdfFrame = document.getElementById('boleto-pdf-frame');
+    const pdfHint = document.getElementById('boleto-pdf-hint');
+    const pdfOpenTab = document.getElementById('boleto-pdf-open-tab');
 
-    const line = (data.barcode != null && String(data.barcode).trim()) ? String(data.barcode).trim() : '';
+    if (pdfLoading) pdfLoading.classList.add('hidden');
+
+    const line = normalizeBoletoDigitableLine(data);
+    const badLine = !line || line === 'Código de barras não disponível';
     const pdfUrl = (data.external_resource_url != null && String(data.external_resource_url).trim())
         ? String(data.external_resource_url).trim()
         : '';
 
+    if (pdfUrl && pdfFrame && pdfView) {
+        pdfFrame.src = pdfUrl;
+        pdfView.classList.remove('hidden');
+        if (pdfHint && pdfOpenTab) {
+            pdfOpenTab.href = pdfUrl;
+            pdfHint.classList.remove('hidden');
+        }
+    } else {
+        if (pdfView) pdfView.classList.add('hidden');
+        if (pdfFrame) pdfFrame.src = 'about:blank';
+        if (pdfHint) pdfHint.classList.add('hidden');
+    }
+
     if (barcodeEl) {
-        if (line && line !== 'Código de barras não disponível') {
+        if (!badLine) {
             barcodeEl.innerText = line;
         } else if (pdfUrl) {
-            barcodeEl.innerText = 'Abra o PDF do boleto pelo botão abaixo ou pelo e-mail do Mercado Pago.';
+            barcodeEl.innerText = 'A linha digitável está no PDF acima ou no e-mail do Mercado Pago.';
         } else {
             barcodeEl.innerText = 'Consulte o boleto no e-mail enviado pelo Mercado Pago.';
         }
     }
 
     if (copyBtn) {
-        if (line && line !== 'Código de barras não disponível') {
+        if (!badLine) {
             copyBtn.style.display = 'block';
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(line).then(() => {
-                    showToast('Copiado!', 'Linha digitável copiada.', 'success');
-                }).catch(() => {
-                    showToast('Não copiou', 'Selecione o código manualmente.');
+            copyBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                copyPlainTextToClipboard(line).then((ok) => {
+                    if (ok) showToast('Copiado!', 'Linha digitável copiada.', 'success');
+                    else showToast('Não foi possível copiar', 'Toque e segure no código acima para copiar manualmente.');
                 });
             };
         } else {
@@ -1767,7 +1841,8 @@ function showBoletoResult(data) {
     if (downloadBtn) {
         if (pdfUrl) {
             downloadBtn.style.display = 'block';
-            downloadBtn.onclick = () => {
+            downloadBtn.onclick = (e) => {
+                e.preventDefault();
                 window.open(pdfUrl, '_blank', 'noopener,noreferrer');
             };
         } else {
