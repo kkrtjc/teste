@@ -50,7 +50,7 @@ export function Search() {
           results.map((d) => (
             <Link key={d.id} to={`/disease/${encodeURIComponent(d.id)}`} className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50">
               <div className="font-bold">{d.nome}</div>
-              <div className="mt-1 line-clamp-3 text-sm text-slate-600">{d.fields.find((f) => f.kind === 'intro')?.text || d.fields[0]?.text}</div>
+              <div className="mt-1 line-clamp-3 text-sm text-slate-600">{d.resumo || d.texto || ''}</div>
             </Link>
           ))
         )}

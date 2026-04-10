@@ -3,6 +3,8 @@ import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { useOnline } from './hooks/useOnline'
 import { Home } from './pages/Home'
 import { Search } from './pages/Search'
+import { Diseases } from './pages/Diseases'
+import { Guides } from './pages/Guides'
 import { Favorites } from './pages/Favorites'
 import { History } from './pages/History'
 import { DiseaseDetail } from './pages/DiseaseDetail'
@@ -57,6 +59,8 @@ export default function App() {
         <nav className="mx-auto max-w-5xl px-4 pb-3">
           <div className="flex gap-2 overflow-x-auto">
             <Tab to="/">Início</Tab>
+            <Tab to="/diseases">Doenças</Tab>
+            <Tab to="/guides">Guias</Tab>
             <Tab to="/search">Buscar</Tab>
             <Tab to="/favorites">Favoritos</Tab>
             <Tab to="/history">Histórico</Tab>
@@ -85,6 +89,8 @@ export default function App() {
       <main className="mx-auto max-w-5xl px-4 py-5">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/diseases" element={<Diseases />} />
+          <Route path="/guides" element={<Guides />} />
           <Route path="/search" element={<Search />} />
           <Route path="/disease/:id" element={<DiseaseDetail />} />
           <Route path="/favorites" element={<Favorites />} />

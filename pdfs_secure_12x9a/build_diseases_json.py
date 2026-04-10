@@ -175,13 +175,13 @@ def build():
     for sid in ('respiratorias', 'virais', 'bacterianas', 'parasitas', 'nutricionais'):
         block = blocks.get(sid, '')
         for m in re.finditer(
-            r'<details class="disease-card">\\s*<summary>(.*?)</summary>(.*?)</details>',
+            r'<details class="disease-card">\s*<summary>(.*?)</summary>(.*?)</details>',
             block,
             flags=re.S,
         ):
             nome = re.sub(r'<[^>]+>', '', m.group(1)).strip()
             tail = m.group(2)
-            dm = re.search(r'<div class="disease-content">(.*)</div>\\s*$', tail, flags=re.S)
+            dm = re.search(r'<div class="disease-content">(.*)</div>\s*$', tail, flags=re.S)
             body_html = (dm.group(1) if dm else tail).strip()
             body_text = html_to_text(body_html)
             diseases.append({
