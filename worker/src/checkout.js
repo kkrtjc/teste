@@ -161,42 +161,21 @@ checkoutRoutes.post('/boleto', async (c) => {
     });
 });
 
-// PDF do boleto via proxy (URL do MP não pode ser embutida em iframe de outro site)
-checkoutRoutes.get('/boleto/ticket/:id', async (c) => {
-    const MP_TOKEN = c.env.MP_ACCESS_TOKEN;
-    const id = c.req.param('id');
-    if (!id) return c.json({ error: 'ID inválido' }, 400);
-
-    const payRes = await fetch(`${MP_API}/${id}`, {
-        headers: { Authorization: `Bearer ${MP_TOKEN}` },
+// PNG mascarado (Worker repassa Node se NODE_BOLETO_PREVIEW_ORIGIN estiver definido)
+checkoutRoutes.get('/boleto/safe-preview', async (c) => {
+    const origin = (c.env.NODE_BOLETO_PREVIEW_ORIGIN || '').replace(/\/$/, '');
+    if (!origin) {
+        return c.json({ error: 'Defina NODE_BOLETO_PREVIEW_ORIGIN ou use assets/boleto-ilustrativo.png no site estático.' }, 503);
+    }
+    const r = await fetch(`${origin}/api/checkout/boleto/safe-preview`, {
+        headers: { Accept: 'image/png' },
     });
-    if (!payRes.ok) return c.json({ error: 'Pagamento não encontrado' }, 404);
-
-    const result = await payRes.json();
-    const methodId = String(result.payment_method_id || '').toLowerCase();
-    if (!methodId.includes('bol')) return c.json({ error: 'Não é boleto' }, 403);
-
-    let ticketUrl = result.transaction_details?.external_resource_url;
-    if (!ticketUrl) ticketUrl = result.point_of_interaction?.transaction_data?.ticket_url;
-    if (!ticketUrl) return c.json({ error: 'Link do boleto indisponível' }, 404);
-
-    const pdfRes = await fetch(ticketUrl, {
-        redirect: 'follow',
-        headers: { 'User-Agent': 'MuraBoletoProxy/1.0' },
-    });
-    if (!pdfRes.ok) return c.json({ error: 'Falha ao obter PDF' }, 502);
-
-    const arrayBuf = await pdfRes.arrayBuffer();
-    const buf = new Uint8Array(arrayBuf);
-    const isPdf = buf.length >= 4
-        && String.fromCharCode(buf[0], buf[1], buf[2], buf[3]) === '%PDF';
-    const upstreamType = pdfRes.headers.get('content-type') || '';
-
-    return new Response(arrayBuf, {
+    if (!r.ok) return c.json({ error: 'upstream' }, 502);
+    const ab = await r.arrayBuffer();
+    return new Response(ab, {
         headers: {
-            'Content-Type': isPdf ? 'application/pdf' : (upstreamType || 'application/octet-stream'),
-            'Content-Disposition': 'inline; filename="boleto.pdf"',
-            'Cache-Control': 'private, max-age=300',
+            'Content-Type': 'image/png',
+            'Cache-Control': 'private, max-age=60',
         },
     });
 });

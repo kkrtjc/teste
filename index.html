@@ -2750,12 +2750,12 @@
                     <h3 style="font-size: 1.4rem; font-weight: 700; color: #1f2937; margin-bottom: 4px;">Boleto Gerado com Sucesso!</h3>
                     <p style="font-size: 0.85rem; color: #6b7280; margin: 0 0 1.2rem 0;">Pague até <strong>72 horas</strong> para garantir seu acesso.</p>
 
-                    <!-- Boleto real (PDF do Mercado Pago) -->
-                    <div id="boleto-pdf-loading" class="hidden" style="margin: 0 auto 1rem; padding: 2.5rem 1rem; max-width: min(100%, 560px); background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1; color: #475569; font-size: 0.9rem;">
-                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Gerando visualização do seu boleto…
+                    <div id="boleto-img-loading" class="hidden" style="margin: 0 auto 1rem; padding: 2.5rem 1rem; max-width: min(100%, 560px); background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1; color: #475569; font-size: 0.9rem;">
+                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Preparando visualização…
                     </div>
-                    <div id="boleto-pdf-view" class="hidden" style="margin: 0 auto 1rem; width: 100%; max-width: min(100%, 560px); border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.08); background: #e2e8f0;">
-                        <iframe id="boleto-pdf-frame" title="Seu boleto bancário" style="width: 100%; min-height: 560px; border: 0; display: block; background: #fff;"></iframe>
+                    <div id="boleto-img-wrap" class="hidden" style="margin: 0 auto 1rem; width: 100%; max-width: min(100%, 560px); border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.08); background: #fff; position: relative;">
+                        <div class="boleto-img-shield" style="position: absolute; inset: 0; z-index: 2; cursor: default;" aria-hidden="true" oncontextmenu="return false;"></div>
+                        <img id="boleto-display-img" src="" alt="Ilustração de boleto (dados genéricos)" width="682" height="407" draggable="false" style="width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; position: relative; z-index: 1; pointer-events: none;">
                     </div>
 
                     <!-- Código de barras display -->

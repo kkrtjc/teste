@@ -1060,12 +1060,15 @@ async function handlePayment(method) {
             document.getElementById('boleto-barcode-display').innerText = 'Gerando código...';
             document.getElementById('btn-copy-boleto').style.display = 'none';
             document.getElementById('btn-download-boleto').style.display = 'none';
-            const boletoPdfLoading = document.getElementById('boleto-pdf-loading');
-            const boletoPdfView = document.getElementById('boleto-pdf-view');
-            const boletoPdfFrame = document.getElementById('boleto-pdf-frame');
-            if (boletoPdfFrame) boletoPdfFrame.src = 'about:blank';
-            if (boletoPdfView) boletoPdfView.classList.add('hidden');
-            if (boletoPdfLoading) boletoPdfLoading.classList.remove('hidden');
+            const boletoImgLoading = document.getElementById('boleto-img-loading');
+            const boletoImgWrap = document.getElementById('boleto-img-wrap');
+            const boletoDisplayImg = document.getElementById('boleto-display-img');
+            if (boletoDisplayImg) {
+                revokeBoletoIllustrationObjectUrl(boletoDisplayImg);
+                boletoDisplayImg.removeAttribute('src');
+            }
+            if (boletoImgWrap) boletoImgWrap.classList.add('hidden');
+            if (boletoImgLoading) boletoImgLoading.classList.remove('hidden');
         }
 
         const totalAmount = items.reduce((acc, item) => acc + Number(item.price), 0);
@@ -1496,6 +1499,8 @@ document.querySelector('.close-modal')?.addEventListener('click', async () => {
         document.getElementById('pix-result').classList.add('hidden');
         const boletoResult = document.getElementById('boleto-result');
         if (boletoResult) boletoResult.classList.add('hidden');
+        const boletoImg = document.getElementById('boleto-display-img');
+        if (boletoImg) revokeBoletoIllustrationObjectUrl(boletoImg);
         if (window.activePixPoll) {
             clearInterval(window.activePixPoll);
             window.activePixPoll = null;
@@ -1736,10 +1741,27 @@ function normalizeBoletoDigitableLine(data) {
     return String(b).trim();
 }
 
-function boletoTicketProxyUrl(paymentId) {
-    if (paymentId == null || paymentId === '') return '';
-    const base = String(API_URL).replace(/\/$/, '');
-    return `${base}/api/checkout/boleto/ticket/${encodeURIComponent(String(paymentId))}`;
+async function fetchBoletoIllustrationBlob() {
+    const api = `${API_URL.replace(/\/$/, '')}/api/checkout/boleto/safe-preview`;
+    try {
+        const res = await fetch(api, { cache: 'no-store' });
+        if (res.ok) return await res.blob();
+    } catch (e) {
+        console.warn('[BOLETO] API ilustrativa indisponível, usando fallback local.');
+    }
+    const fallback = `assets/boleto-ilustrativo.png?t=${Date.now()}`;
+    const res2 = await fetch(fallback, { cache: 'no-store' });
+    if (!res2.ok) throw new Error('boleto_illustration');
+    return res2.blob();
+}
+
+function revokeBoletoIllustrationObjectUrl(imgEl) {
+    if (imgEl && imgEl._boletoBlobUrl) {
+        try {
+            URL.revokeObjectURL(imgEl._boletoBlobUrl);
+        } catch (e) { /* ignore */ }
+        imgEl._boletoBlobUrl = null;
+    }
 }
 
 function copyPlainTextToClipboard(text) {
@@ -1789,35 +1811,47 @@ function showBoletoResult(data) {
     const barcodeEl = document.getElementById('boleto-barcode-display');
     const copyBtn = document.getElementById('btn-copy-boleto');
     const downloadBtn = document.getElementById('btn-download-boleto');
-    const pdfLoading = document.getElementById('boleto-pdf-loading');
-    const pdfView = document.getElementById('boleto-pdf-view');
-    const pdfFrame = document.getElementById('boleto-pdf-frame');
-
-    if (pdfLoading) pdfLoading.classList.add('hidden');
+    const imgLoading = document.getElementById('boleto-img-loading');
+    const imgWrap = document.getElementById('boleto-img-wrap');
+    const displayImg = document.getElementById('boleto-display-img');
 
     const line = normalizeBoletoDigitableLine(data);
     const badLine = !line || line === 'Código de barras não disponível';
     const pdfUrl = (data.external_resource_url != null && String(data.external_resource_url).trim())
         ? String(data.external_resource_url).trim()
         : '';
-    const proxyPdfSrc = data.id ? boletoTicketProxyUrl(data.id) : '';
 
-    if (proxyPdfSrc && pdfFrame && pdfView) {
-        pdfFrame.src = `${proxyPdfSrc}${proxyPdfSrc.includes('?') ? '&' : '?'}t=${Date.now()}`;
-        pdfView.classList.remove('hidden');
-    } else if (pdfUrl && pdfFrame && pdfView) {
-        pdfFrame.src = pdfUrl;
-        pdfView.classList.remove('hidden');
-    } else {
-        if (pdfView) pdfView.classList.add('hidden');
-        if (pdfFrame) pdfFrame.src = 'about:blank';
+    if (displayImg && imgWrap) {
+        revokeBoletoIllustrationObjectUrl(displayImg);
+        displayImg.removeAttribute('src');
+        displayImg.onload = () => {
+            if (imgLoading) imgLoading.classList.add('hidden');
+            imgWrap.classList.remove('hidden');
+        };
+        displayImg.onerror = () => {
+            if (imgLoading) imgLoading.classList.add('hidden');
+            imgWrap.classList.add('hidden');
+        };
+        fetchBoletoIllustrationBlob()
+            .then((blob) => {
+                const url = URL.createObjectURL(blob);
+                displayImg._boletoBlobUrl = url;
+                displayImg.src = url;
+                displayImg.alt = 'Ilustração de boleto com dados genéricos (000 / XXXX)';
+            })
+            .catch(() => {
+                if (imgLoading) imgLoading.classList.add('hidden');
+                imgWrap.classList.add('hidden');
+            });
+    } else if (imgLoading) {
+        imgLoading.classList.add('hidden');
     }
 
     if (barcodeEl) {
         if (!badLine) {
             barcodeEl.innerText = line;
         } else if (pdfUrl) {
-            barcodeEl.innerText = 'A linha digitável está no PDF acima ou no e-mail do Mercado Pago.';
+            barcodeEl.innerText = 'Use o botão Baixar boleto ou o e-mail do Mercado Pago. A linha digitável pode vir no PDF.';
         } else {
             barcodeEl.innerText = 'Consulte o boleto no e-mail enviado pelo Mercado Pago.';
         }
@@ -1840,12 +1874,11 @@ function showBoletoResult(data) {
     }
 
     if (downloadBtn) {
-        const openUrl = proxyPdfSrc || pdfUrl;
-        if (openUrl) {
+        if (pdfUrl) {
             downloadBtn.style.display = 'block';
             downloadBtn.onclick = (e) => {
                 e.preventDefault();
-                window.open(openUrl, '_blank', 'noopener,noreferrer');
+                window.open(pdfUrl, '_blank', 'noopener,noreferrer');
             };
         } else {
             downloadBtn.style.display = 'none';

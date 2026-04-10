@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
-const axios = require('axios');
+const { getSafeBoletoPngBuffer } = require('./lib/boletoSafePreview');
 
 
 dotenv.config();
@@ -94,6 +94,15 @@ if (!fs.existsSync(ANALYTICS_PATH)) fs.writeFileSync(ANALYTICS_PATH, JSON.string
     },
     daily: {}
 }, null, 4));
+
+// Original do boleto e pasta private não são servidos como arquivo estático
+app.use((req, res, next) => {
+    const p = req.path || '';
+    if (p.startsWith('/private/') || p === '/boleto/BoletoBancario.png') {
+        return res.status(404).end();
+    }
+    next();
+});
 
 // Serve static files
 app.use(express.static(__dirname));
@@ -955,49 +964,15 @@ app.post('/api/checkout/boleto', async (req, res) => {
     }
 });
 
-// PDF do boleto para exibir no iframe (URL do MP bloqueia embed em outros domínios)
-app.get('/api/checkout/boleto/ticket/:id', async (req, res) => {
+app.get('/api/checkout/boleto/safe-preview', async (req, res) => {
     try {
-        const id = String(req.params.id || '').trim();
-        if (!id) return res.status(400).json({ error: 'ID inválido' });
-
-        const result = await payment.get({ id });
-        const methodId = String(result.payment_method_id || '').toLowerCase();
-        if (!methodId.includes('bol')) {
-            return res.status(403).json({ error: 'Pagamento não é boleto' });
-        }
-
-        let ticketUrl = result.transaction_details && result.transaction_details.external_resource_url;
-        if (!ticketUrl && result.point_of_interaction && result.point_of_interaction.transaction_data) {
-            ticketUrl = result.point_of_interaction.transaction_data.ticket_url;
-        }
-        if (!ticketUrl) {
-            return res.status(404).json({ error: 'Link do boleto indisponível' });
-        }
-
-        const pdfRes = await axios.get(ticketUrl, {
-            responseType: 'arraybuffer',
-            maxRedirects: 5,
-            headers: { 'User-Agent': 'MuraBoletoProxy/1.0' },
-            validateStatus: () => true,
-        });
-
-        if (!pdfRes.data || pdfRes.status < 200 || pdfRes.status >= 400) {
-            console.error(`[BOLETO TICKET] Upstream ${pdfRes.status} payment ${id}`);
-            return res.status(502).json({ error: 'Não foi possível baixar o boleto' });
-        }
-
-        const buf = Buffer.from(pdfRes.data);
-        const isPdf = buf.length >= 4 && buf.toString('ascii', 0, 4) === '%PDF';
-        const upstreamType = (pdfRes.headers['content-type'] || pdfRes.headers['Content-Type'] || '');
-
-        res.setHeader('Content-Type', isPdf ? 'application/pdf' : (upstreamType || 'application/octet-stream'));
-        res.setHeader('Content-Disposition', 'inline; filename="boleto.pdf"');
-        res.setHeader('Cache-Control', 'private, max-age=300');
-        res.send(buf);
-    } catch (error) {
-        console.error('[BOLETO TICKET]', error);
-        res.status(500).json({ error: 'Erro ao carregar boleto' });
+        const png = await getSafeBoletoPngBuffer();
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'private, max-age=60');
+        res.send(png);
+    } catch (e) {
+        console.error('[BOLETO SAFE-PREVIEW]', e.message);
+        res.status(500).json({ error: 'Pré-visualização indisponível' });
     }
 });
 
