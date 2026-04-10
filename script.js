@@ -1063,10 +1063,8 @@ async function handlePayment(method) {
             const boletoPdfLoading = document.getElementById('boleto-pdf-loading');
             const boletoPdfView = document.getElementById('boleto-pdf-view');
             const boletoPdfFrame = document.getElementById('boleto-pdf-frame');
-            const boletoPdfHint = document.getElementById('boleto-pdf-hint');
             if (boletoPdfFrame) boletoPdfFrame.src = 'about:blank';
             if (boletoPdfView) boletoPdfView.classList.add('hidden');
-            if (boletoPdfHint) boletoPdfHint.classList.add('hidden');
             if (boletoPdfLoading) boletoPdfLoading.classList.remove('hidden');
         }
 
@@ -1738,6 +1736,12 @@ function normalizeBoletoDigitableLine(data) {
     return String(b).trim();
 }
 
+function boletoTicketProxyUrl(paymentId) {
+    if (paymentId == null || paymentId === '') return '';
+    const base = String(API_URL).replace(/\/$/, '');
+    return `${base}/api/checkout/boleto/ticket/${encodeURIComponent(String(paymentId))}`;
+}
+
 function copyPlainTextToClipboard(text) {
     const value = String(text || '');
     if (!value) return Promise.resolve(false);
@@ -1788,8 +1792,6 @@ function showBoletoResult(data) {
     const pdfLoading = document.getElementById('boleto-pdf-loading');
     const pdfView = document.getElementById('boleto-pdf-view');
     const pdfFrame = document.getElementById('boleto-pdf-frame');
-    const pdfHint = document.getElementById('boleto-pdf-hint');
-    const pdfOpenTab = document.getElementById('boleto-pdf-open-tab');
 
     if (pdfLoading) pdfLoading.classList.add('hidden');
 
@@ -1798,18 +1800,17 @@ function showBoletoResult(data) {
     const pdfUrl = (data.external_resource_url != null && String(data.external_resource_url).trim())
         ? String(data.external_resource_url).trim()
         : '';
+    const proxyPdfSrc = data.id ? boletoTicketProxyUrl(data.id) : '';
 
-    if (pdfUrl && pdfFrame && pdfView) {
+    if (proxyPdfSrc && pdfFrame && pdfView) {
+        pdfFrame.src = `${proxyPdfSrc}${proxyPdfSrc.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        pdfView.classList.remove('hidden');
+    } else if (pdfUrl && pdfFrame && pdfView) {
         pdfFrame.src = pdfUrl;
         pdfView.classList.remove('hidden');
-        if (pdfHint && pdfOpenTab) {
-            pdfOpenTab.href = pdfUrl;
-            pdfHint.classList.remove('hidden');
-        }
     } else {
         if (pdfView) pdfView.classList.add('hidden');
         if (pdfFrame) pdfFrame.src = 'about:blank';
-        if (pdfHint) pdfHint.classList.add('hidden');
     }
 
     if (barcodeEl) {
@@ -1839,11 +1840,12 @@ function showBoletoResult(data) {
     }
 
     if (downloadBtn) {
-        if (pdfUrl) {
+        const openUrl = proxyPdfSrc || pdfUrl;
+        if (openUrl) {
             downloadBtn.style.display = 'block';
             downloadBtn.onclick = (e) => {
                 e.preventDefault();
-                window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+                window.open(openUrl, '_blank', 'noopener,noreferrer');
             };
         } else {
             downloadBtn.style.display = 'none';
