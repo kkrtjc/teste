@@ -439,7 +439,7 @@ header.sticky {
         -webkit-overflow-scrolling: touch;
         mask-image: none !important;
         -webkit-mask-image: none !important;
-        touch-action: pan-x; /* Only allow horizontal touch interaction here */
+        touch-action: pan-y; /* Allow page scrolling while keeping horizontal cards stable */
     }
     
     .price-card-premium {
