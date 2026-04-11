@@ -1,23 +1,3 @@
-// Toggle Logic for Offers
-function switchOffer(type) {
-    const cardCombo = document.getElementById('card-combo');
-    const cardIndividual = document.getElementById('card-individual');
-    const toggleCombo = document.getElementById('toggle-combo');
-    const toggleIndividual = document.getElementById('toggle-individual');
-
-    if (type === 'combo') {
-        if(cardCombo) cardCombo.classList.remove('hidden-offer');
-        if(cardIndividual) cardIndividual.classList.add('hidden-offer');
-        if(toggleCombo) toggleCombo.classList.add('active', 'combo-type');
-        if(toggleIndividual) toggleIndividual.classList.remove('active');
-    } else {
-        if(cardCombo) cardCombo.classList.add('hidden-offer');
-        if(cardIndividual) cardIndividual.classList.remove('hidden-offer');
-        if(toggleCombo) toggleCombo.classList.remove('active', 'combo-type');
-        if(toggleIndividual) toggleIndividual.classList.add('active');
-    }
-}
-
 // --- 1. GLOBAL CONFIG & STATE ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
     ? 'http://localhost:10000'

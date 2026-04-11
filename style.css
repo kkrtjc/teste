@@ -296,14 +296,14 @@ header.sticky {
     width: 100%;
     justify-content: center;
     align-items: stretch;
-    padding: 1rem 0;
+    padding: 2rem 0;
 }
 
 .price-card-premium {
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 1.5rem;
     padding: 2.5rem 2rem;
     text-align: center;
@@ -313,33 +313,37 @@ header.sticky {
     position: relative;
     overflow: hidden;
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
-    animation: fadeIn 0.8s ease-out;
+    flex: 1;
+    max-width: 420px;
 }
-
-@keyframes cardPulse {
-    0% { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3); }
-    50% { box-shadow: 0 15px 45px -5px rgba(225, 29, 72, 0.15); border-color: rgba(225, 29, 72, 0.3); }
-    100% { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3); }
-}
-
-.card-vibrant {
-    animation: cardPulse 4s infinite ease-in-out;
-}
-
 
 .price-card-premium.featured {
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.1);
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 25px rgba(16, 185, 129, 0.15);
+    transform: scale(1.03);
+    z-index: 5;
+}
+
+.price-card-premium.featured::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
 }
 
 .price-card-premium:hover {
     transform: translateY(-8px);
-    background: rgba(15, 23, 42, 0.8);
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
 }
 
 .price-card-premium.featured:hover {
+    transform: scale(1.05) translateY(-8px);
     border-color: var(--green-600);
 }
 
@@ -399,22 +403,21 @@ header.sticky {
 
 @media (max-width: 768px) {
     .offers-grid-horizontal {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        justify-content: flex-start;
-        padding: 0 1.5rem 2.5rem; /* Increased padding-right for better peek */
-        scroll-snap-type: x mandatory;
-        gap: 1.25rem;
-        -webkit-overflow-scrolling: touch;
-        mask-image: linear-gradient(to right, black 85%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        flex-direction: column;
+        align-items: center;
+        padding: 0 1.5rem 2rem;
+        gap: 2rem;
     }
     
     .price-card-premium {
-        flex: 0 0 calc(90% - 1.5rem);
-        scroll-snap-align: center;
-        min-width: 290px;
-        padding: 2.25rem 1.5rem;
+        width: 100%;
+        max-width: 100%;
+        padding: 2.5rem 1.5rem;
+    }
+
+    .price-card-premium.featured {
+        transform: scale(1.05);
+        order: -1; /* Mantém o combo no topo */
     }
     
     .card-mockup-wrapper {
