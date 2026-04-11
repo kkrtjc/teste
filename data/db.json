@@ -2,7 +2,7 @@
     "products": {
         "ebook-doencas": {
             "title": "PROTOCOLO ELITE: A Cura das Aves",
-            "price": 79.9,
+            "price": 89.9,
             "originalPrice": 149.9,
             "description": "Protocolo Elite Doenças",
             "isFeatured": true,
@@ -22,7 +22,7 @@
         "ebook-manejo": {
             "title": "Manejo de Pintinhos (Upsell)",
             "price": 49.9,
-            "originalPrice": 99,
+            "originalPrice": 79.9,
             "enabled": true,
             "description": "Manual de Criação",
             "features": [
@@ -34,16 +34,16 @@
             "orderBumps": []
         },
         "combo-elite": {
-            "title": "COMBO ELITE: Doenças + Pintinhos",
-            "price": 0.01,
-            "originalPrice": 159.8,
-            "description": "O Guia Completo para sua Criação",
+            "title": "COMBO CRIADOR DE ELITE",
+            "price": 139.8,
+            "originalPrice": 289.7,
+            "description": "O Guia Completo + Pintinhos + Tabela Ração Grátis",
             "badge": "MAIS VENDIDO",
             "features": [
                 "Tudo do Protocolo de Doenças",
                 "Tudo do Manual de Pintinhos",
-                "Economia de 25%",
-                "Bônus: Tabela de Ração (no PIX)"
+                "BÔNUS: Tabela de Ração Balanceada",
+                "Economia Real de R$ 149,90"
             ],
             "cover": "combo",
             "orderBumps": [

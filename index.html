@@ -1147,53 +1147,55 @@
         </div>
     </section>
 
-    <!-- Horizontal Learning Section -->
-    <section id="learning" class="bg-white"
-        style="padding: 3rem 0; border-top: 1px solid var(--slate-800); border-bottom: 1px solid var(--slate-800);">
-        <div class="container authority-grid" style="gap: 2rem;">
-            <div class="mockup-side" style="flex: 0 0 180px;">
-                <img src="capadasdoencas.webp" alt="Guia O Segredo das Galinhas"
-                    style="width: 100%; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));">
-            </div>
-            <div class="learning-side"
-                style="flex: 1.5; min-width: 300px; background: rgba(30, 41, 59, 0.3); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--slate-800);">
-                <h4 style="color: var(--white); margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 900;">O Que
-                    Você Vai Aprender Hoje:</h4>
-                <ul
-                    style="list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Identificar doenças em segundos</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Medicamento correto para cada doença</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Dosagem que realmente funciona</li>
-                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
-                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
-                        Protocolos Passo a Passo</li>
-                </ul>
+    <!-- Double Offer Section -->
+    <section id="learning" class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800); border-bottom: 1px solid var(--slate-800);">
+        <div class="container">
+            <h2 style="text-align: center; color: var(--white); margin-bottom: 3rem; font-size: 2rem; font-weight: 900;">Escolha o Seu Nível de <span style="color: var(--brand-red);">Sucesso</span></h2>
+            
+            <div class="offers-grid-horizontal">
+                <!-- COMBO CARD (LEFT/FEATURED) -->
+                <div class="price-card featured" style="flex: 1; border: 2px solid var(--green-600); position: relative; background: rgba(16, 185, 129, 0.05);">
+                    <span class="badge-featured" style="background: var(--green-600);">MELHOR CUSTO-BENEFÍCIO</span>
+                    <h3 style="color: var(--white); font-size: 1.5rem; font-weight: 900; margin-bottom: 0.5rem;">COMBO CRIADOR COMPLETO</h3>
+                    <p style="color: var(--slate-400); font-size: 0.9rem; margin-bottom: 1.5rem;">Domine 100% da criação: trate doenças e garanta a sobrevivência dos seus pintinhos.</p>
+                    
+                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; display: grid; gap: 0.75rem;">
+                        <li style="display: flex; gap: 10px; font-size: 0.9rem; color: var(--slate-200);"><i class="fa-solid fa-plus-circle" style="color: var(--green-600);"></i> Ebook O Segredo das Doenças</li>
+                        <li style="display: flex; gap: 10px; font-size: 0.9rem; color: var(--slate-200);"><i class="fa-solid fa-plus-circle" style="color: var(--green-600);"></i> Ebook Manual de Pintinhos</li>
+                        <li style="display: flex; gap: 10px; font-size: 0.95rem; color: var(--amber-600); font-weight: 800;"><i class="fa-solid fa-gift" style="color: var(--amber-600);"></i> BÔNUS: Tabela de Ração Balanceada</li>
+                    </ul>
 
-                <div
-                    style="margin-top: 1.25rem; padding: 1.5rem; background: rgba(15, 23, 42, 0.4); border-radius: 1rem; text-align: center; border: 1px solid var(--slate-800); box-shadow: var(--shadow-xl);">
-                    <span
-                        style="display: block; font-size: 0.85rem; color: var(--slate-400); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">POR
-                        APENAS</span>
-                    <span style="display: block; font-size: 1.5rem; color: var(--white); font-weight: 900;">R$ <span
-                            id="display-price-value" class="dyn-price-main">79,90</span> no pix</span>
-                    <span class="dyn-discount-badge"
-                        style="font-size: 0.75rem; color: #10b981; font-weight: 800; display: block; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px; display: inline-block;">🔥
-                        <span class="dyn-discount-percent">46</span>% DE DESCONTO NO PIX</span>
-                    <span style="font-size: 0.9rem; color: var(--slate-300); display: block; margin-top: 5px;">ou em até
-                        <strong class="dyn-installments" style="color: #fff;">4x de R$ 37,47 sem juros</strong> no
-                        cartão</span>
-                    <span
-                        style="font-size: 0.85rem; color: var(--brand-red); font-weight: 900; display: block; margin-top: 0.5rem; text-transform: uppercase;">QUANTO
-                        VALE UMA GALINHA PRA VOCE?</span>
-                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
-                        style="width: 100%; margin-top: 15px;">
-                        SALVAR MINHAS GALINHAS AGORA
+                    <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.75rem;">
+                        <span style="display: block; font-size: 0.8rem; color: var(--slate-400); text-decoration: line-through;">De R$ 289,70</span>
+                        <span style="display: block; font-size: 2.25rem; color: var(--white); font-weight: 900; margin: 5px 0;">R$ 139<small>,80</small></span>
+                        <span style="font-size: 0.75rem; color: #10b981; font-weight: 800; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px;">VOCÊ ESTÁ ECONOMIZANDO R$ 149,90</span>
+                    </div>
+
+                    <button onclick="startCheckoutProcess('combo-elite')" class="btn-green" style="width: 100%; padding: 1.25rem; font-size: 1.1rem;">
+                        QUERO O COMBO COMPLETO
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--slate-400); margin-top: 10px; opacity: 0.8;"><i class="fa-solid fa-bolt"></i> Acesso Imediato à 3 Produtos</p>
+                </div>
+
+                <!-- INDIVIDUAL CARD (RIGHT) -->
+                <div class="price-card" style="flex: 1; border: 1px solid var(--slate-800); background: transparent;">
+                    <h3 style="color: var(--white); font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem;">APENAS O GUIA DE DOENÇAS</h3>
+                    <p style="color: var(--slate-400); font-size: 0.9rem; margin-bottom: 1.5rem;">Focado apenas no tratamento e cura rápida do seu plantel atual.</p>
+                    
+                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; display: grid; gap: 0.75rem;">
+                        <li style="display: flex; gap: 10px; font-size: 0.9rem; color: var(--slate-200);"><i class="fa-solid fa-circle-check" style="color: var(--slate-600);"></i> O Segredo das Doenças</li>
+                        <li style="display: flex; gap: 10px; font-size: 0.9rem; color: var(--slate-500); text-decoration: line-through;">Manual de Pintinhos</li>
+                        <li style="display: flex; gap: 10px; font-size: 0.9rem; color: var(--slate-500); text-decoration: line-through;">Tabela de Ração</li>
+                    </ul>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <span style="display: block; font-size: 0.8rem; color: var(--slate-400); text-decoration: line-through;">De R$ 149,90</span>
+                        <span style="display: block; font-size: 1.75rem; color: var(--white); font-weight: 900; margin: 5px 0;">R$ 89<small>,90</small></span>
+                        <span style="font-size: 0.8rem; color: var(--slate-300); opacity: 0.8;">ou em até 4x de R$ 37,47</span>
+                    </div>
+
+                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary" style="width: 100%; border-radius: 8px;">
+                        QUERO APENAS O GUIA
                     </button>
                 </div>
             </div>
