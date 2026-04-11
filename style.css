@@ -431,6 +431,7 @@ header.sticky {
     .offers-grid-horizontal {
         flex-wrap: nowrap;
         overflow-x: auto;
+        overflow-y: hidden !important; /* LOCK vertical movement */
         justify-content: flex-start;
         padding: 0 1.25rem 3.5rem;
         scroll-snap-type: x mandatory;
@@ -438,7 +439,7 @@ header.sticky {
         -webkit-overflow-scrolling: touch;
         mask-image: none !important;
         -webkit-mask-image: none !important;
-        touch-action: pan-y;
+        touch-action: pan-x; /* Only allow horizontal touch interaction here */
     }
     
     .price-card-premium {
@@ -448,6 +449,28 @@ header.sticky {
         padding: 2.25rem 1.5rem;
         height: auto;
         overflow: visible;
+        transform: none !important; /* Disable all vertical transforms on mobile */
+    }
+
+    .price-card-premium:hover {
+        transform: none !important; /* Disable hover jumps */
+    }
+
+    .horizontal-arrow-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: #fbbf24;
+        font-size: 0.9rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        animation: arrowMove 1.5s infinite;
+    }
+
+    @keyframes arrowMove {
+        0%, 100% { transform: translateX(0); opacity: 0.6; }
+        50% { transform: translateX(10px); opacity: 1; }
     }
 
     .bright-mockup {
