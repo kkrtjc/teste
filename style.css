@@ -263,7 +263,19 @@ header.sticky {
     position: relative;
     overflow: hidden;
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.8s ease-out;
 }
+
+@keyframes cardPulse {
+    0% { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3); }
+    50% { box-shadow: 0 15px 45px -5px rgba(225, 29, 72, 0.15); border-color: rgba(225, 29, 72, 0.3); }
+    100% { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3); }
+}
+
+.card-vibrant {
+    animation: cardPulse 4s infinite ease-in-out;
+}
+
 
 .price-card-premium.featured {
     border: 1px solid rgba(16, 185, 129, 0.3);
@@ -340,17 +352,19 @@ header.sticky {
         flex-wrap: nowrap;
         overflow-x: auto;
         justify-content: flex-start;
-        padding: 0 1rem 2rem;
+        padding: 0 1.5rem 2.5rem; /* Increased padding-right for better peek */
         scroll-snap-type: x mandatory;
-        gap: 1rem;
+        gap: 1.25rem;
         -webkit-overflow-scrolling: touch;
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
     }
     
     .price-card-premium {
-        flex: 0 0 90%;
+        flex: 0 0 calc(90% - 1.5rem);
         scroll-snap-align: center;
         min-width: 290px;
-        padding: 2rem 1.5rem;
+        padding: 2.25rem 1.5rem;
     }
     
     .card-mockup-wrapper {
