@@ -398,7 +398,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
     const fallbackData = {
         'ebook-doencas': {
             title: 'Protocolo Elite: A Cura das Aves',
-            price: 79.90,
+            price: 89.90,
             originalPrice: 149.90,
             cover: 'capadasdoencas.webp',
             fullBumps: [
@@ -407,15 +407,14 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             ]
         },
         'combo-elite': {
-            title: 'Combo Elite (Doenças + Manual)',
-            price: 147.00,
-            originalPrice: 169.80,
+            title: 'COMBO CRIADOR DE ELITE',
+            price: 139.80,
+            originalPrice: 289.70,
             cover: 'combo',
-            fullBumps: [
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
-            ]
+            fullBumps: []
         }
     };
+
 
     try {
         let productData = (typeof prefetchedProducts !== 'undefined') ? prefetchedProducts[productId] : null;
@@ -453,21 +452,33 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         
         const topCardPriceEl = document.getElementById('top-checkout-card-price');
         const topCardInstEl = document.getElementById('top-checkout-card-installment');
-        if (topCardPriceEl) topCardPriceEl.innerText = formatBRL(productData.originalPrice || (productData.price * 2));
-        if (topCardInstEl) topCardInstEl.innerText = `4x de ${formatBRL((productData.originalPrice || (productData.price * 2)) / 4)}`;
+        
+        // --- CALCULA PREÇO ORIGINAL (O VALOR QUE "ERA") ---
+        const originalVal = productData.originalPrice || (productData.price * 2);
+        const installmentVal = productData.price / 4;
+
+        if (topCardPriceEl) topCardPriceEl.innerText = formatBRL(originalVal);
+        if (topCardInstEl) topCardInstEl.innerText = `4x de ${formatBRL(installmentVal)}`;
 
         const iconContainer = document.getElementById('product-icon-container');
-        if (iconContainer) {
+        const iconMobileContainer = document.getElementById('ck-product-cover'); // Mobile version cover
+
+        if (iconContainer || iconMobileContainer) {
+            let mockupHTML = '';
             if (productData.cover === 'combo') {
-                iconContainer.innerHTML = `
-                    <div style="display: flex; gap: 5px; align-items: center;">
-                        <img src="capadospintinhos.webp" alt="Manejo" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
-                        <img src="capadasdoencas.webp" alt="Doenças" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                mockupHTML = `
+                    <div style="position: relative; width: 60px; height: 75px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                        <img src="capadasdoencas.webp" alt="" style="position: absolute; width: 45px; height: 60px; transform: rotate(-8deg) translateX(-10px); z-index: 1; border-radius: 4px; box-shadow: 2px 4px 10px rgba(0,0,0,0.3); filter: brightness(0.9);">
+                        <img src="capadospintinhos.webp" alt="" style="position: absolute; width: 50px; height: 65px; transform: rotate(5deg) translateX(8px); z-index: 2; border-radius: 4px; box-shadow: 4px 8px 15px rgba(0,0,0,0.4);">
                     </div>`;
             } else {
-                iconContainer.innerHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px;">`;
+                mockupHTML = `<img src="${productData.cover}" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">`;
             }
+
+            if (iconContainer) iconContainer.innerHTML = mockupHTML;
+            if (iconMobileContainer) iconMobileContainer.innerHTML = mockupHTML;
         }
+
 
         currentPaymentMethod = 'pix';
         if (typeof selectPaymentMethod === 'function') {
