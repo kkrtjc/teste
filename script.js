@@ -11,6 +11,23 @@ let cart = {
 // GLOBAL PAYMENT STATE
 let currentPaymentMethod = 'pix'; // Default
 
+// --- NAVIGATION: OFFERS SCROLL ---
+function scrollOffers(direction) {
+    const grid = document.getElementById('offers-grid');
+    if (!grid) return;
+    
+    // Calcula o deslocamento baseado no tamanho do card
+    const cardWidth = grid.querySelector('.price-card-premium').offsetWidth;
+    const gap = 20; // Aproximadamente o gap do CSS
+    const scrollAmount = cardWidth + gap;
+
+    if (direction === 'next') {
+        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    } else {
+        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    }
+}
+
 // --- PERFORMANCE: PRE-FETCHING ---
 const prefetchedProducts = {};
 
@@ -121,6 +138,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     initHelpBubbles();
     setupFields();
     renderHomeProducts();
+    
+    // --- OFFERS NAVIGATION VISIBILITY ---
+    const grid = document.getElementById('offers-grid');
+    const prevBtn = document.querySelector('.nav-arrow.prev');
+    const nextBtn = document.querySelector('.nav-arrow.next');
+
+    if (grid && prevBtn && nextBtn) {
+        const updateArrows = () => {
+            const scrollLeft = grid.scrollLeft;
+            const maxScroll = grid.scrollWidth - grid.clientWidth;
+            
+            prevBtn.style.opacity = scrollLeft > 10 ? '1' : '0';
+            prevBtn.style.pointerEvents = scrollLeft > 10 ? 'auto' : 'none';
+            
+            nextBtn.style.opacity = scrollLeft < maxScroll - 10 ? '1' : '0';
+            nextBtn.style.pointerEvents = scrollLeft < maxScroll - 10 ? 'auto' : 'none';
+        };
+        
+        grid.addEventListener('scroll', updateArrows);
+        updateArrows(); // Initial check
+        window.addEventListener('resize', updateArrows);
+    }
 
     // 6. LAZY VIDEO
     const lazyVideo = document.getElementById('vsl-video');

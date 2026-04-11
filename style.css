@@ -418,9 +418,64 @@ header.sticky {
     animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 0.5; transform: translateX(0); }
-    50% { opacity: 1; transform: translateX(5px); }
+@keyframes arrowMove {
+    0%, 100% { transform: translateX(0); opacity: 0.6; }
+    50% { transform: translateX(10px); opacity: 1; }
+}
+
+/* NAVIGATION ARROWS */
+.offers-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 45px;
+    height: 45px;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.nav-arrow:hover {
+    background: var(--brand-red);
+    border-color: var(--brand-red);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.nav-arrow.prev { left: -22px; }
+.nav-arrow.next { right: -22px; }
+
+.nav-arrow i { font-size: 1.2rem; }
+
+@media (max-width: 768px) {
+    .nav-arrow {
+        width: 38px;
+        height: 38px;
+        background: rgba(0, 0, 0, 0.4);
+        opacity: 0.8;
+    }
+    
+    .nav-arrow.prev { left: 5px; }
+    .nav-arrow.next { right: 5px; }
+    
+    .nav-arrow:hover {
+        transform: translateY(-50%); /* Disable scale on mobile tap */
+    }
 }
 
 @media (max-width: 768px) {

@@ -1161,74 +1161,84 @@
                 <i class="fa-solid fa-circle-arrow-right"></i>
             </div>
 
-            <div class="offers-grid-horizontal">
-                <!-- COMBO PREMIUM CARD (FEATURED / THE CHOICE) -->
-                <div id="card-combo" class="price-card-premium featured">
-                    <div style="position: absolute; top: 0; right: 0; background: var(--green-600); color: white; padding: 8px 25px; font-weight: 900; font-size: 0.8rem; border-bottom-left-radius: 1.25rem; letter-spacing: 1px; box-shadow: -2px 2px 10px rgba(0,0,0,0.2);">RECOMENDADO</div>
-                    
-                    <h3 style="color: var(--white); font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem; font-family: var(--font-heading);">COMBO CRIADOR DE ELITE</h3>
-                    <p style="color: var(--slate-400); font-size: 0.95rem; line-height: 1.5;"><strong>A Solução Suprema:</strong> Identifique, cure e previna todas as doenças, garanta 100% de vida aos pintinhos e economize na alimentação.</p>
-                    
-                    <div class="card-mockup-wrapper">
-                        <img src="capadasdoencas.webp" class="card-mockup-img" style="position: absolute; transform: translateX(-40px) rotate(-10deg); z-index: 1; opacity: 0.9; max-width: 140px;" alt="">
-                        <img src="capadospintinhos.webp" class="card-mockup-img" style="position: absolute; transform: translateX(30px) rotate(5deg); z-index: 2; max-width: 150px;" alt="">
-                    </div>
-
-                    <ul class="feature-list-premium">
-                        <li><i class="fa-solid fa-check-double" style="color: var(--green-600);"></i> <strong>Protocolo Elite:</strong> Cure 11 doenças e domine as dosagens exatas.</li>
-                        <li><i class="fa-solid fa-check-double" style="color: var(--green-600);"></i> <strong>Manual de Pintinhos:</strong> Sobrevivência total do nascimento à vida adulta.</li>
-                        <li class="bonus" style="background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed rgba(251, 191, 36, 0.3);"><i class="fa-solid fa-gift"></i> <strong>SUPER BÔNUS:</strong> Tabela de Ração Balanceada (Corte 65% dos gastos).</li>
-                        <li><i class="fa-solid fa-arrows-rotate"></i> Atualizações Vitalícias de Todos os Materiais.</li>
-                    </ul>
-
-                    <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center;">
-                            <span style="font-size: 0.95rem; color: var(--slate-500); text-decoration: line-through;">De R$ 289,70 por apenas:</span>
-                            <div style="display: flex; align-items: baseline; gap: 4px;">
-                                <span style="font-size: 1.5rem; color: var(--white); font-weight: 500;">R$</span>
-                                <span style="font-size: 3.5rem; color: var(--white); font-weight: 900; line-height: 1;">139<small style="font-size: 1.5rem;">,80</small></span>
-                            </div>
-                            <span style="font-size: 0.85rem; color: var(--green-600); font-weight: 800; background: rgba(16, 185, 129, 0.1); padding: 6px 15px; border-radius: 20px; margin-top: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">🚀 ECONOMIZE R$ 149,90 NO COMBO</span>
+            <div class="offers-wrapper">
+                <button class="nav-arrow prev" onclick="scrollOffers('prev')" aria-label="Oferta Anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
+                <div class="offers-grid-horizontal" id="offers-grid">
+                    <!-- COMBO PREMIUM CARD (FEATURED / THE CHOICE) -->
+                    <div id="card-combo" class="price-card-premium featured">
+                        <div style="position: absolute; top: 0; right: 0; background: var(--green-600); color: white; padding: 8px 25px; font-weight: 900; font-size: 0.8rem; border-bottom-left-radius: 1.25rem; letter-spacing: 1px; box-shadow: -2px 2px 10px rgba(0,0,0,0.2);">RECOMENDADO</div>
+                        
+                        <h3 style="color: var(--white); font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem; font-family: var(--font-heading);">COMBO CRIADOR DE ELITE</h3>
+                        <p style="color: var(--slate-400); font-size: 0.95rem; line-height: 1.5;"><strong>A Solução Suprema:</strong> Identifique, cure e previna todas as doenças, garanta 100% de vida aos pintinhos e economize na alimentação.</p>
+                        
+                        <div class="card-mockup-wrapper">
+                            <img src="capadasdoencas.webp" class="card-mockup-img" style="position: absolute; transform: translateX(-40px) rotate(-10deg); z-index: 1; opacity: 0.9; max-width: 140px;" alt="">
+                            <img src="capadospintinhos.webp" class="card-mockup-img" style="position: absolute; transform: translateX(30px) rotate(5deg); z-index: 2; max-width: 150px;" alt="">
                         </div>
 
-                        <button onclick="startCheckoutProcess('combo-elite')" class="btn-green" style="width: 100%; border-radius: 15px; font-size: 1.3rem; height: 75px; gap: 12px; box-shadow: 0 10px 20px rgba(22, 197, 94, 0.3);">
-                            GARANTIR MEU ACESSO COMPLETO <i class="fa-solid fa-arrow-right"></i>
-                        </button>
+                        <ul class="feature-list-premium">
+                            <li><i class="fa-solid fa-check-double" style="color: var(--green-600);"></i> <strong>Protocolo Elite:</strong> Cure 11 doenças e domine as dosagens exatas.</li>
+                            <li><i class="fa-solid fa-check-double" style="color: var(--green-600);"></i> <strong>Manual de Pintinhos:</strong> Sobrevivência total do nascimento à vida adulta.</li>
+                            <li class="bonus" style="background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 8px; border: 1px dashed rgba(251, 191, 36, 0.3);"><i class="fa-solid fa-gift"></i> <strong>SUPER BÔNUS:</strong> Tabela de Ração Balanceada (Corte 65% dos gastos).</li>
+                            <li><i class="fa-solid fa-arrows-rotate"></i> Atualizações Vitalícias de Todos os Materiais.</li>
+                        </ul>
+
+                        <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                            <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center;">
+                                <span style="font-size: 0.95rem; color: var(--slate-500); text-decoration: line-through;">De R$ 289,70 por apenas:</span>
+                                <div style="display: flex; align-items: baseline; gap: 4px;">
+                                    <span style="font-size: 1.5rem; color: var(--white); font-weight: 500;">R$</span>
+                                    <span style="font-size: 3.5rem; color: var(--white); font-weight: 900; line-height: 1;">139<small style="font-size: 1.5rem;">,80</small></span>
+                                </div>
+                                <span style="font-size: 0.85rem; color: var(--green-600); font-weight: 800; background: rgba(16, 185, 129, 0.1); padding: 6px 15px; border-radius: 20px; margin-top: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">🚀 ECONOMIZE R$ 149,90 NO COMBO</span>
+                            </div>
+
+                            <button onclick="startCheckoutProcess('combo-elite')" class="btn-green" style="width: 100%; border-radius: 15px; font-size: 1.3rem; height: 75px; gap: 12px; box-shadow: 0 10px 20px rgba(22, 197, 94, 0.3);">
+                                GARANTIR MEU ACESSO COMPLETO <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- INDIVIDUAL CARD (THE ANCHOR) -->
+                    <div id="card-individual" class="price-card-premium">
+                        <h3 style="color: var(--white); font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; font-family: var(--font-heading);">GUIA DAS DOENÇAS</h3>
+                        <p style="color: var(--slate-400); font-size: 0.85rem;">Identificação e cura rápida de doenças para salvar seu plantel atual.</p>
+                        
+                        <div class="card-mockup-wrapper" style="height: 160px;">
+                            <img src="capadasdoencas.webp" class="card-mockup-img bright-mockup" style="max-width: 130px;" alt="">
+                        </div>
+
+                        <ul class="feature-list-premium">
+                            <li><i class="fa-solid fa-circle-check"></i> 11 Doenças Documentadas</li>
+                            <li><i class="fa-solid fa-circle-check"></i> Tabelas de Vacinação e Vermifugação</li>
+                            <li><i class="fa-solid fa-circle-check"></i> Atualizações Vitalícias</li>
+                            <li style="opacity: 0.4;"><i class="fa-solid fa-xmark"></i> Manual de Pintinhos</li>
+                            <li style="opacity: 0.4;"><i class="fa-solid fa-xmark"></i> Tabela de Ração Balanceada</li>
+                        </ul>
+
+                        <div style="margin-top: auto; padding-top: 1.5rem;">
+                            <div style="margin-bottom: 1.25rem;">
+                                <span style="font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 149,90 por:</span>
+                                <div style="display: flex; align-items: baseline; gap: 2px; justify-content: center;">
+                                    <span style="font-size: 1.2rem; color: var(--white); font-weight: 500;">R$</span>
+                                    <span style="font-size: 2.5rem; color: var(--white); font-weight: 800; line-height: 1;">89<small style="font-size: 1.2rem;">,90</small></span>
+                                </div>
+                                <span style="font-size: 0.8rem; color: var(--slate-400); display: block; margin-top: 5px;">ou 4x de R$ 37,47</span>
+                            </div>
+
+                            <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary" style="width: 100%; border-radius: 12px; font-size: 1rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(225,29,72,0.6); height: 55px;">
+                                QUERO APENAS O GUIA
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- INDIVIDUAL CARD (THE ANCHOR) -->
-                <div id="card-individual" class="price-card-premium">
-                    <h3 style="color: var(--white); font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; font-family: var(--font-heading);">GUIA DAS DOENÇAS</h3>
-                    <p style="color: var(--slate-400); font-size: 0.85rem;">Identificação e cura rápida de doenças para salvar seu plantel atual.</p>
-                    
-                    <div class="card-mockup-wrapper" style="height: 160px;">
-                        <img src="capadasdoencas.webp" class="card-mockup-img bright-mockup" style="max-width: 130px;" alt="">
-                    </div>
-
-                    <ul class="feature-list-premium">
-                        <li><i class="fa-solid fa-circle-check"></i> 11 Doenças Documentadas</li>
-                        <li><i class="fa-solid fa-circle-check"></i> Tabelas de Vacinação e Vermifugação</li>
-                        <li><i class="fa-solid fa-circle-check"></i> Atualizações Vitalícias</li>
-                        <li style="opacity: 0.4;"><i class="fa-solid fa-xmark"></i> Manual de Pintinhos</li>
-                        <li style="opacity: 0.4;"><i class="fa-solid fa-xmark"></i> Tabela de Ração Balanceada</li>
-                    </ul>
-
-                    <div style="margin-top: auto; padding-top: 1.5rem;">
-                        <div style="margin-bottom: 1.25rem;">
-                            <span style="font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 149,90 por:</span>
-                            <div style="display: flex; align-items: baseline; gap: 2px; justify-content: center;">
-                                <span style="font-size: 1.2rem; color: var(--white); font-weight: 500;">R$</span>
-                                <span style="font-size: 2.5rem; color: var(--white); font-weight: 800; line-height: 1;">89<small style="font-size: 1.2rem;">,90</small></span>
-                            </div>
-                            <span style="font-size: 0.8rem; color: var(--slate-400); display: block; margin-top: 5px;">ou 4x de R$ 37,47</span>
-                        </div>
-
-                        <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary" style="width: 100%; border-radius: 12px; font-size: 1rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(225,29,72,0.6); height: 55px;">
-                            QUERO APENAS O GUIA
-                        </button>
-                    </div>
-                </div>
+                <button class="nav-arrow next" onclick="scrollOffers('next')" aria-label="Próxima Oferta">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
             </div>
             
