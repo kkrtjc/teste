@@ -432,22 +432,33 @@ header.sticky {
         flex-wrap: nowrap;
         overflow-x: auto;
         justify-content: flex-start;
-        padding: 0 1.5rem 3rem;
+        padding: 0 1.25rem 3.5rem;
         scroll-snap-type: x mandatory;
-        gap: 1.5rem;
+        gap: 1.25rem;
         -webkit-overflow-scrolling: touch;
-        /* REARED: Removed mask-image to prevent cutting off borders */
-        mask-image: none;
-        -webkit-mask-image: none;
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
+        touch-action: pan-y;
     }
     
     .price-card-premium {
-        flex: 0 0 calc(90% - 1rem);
-        scroll-snap-align: center;
-        min-width: 300px;
-        padding: 2.25rem 1.75rem;
-        height: auto; /* Ensure it grows with content */
-        overflow: visible; /* Prevent internal scrolling */
+        flex: 0 0 82%; 
+        scroll-snap-align: start;
+        min-width: 280px;
+        padding: 2.25rem 1.5rem;
+        height: auto;
+        overflow: visible;
+    }
+
+    .bright-mockup {
+        filter: brightness(1.2) contrast(1.1) drop-shadow(0 15px 30px rgba(0,0,0,0.5)) !important;
+        opacity: 1 !important;
+    }
+
+    #card-individual {
+        opacity: 1 !important;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
     }
 
     .price-card-premium.featured {
