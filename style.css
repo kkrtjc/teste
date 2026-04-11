@@ -403,21 +403,26 @@ header.sticky {
 
 @media (max-width: 768px) {
     .offers-grid-horizontal {
-        flex-direction: column;
-        align-items: center;
-        padding: 0 1.5rem 2rem;
-        gap: 2rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding: 0 1.5rem 3rem;
+        scroll-snap-type: x mandatory;
+        gap: 1.25rem;
+        -webkit-overflow-scrolling: touch;
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
     }
     
     .price-card-premium {
-        width: 100%;
-        max-width: 100%;
-        padding: 2.5rem 1.5rem;
+        flex: 0 0 calc(90% - 1.5rem);
+        scroll-snap-align: center;
+        min-width: 295px;
+        padding: 2.25rem 1.5rem;
     }
 
     .price-card-premium.featured {
-        transform: scale(1.05);
-        order: -1; /* Mantém o combo no topo */
+        transform: scale(1.02);
     }
     
     .card-mockup-wrapper {
