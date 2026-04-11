@@ -300,10 +300,10 @@ header.sticky {
 }
 
 .price-card-premium {
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(30, 41, 59, 0.4); /* Made slightly lighter base */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1.5rem;
     padding: 2.5rem 2rem;
     text-align: center;
@@ -311,11 +311,12 @@ header.sticky {
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow: hidden;
+    /* REARED: Removed overflow: hidden to prevent clipping borders/shadows */
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
     flex: 1;
     max-width: 420px;
 }
+
 
 .price-card-premium.featured {
     background: rgba(15, 23, 42, 0.7);
@@ -401,34 +402,65 @@ header.sticky {
     color: #fbbf24;
 }
 
+/* SCROLL HINT INDICATOR */
+.scroll-hint {
+    display: none;
+    text-align: center;
+    color: var(--slate-400);
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(5px); }
+}
+
 @media (max-width: 768px) {
+    .scroll-hint {
+        display: flex;
+    }
+
     .offers-grid-horizontal {
         flex-wrap: nowrap;
         overflow-x: auto;
         justify-content: flex-start;
         padding: 0 1.5rem 3rem;
         scroll-snap-type: x mandatory;
-        gap: 1.25rem;
+        gap: 1.5rem;
         -webkit-overflow-scrolling: touch;
-        mask-image: linear-gradient(to right, black 85%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        /* REARED: Removed mask-image to prevent cutting off borders */
+        mask-image: none;
+        -webkit-mask-image: none;
     }
     
     .price-card-premium {
-        flex: 0 0 calc(90% - 1.5rem);
+        flex: 0 0 calc(90% - 1rem);
         scroll-snap-align: center;
-        min-width: 295px;
-        padding: 2.25rem 1.5rem;
+        min-width: 300px;
+        padding: 2.25rem 1.75rem;
+        height: auto; /* Ensure it grows with content */
+        overflow: visible; /* Prevent internal scrolling */
     }
 
     .price-card-premium.featured {
-        transform: scale(1.02);
+        transform: scale(1); /* Avoid scale on mobile to prevent clipping */
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(16, 185, 129, 0.5);
     }
     
     .card-mockup-wrapper {
         height: 150px;
     }
 }
+
 
 /* --- Hero Section --- */
 .hero {
