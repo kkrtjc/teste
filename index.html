@@ -1156,9 +1156,16 @@
                 <p style="color: var(--slate-400); font-size: 1.1rem; max-width: 600px; margin: 1rem auto;">Garanta as ferramentas definitivas para transformar sua criação em um plantel de elite.</p>
             </div>
             
+            <div class="offer-selector-wrapper">
+                <div class="offer-toggle">
+                    <div id="toggle-combo" class="toggle-btn active combo-type" onclick="switchOffer('combo')">O Combo Completo</div>
+                    <div id="toggle-individual" class="toggle-btn" onclick="switchOffer('individual')">Apenas o Guia</div>
+                </div>
+            </div>
+            
             <div class="offers-grid-horizontal">
                 <!-- COMBO PREMIUM CARD (LEFT/FEATURED) -->
-                <div class="price-card-premium featured">
+                <div id="card-combo" class="price-card-premium featured">
                     <div style="position: absolute; top: 0; right: 0; background: var(--green-600); color: white; padding: 6px 20px; font-weight: 900; font-size: 0.75rem; border-bottom-left-radius: 1rem; letter-spacing: 1px;">+ RECOMENDADO</div>
                     
                     <h3 style="color: var(--white); font-size: 1.6rem; font-weight: 900; margin-bottom: 0.5rem; font-family: var(--font-heading);">COMBO CRIADOR DE ELITE</h3>
@@ -1193,7 +1200,7 @@
                 </div>
 
                 <!-- INDIVIDUAL PREMIUM CARD (RIGHT) -->
-                <div class="price-card-premium card-vibrant">
+                <div id="card-individual" class="price-card-premium card-vibrant hidden-offer">
                     <h3 style="color: var(--white); font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; font-family: var(--font-heading);">GUIA DAS DOENÇAS</h3>
                     <p style="color: var(--slate-400); font-size: 0.85rem;">Protocolo completo para tratar seu plantel e prevenir perdas futuras.</p>
                     

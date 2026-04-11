@@ -1,3 +1,23 @@
+// Toggle Logic for Offers
+function switchOffer(type) {
+    const cardCombo = document.getElementById('card-combo');
+    const cardIndividual = document.getElementById('card-individual');
+    const toggleCombo = document.getElementById('toggle-combo');
+    const toggleIndividual = document.getElementById('toggle-individual');
+
+    if (type === 'combo') {
+        if(cardCombo) cardCombo.classList.remove('hidden-offer');
+        if(cardIndividual) cardIndividual.classList.add('hidden-offer');
+        if(toggleCombo) toggleCombo.classList.add('active', 'combo-type');
+        if(toggleIndividual) toggleIndividual.classList.remove('active');
+    } else {
+        if(cardCombo) cardCombo.classList.add('hidden-offer');
+        if(cardIndividual) cardIndividual.classList.remove('hidden-offer');
+        if(toggleCombo) toggleCombo.classList.remove('active', 'combo-type');
+        if(toggleIndividual) toggleIndividual.classList.add('active');
+    }
+}
+
 // --- 1. GLOBAL CONFIG & STATE ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'
     ? 'http://localhost:10000'
@@ -187,6 +207,7 @@ function initStickyCTA() {
             const triggerPoint = heroSection.offsetHeight - 200;
             if (window.scrollY > triggerPoint) stickyCta.classList.add('visible');
             else stickyCta.classList.remove('visible');
+
         });
     }
 }
@@ -455,8 +476,18 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             switchMethod('pix');
         }
 
-        renderOrderBumps(productData.fullBumps);
+        // --- PURIFY COMBO CHECKOUT ---
+        const bumpArea = document.getElementById('order-bump-area');
+        if (productId === 'combo-elite') {
+            cart.bumps = []; // Combo already includes everything
+            if (bumpArea) bumpArea.style.display = 'none';
+        } else {
+            if (bumpArea) bumpArea.style.display = 'block';
+        }
+
+        renderOrderBumps(productId === 'combo-elite' ? [] : productData.fullBumps);
         updateTotal();
+
 
         const delay = (productData && productData.fullBumps) ? 10 : 250;
         setTimeout(() => {
