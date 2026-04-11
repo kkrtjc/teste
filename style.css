@@ -239,12 +239,100 @@ header.sticky {
     filter: brightness(1.1);
 }
 
+/* PREMIUM PRICE CARDS */
 .offers-grid-horizontal {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     width: 100%;
     justify-content: center;
     align-items: stretch;
+    padding: 1rem 0;
+}
+
+.price-card-premium {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+}
+
+.price-card-premium.featured {
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.price-card-premium:hover {
+    transform: translateY(-8px);
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+}
+
+.price-card-premium.featured:hover {
+    border-color: var(--green-600);
+}
+
+.card-mockup-wrapper {
+    position: relative;
+    margin: 1.5rem auto;
+    width: 100%;
+    max-width: 220px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-mockup-img {
+    max-width: 100%;
+    max-height: 100%;
+    filter: drop-shadow(0 15px 25px rgba(0,0,0,0.4));
+    transition: transform 0.5s ease;
+}
+
+.price-card-premium:hover .card-mockup-img {
+    transform: scale(1.05) rotate(-2deg);
+}
+
+.feature-list-premium {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+    text-align: left;
+    flex-grow: 1;
+}
+
+.feature-list-premium li {
+    display: flex;
+    gap: 12px;
+    font-size: 0.95rem;
+    color: var(--slate-300);
+    margin-bottom: 0.85rem;
+    align-items: flex-start;
+}
+
+.feature-list-premium li i {
+    color: var(--brand-red);
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+
+.feature-list-premium li.bonus {
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+.feature-list-premium li.bonus i {
+    color: #fbbf24;
 }
 
 @media (max-width: 768px) {
@@ -252,16 +340,21 @@ header.sticky {
         flex-wrap: nowrap;
         overflow-x: auto;
         justify-content: flex-start;
-        padding: 0 1rem 1.5rem;
+        padding: 0 1rem 2rem;
         scroll-snap-type: x mandatory;
-        gap: 0.75rem;
+        gap: 1rem;
         -webkit-overflow-scrolling: touch;
     }
     
-    .offers-grid-horizontal .price-card {
-        flex: 0 0 85%;
+    .price-card-premium {
+        flex: 0 0 90%;
         scroll-snap-align: center;
-        min-width: 280px;
+        min-width: 290px;
+        padding: 2rem 1.5rem;
+    }
+    
+    .card-mockup-wrapper {
+        height: 150px;
     }
 }
 
