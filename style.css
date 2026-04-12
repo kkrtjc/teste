@@ -436,6 +436,13 @@ header.sticky {
     transform: translateX(5px);
 }
 
+.price-section {
+    margin: 1.5rem 0 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
 .feature-list-premium {
     list-style: none;
     padding: 0;

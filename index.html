@@ -1169,7 +1169,6 @@
                         </div>
                         <div style="position: absolute; top: 0; right: 0; background: var(--green-600); color: white; padding: 5px 15px; font-weight: 900; font-size: 0.7rem; border-bottom-left-radius: 1rem; letter-spacing: 1px; z-index: 5;">RECOMENDADO</div>
                         
-                        <!-- NEW FLEX HEADER: TO SAVE VERTICAL SPACE -->
                         <div class="card-header-flex">
                             <div class="card-mockup-wrapper">
                                 <img src="capadospintinhos.webp" class="card-mockup-img" style="position: absolute; transform: translateX(-15px) rotate(-10deg); z-index: 1; opacity: 0.9; max-width: 70px;" alt="">
@@ -1179,16 +1178,6 @@
                                 <h3 style="color: var(--white); font-size: 1.4rem; font-weight: 900; font-family: var(--font-heading);">COMBO CRIADOR DE ELITE</h3>
                                 <p style="font-size: 0.8rem; color: var(--slate-400); margin-top: 5px; line-height: 1.3;">A solução completa e definitiva para salvar suas aves e economizar muito.</p>
                             </div>
-                        </div>
-
-                        <div class="price-section">
-                            <div class="price-label">OFERTA DE LANÇAMENTO:</div>
-                            <div style="font-size: 0.8rem; color: #94a3b8; text-decoration: line-through; margin-bottom: -5px;">De R$ 289,70 por apenas:</div>
-                            <div class="price-main">
-                                <span class="currency">R$</span>
-                                <span class="amount">139,80</span>
-                            </div>
-                            <div class="price-installments">4x de R$ 34,95 sem juros</div>
                         </div>
 
                         <ul class="feature-list-premium">
@@ -1205,11 +1194,26 @@
                                     <li><i class="fa-solid fa-temperature-half"></i> Melhor ambiente e temperatura ideal</li>
                                 </ul>
                             </li>
-                            <li class="bonus"><i class="fa-solid fa-star"></i> <strong>BÔNUS EXCLUSIVO:</strong>
-                                <p style="font-size: 0.75rem; color: #fbbf24; margin: 2px 0 0 24px; line-height: 1.3;">Bonus apenas no combo Tabela de Ração Balanceada Corte 65% de gastos na sua raçao produzindo a raçao da suas galinhas, e pare de gastar com raçoes caras.</p>
+                            <li class="bonus">
+                                <i class="fa-solid fa-star"></i> 
+                                <div style="display: flex; flex-direction: column;">
+                                    <strong>BÔNUS EXCLUSIVO</strong>
+                                    <span style="color: #fbbf24; font-size: 0.85rem; margin-top: -2px;">Tabela de Ração (apenas no combo)</span>
+                                    <p style="font-size: 0.75rem; color: #cbd5e1; margin-top: 4px; font-weight: 400; line-height: 1.3;">economize 65% de gastos na raçao das suas galinhas, produzindo sua propria raçao e pare de gastar caro com raçoes prontas.</p>
+                                </div>
                             </li>
                             <li style="color: #38bdf8;"><i class="fa-solid fa-arrows-rotate"></i> <strong>Atualizações Vitalícias Inclusas</strong></li>
                         </ul>
+
+                        <div class="price-section">
+                            <div class="price-label">OFERTA DE LANÇAMENTO:</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8; text-decoration: line-through; margin-bottom: -5px;">De R$ 289,70 por apenas:</div>
+                            <div class="price-main">
+                                <span class="currency">R$</span>
+                                <span class="amount">139,80</span>
+                            </div>
+                            <div class="price-installments">4x de R$ 34,95 sem juros</div>
+                        </div>
 
                         <button onclick="startCheckoutProcess('combo-elite')" class="btn-premium-cta">
                             QUERO O COMBO COMPLETO <i class="fa-solid fa-arrow-right"></i>
@@ -1218,20 +1222,14 @@
 
                     <!-- INDIVIDUAL CARD -->
                     <div id="card-individual" class="price-card-premium">
-                        <h3 style="color: var(--white); font-size: 1.4rem; font-weight: 800; margin: 0.5rem 0 0.25rem;">GUIA DAS DOENÇAS</h3>
-                        
-                        <div class="card-mockup-wrapper" style="height: 140px;">
-                            <img src="capadasdoencas.webp" class="card-mockup-img bright-mockup" style="max-width: 110px;" alt="">
-                        </div>
-
-                        <div class="price-section">
-                            <div class="price-label" style="text-decoration: line-through; opacity: 0.6;">De R$ 149,90 por:</div>
-                            <div class="price-main">
-                                <span class="currency">R$</span>
-                                <span class="amount">89,90</span>
+                        <div class="card-header-flex">
+                            <div class="card-mockup-wrapper">
+                                <img src="capadasdoencas.webp" class="card-mockup-img bright-mockup" style="max-width: 80px;" alt="">
                             </div>
-                            <div class="price-installments">Ou 4x de R$ 37,47 no cartão</div>
-                            <div style="font-size: 0.7rem; color: #10b981; font-weight: 700; margin-top: 4px;">🔥 DESCONTO EXCLUSIVO NO PIX</div>
+                            <div class="title-and-intro">
+                                <h3 style="color: var(--white); font-size: 1.3rem; font-weight: 800;">GUIA DAS DOENÇAS</h3>
+                                <p style="font-size: 0.75rem; color: var(--slate-400); margin-top: 3px;">Tratamento e cura rápida para o seu plantel.</p>
+                            </div>
                         </div>
 
                         <ul class="feature-list-premium">
@@ -1242,12 +1240,23 @@
                                     <li><i class="fa-solid fa-vial-circle-check"></i> Guia de Vermifugação</li>
                                 </ul>
                             </li>
-                            <li style="opacity: 0.5; text-decoration: line-through;"><i class="fa-solid fa-circle-xmark"></i> Manual dos Pintinhos</li>
-                            <li style="opacity: 0.5; text-decoration: line-through;"><i class="fa-solid fa-circle-xmark"></i> Tabela de Ração Balanceada</li>
-                            <li style="color: #64748b; font-size: 0.8rem;"><i class="fa-solid fa-arrows-rotate"></i> Atualizações Vitalícias Inclusas</li>
+                            <li style="opacity: 0.5; text-decoration: line-through; font-size: 0.8rem;"><i class="fa-solid fa-circle-xmark"></i> Manual dos Pintinhos</li>
+                            <li style="opacity: 0.5; text-decoration: line-through; font-size: 0.8rem;"><i class="fa-solid fa-circle-xmark"></i> Tabela de Ração Balanceada</li>
+                            <li style="color: #64748b; font-size: 0.75rem;"><i class="fa-solid fa-arrows-rotate"></i> Atualizações Vitalícias</li>
                         </ul>
 
-                        <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-checkout-premium" style="background: var(--slate-700);">
+                        <div class="price-section">
+                            <div class="price-label">OFERTA DE LANÇAMENTO:</div>
+                            <div style="font-size: 0.75rem; color: #94a3b8; text-decoration: line-through; margin-bottom: -5px;">De R$ 149,90 por apenas:</div>
+                            <div class="price-main">
+                                <span class="currency">R$</span>
+                                <span class="amount">89,90</span>
+                            </div>
+                            <div class="price-installments">Ou 4x de R$ 37,47 no cartão</div>
+                            <div style="font-size: 0.7rem; color: #10b981; font-weight: 700; margin-top: 4px;">🔥 DESCONTO EXCLUSIVO NO PIX</div>
+                        </div>
+
+                        <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-premium-cta" style="background: linear-gradient(to bottom, #475569, #1e293b); box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.4);">
                             QUERO APENAS O GUIA <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </div>
