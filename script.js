@@ -117,8 +117,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data.price = 89.90; // PIX/Boleto
                     data.originalPrice = 149.90; // Card
                 } else if (id === 'combo-elite') {
-                    data.price = 139.90; // Same for both
-                    data.originalPrice = 139.90;
+                    data.price = 139.80; // Same for both
+                    data.originalPrice = 139.80;
                 }
                 
                 prefetchedProducts[id] = data;
@@ -757,8 +757,8 @@ function updateTotal() {
     if (cart.mainProduct.id === 'combo-elite') {
         const instSelect = document.getElementById('installments-select');
         if (instSelect) {
-            // Force 4x of 34,97 logic for 139,90
-            updateInstallments(139.90);
+            // Force 4x of 34,95 logic for 139,80
+            updateInstallments(139.80);
         }
     } else {
         updateInstallments(finalDisplayPrice);
