@@ -608,25 +608,32 @@ header.sticky {
     .offers-grid-horizontal {
         flex-wrap: nowrap;
         overflow-x: auto;
-        overflow-y: hidden !important; /* LOCK vertical movement */
+        overflow-y: hidden !important;
         justify-content: flex-start;
-        padding: 0 1.25rem 3.5rem;
+        padding: 0 1rem 3.5rem; /* Reduced horizontal padding as we use snap-center */
         scroll-snap-type: x mandatory;
         gap: 1.25rem;
         -webkit-overflow-scrolling: touch;
         mask-image: none !important;
         -webkit-mask-image: none !important;
-        touch-action: pan-y; /* Allow page scrolling while keeping horizontal cards stable */
+        touch-action: pan-y;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    .offers-grid-horizontal::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
     }
     
     .price-card-premium {
-        flex: 0 0 82%; 
-        scroll-snap-align: start;
+        flex: 0 0 85%; /* Slightly wider for immersion */
+        scroll-snap-align: center; /* CENTER ALIGNMENT */
+        scroll-snap-stop: always;
         min-width: 280px;
-        padding: 1.25rem 1rem; /* REDUCED mobile padding */
+        padding: 1.25rem 1rem;
         height: auto;
         overflow: visible;
-        transform: none !important; /* Disable all vertical transforms on mobile */
+        transform: none !important;
     }
 
     .price-card-premium:hover {

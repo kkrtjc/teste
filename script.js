@@ -16,9 +16,16 @@ function scrollOffers(direction) {
     const grid = document.getElementById('offers-grid');
     if (!grid) return;
     
-    // Calcula o deslocamento baseado no tamanho do card
-    const cardWidth = grid.querySelector('.price-card-premium').offsetWidth;
-    const gap = 20; // Aproximadamente o gap do CSS
+    // Pega a largura do container visível
+    const containerWidth = grid.offsetWidth;
+    // Pega a largura de um card individual
+    const card = grid.querySelector('.price-card-premium');
+    if (!card) return;
+    
+    const cardWidth = card.offsetWidth;
+    const gap = 20; 
+    
+    // Mover exatamente a largura necessária para o próximo snap point
     const scrollAmount = cardWidth + gap;
 
     if (direction === 'next') {
