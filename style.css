@@ -281,10 +281,16 @@ header.sticky {
 
 @media (max-width: 768px) {
     .offers-grid-horizontal {
-        justify-content: center;
-        mask-image: none;
-        -webkit-mask-image: none;
-        overflow: visible;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        justify-content: flex-start !important;
+        padding: 0 1.25rem 3.5rem !important;
+        scroll-snap-type: x mandatory !important;
+        gap: 1.25rem !important;
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
+        touch-action: pan-y !important;
     }
 }
 
@@ -558,18 +564,6 @@ header.sticky {
 
     .price-card-premium:hover {
         transform: none !important; /* Disable hover jumps */
-    }
-
-    .horizontal-arrow-hint {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        color: #fbbf24;
-        font-size: 0.9rem;
-        font-weight: 800;
-        margin-bottom: 1.5rem;
-        animation: arrowMove 1.5s infinite;
     }
 
     @keyframes arrowMove {

@@ -110,18 +110,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch(`${API_URL}/api/products/${id}`);
             if (response.ok) {
-                prefetchedProducts[id] = await response.json();
+                let data = await response.json();
+                
+                // --- OVERRIDE PRICES BASED ON USER REQUEST ---
+                if (id === 'ebook-doencas') {
+                    data.price = 89.90; // PIX/Boleto
+                    data.originalPrice = 149.90; // Card
+                } else if (id === 'combo-elite') {
+                    data.price = 139.90; // Same for both
+                    data.originalPrice = 139.90;
+                }
+                
+                prefetchedProducts[id] = data;
                 
                 if (id === 'ebook-doencas') {
-                    const resp = prefetchedProducts[id];
-                    
                     if (typeof applyDynamicPrices === 'function') {
-                        applyDynamicPrices(resp);
+                        applyDynamicPrices(data);
                     }
-
                     trackPixel('ViewContent', {
-                        content_ids: [id], content_name: resp.title, content_type: 'product',
-                        value: resp.price, currency: 'BRL'
+                        content_ids: [id], content_name: data.title, content_type: 'product',
+                        value: data.price, currency: 'BRL'
                     });
                 }
             }
@@ -745,7 +753,16 @@ function updateTotal() {
         el.innerText = formatBRL(finalDisplayPrice);
     });
 
-    updateInstallments(finalDisplayPrice);
+    // Special case for Combo: If it's the combo, fixed installments text
+    if (cart.mainProduct.id === 'combo-elite') {
+        const instSelect = document.getElementById('installments-select');
+        if (instSelect) {
+            // Force 4x of 34,97 logic for 139,90
+            updateInstallments(139.90);
+        }
+    } else {
+        updateInstallments(finalDisplayPrice);
+    }
 }
 
 function updateInstallments(total) {
