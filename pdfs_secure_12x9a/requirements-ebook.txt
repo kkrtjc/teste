@@ -1,2 +1,0 @@
-# Extração PDF → texto (ebook de doenças)
-pymupdf>=1.24.0

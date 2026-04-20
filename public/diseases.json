@@ -1,0 +1,90 @@
+[
+  {
+    "id": "peito-seco",
+    "nome": "Peito Seco",
+    "categoria": "Casos isolados",
+    "resumo": "Fraqueza extrema onde o osso do peito fica proeminente e a ave perde toda a massa muscular.",
+    "texto": "O Peito Seco não é uma doença em si, mas um SINTOMA grave de que algo está errado. A ave definha até que o osso esterno (quina do peito) fique totalmente exposto.\n\nCAUSAS:\n- Verminoses pesadas que roubam nutrientes.\n- Coccidiose crônica.\n- Doença de Marek (forma tumoral).\n- Má nutrição ou água contaminada.\n- Micoplasmose ou outras doenças crônicas que tiram o apetite.\n\nSINTOMAS:\n- Perda total de peso (emagrecimento progressivo).\n- Tristeza e isolamento.\n- Desidratação.\n- Palidez na crista e barbelas.\n\nTRATAMENTO:\n1. Isolar a ave imediatamente.\n2. Vermifugar (se a ave ainda tiver forças).\n3. Fornecer polivitamínicos na água (ex: Vitagold, Glicopan).\n4. Alimentação de alta energia (papinhas se necessário).\n5. Uso de antibióticos de largo espectro se houver suspeita de infecção secundária.\n\nPREVENÇÃO:\nManter o calendário de vermifugação em dia e fornecer alimentação de qualidade balanceada.",
+    "tratamento": "Isolamento, suporte vitamínico e tratamento da causa base (vermes ou infecção)."
+  },
+  {
+    "id": "coriza-infecciosa",
+    "nome": "Coriza Infecciosa",
+    "categoria": "Doenças bacterianas respiratorias",
+    "resumo": "Resfriado grave caracterizado por forte mau cheiro e inchaço na face.",
+    "texto": "Doença bacteriana altamente contagiosa que ataca o sistema respiratório superior das aves.\n\nSINTOMAS:\n- Espirros e ruídos respiratórios.\n- Secreção nasal pegajosa e com CHEIRO FORTE (fétido).\n- Inchaço na face (cara inchada).\n- Olhos fechados ou com espuma.\n- Queda brusca na postura de ovos.\n\nTRATAMENTO:\n- Antibióticos à base de Sulfa (ex: Trisulmix, Sulfaquinoxalina).\n- Antibióticos injetáveis como Estreptomicina ou Oxitetraciclina em casos graves.\n- Higienização rigorosa dos bebedouros.\n\nPREVENÇÃO:\nVacinação aos 60 e 90 dias. Evitar umidade excessiva e correntes de ar frio.",
+    "tratamento": "Sulfonamidas e antibióticos de largo espectro."
+  },
+  {
+    "id": "coccidiose",
+    "nome": "Coccidiose",
+    "categoria": "Doenças bacterianas sistemicas",
+    "resumo": "Infecção intestinal que causa diarreia com sangue e alta mortalidade em pintinhos.",
+    "texto": "Causada por protozoários que destroem a parede do intestino.\n\nSINTOMAS:\n- Diarreia líquida ou com SANGUE (frequente).\n- Penas arrepiadas e asas caídas.\n- Aves amontoadas e tristes.\n- Palidez extrema.\n\nTRATAMENTO:\n- Coccidiostáticos (ex: Amprolium, Sulfaquinoxalina).\n- Suporte vitamínico (Vitamina K para estancar sangramentos).\n- Troca imediata da cama do frango para evitar reinfecção.\n\nPREVENÇÃO:\nManter a cama sempre seca e limpa. Evitar superlotação.",
+    "tratamento": "Amprolium ou Sulfas específicas para coccidiose."
+  },
+  {
+    "id": "marek",
+    "nome": "Doença de Marek",
+    "categoria": "Doenças virais",
+    "resumo": "Causa paralisia nas pernas/asas e tumores internos. Não tem cura.",
+    "texto": "Vírus altamente contagioso que ataca o sistema nervoso e órgãos internos.\n\nSINTOMAS:\n- Paralisia (uma perna para frente e outra para trás).\n- Pescoço torto ou asas caídas.\n- Olhos acinzentados (cegueira).\n- Perda de peso rápida (Peito Seco).\n\nTRATAMENTO:\nNÃO EXISTE CURA. Aves infectadas devem ser descartadas para proteger o restante do plantel.\n\nPREVENÇÃO:\nVacinação OBRIGATÓRIA no 1º dia de vida (ainda no incubatório).",
+    "tratamento": "Inexistente. Foco total em prevenção via vacina."
+  },
+  {
+    "id": "bouba-aviaria",
+    "nome": "Bouba Aviária (Caroço)",
+    "categoria": "Doenças virais",
+    "resumo": "Verrugas/caroços na pele ou placas na garganta. Transmitida por mosquitos.",
+    "texto": "Conhecida como Varíola Aviária. Apresenta duas formas: Cutânea e Diftérica.\n\nSINTOMAS:\n- Caroços escuros na crista, barbelas e ao redor dos olhos.\n- Forma Diftérica: Placas amareladas dentro da garganta (pode sufocar a ave).\n- Febre e prostração.\n\nTRATAMENTO:\n- Não há remédio para matar o vírus, mas tratamos os sintomas.\n- Limpeza dos caroços com iodo.\n- Uso de antibióticos para evitar infecções secundárias nos ferimentos.\n- Tuia (homeopatia) ajuda na cicatrização.\n\nPREVENÇÃO:\nVacinação na membrana da asa aos 35 dias. Controle de mosquitos.",
+    "tratamento": "Iodo nos caroços e antibióticos para prevenir infecções secundárias."
+  },
+  {
+    "id": "newcastle",
+    "nome": "Doença de Newcastle",
+    "categoria": "Doenças virais",
+    "resumo": "Doença gravíssima que afeta os sistemas respiratório e nervoso.",
+    "texto": "Altamente contagiosa e pode dizimar um plantel em poucos dias.\n\nSINTOMAS:\n- Tosse, espirros e sons de 'ronco'.\n- Diarreia esverdeada.\n- Sinais nervosos: Tremores, pescoço torto (torcicolo) e caminhar em círculos.\n- Alta mortalidade.\n\nTRATAMENTO:\nNão há tratamento específico para o vírus.\n\nPREVENÇÃO:\nVacinação rigorosa (8º dia e reforços). Controle de trânsito de pessoas e aves.",
+    "tratamento": "Inexistente. Vacinação é a única defesa."
+  },
+  {
+    "id": "laringotraqueite",
+    "nome": "Laringotraqueíte Infecciosa",
+    "categoria": "Doenças virais",
+    "resumo": "Infecção respiratória grave com presença de sangue no catarro.",
+    "texto": "Causada por um Herpesvírus. Afeta a traqueia da ave.\n\nSINTOMAS:\n- Dificuldade respiratória extrema (ave estica o pescoço para respirar).\n- Tosse com presença de SANGUE (expelido nas paredes do galinheiro).\n- Alta mortalidade por sufocamento.\n\nTRATAMENTO:\nNão há cura para o vírus. Uso de antibióticos ajuda a evitar complicações secundárias.\n\nPREVENÇÃO:\nVacinação em áreas de risco e biosseguridade rigorosa.",
+    "tratamento": "Suporte e prevenção de infecções secundárias."
+  },
+  {
+    "id": "pulorose",
+    "nome": "Pulorose (Diarreia Branca)",
+    "categoria": "Doenças bacterianas sistemicas",
+    "resumo": "Afeta principalmente pintinhos nos primeiros dias de vida.",
+    "texto": "Causada pela Salmonella pullorum. Transmitida da galinha para o ovo.\n\nSINTOMAS:\n- Diarreia branca e pastosa que 'cola' nas penas da cloaca.\n- Pintinhos tristes e amontoados sob a fonte de calor.\n- Piado constante de dor.\n- Alta mortalidade na primeira semana.\n\nTRATAMENTO:\n- Antibióticos como Enrofloxacina ou Florfenicol.\n- Desinfecção total das chocadeiras e pinteiros.\n\nPREVENÇÃO:\nComprar aves de matrizes testadas e livres de Salmonella.",
+    "tratability": "Tratável com antibióticos específicos."
+  },
+  {
+    "id": "vermes-intestinais",
+    "nome": "Verminoses (Geral)",
+    "categoria": "Casos isolados",
+    "resumo": "Infestações por diversos tipos de vermes que causam Peito Seco e queda na postura.",
+    "texto": "Os principais são: Ascaridia galli (lombriga), Heterakis e Tênias.\n\nSINTOMAS:\n- Perda de peso e apetite.\n- Crista pálida.\n- Diarreia ou fezes com presença de vermes visíveis.\n- Queda acentuada na produção de ovos.\n\nTRATAMENTO:\n- Vermífugos de amplo espectro (Mebendazol, Albendazol, Levamisol).\n- Repetir a dose após 15 dias para quebrar o ciclo dos ovos.\n\nPREVENÇÃO:\nTrocar a cama regularmente e manter o calendário de vermifugação a cada 3 ou 4 meses.",
+    "tratamento": "Vermífugos orais ou via água."
+  },
+  {
+    "id": "piolhos-acaros",
+    "nome": "Piolhos e Ácaros",
+    "categoria": "Casos isolados",
+    "resumo": "Parasitas externos que causam estresse, anemia e morte.",
+    "texto": "Os principais são o Piolho de Galinha e o Ácaro Vermelho (Dermanyssus).\n\nSINTOMAS:\n- Aves se coçando constantemente.\n- Presença de pontos pretos ou vermelhos na pele (sob as asas e cloaca).\n- Anemia (crista branca).\n- Aves evitam entrar no galinheiro à noite (no caso do ácaro vermelho).\n\nTRATAMENTO:\n- Aplicação de inseticidas próprios para aves (pó ou spray).\n- Pulverização rigorosa de todo o galinheiro e ninhos.\n\nPREVENÇÃO:\nManter ninhos limpos e fornecer local para banho de cinza/terra.",
+    "tratamento": "Inseticidas veterinários e limpeza ambiental."
+  },
+  {
+    "id": "colibacilose",
+    "nome": "Colibacilose",
+    "categoria": "Doenças bacterianas sistemicas",
+    "resumo": "Causada pela bactéria E. coli, comum em ambientes com pouca higiene.",
+    "texto": "Afeta vários órgãos e pode causar infecção generalizada.\n\nSINTOMAS:\n- Diarreia amarelada.\n- Tristeza e falta de apetite.\n- Onfalite (infecção no umbigo) em pintinhos recém-nascidos.\n\nTRATAMENTO:\n- Antibióticos como Enrofloxacina ou Neomicina.\n- Melhoria imediata na qualidade da água de beber.\n\nPREVENÇÃO:\nHigiene rigorosa e cloração da água.",
+    "tratamento": "Antibióticos e saneamento da água."
+  }
+]
