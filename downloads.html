@@ -447,10 +447,11 @@
                 let showDoencas = hasKeyword('doenca') || hasKeyword('saude') || hasKeyword('protocolo') || hasKeyword('elite') || hasKeyword('ebook-doencas');
                 let showBump = hasKeyword('bump') || hasKeyword('racao') || hasKeyword('tabela');
 
-                // Lógica de Combo: Se houver a palavra "combo", libera ambos os e-books principais
+                // Lógica de Combo: Se houver a palavra "combo", libera ambos os e-books principais E a tabela de ração (bônus)
                 if (hasKeyword('combo')) {
                     showManejo = true;
                     showDoencas = true;
+                    showBump = true;
                 }
 
                 // 🚨 FALLBACK DE SEGURANÇA: Se nenhum item for detectado na URL, MOSTRAR TUDO.
