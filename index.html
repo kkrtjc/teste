@@ -1006,74 +1006,11 @@
                 <p style="color: var(--slate-400); margin-top: 0.5rem; font-size: 1rem;">Acesso imediato • 7 dias de garantia • 100% Seguro</p>
             </div>
 
-            <div style="display: flex; gap: 1.5rem; justify-content: center; align-items: stretch; flex-wrap: wrap; max-width: 860px; margin: 0 auto;">
+            <div style="display: flex; gap: 1.5rem; align-items: center; max-width: 860px; margin: 0 auto; overflow-x: auto; padding: 1rem 0 2rem 0; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
 
-                <!-- CARD 1: Ebook Doenças Individual -->
+                <!-- CARD 1: COMBO (DESTAQUE) - AGORA PRIMEIRO -->
                 <div style="
-                    flex: 1;
-                    min-width: 280px;
-                    max-width: 380px;
-                    background: rgba(15, 23, 42, 0.6);
-                    border: 1px solid var(--slate-700);
-                    border-radius: 20px;
-                    padding: 2rem 1.5rem;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    text-align: center;
-                    position: relative;
-                    transition: transform 0.2s, box-shadow 0.2s;
-                " onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4)'"
-                   onmouseleave="this.style.transform='none';this.style.boxShadow='none'">
-
-                    <img src="capadasdoencas.webp" alt="Ebook Doenças"
-                        style="width: 110px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); margin-bottom: 1rem;">
-
-                    <h4 style="color: var(--white); font-size: 1.1rem; font-weight: 900; margin-bottom: 0.5rem; line-height: 1.3;">
-                        Manual de Doenças
-                    </h4>
-                    <p style="color: var(--slate-400); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-                        Cura e prevenção completa para as principais doenças que afetam suas galinhas.
-                    </p>
-
-                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; width: 100%; display: flex; flex-direction: column; gap: 8px;">
-                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                            10+ Doenças catalogadas com dosagens
-                        </li>
-                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                            Sintomas e tratamentos passo a passo
-                        </li>
-                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                            Tabela de vacinação inclusa
-                        </li>
-                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                            Acesso vitalício + atualizações
-                        </li>
-                    </ul>
-
-                    <div style="margin-bottom: 1.25rem;">
-                        <span style="display: block; font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 149,90</span>
-                        <span style="display: block; font-size: 2rem; font-weight: 900; color: var(--white); line-height: 1;">R$ 89,90</span>
-                        <span style="font-size: 0.8rem; color: #10b981; font-weight: 700;">no PIX</span>
-                        <span style="display: block; font-size: 0.8rem; color: var(--slate-400); margin-top: 4px;">ou 4x de R$ 37,47 s/ juros</span>
-                    </div>
-
-                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
-                        style="width: 100%; font-size: 1rem; padding: 14px 20px;">
-                        QUERO ESTE PLANO
-                    </button>
-                    <p style="font-size: 0.75rem; color: var(--slate-500); margin-top: 0.75rem;">
-                        <i class="fa-solid fa-shield-halved"></i> 7 dias de garantia
-                    </p>
-                </div>
-
-                <!-- CARD 2: COMBO (DESTAQUE) -->
-                <div style="
-                    flex: 1;
+                    flex: 1 0 280px;
                     min-width: 280px;
                     max-width: 380px;
                     background: linear-gradient(145deg, rgba(22,163,74,0.15) 0%, rgba(15,23,42,0.8) 60%);
@@ -1087,6 +1024,7 @@
                     position: relative;
                     box-shadow: 0 0 30px rgba(34,197,94,0.2);
                     transition: transform 0.2s, box-shadow 0.2s;
+                    scroll-snap-align: center;
                 " onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 25px 50px rgba(34,197,94,0.3)'"
                    onmouseleave="this.style.transform='none';this.style.boxShadow='0 0 30px rgba(34,197,94,0.2)'">
 
@@ -1143,6 +1081,76 @@
                     </button>
                     <p style="font-size: 0.75rem; color: var(--slate-400); margin-top: 0.75rem;">
                         <i class="fa-solid fa-shield-halved"></i> 7 dias de garantia incondicional
+                    </p>
+                </div>
+
+                <!-- SETINHA INDICADORA -->
+                <div style="flex-shrink: 0; color: var(--slate-500); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.6;">
+                    <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; white-space: nowrap;">Ou apenas</span>
+                    <i class="fa-solid fa-arrow-right-long" style="font-size: 1.5rem;"></i>
+                </div>
+
+                <!-- CARD 2: Ebook Doenças Individual -->
+                <div style="
+                    flex: 1 0 280px;
+                    min-width: 280px;
+                    max-width: 380px;
+                    background: rgba(15, 23, 42, 0.6);
+                    border: 1px solid var(--slate-700);
+                    border-radius: 20px;
+                    padding: 2rem 1.5rem;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    position: relative;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    scroll-snap-align: center;
+                " onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4)'"
+                   onmouseleave="this.style.transform='none';this.style.boxShadow='none'">
+
+                    <img src="capadasdoencas.webp" alt="Ebook Doenças"
+                        style="width: 110px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); margin-bottom: 1rem;">
+
+                    <h4 style="color: var(--white); font-size: 1.1rem; font-weight: 900; margin-bottom: 0.5rem; line-height: 1.3;">
+                        Manual de Doenças
+                    </h4>
+                    <p style="color: var(--slate-400); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
+                        Cura e prevenção completa para as principais doenças que afetam suas galinhas.
+                    </p>
+
+                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; width: 100%; display: flex; flex-direction: column; gap: 8px;">
+                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
+                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
+                            10+ Doenças catalogadas com dosagens
+                        </li>
+                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
+                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
+                            Sintomas e tratamentos passo a passo
+                        </li>
+                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
+                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
+                            Tabela de vacinação inclusa
+                        </li>
+                        <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
+                            <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
+                            Acesso vitalício + atualizações
+                        </li>
+                    </ul>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <span style="display: block; font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 149,90</span>
+                        <span style="display: block; font-size: 2rem; font-weight: 900; color: var(--white); line-height: 1;">R$ 89,90</span>
+                        <span style="font-size: 0.8rem; color: #10b981; font-weight: 700;">no PIX</span>
+                        <span style="display: block; font-size: 0.8rem; color: var(--slate-400); margin-top: 4px;">ou 4x de R$ 37,47 s/ juros</span>
+                    </div>
+
+                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
+                        style="width: 100%; font-size: 1rem; padding: 14px 20px;">
+                        QUERO ESTE PLANO
+                    </button>
+                    <p style="font-size: 0.75rem; color: var(--slate-500); margin-top: 0.75rem;">
+                        <i class="fa-solid fa-shield-halved"></i> 7 dias de garantia
                     </p>
                 </div>
 
