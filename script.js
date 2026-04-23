@@ -435,6 +435,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
                     image: 'capadospintinhos.webp', 
                     description: `
                         <div style="color: #ffffff; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; font-size: 0.85rem; line-height: 1.4;">
+                            <span style="color: #fca5a5; font-weight: 800; font-style: italic; display: block; margin-bottom: 8px; font-size: 0.95rem;">Já perdeu quantos pintinhos sem saber o motivo?</span>
                             Adicione o <strong>Manual de Elite de Criação de Pintinhos</strong>, Aprenda a <strong>MELHOR forma</strong> de cuidar do seus pintinhos e garanta <strong>90% de sobrevivência</strong> dos seus filhotes do nascimento à fase adulta. 
                             <br><br>
                             E tem mais: <span style="color: #4ade80; font-weight: 900;">GANHE a Tabela de Ração</span> (valor de R$ 19,90) que vai te fazer economizar <strong>até 70% nos custos de alimentação!</strong>
@@ -570,7 +571,7 @@ function renderOrderBumps(bumps) {
                 <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer; width: 100%;">
                     
                     <!-- Background Image -->
-                    ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 20%' : 'center'}; z-index: 0;">` : ''}
+                    ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 0%' : 'center'}; z-index: 0;">` : ''}
                     
                     <!-- Gradient Overlay -->
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
