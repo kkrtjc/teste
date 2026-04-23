@@ -435,7 +435,7 @@ async function startCheckoutProcess(productId, forceBumps = []) {
                     image: 'capadospintinhos.webp', 
                     description: `
                         <div style="color: #ffffff; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; font-size: 0.85rem; line-height: 1.4;">
-                            Adicione o <strong>Manual de Elite de Criação de Pintinhos</strong> e garanta <strong>90% de sobrevivência</strong> dos seus filhotes do nascimento à fase adulta. 
+                            Adicione o <strong>Manual de Elite de Criação de Pintinhos</strong>, Aprenda a <strong>MELHOR forma</strong> de cuidar do seus pintinhos e garanta <strong>90% de sobrevivência</strong> dos seus filhotes do nascimento à fase adulta. 
                             <br><br>
                             E tem mais: <span style="color: #4ade80; font-weight: 900;">GANHE a Tabela de Ração</span> (valor de R$ 19,90) que vai te fazer economizar <strong>até 70% nos custos de alimentação!</strong>
                             <br><br>
