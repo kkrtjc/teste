@@ -381,14 +381,21 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             originalPrice: 149.90,
             cover: 'capadasdoencas.webp',
             fullBumps: [
-                { id: 'ebook-manejo', title: 'Manual de Pintinhos', price: 49.90, priceCard: 49.90, image: 'capadospintinhos.webp', description: '90% das mortes ocorrem antes dos 20 dias. O manual ensina temperatura, ração e manejo correto para garantir a sobrevivência dos seus pintinhos.' },
-                { id: 'bump-6361', title: 'Tabela de Ração', price: 19.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Corte até R$ 80/mês no gasto com ração. Aprenda a montar sua própria ração balanceada e nutritiva sem depender de marca cara.', tag: 'OFERTA ÚNICA' }
+                { 
+                    id: 'combo-elite-bump', 
+                    title: 'Combo Criador Elite', 
+                    price: 49.90, 
+                    priceCard: 49.90, 
+                    image: 'capadospintinhos.webp', 
+                    description: '<b>O protocolo completo</b> — doenças, pintinhos e tabela de ração em um único pacote.<br><br>• Ebook Completo de Doenças<br>• Manual Criação de Pintinhos<br>• 🎁 BÔNUS: Tabela de Rações', 
+                    tag: 'OFERTA ELITE' 
+                }
             ]
         },
         'combo-elite': {
-            title: 'Combo Elite (Doenças + Manual)',
-            price: 147.00,
-            originalPrice: 169.80,
+            title: 'Combo Criador Elite',
+            price: 139.80,
+            originalPrice: 249.70,
             cover: 'combo',
             fullBumps: [
                 { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
@@ -501,8 +508,8 @@ function renderOrderBumps(bumps) {
     const bumpHeader = `
         <div style="text-align: center; margin-bottom: 6px; padding: 8px 10px; background: rgba(239,68,68,0.08); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
             <p style="color: #ef4444; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0; line-height: 1.6;">
-                ⚡ ADICIONE AGORA ESSAS OFERTAS IMPERDÍVEIS!<br>
-                <span style="color: #fbbf24;">ELAS NÃO APARECEM EM OUTRO LUGAR — ESSA É SUA ÚNICA CHANCE.</span>
+                ⚡ ADICIONE AGORA ${filteredBumps.length === 1 ? 'ESTA OFERTA IMPERDÍVEL' : 'ESTAS OFERTAS IMPERDÍVEIS'}!<br>
+                <span style="color: #fbbf24;">${filteredBumps.length === 1 ? 'ELA NÃO APARECE' : 'ELAS NÃO APARECEM'} EM OUTRO LUGAR — ESSA É SUA ÚNICA CHANCE.</span>
             </p>
         </div>
     `;
@@ -518,13 +525,20 @@ function renderOrderBumps(bumps) {
             else if (bump.title?.includes('Ração') || bump.title?.includes('Racao') || bump.title?.includes('Tabela')) imgSrc = 'tabela_racao_bump.webp';
         }
 
+        const isCombo = (bump.id === 'combo-elite-bump');
         const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
-        const title = isManejo ? '🐣 SALVE SEUS PINTINHOS' : '💰 CORTE SUA CONTA DE RAÇÃO';
-        const desc = isManejo 
-            ? '<span style="color: #fca5a5;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, bico molhado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.' 
-            : '<span style="color: #fca5a5;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até R$ 80/mês</strong> no seu plantel.';
+        
+        let title = isManejo ? '🐣 SALVE SEUS PINTINHOS' : '💰 CORTE SUA CONTA DE RAÇÃO';
+        if (isCombo) title = '👑 COMBO CRIADOR ELITE';
 
-        const bumpLabel = isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO';
+        let desc = bump.description;
+        if (!desc) {
+            desc = isManejo 
+                ? '<span style="color: #fca5a5;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, bico molhado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.' 
+                : '<span style="color: #fca5a5;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até R$ 80/mês</strong> no seu plantel.';
+        }
+
+        const bumpLabel = isCombo ? 'PROTOCOLO COMPLETO' : (isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO');
 
         return `
             <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center;">
@@ -558,7 +572,7 @@ function renderOrderBumps(bumps) {
                         </p>
 
                         <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px; position: relative; z-index: 5;">
-                            <span class="order-bump-old-price">${isManejo ? 'R$ 99,90' : 'R$ 49,90'}</span>
+                            <span class="order-bump-old-price">${isCombo ? 'R$ 249,70' : (isManejo ? 'R$ 99,90' : 'R$ 49,90')}</span>
                             <span class="order-bump-price">
                                 + ${formatBRL((currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? bump.price : (bump.priceCard || bump.price))}
                             </span>
@@ -569,7 +583,7 @@ function renderOrderBumps(bumps) {
     }).join('');
 
     area.innerHTML = bumpHeader + `
-        <div class="order-bump-grid-view">
+        <div class="order-bump-grid-view" style="grid-template-columns: ${filteredBumps.length === 1 ? '1fr' : '1fr 1fr'} !important;">
             ${bumpHtml}
         </div>
     `;
@@ -670,6 +684,7 @@ function updateTotal() {
         if (id === 'ebook-doencas' || id === 'bump-doencas') bumpTitle = 'Guia de Doenças';
         if (id === 'bump-6361') bumpTitle = 'Tabela de Ração';
         if (id === 'ebook-manejo' || id.includes('manejo')) bumpTitle = 'Manual de Pintinhos';
+        if (id === 'combo-elite-bump') bumpTitle = 'Combo Criador Elite';
         
         const priceForMethod = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? (bump?.price || 0) : (bump?.priceCard || bump?.price || 0);
         summaryHtml += `<div style="display: flex; justify-content: space-between; color: #16a34a; font-weight: 500;"><span>+ ${bumpTitle}</span><span>${formatBRL(priceForMethod)}</span></div>`;
