@@ -429,12 +429,20 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             cart.mainProduct.fullBumps = [
                 { 
                     id: 'combo-elite-bump', 
-                    title: 'Combo Criador Elite', 
+                    title: '👑 COMBO CRIADOR ELITE', 
                     price: 49.90, 
                     priceCard: 49.90, 
                     image: 'capadospintinhos.webp', 
-                    description: '<b>O protocolo completo</b> — doenças, pintinhos e tabela de ração em um único pacote.<br><br>• Ebook Completo de Doenças<br>• Manual Criação de Pintinhos<br>• 🎁 BÔNUS: Tabela de Rações', 
-                    tag: 'OFERTA ELITE' 
+                    description: `
+                        <div style="margin-bottom: 8px; color: #fbbf24; font-weight: 800; font-size: 0.85rem;">🔥 ECONOMIZE R$ 109,90 AGORA!</div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; gap: 6px; align-items: flex-start;"><span style="color: #4ade80;">✔</span> <span><strong>Guia de Doenças:</strong> Cure suas aves em casa.</span></div>
+                            <div style="display: flex; gap: 6px; align-items: flex-start;"><span style="color: #4ade80;">✔</span> <span><strong>Manual de Pintinhos:</strong> +90% de sobrevivência.</span></div>
+                            <div style="display: flex; gap: 6px; align-items: flex-start;"><span style="color: #4ade80;">✔</span> <span><strong>BÔNUS:</strong> Tabela de Ração (Economia Real).</span></div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.7rem; color: #fca5a5; font-style: italic; line-height: 1.2;">*Atenção: Esta é uma oferta única. Se você fechar esta página, terá que pagar o valor cheio de R$ 249,70.*</div>
+                    `, 
+                    tag: 'ECONOMIA DE 70%' 
                 }
             ];
             productData.fullBumps = cart.mainProduct.fullBumps;
@@ -546,7 +554,7 @@ function renderOrderBumps(bumps) {
         const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
         
         let title = isManejo ? '🐣 SALVE SEUS PINTINHOS' : '💰 CORTE SUA CONTA DE RAÇÃO';
-        if (isCombo) title = '👑 COMBO CRIADOR ELITE';
+        if (isCombo) title = '💎 UPGRADE: PROTOCOLO COMPLETO';
 
         let desc = bump.description;
         if (!desc) {
@@ -555,7 +563,7 @@ function renderOrderBumps(bumps) {
                 : '<span style="color: #fca5a5;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até R$ 80/mês</strong> no seu plantel.';
         }
 
-        const bumpLabel = isCombo ? 'PROTOCOLO COMPLETO' : (isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO');
+        const bumpLabel = isCombo ? 'LEVAR O COMBO ELITE' : (isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO');
 
         return `
             <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center;">
@@ -588,9 +596,9 @@ function renderOrderBumps(bumps) {
                             ${desc}
                         </p>
 
-                        <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 6px; position: relative; z-index: 5;">
-                            <span class="order-bump-old-price">${isCombo ? 'R$ 249,70' : (isManejo ? 'R$ 99,90' : 'R$ 49,90')}</span>
-                            <span class="order-bump-price">
+                        <div style="margin-top: 8px; display: flex; align-items: baseline; gap: 8px; position: relative; z-index: 5; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 6px; width: fit-content;">
+                            <span class="order-bump-old-price" style="font-size: 0.85rem !important;">${isCombo ? 'R$ 249,70' : (isManejo ? 'R$ 99,90' : 'R$ 49,90')}</span>
+                            <span class="order-bump-price" style="font-size: 1.3rem !important; color: #4ade80 !important;">
                                 + ${formatBRL((currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? bump.price : (bump.priceCard || bump.price))}
                             </span>
                         </div>
