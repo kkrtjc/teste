@@ -386,11 +386,13 @@ async function startCheckoutProcess(productId, forceBumps = []) {
             ]
         },
         'combo-elite': {
-            title: 'Combo Criador Elite (Doenças + Pintinhos)',
-            price: 139.80,
-            originalPrice: 249.70,
+            title: 'Combo Elite (Doenças + Manual)',
+            price: 147.00,
+            originalPrice: 169.80,
             cover: 'combo',
-            fullBumps: []
+            fullBumps: [
+                { id: 'bump-6361', title: 'Tabela de Ração', price: 14.90, priceCard: 19.90, image: 'tabela_racao_bump.webp', description: 'Alimentação correta em todas as fases da sua criação.', tag: 'OFERTA ÚNICA' }
+            ]
         }
     };
 
@@ -652,23 +654,11 @@ function updateTotal() {
     const finalDisplayPrice = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? total : cardTotal;
 
     // Atualiza Resumo Dinâmico do Pedido (Minimalista)
-    // Atualiza Resumo Dinâmico do Pedido (Minimalista)
     const pInstPix = formatBRL(basePrice / 4);
     const pInstCard = formatBRL(cardPrice / 4);
-    let mainTitle = cart.mainProduct.title || 'Protocolo Elite';
-    let freeItemsHtml = '';
-    
-    if (cart.mainProduct.id === 'combo-elite') {
-        freeItemsHtml = `
-            <div style="font-size: 0.75rem; color: #10b981; margin-top: 4px; padding-left: 8px; border-left: 2px solid #10b981;">
-                + Manual de Pintinhos (Grátis)<br>
-                + Tabela de Ração (Grátis)
-            </div>`;
-    }
-
     let eliteHtml = (currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto')
-        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">${mainTitle}${freeItemsHtml}</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstCard} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no ${currentPaymentMethod === 'pix' ? 'PIX' : 'Boleto'}</span></span></div>`
-        : `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">${mainTitle}${freeItemsHtml}</span><span style="text-align: right; line-height: 1.2;"><span style="color: #10b981; font-size: 0.85rem; font-weight: 800;">4x de ${pInstCard}</span><br><span style="font-size: 0.75rem; color: #64748b;">(ou ${formatBRL(cardPrice)} à vista)</span></span></div>`;
+        ? `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #64748b; font-size: 0.75rem;">4x de ${pInstCard} s/ juros</span><br><span style="font-size: 0.85rem; color: #10b981; font-weight: 800;">ou ${formatBRL(basePrice)} no ${currentPaymentMethod === 'pix' ? 'PIX' : 'Boleto'}</span></span></div>`
+        : `<div style="display: flex; justify-content: space-between; font-weight: 500;"><span style="font-weight:700;">Protocolo Elite</span><span style="text-align: right; line-height: 1.2;"><span style="color: #10b981; font-size: 0.85rem; font-weight: 800;">4x de ${pInstCard}</span><br><span style="font-size: 0.75rem; color: #64748b;">(ou ${formatBRL(cardPrice)} à vista)</span></span></div>`;
         
     let summaryHtml = eliteHtml;
     

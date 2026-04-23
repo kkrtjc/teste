@@ -34,19 +34,21 @@
             "orderBumps": []
         },
         "combo-elite": {
-            "title": "Combo Criador Elite (Doenças + Pintinhos)",
-            "price": 139.8,
-            "originalPrice": 249.7,
-            "description": "O protocolo completo — doenças, pintinhos e tabela de ração em um único pacote.",
-            "badge": "MAIS POPULAR",
+            "title": "COMBO ELITE: Doenças + Pintinhos",
+            "price": 0.01,
+            "originalPrice": 159.8,
+            "description": "O Guia Completo para sua Criação",
+            "badge": "MAIS VENDIDO",
             "features": [
-                "Ebook Completo de Doenças",
-                "Manual Criação de Pintinhos",
-                "Bônus: Tabela de Rações Gratuita",
-                "Acesso vitalício + atualizações"
+                "Tudo do Protocolo de Doenças",
+                "Tudo do Manual de Pintinhos",
+                "Economia de 25%",
+                "Bônus: Tabela de Ração (no PIX)"
             ],
             "cover": "combo",
-            "orderBumps": []
+            "orderBumps": [
+                "bump-6361"
+            ]
         }
     },
     "orderBumps": {

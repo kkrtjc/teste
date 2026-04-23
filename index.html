@@ -992,265 +992,57 @@
         </div>
     </section>
 
-    <!-- Seção de Ofertas - 2 Cards Lado a Lado -->
-    <section id="learning" class="bg-white" style="padding: 4rem 0; border-top: 1px solid var(--slate-800);">
-        <div class="container">
-
-            <div style="text-align: center; margin-bottom: 2.5rem;">
-                <span style="display: inline-block; background: rgba(220,38,38,0.15); color: #ff4d4d; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(220,38,38,0.3); margin-bottom: 1rem;">
-                    <i class="fa-solid fa-fire"></i> ESCOLHA SEU PLANO
-                </span>
-                <h3 style="font-size: 1.8rem; font-weight: 900; color: var(--white); margin: 0; line-height: 1.2;">
-                    Comece Agora e Salve Suas Galinhas
-                </h3>
-                <p style="color: var(--slate-400); margin-top: 0.5rem; font-size: 1rem;">Acesso imediato • 7 dias de garantia • 100% Seguro</p>
+    <!-- Horizontal Learning Section -->
+    <section id="learning" class="bg-white"
+        style="padding: 3rem 0; border-top: 1px solid var(--slate-800); border-bottom: 1px solid var(--slate-800);">
+        <div class="container authority-grid" style="gap: 2rem;">
+            <div class="mockup-side" style="flex: 0 0 180px;">
+                <img src="capadasdoencas.webp" alt="Guia O Segredo das Galinhas"
+                    style="width: 100%; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));">
             </div>
+            <div class="learning-side"
+                style="flex: 1.5; min-width: 300px; background: rgba(30, 41, 59, 0.3); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--slate-800);">
+                <h4 style="color: var(--white); margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 900;">O Que
+                    Você Vai Aprender Hoje:</h4>
+                <ul
+                    style="list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Identificar doenças em segundos</li>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Medicamento correto para cada doença</li>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Dosagem que realmente funciona</li>
+                    <li style="display: flex; gap: 12px; font-size: 0.95rem; color: var(--slate-200);"><i
+                            class="fa-solid fa-circle-check" style="color: var(--green-600); margin-top: 3px;"></i>
+                        Protocolos Passo a Passo</li>
+                </ul>
 
-            <div style="position: relative; max-width: 860px; margin: 0 auto;" id="pricing-wrapper">
-                <style>
-                    .mobile-scroll-pad {
-                        padding: 1rem 0 2rem 0;
-                        justify-content: center;
-                    }
-                    @media (max-width: 768px) {
-                        .mobile-scroll-pad {
-                            padding: 1rem calc(50vw - 160px) 2rem calc(50vw - 160px) !important;
-                            justify-content: flex-start;
-                        }
-                    }
-                </style>
-                <div id="pricing-scroll" class="mobile-scroll-pad" style="display: flex; gap: 1.5rem; align-items: center; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
-
-                    <!-- CARD 1: COMBO (DESTAQUE) - AGORA PRIMEIRO -->
-                    <div style="
-                        flex: 1 0 280px;
-                        min-width: 280px;
-                        max-width: 340px;
-                        background: linear-gradient(145deg, rgba(22,163,74,0.15) 0%, rgba(15,23,42,0.8) 60%);
-                        border: 2px solid #22c55e;
-                        border-radius: 20px;
-                        padding: 2rem 1.5rem;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        text-align: center;
-                        position: relative;
-                        box-shadow: 0 0 30px rgba(34,197,94,0.2);
-                        transition: transform 0.2s, box-shadow 0.2s;
-                        scroll-snap-align: center;
-                    " onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 25px 50px rgba(34,197,94,0.3)'"
-                       onmouseleave="this.style.transform='none';this.style.boxShadow='0 0 30px rgba(34,197,94,0.2)'">
-
-                        <!-- Badge Mais Popular -->
-                        <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; padding: 5px 18px; border-radius: 20px; white-space: nowrap; box-shadow: 0 4px 12px rgba(34,197,94,0.4);">
-                            <i class="fa-solid fa-star"></i> MAIS POPULAR — MELHOR VALOR
-                        </div>
-
-                        <!-- Capas dos 2 ebooks em destaque -->
-                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; margin-top: 0.5rem;">
-                            <img src="capadasdoencas.webp" alt="Ebook Doenças"
-                                style="width: 80px; filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5)); transform: rotate(-4deg);">
-                            <span style="color: #22c55e; font-size: 1.5rem; font-weight: 900;">+</span>
-                            <img src="capadospintinhos.webp" alt="Ebook Pintinhos"
-                                style="width: 80px; filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5)); transform: rotate(4deg);">
-                        </div>
-
-                        <h4 style="color: var(--white); font-size: 1.15rem; font-weight: 900; margin-bottom: 0.5rem; line-height: 1.3;">
-                            Combo Criador Elite
-                        </h4>
-                        <p style="color: var(--slate-300); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-                            O protocolo completo — doenças, pintinhos e tabela de ração em um único pacote.
-                        </p>
-
-                        <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; width: 100%; display: flex; flex-direction: column; gap: 12px;">
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200); align-items: flex-start;">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                <div>
-                                    <strong style="color:#4ade80; display: block; margin-bottom: 6px;">Ebook Completo de Doenças</strong>
-                                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; color: var(--slate-300);">
-                                        <li style="display: flex; gap: 6px;"><i class="fa-solid fa-caret-right" style="color: #22c55e; margin-top: 2px; flex-shrink: 0;"></i> Tratamento para mais de 10 doenças nas galinhas</li>
-                                        <li style="display: flex; gap: 6px;"><i class="fa-solid fa-caret-right" style="color: #22c55e; margin-top: 2px; flex-shrink: 0;"></i> Tabela de vacinação</li>
-                                        <li style="display: flex; gap: 6px;"><i class="fa-solid fa-caret-right" style="color: #22c55e; margin-top: 2px; flex-shrink: 0;"></i> Tabela de vermifugação</li>
-                                        <li style="display: flex; gap: 6px;"><i class="fa-solid fa-caret-right" style="color: #22c55e; margin-top: 2px; flex-shrink: 0;"></i> Dosagens precisas</li>
-                                    </ul>
-                                </div>
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200); align-items: flex-start;">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                <div>
-                                    <strong style="color:#4ade80; display: block; margin-bottom: 6px;">Manual Criação de Pintinhos</strong>
-                                    <div style="font-size: 0.78rem; color: var(--slate-300); display: flex; gap: 6px; line-height: 1.4;">
-                                        <i class="fa-solid fa-caret-right" style="color: #22c55e; margin-top: 2px; flex-shrink: 0;"></i> 
-                                        Alcance até 90% de sobrevivência nos pintinhos do nascimento até a fase adulta.
-                                    </div>
-                                </div>
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200); align-items: center;">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0;"></i>
-                                <strong style="color:#fbbf24;">🎁 BÔNUS: Tabela de Rações</strong>
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200); align-items: center;">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0;"></i>
-                                Acesso vitalício + atualizações
-                            </li>
-                        </ul>
-
-                        <div style="margin-bottom: 1.25rem;">
-                            <span style="display: block; font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 249,70</span>
-                            <span style="display: block; font-size: 2.4rem; font-weight: 900; color: #4ade80; line-height: 1;">R$ 139,80</span>
-                            <span style="font-size: 0.8rem; color: #10b981; font-weight: 700;">no PIX — por tempo limitado</span>
-                            <span style="display: block; font-size: 0.8rem; color: var(--slate-400); margin-top: 4px;">ou 4x de R$ 34,95 s/ juros</span>
-                        </div>
-
-                        <button onclick="startCheckoutProcess('combo-elite')" class="btn-primary btn-pulse"
-                            style="width: 100%; font-size: 1rem; padding: 14px 20px; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 8px 25px rgba(34,197,94,0.35);">
-                            <i class="fa-solid fa-bolt"></i> QUERO O COMBO COMPLETO
-                        </button>
-                        <p style="font-size: 0.75rem; color: var(--slate-400); margin-top: 0.75rem;">
-                            <i class="fa-solid fa-shield-halved"></i> 7 dias de garantia incondicional
-                        </p>
-                    </div>
-
-                    <!-- CARD 2: Ebook Doenças Individual -->
-                    <div style="
-                        flex: 1 0 280px;
-                        min-width: 280px;
-                        max-width: 340px;
-                        background: rgba(15, 23, 42, 0.6);
-                        border: 1px solid var(--slate-700);
-                        border-radius: 20px;
-                        padding: 2rem 1.5rem;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        text-align: center;
-                        position: relative;
-                        transition: transform 0.2s, box-shadow 0.2s;
-                        scroll-snap-align: center;
-                    " onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4)'"
-                       onmouseleave="this.style.transform='none';this.style.boxShadow='none'">
-
-                        <img src="capadasdoencas.webp" alt="Ebook Doenças"
-                            style="width: 110px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); margin-bottom: 1rem;">
-
-                        <h4 style="color: var(--white); font-size: 1.1rem; font-weight: 900; margin-bottom: 0.5rem; line-height: 1.3;">
-                            Manual de Doenças
-                        </h4>
-                        <p style="color: var(--slate-400); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.5;">
-                            Cura e prevenção completa para as principais doenças que afetam suas galinhas.
-                        </p>
-
-                        <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; width: 100%; display: flex; flex-direction: column; gap: 8px;">
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                10+ Doenças catalogadas com dosagens
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                Sintomas e tratamentos passo a passo
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                Tabela de vacinação inclusa
-                            </li>
-                            <li style="display: flex; gap: 10px; font-size: 0.88rem; color: var(--slate-200);">
-                                <i class="fa-solid fa-circle-check" style="color: #22c55e; flex-shrink: 0; margin-top: 2px;"></i>
-                                Acesso vitalício + atualizações
-                            </li>
-                        </ul>
-
-                        <div style="margin-bottom: 1.25rem;">
-                            <span style="display: block; font-size: 0.85rem; color: var(--slate-500); text-decoration: line-through;">De R$ 149,90</span>
-                            <span style="display: block; font-size: 2rem; font-weight: 900; color: var(--white); line-height: 1;">R$ 89,90</span>
-                            <span style="font-size: 0.8rem; color: #10b981; font-weight: 700;">no PIX</span>
-                            <span style="display: block; font-size: 0.8rem; color: var(--slate-400); margin-top: 4px;">ou 4x de R$ 37,47 s/ juros</span>
-                        </div>
-
-                        <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
-                            style="width: 100%; font-size: 1rem; padding: 14px 20px;">
-                            QUERO ESTE PLANO
-                        </button>
-                        <p style="font-size: 0.75rem; color: var(--slate-500); margin-top: 0.75rem;">
-                            <i class="fa-solid fa-shield-halved"></i> 7 dias de garantia
-                        </p>
-                    </div>
-
+                <div
+                    style="margin-top: 1.25rem; padding: 1.5rem; background: rgba(15, 23, 42, 0.4); border-radius: 1rem; text-align: center; border: 1px solid var(--slate-800); box-shadow: var(--shadow-xl);">
+                    <span
+                        style="display: block; font-size: 0.9rem; color: var(--slate-500); text-decoration: line-through; margin-bottom: 2px;">De R$ 149,90 por:</span>
+                    <span
+                        style="display: block; font-size: 0.85rem; color: var(--slate-400); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8;">APENAS</span>
+                    <span style="display: block; font-size: 1.8rem; color: var(--white); font-weight: 900;">R$ <span
+                            id="display-price-value" class="dyn-price-main">89,90</span> no pix</span>
+                    <span class="dyn-discount-badge"
+                        style="font-size: 0.75rem; color: #10b981; font-weight: 800; display: block; margin-top: 3px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 15px; display: inline-block;">🔥
+                        <span class="dyn-discount-percent">40</span>% DE DESCONTO NO PIX</span>
+                    <span style="font-size: 0.9rem; color: var(--slate-300); display: block; margin-top: 5px;">ou em até
+                        <strong class="dyn-installments" style="color: #fff;">4x de R$ 37,47 sem juros</strong> no
+                        cartão</span>
+                    <span
+                        style="font-size: 0.85rem; color: var(--brand-red); font-weight: 900; display: block; margin-top: 0.5rem; text-transform: uppercase;">QUANTO
+                        VALE UMA GALINHA PRA VOCE?</span>
+                    <button onclick="startCheckoutProcess('ebook-doencas')" class="btn-primary"
+                        style="width: 100%; margin-top: 15px;">
+                        SALVAR MINHAS GALINHAS AGORA
+                    </button>
                 </div>
-                
-                <!-- Smart Floating Arrow -->
-                <button id="smart-scroll-btn" onclick="togglePricingScroll()" style="
-                    position: absolute; 
-                    top: 50%; 
-                    right: 0px; 
-                    transform: translateY(-50%); 
-                    width: 44px; 
-                    height: 44px; 
-                    border-radius: 50%; 
-                    background: #22c55e; 
-                    color: white; 
-                    border: 2px solid #16a34a; 
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-                    display: none; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 1.1rem;
-                    cursor: pointer;
-                    z-index: 10;
-                    transition: all 0.3s;
-                ">
-                    <i class="fa-solid fa-chevron-right" id="smart-scroll-icon"></i>
-                </button>
             </div>
-
-            <script>
-                document.addEventListener('DOMContentLoaded', () => {
-                    const scroller = document.getElementById('pricing-scroll');
-                    const scrollBtn = document.getElementById('smart-scroll-btn');
-                    const scrollIcon = document.getElementById('smart-scroll-icon');
-
-                    function checkScrollable() {
-                        if (!scroller || !scrollBtn) return;
-                        // Mostrar o botão só se houver scroll (ex: em mobile)
-                        if (scroller.scrollWidth > scroller.clientWidth + 10) {
-                            scrollBtn.style.display = 'flex';
-                            updateScrollIcon();
-                        } else {
-                            scrollBtn.style.display = 'none';
-                        }
-                    }
-
-                    function updateScrollIcon() {
-                        if (!scroller || !scrollIcon) return;
-                        // Se chegou quase no final do scroll
-                        if (scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 30) {
-                            scrollIcon.classList.remove('fa-chevron-right');
-                            scrollIcon.classList.add('fa-chevron-left');
-                            scrollBtn.style.right = 'auto';
-                            scrollBtn.style.left = '0px';
-                        } else {
-                            scrollIcon.classList.remove('fa-chevron-left');
-                            scrollIcon.classList.add('fa-chevron-right');
-                            scrollBtn.style.left = 'auto';
-                            scrollBtn.style.right = '0px';
-                        }
-                    }
-
-                    if (scroller) {
-                        scroller.addEventListener('scroll', updateScrollIcon);
-                        window.addEventListener('resize', checkScrollable);
-                        setTimeout(checkScrollable, 300);
-                    }
-
-                    window.togglePricingScroll = function() {
-                        if (!scroller || !scrollIcon) return;
-                        if (scrollIcon.classList.contains('fa-chevron-right')) {
-                            scroller.scrollBy({ left: 320, behavior: 'smooth' });
-                        } else {
-                            scroller.scrollTo({ left: 0, behavior: 'smooth' });
-                        }
-                    };
-                });
-            </script>
         </div>
     </section>
 
