@@ -423,6 +423,23 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         }
 
         cart.mainProduct = { ...productData, id: productId };
+
+        // HOTFIX: Force the new Combo bump to bypass API/KV cache delays
+        if (productId === 'ebook-doencas') {
+            cart.mainProduct.fullBumps = [
+                { 
+                    id: 'combo-elite-bump', 
+                    title: 'Combo Criador Elite', 
+                    price: 49.90, 
+                    priceCard: 49.90, 
+                    image: 'capadospintinhos.webp', 
+                    description: '<b>O protocolo completo</b> — doenças, pintinhos e tabela de ração em um único pacote.<br><br>• Ebook Completo de Doenças<br>• Manual Criação de Pintinhos<br>• 🎁 BÔNUS: Tabela de Rações', 
+                    tag: 'OFERTA ELITE' 
+                }
+            ];
+            productData.fullBumps = cart.mainProduct.fullBumps;
+        }
+
         cart.bumps = forceBumps || [];
 
         // PIXEL: InitiateCheckout (Now with real data)
