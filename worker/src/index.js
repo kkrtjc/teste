@@ -5,6 +5,7 @@ import { adminRoutes } from './admin.js';
 import { trackingRoutes } from './tracking.js';
 import { downloadRoutes } from './downloads.js';
 import { webhookRoutes } from './webhooks.js';
+import { capiRoutes } from './capiRoutes.js';
 
 const app = new Hono();
 
@@ -20,6 +21,9 @@ app.get('/health', (c) => c.text('Mura Engine V3 Online! 🚀 (Cloudflare Worker
 
 // Rotas de checkout (PIX, cartão)
 app.route('/api/checkout', checkoutRoutes);
+
+// CAPI server-side — recebe eventos do browser e repassa ao Meta
+app.route('/api', capiRoutes);
 
 // Status de pagamento — compatível com script.js que chama /api/payment/:id
 app.get('/api/payment/:id', async (c) => {
@@ -61,6 +65,10 @@ app.get('/api/payment/:id', async (c) => {
         }
         
         const token = await generateDownloadToken(customer.email, items, result.id, c.env);
+        const clientIp = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim();
+        if (!isLocked) {
+            // clientIp passado para o CAPI enriquecer o Purchase
+        }
         return c.json({ id: result.id, status: result.status, redirectToken: token });
     }
     return c.json({ id: result.id, status: result.status, status_detail: result.status_detail });
