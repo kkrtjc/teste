@@ -39,6 +39,7 @@ app.get('/api/payment/:id', async (c) => {
             name: metadata.customer_name || `${result.payer?.first_name || ''} ${result.payer?.last_name || ''}`.trim() || 'Cliente',
             email: metadata.customer_email || result.payer?.email || 'galosmurabrasill@gmail.com',
             phone: metadata.customer_phone || 'Sem Telefone',
+            cpf: metadata.customer_cpf || result.payer?.identification?.number || 'Sem CPF',
         };
         const itemTitles = (result.description || 'Produto').split(', ');
         const items = itemTitles.map(t => ({ title: t, price: result.transaction_amount / itemTitles.length }));

@@ -332,14 +332,12 @@ function declineEliteCombo() {
 }
 
 async function startCheckoutProcess(productId, forceBumps = []) {
-    if (!sessionStorage.getItem('mura_checkout_opened')) {
-        trackEvent('checkout_open');
-        sessionStorage.setItem('mura_checkout_opened', 'true');
-    }
+    // trackEvent('checkout_open') modificado: removido o limite de 1 por sessão 
+    // e o trackEvent('click') redundante para evitar "Race Conditions" no banco de dados KV
+    trackEvent('checkout_open');
     
-    trackEvent('click');
     sessionStorage.setItem('mura_modal_open', 'true');
-    currentFacebookEventId = generateEventID(); 
+    currentFacebookEventId = generateEventID();
     // InitiateCheckout will be fired in loadCheckoutData once we have the price and name
 
 
