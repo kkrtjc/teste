@@ -2,11 +2,13 @@ import { generateDownloadToken } from './utils.js';
 import { sendCAPIEvent } from './capi.js';
 
 // Envia os dados para o webhook do Make.com que disparará o e-mail via Gmail
-// E dispara o Purchase server-side via Meta CAPI para atribuição confiável
+// E dispara o Purchase server-side via Meta CAPI para atribuição confiável (Desduplicado cirurgicamente)
 export async function sendEmail(env, customer, items, paymentId = null, facebookEventId = null, fbc = null, fbp = null, userAgent = null, clientIp = null) {
     try {
-        if (!customer || !customer.email || customer.email.trim() === '') {
-            console.warn('[EMAIL WARNING] Tentativa de envio abortada. E-mail não fornecido.');
+        // Validação rigorosa de e-mail para evitar erro no Make/Gmail
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!customer || !customer.email || !emailRegex.test(customer.email.trim())) {
+            console.warn(`[EMAIL ABORTED] E-mail inválido ou ausente: ${customer?.email}`);
             return false;
         }
 
@@ -75,47 +77,40 @@ export async function sendEmail(env, customer, items, paymentId = null, facebook
 
         if (!res.ok) {
             console.error('[EMAIL ERROR] Falha no disparo pro Make.com');
-            // Mesmo se email falhar, CAPI deve disparar
         } else {
             console.log(`[EMAIL] Webhook acionado para ${customer.email}`);
         }
 
-        // ── META CAPI: Purchase server-side ──────────────────────────
-        // CPF, cidade, estado — tudo que tiver disponível vai hasheado
-        const totalValue = items.reduce((acc, i) => acc + Number(i.price || 0), 0);
-        const contentIds = items.map(i => i.id || i.title);
-        const contentName = items.map(i => i.title).join(', ');
-        const sourceUrl = env.SITE_URL
-            ? `${env.SITE_URL}/downloads.html`
-            : 'https://osegredodasgalinhas.pages.dev/downloads.html';
-
-        try {
-            await sendCAPIEvent(env, {
-                eventName: 'Purchase',
-                eventId: facebookEventId,
-                customer: {
-                    name:  customer.name,
-                    email: customer.email,
-                    phone: customer.phone,
-                    cpf:   customer.cpf,    // ← CPF agora incluído
-                    city:  customer.city,
-                    state: customer.state,
-                    zip:   customer.zip,
-                },
-                meta: {
-                    fbc,
-                    fbp,
-                    userAgent,
-                    clientIp,
-                },
-                value: totalValue,
-                currency: 'BRL',
-                contentIds,
-                contentName,
-                sourceUrl,
-            });
-        } catch (capiErr) {
-            console.error('[CAPI ERROR]', capiErr.message);
+        // --- META CAPI SERVER-SIDE PURCHASE (10/10 EMQ) ---
+        // Dispara o CAPI Purchase com desduplicação cirúrgica usando o facebookEventId gerado no checkout
+        if (facebookEventId) {
+            try {
+                const totalValue = items.reduce((acc, i) => acc + Number(i.price), 0);
+                const contentIds = items.map(i => String(i.id || i.title));
+                
+                await sendCAPIEvent(env, {
+                    eventName: 'Purchase',
+                    eventId: facebookEventId, // EXACT MATCH with downloads.html
+                    customer: customer,       // Contains name, email, phone, cpf, cep (if card)
+                    meta: { 
+                        fbc, 
+                        fbp, 
+                        userAgent, 
+                        clientIp,
+                        externalId: customer.cpf // Usa o CPF como External ID forte para match
+                    },
+                    value: totalValue,
+                    currency: 'BRL',
+                    contentIds: contentIds,
+                    contentType: 'product',
+                    sourceUrl: env.SITE_URL || 'https://osegredodasgalinhas.pages.dev/'
+                });
+                console.log(`[CAPI] Purchase server-side disparado com sucesso. EventID: ${facebookEventId}`);
+            } catch (capiErr) {
+                console.error('[CAPI ERROR]', capiErr.message);
+            }
+        } else {
+            console.warn('[CAPI WARNING] Compra aprovada mas sem facebookEventId. CAPI não enviado para evitar duplicatas.');
         }
 
         return true;

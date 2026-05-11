@@ -44,104 +44,119 @@ function applyDynamicPrices(productData) {
 }
 
 // --- INIT: CHECK PENDING PIX (Recover Logic) ---
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. UNIQUE VISITOR + SESSÃO TRACKING
-    const today = new Date().toISOString().split('T')[0];
-    const lastVisit = localStorage.getItem('mura_visita_hoje');
-
-    trackEvent('session_start');
-
-    if (lastVisit !== today) {
-        trackEvent('unique_visit');
-        localStorage.setItem('mura_visita_hoje', today);
-    }
-
-    // 2. CTA CLICK TRACKING
-    document.querySelectorAll('a[href^="#offer"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const ctaId = btn.getAttribute('data-cta') || 'generic_cta';
-            trackEvent('cta_click', null, ctaId);
-        });
-    });
-
-    // 3. PIX RECOVERY
-    const cached = localStorage.getItem('active_pix_session');
-    if (cached) {
+    // Wrap everything in a robust initialization
+    const initPage = async () => {
+        // 1. UNIQUE VISITOR + SESSÃO TRACKING
         try {
-            const session = JSON.parse(cached);
-            if ((Date.now() - session.timestamp) < 60 * 60 * 1000) {
-                try {
-                    const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
-                    const sd = await s.json();
-                    if (sd.status === 'approved') {
-                        localStorage.removeItem('active_pix_session');
-                        // Recuperação: Redireciona para downloads.html que dispara Purchase com deduplicação
-                        const recoveryEventId = session.facebookEventId || generateEventID();
-                        const { fbc: recFbc, fbp: recFbp } = getMetaCookies();
-                        const rc = session.customer || {};
-                        window.location.href = `downloads.html?items=${session.itemIds}&total=${session.total.toFixed(2)}&evid=${encodeURIComponent(recoveryEventId)}&fbc=${encodeURIComponent(recFbc)}&fbp=${encodeURIComponent(recFbp)}&email=${encodeURIComponent(rc.email||'')}&name=${encodeURIComponent(rc.name||'')}&cpf=${encodeURIComponent(rc.cpf||'')}&phone=${encodeURIComponent(rc.phone||'')}`;
-                    } else {
-                        localStorage.removeItem('active_pix_session');
-                    }
-                } catch (e) { /* Recover silently */ }
-            } else {
-                localStorage.removeItem('active_pix_session');
+            const todayStr = new Date().toISOString().split('T')[0];
+            const lastVisit = localStorage.getItem('mura_visita_hoje');
+
+            // Sequentialize to avoid KV race conditions in Worker
+            await trackEvent('session_start');
+
+            if (lastVisit !== todayStr) {
+                await trackEvent('unique_visit');
+                localStorage.setItem('mura_visita_hoje', todayStr);
             }
-        } catch (e) { localStorage.removeItem('active_pix_session'); }
-    }
 
-    // 4. PRE-FETCH
-    const productsToPreload = ['ebook-doencas', 'combo-elite', 'ebook-manejo'];
-    productsToPreload.forEach(async (id) => {
-        try {
-            const response = await fetch(`${API_URL}/api/products/${id}`);
-            if (response.ok) {
-                prefetchedProducts[id] = await response.json();
-                
-                if (id === 'ebook-doencas') {
-                    const resp = prefetchedProducts[id];
-                    
-                    if (typeof applyDynamicPrices === 'function') {
-                        applyDynamicPrices(resp);
-                    }
-                    // ViewContent é disparado em renderHomeProducts() — não duplicar aqui
-                }
-            }
-        } catch (e) { console.warn(`[PREFETCH] Failed: ${id}`); }
-    });
-
-    // 5. COMPONENTS INIT
-    initFAQ();
-    initSmoothScroll();
-    initComparisonSlider();
-    initStickyCTA();
-    initLazyLoading();
-    initImageTransitions();
-    initHelpBubbles();
-    setupFields();
-    renderHomeProducts();
-
-    // 6. LAZY VIDEO
-    const lazyVideo = document.getElementById('vsl-video');
-    if (lazyVideo && 'IntersectionObserver' in window) {
-        const videoObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const source = lazyVideo.querySelector('source');
-                    if (source && source.dataset.src) {
-                        source.src = source.dataset.src;
-                        lazyVideo.load();
-                    }
-                    observer.unobserve(lazyVideo);
-                }
+            // 2. CTA CLICK TRACKING
+            document.querySelectorAll('a[href^="#offer"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const ctaId = btn.getAttribute('data-cta') || 'generic_cta';
+                    trackEvent('cta_click', null, ctaId);
+                });
             });
-        }, { rootMargin: '200px' });
-        videoObserver.observe(lazyVideo);
-    }
+        } catch (e) {
+            console.warn('[TRACKING] Failed:', e);
+        }
 
-    // 7. GLOBAL MOBILE FIXES
-    initMobileFixes();
-});
+        // 3. PIX RECOVERY
+        const cached = localStorage.getItem('active_pix_session');
+        if (cached) {
+            try {
+                const session = JSON.parse(cached);
+                if ((Date.now() - session.timestamp) < 60 * 60 * 1000) {
+                    try {
+                        const s = await fetch(`${API_URL}/api/payment/${session.data.id}`);
+                        const sd = await s.json();
+                        if (sd.status === 'approved') {
+                            localStorage.removeItem('active_pix_session');
+                            const recoveryEventId = session.facebookEventId || generateEventID();
+                            const { fbc: recFbc, fbp: recFbp } = getMetaCookies();
+                            const rc = session.customer || {};
+                            window.location.href = `downloads.html?items=${session.itemIds}&total=${session.total.toFixed(2)}&evid=${encodeURIComponent(recoveryEventId)}&fbc=${encodeURIComponent(recFbc)}&fbp=${encodeURIComponent(recFbp)}&email=${encodeURIComponent(rc.email||'')}&name=${encodeURIComponent(rc.name||'')}&cpf=${encodeURIComponent(rc.cpf||'')}&phone=${encodeURIComponent(rc.phone||'')}`;
+                        } else {
+                            localStorage.removeItem('active_pix_session');
+                        }
+                    } catch (e) { /* Recover silently */ }
+                } else {
+                    localStorage.removeItem('active_pix_session');
+                }
+            } catch (e) { localStorage.removeItem('active_pix_session'); }
+        }
+
+        // 4. PRE-FETCH
+        const productsToPreload = ['ebook-doencas', 'combo-elite', 'ebook-manejo'];
+        productsToPreload.forEach(async (id) => {
+            try {
+                const response = await fetch(`${API_URL}/api/products/${id}`);
+                if (response.ok) {
+                    prefetchedProducts[id] = await response.json();
+                    if (id === 'ebook-doencas') {
+                        const resp = prefetchedProducts[id];
+                        if (typeof applyDynamicPrices === 'function') applyDynamicPrices(resp);
+                    }
+                }
+            } catch (e) { console.warn(`[PREFETCH] Failed: ${id}`); }
+        });
+
+        // 5. COMPONENTS INIT
+        initFAQ();
+        initSmoothScroll();
+        initComparisonSlider();
+        initStickyCTA();
+        initLazyLoading();
+        initImageTransitions();
+        initHelpBubbles();
+        setupFields();
+        renderHomeProducts();
+
+        // 6. LAZY VIDEO
+        const lazyVideo = document.getElementById('vsl-video');
+        if (lazyVideo && 'IntersectionObserver' in window) {
+            const videoObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const source = lazyVideo.querySelector('source');
+                        if (source && source.dataset.src) {
+                            source.src = source.dataset.src;
+                            lazyVideo.load();
+                        }
+                        observer.unobserve(lazyVideo);
+                    }
+                });
+            }, { rootMargin: '200px' });
+            videoObserver.observe(lazyVideo);
+        }
+
+        // 7. GLOBAL MOBILE FIXES
+        initMobileFixes();
+
+        // 8. DIRECT CHECKOUT LINK
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('checkout') === 'doencas') {
+            setTimeout(() => {
+                if (typeof openCheckout === 'function') openCheckout('ebook-doencas');
+            }, 800);
+        }
+    };
+
+    // Robust Entry Point
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        initPage();
+    } else {
+        document.addEventListener('DOMContentLoaded', initPage);
+    }
 
 // --- COMPONENT INITIALIZERS (Refactored for clarity) ---
 
@@ -255,7 +270,7 @@ async function trackEvent(type, isMobileManual = null, ctaId = null, details = n
         window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     );
 
-    const body = JSON.stringify({ type, isMobile, ctaId, details });
+    const body = JSON.stringify({ type, isMobile, ctaId, details, site: 'official' });
 
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
@@ -312,7 +327,20 @@ function getMetaCookies() {
         if (k) acc[k] = v || '';
         return acc;
     }, {});
-    return { fbc: cookies['_fbc'] || '', fbp: cookies['_fbp'] || '' };
+    
+    let fbc = cookies['_fbc'] || '';
+    const fbp = cookies['_fbp'] || '';
+
+    // FALLBACK: Se o cookie _fbc não existe mas o fbclid está na URL
+    if (!fbc) {
+        const params = new URLSearchParams(window.location.search);
+        const fbclid = params.get('fbclid');
+        if (fbclid) {
+            fbc = `fb.1.${Date.now()}.${fbclid}`;
+        }
+    }
+
+    return { fbc, fbp };
 }
 
 /**
@@ -320,11 +348,15 @@ function getMetaCookies() {
  * Complementa o fbq() — Meta deduplica pelo eventId.
  *
  * @param {string} eventName   - 'ViewContent' | 'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase'
- * @param {string} eventId     - Mesmo ID usado no fbq() para deduáo
+ * @param {string} eventId     - Mesmo ID usado no fbq() para deduplicação
  * @param {Object} [extra]     - { value, contentIds, contentName, customer }
  */
 async function trackCAPI(eventName, eventId, extra = {}) {
     try {
+        const params = new URLSearchParams(window.location.search);
+        const testCode = params.get('testCode') || sessionStorage.getItem('mura_test_code') || null;
+        if (testCode && !sessionStorage.getItem('mura_test_code')) sessionStorage.setItem('mura_test_code', testCode);
+
         const { fbc, fbp } = getMetaCookies();
         const formData = getCurrentCustomerData();
         // extra.customer sobrescreve o form quando temos dados completos (ex: no pagamento)
@@ -345,6 +377,7 @@ async function trackCAPI(eventName, eventId, extra = {}) {
             fbc,
             fbp,
             externalId,
+            testCode,
         };
         if (extra.value      !== undefined) payload.value       = extra.value;
         if (extra.currency   !== undefined) payload.currency    = extra.currency;
@@ -505,23 +538,23 @@ async function startCheckoutProcess(productId, forceBumps = []) {
         // HOTFIX: Force the new Combo bump to bypass API/KV cache delays
         if (productId === 'ebook-doencas') {
             cart.mainProduct.fullBumps = [
-                { 
-                    id: 'combo-elite-bump', 
-                    title: 'ESPERE! Leve o Kit Completo e Economize AGORA!', 
-                    price: 50.00, 
-                    priceCard: 50.00, 
-                    image: 'capadospintinhos.webp', 
-                    description: `
-                        <div style="color: #ffffff; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; font-size: 0.85rem; line-height: 1.4;">
-                            <span style="color: #fca5a5; font-weight: 800; font-style: italic; display: block; margin-bottom: 8px; font-size: 0.95rem;">Já perdeu quantos pintinhos sem saber o motivo?</span>
-                            Adicione o <strong>Manual de Elite de Criação de Pintinhos</strong>, Aprenda a <strong>MELHOR forma</strong> de cuidar do seus pintinhos e garanta <strong>90% de sobrevivência</strong> dos seus filhotes do nascimento à fase adulta. 
-                            <br><br>
-                            E tem mais: <span style="color: #4ade80; font-weight: 900;">GANHE a Tabela de Ração</span> (valor de R$ 19,90) que vai te fazer economizar <strong>até 70% nos custos de alimentação!</strong>
-                            <br><br>
-                            <div style="font-size: 1.1rem; color: #fbbf24; font-weight: 900;">Tudo isso por apenas +R$ 50,00!</div>
-                        </div>
-                    `, 
-                    tag: 'PRESENTE LIBERADO' 
+                {
+                    id: 'ebook-manejo',
+                    title: 'MANUAL DE ELITE DOS PINTINHOS',
+                    price: 49.90,
+                    priceCard: 49.90,
+                    image: 'capadospintinhos.webp',
+                    description: '<span style="color: #ff4444;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, ambiente inapropriado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.',
+                    tag: 'OFERTA ÚNICA'
+                },
+                {
+                    id: 'bump-6361',
+                    title: 'TABELA DE RAÇÃO',
+                    price: 19.90,
+                    priceCard: 19.90,
+                    image: 'tabela_racao_bump.webp',
+                    description: '<span style="color: #ff4444;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até 60% na ração</strong> das suas aves.',
+                    tag: 'OFERTA ÚNICA'
                 }
             ];
             productData.fullBumps = cart.mainProduct.fullBumps;
@@ -616,8 +649,8 @@ function renderOrderBumps(bumps) {
     const bumpHeader = `
         <div style="text-align: center; margin-bottom: 4px; padding: 6px 10px; background: rgba(239,68,68,0.08); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2);">
             <p style="color: #ef4444; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 0; line-height: 1.4;">
-                ⚡ ATENÇÃO OFERTA IMPERDÍVEL!<br>
-                <span style="color: #fbbf24;">ELA NÃO APARECE EM OUTRO LUGAR — ESSA É SUA ÚNICA CHANCE.</span>
+                ⚡ ADICIONE AGORA ESSAS OFERTAS IMPERDÍVEIS!<br>
+                <span style="color: #fbbf24;">ELAS NÃO APARECEM EM OUTRO LUGAR — ESSA É SUA ÚNICA CHANCE.</span>
             </p>
         </div>
     `;
@@ -637,55 +670,57 @@ function renderOrderBumps(bumps) {
         const isManejo = (bump.id === 'ebook-manejo' || bump.title?.includes('Pintinhos'));
         
         let title = isManejo ? '🐣 SALVE SEUS PINTINHOS' : '💰 CORTE SUA CONTA DE RAÇÃO';
-        if (isCombo) title = '💎 UPGRADE: PROTOCOLO COMPLETO';
+        if (isCombo) title = '<span style="color: #000; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0 0 5px #fff; display: inline-block; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.1);">⚠️ SEUS PINTINHOS VÃO MORRER SEM ISSO</span>';
 
         let desc = bump.description;
         if (!desc) {
             desc = isManejo 
-                ? '<span style="color: #fca5a5;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, bico molhado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.' 
-                : '<span style="color: #fca5a5;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até R$ 80/mês</strong> no seu plantel.';
+                ? '<span style="color: #ff4444;"><strong>8 em cada 10 pintinhos morrem antes dos 20 dias.</strong></span> Temperatura errada, ração imprópria, ambiente inapropriado. <span style="color: #4ade80;"><strong>O manual te ensina o passo a passo completo</strong></span> do nascimento à fase adulta.' 
+                : '<span style="color: #ff4444;"><strong>Você está perdendo dinheiro todo mês</strong></span> com ração de marca cara. <span style="color: #4ade80;"><strong>Monte sua própria ração balanceada</strong></span> e economize <strong style="color:#fbbf24;">até 60% na ração</strong> das suas aves.';
         }
 
         const bumpLabel = isManejo ? 'MANUAL DE ELITE<br>DOS PINTINHOS' : 'TABELA DE RAÇÃO';
 
         return `
-            <div style="display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center;">
-                <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="margin-bottom: 0; min-height: 140px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer; width: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                <div style="font-weight: 900; color: #fff; font-size: 0.75rem; text-transform: uppercase; text-align: center; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 4px 6px rgba(0,0,0,0.5); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: -5px; z-index: 2; position: relative;">
+                    ${bumpLabel}
+                </div>
+                <div id="bump-card-${bump.id}" class="order-bump-container ${isSelected ? 'selected' : ''}" onclick="toggleBump('${bump.id}')" style="min-height: 160px; padding: 0; position: relative; overflow: hidden; border-radius: 10px; cursor: pointer; width: 100%; border: 3px solid ${isSelected ? '#10b981' : '#ffc107'}; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.8);">
                     
                     <!-- Background Image -->
-                    ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 0%' : 'center'}; z-index: 0;">` : ''}
+                    ${imgSrc ? `<img src="${imgSrc}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: ${isManejo ? 'center 0%' : 'center'}; z-index: 0; opacity: 0.85;">` : ''}
                     
                     <!-- Gradient Overlay -->
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.85) 60%); z-index: 1;"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,1) 100%); z-index: 1;"></div>
                     
                     <!-- Content -->
-                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 12px; width: 100%; height: 100%; justify-content: flex-end; min-height: 140px;">
+                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; padding: 10px; width: 100%; height: 100%; min-height: 160px; justify-content: space-between;">
                         
                         <input type="checkbox" id="bump-chk-${bump.id}" ${isSelected ? 'checked' : ''} style="display: none;">
                         
-                        <strong class="order-bump-title" style="margin-top: 5px;">
-                            ${title}
-                        </strong>
-                        
-                        <p class="order-bump-description">
+                        <!-- Top Bar (Title + Checkbox) -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 4px;">
+                            <strong style="color: #ffd700; font-size: 0.85rem; line-height: 1.1; text-shadow: 2px 2px 4px #000, 0 0 10px rgba(0,0,0,0.8); text-align: left;">
+                                ${title}
+                            </strong>
+                            <div class="bump-check-wrapper" style="width: 22px; height: 22px; border-radius: 4px; border: 2px solid ${isSelected ? '#10b981' : '#ffc107'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.7)'}; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
+                                ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.75rem;"></i>' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <p style="color: #fff; font-size: 0.65rem; line-height: 1.3; text-shadow: 1px 1px 2px #000; margin: 6px 0; text-align: center; font-weight: 500;">
                             ${desc}
                         </p>
 
-                        <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 2px; position: relative; z-index: 5; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px; width: fit-content; border: 1px solid rgba(255,255,255,0.1);">
-                            <span class="order-bump-old-price" style="font-size: 0.8rem !important; margin-bottom: -4px;">De ${formatBRL(isCombo ? 249.90 : (isManejo ? 99.90 : 49.90))} por apenas:</span>
-                            <span class="order-bump-price" style="font-size: 1.5rem !important; color: #4ade80 !important; font-weight: 900; text-shadow: 0 0 10px rgba(74,222,128,0.3) !important;">
-                                + ${formatBRL((currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? bump.price : (bump.priceCard || bump.price))}
+                        <!-- Price -->
+                        <div style="text-align: center; margin-top: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px;">
+                            <span style="color: #a3a3a3; font-size: 0.75rem; text-decoration: line-through; text-shadow: 1px 1px 1px #000;">De R$ ${isManejo ? '99,90' : '89,90'}</span>
+                            <span style="color: #4ade80; font-size: 0.85rem; font-weight: 800; text-shadow: 0 0 8px rgba(74,222,128,0.4), 1px 1px 2px #000; line-height: 1.15;">
+                                Por APENAS <span style="font-size: 1.05rem;">R$ ${formatBRL((currentPaymentMethod === 'pix' || currentPaymentMethod === 'boleto') ? bump.price : (bump.priceCard || bump.price)).replace('R$ ', '')}</span><br>
+                                ${isManejo ? 'você salva seus pintinhos' : ', você economiza até 60% na ração'}
                             </span>
-                        </div>
-
-                        <!-- Bottom Checkbox + Label Area -->
-                        <div style="margin-top: 12px; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: ${isSelected ? 'rgba(16,185,129,0.15)' : 'rgba(0,0,0,0.6)'}; padding: 8px 10px; border-radius: 6px; border: 1px solid ${isSelected ? '#10b981' : '#fbbf24'};">
-                            <span style="color: #fff; font-size: 0.72rem; font-weight: 900; text-align: left; text-shadow: 1px 1px 1px #000; line-height: 1.2;">
-                                ${isCombo ? 'SIM! Eu quero o Kit Criador de Elite e ganhar a Tabela de Ração GRÁTIS!' : bumpLabel}
-                            </span>
-                            <div class="bump-check-wrapper" style="width: 24px; height: 24px; border-radius: 6px; border: 2px solid ${isSelected ? '#10b981' : '#fbbf24'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? '#10b981' : 'rgba(0,0,0,0.4)'}; flex-shrink: 0;">
-                                ${isSelected ? '<i class="fa-solid fa-check" style="color: #fff; font-size: 0.9rem;"></i>' : ''}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1217,7 +1252,7 @@ async function handlePayment(method) {
             const { fbc, fbp } = getMetaCookies();
 
             // PIXEL + CAPI: AddPaymentInfo — sinal crucial para o Meta otimizar
-            const addPaymentEventId = generateEventID();
+            const addPaymentEventId = 'ap_pix_' + Date.now() + '_' + Math.random().toString(16).slice(2, 10);
             trackPixel('AddPaymentInfo', {
                 content_ids: items.map(i => i.id),
                 content_type: 'product',
@@ -1228,6 +1263,7 @@ async function handlePayment(method) {
                 value: totalAmount, currency: 'BRL',
                 contentIds: items.map(i => i.id),
             });
+            console.log('[TRACKING] AddPaymentInfo PIX disparado. eventId:', addPaymentEventId);
 
             const endpointVar = isBoleto ? '/api/checkout/boleto' : '/api/checkout/pix';
             const res = await fetch(`${API_URL}${endpointVar}`, {
@@ -1340,7 +1376,7 @@ async function handlePayment(method) {
             const { fbc, fbp } = getMetaCookies();
 
             // PIXEL + CAPI: AddPaymentInfo — sinal crucial para o Meta otimizar
-            const addPayEventIdCard = generateEventID();
+            const addPayEventIdCard = 'ap_card_' + Date.now() + '_' + Math.random().toString(16).slice(2, 10);
             trackPixel('AddPaymentInfo', {
                 content_ids: items.map(i => i.id),
                 content_type: 'product',
@@ -1352,6 +1388,7 @@ async function handlePayment(method) {
                 currency: 'BRL',
                 contentIds: items.map(i => i.id),
             });
+            console.log('[TRACKING] AddPaymentInfo Cartão disparado. eventId:', addPayEventIdCard);
 
             const payload = {
                 items, customer, token: token.id,
@@ -1446,7 +1483,7 @@ async function handlePayment(method) {
                 btn.innerText = originalText;
             }
         } catch (e) {
-            console.error("ERRO CRÃTICO CARTÃO:", e);
+            console.error("ERRO CRÃ TICO CARTÃO:", e);
             let errDisplay = 'Erro desconhecido';
 
             if (e && e.message) errDisplay = e.message;
@@ -1623,7 +1660,8 @@ async function captureAbandonedLead(extra = {}) {
                     phone,
                     product: productId,
                     pixGenerated: extra.pixGenerated || false,
-                    pixId: extra.pixId || null
+                    pixId: extra.pixId || null,
+                    site: 'official'
                 })
             });
         } catch (e) {
@@ -1792,6 +1830,10 @@ function showPixResult(data, items) {
     }
 
     qrImg.src = `data:image/png;base64,${data.qr_code_base64}`;
+    qrImg.classList.remove('hidden');
+    qrImg.style.display = 'block';
+    qrImg.style.opacity = '1';
+    
     document.getElementById('pix-copy-paste').value = data.qr_code;
 
     // Fallback: Exibir UI imediatamente (evita ficar preso no "Conectando" se a imagem falhar)
@@ -2355,4 +2397,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ─── LEAD CAPTURE: Enriquece CAPI com e-mail do checkout ─────────────────────
+// Dispara evento 'Lead' (padrão Meta) UMA VEZ por sessão quando o cliente
+// termina de preencher o e-mail no checkout. Não interfere em nenhum outro evento.
+// O Meta usa esse e-mail hasheado para melhorar o match de Remarketing e Lookalike.
+(function initLeadCapture() {
+    const EMAIL_IDS = ['payer-email', 'card-email'];
+    const FLAG_KEY  = 'mura_lead_captured';
+
+    function isValidEmail(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    function onEmailBlur(e) {
+        const email = (e.target.value || '').trim();
+        if (!email || !isValidEmail(email)) return;
+        if (sessionStorage.getItem(FLAG_KEY)) return;
+
+        sessionStorage.setItem(FLAG_KEY, 'true');
+
+        const leadEventId = generateEventID();
+
+        // Pixel browser-side (deduplicado pelo eventId)
+        trackPixel('Lead', {
+            content_name: cart.mainProduct?.title || 'Protocolo Elite',
+            value: cart.mainProduct?.price || 0,
+            currency: 'BRL'
+        }, leadEventId);
+
+        // CAPI server-side — getCurrentCustomerData() já coleta todos os campos
+        // preenchidos até o momento (nome, telefone, CPF etc.)
+        trackCAPI('Lead', leadEventId, {
+            value: cart.mainProduct?.price || 0,
+            currency: 'BRL',
+            contentIds: [cart.mainProduct?.id || 'ebook-doencas'],
+            contentName: cart.mainProduct?.title || 'Protocolo Elite',
+        });
+
+        console.log('📧 [LEAD] E-mail capturado via CAPI:', email.replace(/(.{2}).*(@.*)/, '$1***$2'));
+    }
+
+    // Attach listeners — usa evento delegado para funcionar mesmo se
+    // os campos forem renderizados depois do DOMContentLoaded
+    document.addEventListener('focusout', function(e) {
+        if (e.target && EMAIL_IDS.includes(e.target.id)) {
+            onEmailBlur(e);
+        }
+    });
+})();
 
