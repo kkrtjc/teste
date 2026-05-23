@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Search, GitBranch, Filter, MoreVertical, Users } from 'lucide-react';
+import { Search, GitBranch, Filter, MoreVertical, Users, X, CheckCircle } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
-import { SearchableSelect } from '../components/SearchableSelect';
 
 
 export function Genetics() {
@@ -22,6 +21,7 @@ export function Genetics() {
   const [femeaId, setFemeaId] = useState('');
   const [objetivo, setObjetivo] = useState('Melhoramento Genético');
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
+  const [baiaCasal, setBaiaCasal] = useState('');
 
   const handleSaveCouple = () => {
     if (!machoId || !femeaId) return;
@@ -29,22 +29,23 @@ export function Genetics() {
       id: Date.now().toString(),
       machoId,
       femeaId,
-      objetivo,
+      objetivo: baiaCasal ? `${objetivo} | Cruzador: ${baiaCasal}` : objetivo,
       dataInicio,
       status: 'Ativo'
     });
     setShowCoupleModal(false);
     setMachoId('');
     setFemeaId('');
+    setBaiaCasal('');
+    setObjetivo('Melhoramento Genético');
+    setDataInicio(new Date().toISOString().split('T')[0]);
   };
 
-  const machoOptions = birds.filter(b => b.sexo === 'Macho').map(b => ({ label: `${b.anilha} - ${b.nome || 'Sem nome'}`, value: b.id }));
-  const femeaOptions = birds.filter(b => b.sexo === 'Fêmea').map(b => ({ label: `${b.anilha} - ${b.nome || 'Sem nome'}`, value: b.id }));
-  const objetivoOptions = [
-    { label: 'Melhoramento Genético', value: 'Melhoramento Genético' },
-    { label: 'Corte (Pesados)', value: 'Corte (Pesados)' },
-    { label: 'Postura', value: 'Postura' }
-  ];
+  const machoOptions = birds.filter(b => b.sexo === 'Macho').map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }));
+  const femeaOptions = birds.filter(b => b.sexo === 'Fêmea').map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }));
+  
+  const selectedMacho = birds.find(b => b.id === machoId);
+  const selectedFemea = birds.find(b => b.id === femeaId);
 
   return (
     <div className="space-y-6 animate-fade-in h-full flex flex-col">
@@ -405,52 +406,119 @@ export function Genetics() {
       {/* Modal Novo Casal */}
       {showCoupleModal && (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
-            <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
-              <h3 className="font-bold text-lg text-white">Formar Novo Casal</h3>
-              <button onClick={() => setShowCoupleModal(false)} className="text-theme-text-muted hover:text-white p-2">✕</button>
-            </div>
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-auto max-h-[92dvh] rounded-t-2xl md:rounded-2xl">
             
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="space-y-1 relative z-40">
-                <label className="text-xs font-bold text-blue-400 uppercase">Selecione o Reprodutor (Macho)</label>
-                <SearchableSelect 
-                  options={machoOptions}
-                  value={machoId}
-                  onChange={setMachoId}
-                  placeholder="Pesquise o Reprodutor..."
-                />
+            {/* Header */}
+            <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="font-black text-lg text-white">Formar Novo Casal</h3>
+                <p className="text-xs text-theme-text-muted">Selecione o reprodutor e a matriz</p>
               </div>
+              <button onClick={() => setShowCoupleModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 overflow-y-auto flex-1 space-y-5 overscroll-contain">
               
-              <div className="space-y-1 relative z-30">
-                <label className="text-xs font-bold text-pink-400 uppercase">Selecione a Matriz (Fêmea)</label>
-                <SearchableSelect 
-                  options={femeaOptions}
-                  value={femeaId}
-                  onChange={setFemeaId}
-                  placeholder="Pesquise a Matriz..."
-                />
+              {/* Visual preview of the couple */}
+              {(machoId || femeaId) && (
+                <div className="flex items-center justify-center gap-4 p-4 bg-theme-base/50 rounded-xl border border-theme-border/50">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-12 h-12 rounded-full border-2 border-blue-500/50 bg-theme-base flex items-center justify-center overflow-hidden">
+                      {selectedMacho?.imagem ? <img src={selectedMacho.imagem} className="w-full h-full object-cover" /> : <span className="text-xl">🐓</span>}
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-400 truncate w-20 text-center">{selectedMacho?.anilha || '—'}</span>
+                  </div>
+                  <div className="text-theme-text-muted font-black text-lg">×</div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-12 h-12 rounded-full border-2 border-pink-500/50 bg-theme-base flex items-center justify-center overflow-hidden">
+                      {selectedFemea?.imagem ? <img src={selectedFemea.imagem} className="w-full h-full object-cover" /> : <span className="text-xl">🐔</span>}
+                    </div>
+                    <span className="text-[10px] font-bold text-pink-400 truncate w-20 text-center">{selectedFemea?.anilha || '—'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Macho */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-blue-400 uppercase tracking-wider">Reprodutor (Macho) *</label>
+                <select
+                  value={machoId}
+                  onChange={e => setMachoId(e.target.value)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-blue-400 outline-none transition-colors"
+                >
+                  <option value="">— Selecione o macho —</option>
+                  {machoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {machoOptions.length === 0 && <p className="text-[10px] text-orange-400">Nenhum macho cadastrado no plantel.</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 relative z-20">
+              {/* Femea */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-pink-400 uppercase tracking-wider">Matriz (Fêmea) *</label>
+                <select
+                  value={femeaId}
+                  onChange={e => setFemeaId(e.target.value)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-pink-400 outline-none transition-colors"
+                >
+                  <option value="">— Selecione a fêmea —</option>
+                  {femeaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {femeaOptions.length === 0 && <p className="text-[10px] text-orange-400">Nenhuma fêmea cadastrada no plantel.</p>}
+              </div>
+
+              {/* N° do Cruzador / Baia */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nº do Cruzador / Baia</label>
+                <input
+                  type="text"
+                  value={baiaCasal}
+                  onChange={e => setBaiaCasal(e.target.value)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                  placeholder="Ex: Cruzador 3, Baia C-07..."
+                />
+                <p className="text-[10px] text-theme-text-muted">Identifica onde este casal está alojado</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Objetivo da Cruza</label>
-                  <SearchableSelect 
-                    options={objetivoOptions}
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Objetivo</label>
+                  <select
                     value={objetivo}
-                    onChange={setObjetivo}
+                    onChange={e => setObjetivo(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                  >
+                    <option>Melhoramento Genético</option>
+                    <option>Corte (Pesados)</option>
+                    <option>Postura</option>
+                    <option>Competição</option>
+                    <option>Conservação de Linhagem</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Data de Início</label>
+                  <input
+                    type="date"
+                    value={dataInicio}
+                    onChange={e => setDataInicio(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white outline-none [color-scheme:dark] transition-colors"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Data de Início</label>
-                  <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white outline-none [color-scheme:dark]" />
-                </div>
               </div>
             </div>
 
-            <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50 relative z-10">
-              <button onClick={() => setShowCoupleModal(false)} className="px-5 py-2 text-theme-text-muted">Cancelar</button>
-              <button onClick={handleSaveCouple} className="btn-primary">Registrar Cruzamento</button>
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
+              <button onClick={() => setShowCoupleModal(false)} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">Cancelar</button>
+              <button
+                onClick={handleSaveCouple}
+                disabled={!machoId || !femeaId}
+                className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <CheckCircle size={16} /> Registrar Casal
+              </button>
             </div>
           </div>
         </div>
