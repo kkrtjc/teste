@@ -62,38 +62,54 @@ export function BirdProfileModal() {
           </div>
 
           <div className="p-6 pt-16 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-xs text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                  <Info size={14} /> Raça / Genética
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                  <Info size={12} /> Raça
                 </p>
-                <p className="text-white font-bold">{bird.raca}</p>
+                <p className="text-sm text-white font-bold truncate">{bird.raca}</p>
               </div>
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-xs text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                  <GitBranch size={14} /> Baia Atual
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                  <GitBranch size={12} /> Baia
                 </p>
-                <p className="text-theme-accent font-mono font-bold">{bird.baia}</p>
+                <p className="text-sm text-theme-accent font-mono font-bold truncate">{bird.baia}</p>
               </div>
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-xs text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                  <Activity size={14} /> Status
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                  <Activity size={12} /> Status
                 </p>
-                <p className="text-green-400 font-bold">{bird.status}</p>
+                <p className="text-sm text-green-400 font-bold truncate">{bird.status}</p>
               </div>
+              {bird.dataNascimento && (
+                <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                  <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                    <Info size={12} /> Nascimento
+                  </p>
+                  <p className="text-sm text-white font-bold">{bird.dataNascimento.split('-').reverse().join('/')}</p>
+                </div>
+              )}
+              {bird.peso && (
+                <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                  <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                    <Activity size={12} /> Peso
+                  </p>
+                  <p className="text-sm text-white font-bold">{bird.peso}</p>
+                </div>
+              )}
             </div>
 
             {bird.vacinas && (
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-xs text-theme-text-muted font-bold uppercase mb-2 flex items-center gap-2">
-                  <Syringe size={14} className="text-blue-400" /> Vacinas e Imunizações Aplicadas
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-2 flex items-center gap-2">
+                  <Syringe size={12} className="text-blue-400" /> Vacinas Aplicadas
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {bird.vacinas.split(',').map((vacina, i) => {
                     const trimmed = vacina.trim();
                     if (!trimmed) return null;
                     return (
-                      <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-lg text-sm font-medium">
+                      <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-lg text-xs font-medium">
                         {trimmed}
                       </span>
                     );
@@ -104,15 +120,24 @@ export function BirdProfileModal() {
 
             <div className="border border-theme-border rounded-xl overflow-hidden">
               <div className="bg-theme-base p-4 border-b border-theme-border">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <GitBranch size={18} className="text-theme-primary" /> Informações de Pedigree
+                <h4 className="font-bold text-white flex items-center gap-2 text-sm">
+                  <GitBranch size={16} className="text-theme-primary" /> Ascendência / Pedigree
                 </h4>
               </div>
-              <div className="p-6 text-center text-theme-text-muted">
-                <p className="text-sm">Árvore genealógica (Pai e Mãe) não vinculada ou dados importados.</p>
-                <button className="mt-4 px-4 py-2 border border-theme-border rounded-lg text-sm hover:border-theme-primary hover:text-theme-primary transition-colors">
-                  Vincular Ascendentes
-                </button>
+              <div className="p-6 text-center text-theme-text-muted bg-theme-surface">
+                {bird.origem === 'Cruzamento' ? (
+                  <div className="space-y-2">
+                    <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-md text-xs font-bold uppercase border border-purple-500/30">Nascido de Cruzamento Local</span>
+                    <p className="text-sm text-white mt-4 font-medium">Os pais foram preenchidos automaticamente na ficha da ave pelo registro do casal.</p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm">{bird.origem === 'Externo' ? 'Ave externa.' : 'Árvore genealógica'} (Pai e Mãe) não vinculada no módulo de casais.</p>
+                    <button onClick={() => openAddBirdModal('', bird.id)} className="mt-4 px-4 py-2 border border-theme-border rounded-lg text-xs font-bold uppercase hover:border-theme-primary hover:text-theme-primary transition-colors">
+                      Vincular / Editar Pai e Mãe
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

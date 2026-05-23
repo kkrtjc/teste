@@ -20,11 +20,14 @@ export type Bird = {
   status: string;
   imagem?: string;
   vacinas?: string;
-  origem?: 'Criatório' | 'Externo';
+  origem?: 'Criatório' | 'Externo' | 'Cruzamento';
+  casalId?: string;
   paiId?: string;
   maeId?: string;
   isPaiExterno?: boolean;
   isMaeExterno?: boolean;
+  dataNascimento?: string;
+  peso?: string;
 };
 
 export type Couple = {

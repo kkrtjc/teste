@@ -4,7 +4,7 @@ import { useAppContext } from '../../lib/AppContext';
 import { SearchableSelect } from '../SearchableSelect';
 
 export function AddBirdModal() {
-  const { isAddBirdModalOpen, closeModals, breeds, addBird, editBird, preSelectedBreedForNewBird, birds, birdToEditId } = useAppContext();
+  const { isAddBirdModalOpen, closeModals, breeds, addBird, editBird, preSelectedBreedForNewBird, birds, birdToEditId, couples } = useAppContext();
 
   const [newBirdAnilha, setNewBirdAnilha] = useState('');
   const [newBirdName, setNewBirdName] = useState('');
@@ -13,10 +13,13 @@ export function AddBirdModal() {
   const [newBirdBaia, setNewBirdBaia] = useState('');
   const [newBirdStatus, setNewBirdStatus] = useState('Reprodutor');
   const [newBirdVacinas, setNewBirdVacinas] = useState('');
+  const [newBirdDataNascimento, setNewBirdDataNascimento] = useState('');
+  const [newBirdPeso, setNewBirdPeso] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // New states for Origins
-  const [birdOrigin, setBirdOrigin] = useState<'Criatório' | 'Externo'>('Criatório');
+  const [birdOrigin, setBirdOrigin] = useState<'Criatório' | 'Externo' | 'Cruzamento'>('Criatório');
+  const [casalId, setCasalId] = useState('');
   
   const [isPaiExterno, setIsPaiExterno] = useState(false);
   const [paiId, setPaiId] = useState('');
@@ -41,7 +44,10 @@ export function AddBirdModal() {
           setNewBirdBaia(bird.baia);
           setNewBirdStatus(bird.status);
           setNewBirdVacinas(bird.vacinas || '');
+          setNewBirdDataNascimento(bird.dataNascimento || '');
+          setNewBirdPeso(bird.peso || '');
           setBirdOrigin(bird.origem || 'Criatório');
+          setCasalId(bird.casalId || '');
           setPreviewImage(bird.imagem || null);
           
           setIsPaiExterno(bird.isPaiExterno || false);
@@ -61,7 +67,10 @@ export function AddBirdModal() {
         setNewBirdBaia('');
         setNewBirdStatus('Reprodutor');
         setNewBirdVacinas('');
+        setNewBirdDataNascimento('');
+        setNewBirdPeso('');
         setBirdOrigin('Criatório');
+        setCasalId('');
         setPreviewImage(null);
         setIsPaiExterno(false);
         setPaiId('');
@@ -72,6 +81,19 @@ export function AddBirdModal() {
       }
     }
   }, [isAddBirdModalOpen, birdToEditId, preSelectedBreedForNewBird, breeds, birds]);
+
+  // Effect to auto-fill parents when a Couple is selected
+  useEffect(() => {
+    if (birdOrigin === 'Cruzamento' && casalId) {
+      const casal = couples.find(c => c.id === casalId);
+      if (casal) {
+        setIsPaiExterno(false);
+        setPaiId(casal.machoId);
+        setIsMaeExterno(false);
+        setMaeId(casal.femeaId);
+      }
+    }
+  }, [casalId, birdOrigin, couples]);
 
   if (!isAddBirdModalOpen) return null;
 
@@ -95,10 +117,13 @@ export function AddBirdModal() {
       status: newBirdStatus,
       vacinas: newBirdVacinas,
       origem: birdOrigin,
+      casalId: birdOrigin === 'Cruzamento' ? casalId : undefined,
       isPaiExterno,
       paiId: isPaiExterno ? paiNameExterno : paiId,
       isMaeExterno,
       maeId: isMaeExterno ? maeNameExterno : maeId,
+      dataNascimento: newBirdDataNascimento,
+      peso: newBirdPeso,
       imagem: previewImage || undefined
     };
 
@@ -134,6 +159,18 @@ export function AddBirdModal() {
   const maeOptions = [
     { label: 'Desconhecida', value: '' },
     ...birds.filter(b => b.sexo === 'Fêmea' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha} - ${b.nome}`, value: b.id }))
+  ];
+
+  const casalOptions = [
+    { label: 'Nenhum casal selecionado', value: '' },
+    ...couples.map(c => {
+      const macho = birds.find(b => b.id === c.machoId);
+      const femea = birds.find(b => b.id === c.femeaId);
+      return { 
+        label: `${c.dataInicio} | 🐓 ${macho?.anilha} x 🐔 ${femea?.anilha}`, 
+        value: c.id 
+      };
+    })
   ];
 
   return (
@@ -214,9 +251,13 @@ export function AddBirdModal() {
                   className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${birdOrigin === 'Criatório' ? 'bg-theme-primary/20 border-theme-primary text-theme-primary' : 'bg-theme-base border-theme-border text-theme-text-muted'}`}
                 >Nascida Aqui</button>
                 <button 
+                  onClick={() => setBirdOrigin('Cruzamento')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${birdOrigin === 'Cruzamento' ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-theme-base border-theme-border text-theme-text-muted'}`}
+                >De Cruzamento</button>
+                <button 
                   onClick={() => setBirdOrigin('Externo')}
                   className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${birdOrigin === 'Externo' ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-theme-base border-theme-border text-theme-text-muted'}`}
-                >Comprada / Externa</button>
+                >Externa</button>
               </div>
             </div>
             
@@ -224,6 +265,17 @@ export function AddBirdModal() {
               <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-200 text-sm">
                 <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={16} />
                 <p><strong>Aviso de Quarentena:</strong> Como esta ave veio de fora, mantenha-a isolada do plantel principal por pelo menos 30 a 40 dias para evitar a introdução de doenças.</p>
+              </div>
+            )}
+            {birdOrigin === 'Cruzamento' && (
+              <div className="space-y-2 pt-2 relative z-[60]">
+                <label className="text-xs font-bold text-theme-text-muted uppercase">Qual casal gerou esta ave?</label>
+                <SearchableSelect 
+                  options={casalOptions}
+                  value={casalId}
+                  onChange={setCasalId}
+                  placeholder="Selecione o Casal de Origem..."
+                />
               </div>
             )}
           </div>
@@ -281,6 +333,17 @@ export function AddBirdModal() {
                 value={newBirdStatus}
                 onChange={setNewBirdStatus}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 relative z-10">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase">Data de Nascimento / Idade</label>
+              <input type="date" value={newBirdDataNascimento} onChange={e => setNewBirdDataNascimento(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase">Peso (kg/g)</label>
+              <input type="text" value={newBirdPeso} onChange={e => setNewBirdPeso(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: 3.2 kg" />
             </div>
           </div>
 
