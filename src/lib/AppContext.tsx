@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import localforage from 'localforage';
 
 export type Breed = {
   id: string;
@@ -58,6 +59,7 @@ export type MeatLot = {
 };
 
 type AppContextType = {
+  isReady: boolean;
   breeds: Breed[];
   addBreed: (breed: Breed) => void;
   editBreed: (id: string, updatedBreed: Partial<Breed>) => void;
@@ -87,52 +89,72 @@ type AppContextType = {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // Initialize state from localStorage or default to empty
-  const [breeds, setBreeds] = useState<Breed[]>(() => {
-    const saved = localStorage.getItem('@mura-manager:breeds');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [birds, setBirds] = useState<Bird[]>(() => {
-    const saved = localStorage.getItem('@mura-manager:birds');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [isReady, setIsReady] = useState(false);
 
-  const [couples, setCouples] = useState<Couple[]>(() => {
-    const saved = localStorage.getItem('@mura-manager:couples');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [breeds, setBreeds] = useState<Breed[]>([]);
+  const [birds, setBirds] = useState<Bird[]>([]);
+  const [couples, setCouples] = useState<Couple[]>([]);
+  const [eggLots, setEggLots] = useState<EggLot[]>([]);
+  const [meatLots, setMeatLots] = useState<MeatLot[]>([]);
 
-  const [eggLots, setEggLots] = useState<EggLot[]>(() => {
-    const saved = localStorage.getItem('@mura-manager:egglots');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [meatLots, setMeatLots] = useState<MeatLot[]>(() => {
-    const saved = localStorage.getItem('@mura-manager:meatlots');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Save to localStorage whenever state changes
+  // Load data from localforage on mount
   useEffect(() => {
-    localStorage.setItem('@mura-manager:breeds', JSON.stringify(breeds));
-  }, [breeds]);
+    async function loadData() {
+      const storageItems = [
+        { key: '@mura-manager:breeds', setter: setBreeds },
+        { key: '@mura-manager:birds', setter: setBirds },
+        { key: '@mura-manager:couples', setter: setCouples },
+        { key: '@mura-manager:egglots', setter: setEggLots },
+        { key: '@mura-manager:meatlots', setter: setMeatLots }
+      ];
+
+      for (const item of storageItems) {
+        try {
+          let data: any = await localforage.getItem(item.key);
+          
+          if (!data) {
+            // Migration fallback: se não tem no IndexedDB, puxa do localStorage antigo
+            const oldData = localStorage.getItem(item.key);
+            if (oldData) {
+              data = JSON.parse(oldData);
+              await localforage.setItem(item.key, data);
+              localStorage.removeItem(item.key); // Limpa o velho limite de 5MB
+            }
+          }
+          
+          if (data) {
+            item.setter(data);
+          }
+        } catch (error) {
+          console.error(`Erro ao carregar ${item.key}:`, error);
+        }
+      }
+      setIsReady(true);
+    }
+    
+    loadData();
+  }, []);
+
+  // Save to localforage whenever state changes (only if loaded)
+  useEffect(() => {
+    if (isReady) localforage.setItem('@mura-manager:breeds', breeds);
+  }, [breeds, isReady]);
 
   useEffect(() => {
-    localStorage.setItem('@mura-manager:birds', JSON.stringify(birds));
-  }, [birds]);
+    if (isReady) localforage.setItem('@mura-manager:birds', birds);
+  }, [birds, isReady]);
 
   useEffect(() => {
-    localStorage.setItem('@mura-manager:couples', JSON.stringify(couples));
-  }, [couples]);
+    if (isReady) localforage.setItem('@mura-manager:couples', couples);
+  }, [couples, isReady]);
 
   useEffect(() => {
-    localStorage.setItem('@mura-manager:egglots', JSON.stringify(eggLots));
-  }, [eggLots]);
+    if (isReady) localforage.setItem('@mura-manager:egglots', eggLots);
+  }, [eggLots, isReady]);
 
   useEffect(() => {
-    localStorage.setItem('@mura-manager:meatlots', JSON.stringify(meatLots));
-  }, [meatLots]);
+    if (isReady) localforage.setItem('@mura-manager:meatlots', meatLots);
+  }, [meatLots, isReady]);
 
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
@@ -185,6 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{ 
+      isReady,
       breeds, addBreed, editBreed,
       birds, addBird, editBird,
       couples, addCouple, editCouple,

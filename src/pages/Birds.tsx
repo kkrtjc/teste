@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Plus, Edit2, MoreVertical, Camera } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { compressImage } from '../lib/imageCompression';
 
 export function Birds() {
   const { breeds, addBreed, editBreed, birds, openAddBirdModal, openBirdProfile } = useAppContext();
@@ -16,14 +17,15 @@ export function Birds() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file, 500, 500, 0.6);
+        setPreviewImage(compressedBase64);
+      } catch (err) {
+        console.error("Erro ao comprimir imagem da raça", err);
+      }
     }
   };
 
