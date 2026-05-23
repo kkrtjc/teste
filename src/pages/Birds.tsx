@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Edit2, MoreVertical, Camera } from 'lucide-react';
+import { Plus, Edit2, MoreVertical, Camera, Search } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
@@ -8,6 +8,8 @@ export function Birds() {
   const [activeBreed, setActiveBreed] = useState<string>('');
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
+  const [breedSearch, setBreedSearch] = useState('');
+  const [birdSearch, setBirdSearch] = useState('');
   
   // Form states for Breed
   const [newBreedName, setNewBreedName] = useState('');
@@ -78,32 +80,59 @@ export function Birds() {
     setShowNewBreedModal(false);
   };
 
+  const filteredBreeds = breeds.filter(b =>
+    b.nome.toLowerCase().includes(breedSearch.toLowerCase())
+  );
+
   const currentBirds = birds.filter(b => b.raca === activeBreed);
+  const filteredBirds = currentBirds.filter(b =>
+    b.anilha.toLowerCase().includes(birdSearch.toLowerCase()) ||
+    (b.nome || '').toLowerCase().includes(birdSearch.toLowerCase()) ||
+    (b.baia || '').toLowerCase().includes(birdSearch.toLowerCase())
+  );
   const activeBreedObj = breeds.find(b => b.nome === activeBreed);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in h-full flex flex-col">
       {!activeBreed ? (
         <>
+          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white">Raças & Linhagens</h2>
-              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">Selecione uma raça para visualizar seu plantel.</p>
+              <h2 className="text-xl sm:text-2xl font-black text-white">Raças &amp; Linhagens</h2>
+              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">{breeds.length} raça{breeds.length !== 1 ? 's' : ''} cadastrada{breeds.length !== 1 ? 's' : ''}</p>
             </div>
-            
             <button onClick={() => openBreedModal()} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
               <Plus size={18} /> Cadastrar Raça
             </button>
           </div>
+
+          {/* Search bar for breeds */}
+          {breeds.length > 0 && (
+            <div className="relative shrink-0">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
+              <input
+                type="text"
+                placeholder="Pesquisar raça..."
+                value={breedSearch}
+                onChange={e => setBreedSearch(e.target.value)}
+                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-sm"
+              />
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto pb-4">
             {breeds.length === 0 ? (
               <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
                 Nenhuma raça cadastrada. Clique no botão acima para começar.
               </div>
+            ) : filteredBreeds.length === 0 ? (
+              <div className="text-center p-10 text-theme-text-muted text-sm">
+                Nenhuma raça encontrada para "{breedSearch}".
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {breeds.map(breed => (
+                {filteredBreeds.map(breed => (
                   <div 
                     key={breed.id}
                     onClick={() => setActiveBreed(breed.nome)}
@@ -150,22 +179,33 @@ export function Birds() {
         </>
       ) : (
         <>
+          {/* Breed header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <button onClick={() => setActiveBreed('')} className="text-sm text-theme-text-muted hover:text-white flex items-center gap-2 mb-2 transition-colors">
+              <button
+                onClick={() => { setActiveBreed(''); setBirdSearch(''); }}
+                className="text-sm text-theme-text-muted hover:text-white flex items-center gap-2 mb-2 transition-colors"
+              >
                 ← Voltar para Raças
               </button>
-              <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                Plantel de {activeBreedObj?.nome}
-              </h2>
-              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">{activeBreedObj?.descricao}</p>
+              <h2 className="text-xl sm:text-2xl font-black text-white">{activeBreedObj?.nome}</h2>
+              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">{currentBirds.length} ave{currentBirds.length !== 1 ? 's' : ''} nesta raça</p>
             </div>
-            
-            <div className="flex gap-3">
-              <button onClick={() => openAddBirdModal(activeBreed)} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
-                <Plus size={18} /> Cadastrar Ave
-              </button>
-            </div>
+            <button onClick={() => openAddBirdModal(activeBreed)} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
+              <Plus size={18} /> Cadastrar Ave
+            </button>
+          </div>
+
+          {/* Search bar inside breed */}
+          <div className="relative shrink-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
+            <input
+              type="text"
+              placeholder="Pesquisar por anilha, nome ou baia..."
+              value={birdSearch}
+              onChange={e => setBirdSearch(e.target.value)}
+              className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-sm"
+            />
           </div>
 
           <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
@@ -178,12 +218,12 @@ export function Birds() {
                     <th className="p-4 font-bold">Anilha / Nome</th>
                     <th className="p-4 font-bold">Sexo</th>
                     <th className="p-4 font-bold">Baia</th>
-                    <th className="p-4 font-bold">Categoria</th>
+                    <th className="p-4 font-bold">Status</th>
                     <th className="p-4 font-bold text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-theme-border/50 text-sm">
-                  {currentBirds.map(bird => (
+                  {filteredBirds.map(bird => (
                     <tr key={bird.id} onClick={() => openBirdProfile(bird.id)} className="hover:bg-white/5 transition-colors cursor-pointer group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
@@ -210,10 +250,10 @@ export function Birds() {
                       </td>
                     </tr>
                   ))}
-                  {currentBirds.length === 0 && (
+                  {filteredBirds.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-theme-text-muted">
-                        {breeds.length === 0 ? 'Nenhuma raça foi criada ainda.' : 'Nenhuma ave vinculada a esta raça no momento.'}
+                        {birdSearch ? `Nenhuma ave encontrada para "${birdSearch}".` : 'Nenhuma ave vinculada a esta raça.'}
                       </td>
                     </tr>
                   )}
@@ -222,8 +262,8 @@ export function Birds() {
             </div>
 
             {/* Mobile Cards */}
-            <div className="md:hidden flex flex-col divide-y divide-theme-border/50">
-              {currentBirds.map(bird => (
+              <div className="md:hidden flex flex-col divide-y divide-theme-border/50">
+                {filteredBirds.map(bird => (
                 <div key={bird.id} onClick={() => openBirdProfile(bird.id)} className="p-4 hover:bg-white/5 transition-colors cursor-pointer active:bg-theme-primary/10">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-xl overflow-hidden shrink-0 shadow-inner">
@@ -247,11 +287,11 @@ export function Birds() {
                   </div>
                 </div>
               ))}
-              {currentBirds.length === 0 && (
-                <div className="p-8 text-center text-theme-text-muted text-sm">
-                  {breeds.length === 0 ? 'Nenhuma raça criada.' : 'Nenhuma ave vinculada.'}
-                </div>
-              )}
+                {filteredBirds.length === 0 && (
+                  <div className="p-8 text-center text-theme-text-muted text-sm">
+                    {birdSearch ? `Nenhuma ave encontrada para "${birdSearch}".` : 'Nenhuma ave vinculada.'}
+                  </div>
+                )}
             </div>
           </div>
         </div>
