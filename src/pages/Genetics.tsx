@@ -406,7 +406,7 @@ export function Genetics() {
       {/* Modal Novo Casal */}
       {showCoupleModal && (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-auto max-h-[92dvh] rounded-t-2xl md:rounded-2xl">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[92vh] rounded-t-2xl md:rounded-2xl">
             
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">

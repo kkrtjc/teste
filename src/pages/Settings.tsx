@@ -4,15 +4,21 @@ import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
 export function Settings() {
-  const { farmSettings, updateFarmSettings } = useAppContext();
+  const { 
+    farmSettings, updateFarmSettings,
+    breeds, birds, couples, eggLots, meatLots,
+    importBackup
+  } = useAppContext();
   
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email);
   const [phone, setPhone] = useState(farmSettings.phone);
   const [previewImage, setPreviewImage] = useState<string>(farmSettings.photo);
   const [isSaved, setIsSaved] = useState(false);
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state if farmSettings changes externally
   useEffect(() => {
@@ -32,6 +38,59 @@ export function Settings() {
         console.error("Erro ao comprimir imagem de perfil", err);
       }
     }
+  };
+
+  const handleExportBackup = () => {
+    const data = {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      breeds,
+      birds,
+      couples,
+      egglots: eggLots,
+      meatlots: meatLots,
+      settings: farmSettings
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mura-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        
+        if (!parsed.breeds && !parsed.birds) {
+          throw new Error('Formato de backup inválido');
+        }
+
+        await importBackup(parsed);
+        setImportStatus('success');
+        setTimeout(() => setImportStatus('idle'), 4000);
+      } catch (err) {
+        console.error(err);
+        setImportStatus('error');
+        setTimeout(() => setImportStatus('idle'), 4000);
+      }
+    };
+    reader.onerror = () => {
+      setImportStatus('error');
+      setTimeout(() => setImportStatus('idle'), 4000);
+    };
+    reader.readAsText(file);
   };
 
   const handleSave = () => {
@@ -138,6 +197,69 @@ export function Settings() {
           </button>
         </div>
 
+      </div>
+
+      {/* Backup and Sync Card */}
+      <div className="premium-card p-6 border border-theme-border/50 space-y-6 mt-6">
+        <div>
+          <h3 className="text-lg font-black text-white flex items-center gap-2">
+            📂 Backup &amp; Sincronização Local
+          </h3>
+          <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
+            Como o aplicativo funciona offline no seu aparelho, seus dados ficam guardados no navegador do seu celular ou computador. Se você limpar o histórico do navegador ou usar abas anônimas, os dados podem ser apagados pelo sistema do celular.
+          </p>
+        </div>
+
+        <div className="bg-theme-base/30 p-4 rounded-xl border border-theme-border flex flex-col gap-3">
+          <p className="text-xs text-amber-400 font-bold leading-relaxed">
+            💡 Dica: Recomendamos exportar um backup regularmente e salvar o arquivo no seu WhatsApp ou Google Drive para nunca perder suas aves e raças!
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          {/* Export button */}
+          <button
+            onClick={handleExportBackup}
+            className="flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-sm font-bold transition-all active:scale-95"
+          >
+            📥 Exportar Backup (Baixar Dados)
+          </button>
+
+          {/* Import button */}
+          <div className="relative">
+            <input
+              type="file"
+              accept=".json"
+              ref={importFileInputRef}
+              onChange={handleImportBackup}
+              className="hidden"
+            />
+            <button
+              onClick={() => importFileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-sm font-bold transition-all active:scale-95"
+            >
+              📤 Importar Backup (Restaurar)
+            </button>
+          </div>
+        </div>
+
+        {importStatus === 'success' && (
+          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold text-center animate-pulse">
+            ✅ Dados restaurados com sucesso! Seu criatório foi atualizado.
+          </div>
+        )}
+
+        {importStatus === 'error' && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold text-center animate-pulse">
+            ❌ Falha ao importar. Verifique se o arquivo de backup é válido.
+          </div>
+        )}
+
+        <div className="border-t border-theme-border/30 pt-4">
+          <p className="text-[10px] text-theme-text-muted leading-relaxed">
+            ℹ️ <strong>Sincronização em Nuvem:</strong> Se você deseja criar uma conta com e-mail/senha para sincronizar seus dados automaticamente na nuvem e acessá-los de qualquer dispositivo sem precisar de arquivos de backup, nos informe para que possamos implementar o banco de dados online na próxima etapa!
+          </p>
+        </div>
       </div>
     </div>
   );

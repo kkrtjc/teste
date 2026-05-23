@@ -85,6 +85,7 @@ type AppContextType = {
   
   farmSettings: FarmSettings;
   updateFarmSettings: (settings: Partial<FarmSettings>) => void;
+  importBackup: (backupData: any) => Promise<void>;
 
   // Modals state
   isAddBirdModalOpen: boolean;
@@ -153,64 +154,121 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadData();
   }, []);
 
-  // Save to localforage whenever state changes (only if loaded)
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:breeds', breeds);
-  }, [breeds, isReady]);
-
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:birds', birds);
-  }, [birds, isReady]);
-
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:couples', couples);
-  }, [couples, isReady]);
-
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:egglots', eggLots);
-  }, [eggLots, isReady]);
-
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:meatlots', meatLots);
-  }, [meatLots, isReady]);
-
-  useEffect(() => {
-    if (isReady) localforage.setItem('@mura-manager:settings', farmSettings);
-  }, [farmSettings, isReady]);
-
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
   const [preSelectedBreedForNewBird, setPreSelectedBreedForNewBird] = useState('');
   const [birdToEditId, setBirdToEditId] = useState<string | null>(null);
   const [selectedBirdProfileId, setSelectedBirdProfileId] = useState<string | null>(null);
 
-  const addBreed = (breed: Breed) => setBreeds(prev => [...prev, breed]);
+  const addBreed = (breed: Breed) => {
+    setBreeds(prev => {
+      const next = [...prev, breed];
+      localforage.setItem('@mura-manager:breeds', next).catch(err => console.error(err));
+      return next;
+    });
+  };
   const editBreed = (id: string, updatedBreed: Partial<Breed>) => {
-    setBreeds(prev => prev.map(b => b.id === id ? { ...b, ...updatedBreed } : b));
+    setBreeds(prev => {
+      const next = prev.map(b => b.id === id ? { ...b, ...updatedBreed } : b);
+      localforage.setItem('@mura-manager:breeds', next).catch(err => console.error(err));
+      return next;
+    });
   };
 
-  const addBird = (bird: Bird) => setBirds(prev => [...prev, bird]);
+  const addBird = (bird: Bird) => {
+    setBirds(prev => {
+      const next = [...prev, bird];
+      localforage.setItem('@mura-manager:birds', next).catch(err => console.error(err));
+      return next;
+    });
+  };
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
-    setBirds(prev => prev.map(b => b.id === id ? { ...b, ...updatedBird } : b));
+    setBirds(prev => {
+      const next = prev.map(b => b.id === id ? { ...b, ...updatedBird } : b);
+      localforage.setItem('@mura-manager:birds', next).catch(err => console.error(err));
+      return next;
+    });
   };
 
-  const addCouple = (couple: Couple) => setCouples(prev => [...prev, couple]);
+  const addCouple = (couple: Couple) => {
+    setCouples(prev => {
+      const next = [...prev, couple];
+      localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
+      return next;
+    });
+  };
   const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
-    setCouples(prev => prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c));
+    setCouples(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c);
+      localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
+      return next;
+    });
   };
 
-  const addEggLot = (lot: EggLot) => setEggLots(prev => [...prev, lot]);
+  const addEggLot = (lot: EggLot) => {
+    setEggLots(prev => {
+      const next = [...prev, lot];
+      localforage.setItem('@mura-manager:egglots', next).catch(err => console.error(err));
+      return next;
+    });
+  };
   const editEggLot = (id: string, updatedLot: Partial<EggLot>) => {
-    setEggLots(prev => prev.map(l => l.id === id ? { ...l, ...updatedLot } : l));
+    setEggLots(prev => {
+      const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
+      localforage.setItem('@mura-manager:egglots', next).catch(err => console.error(err));
+      return next;
+    });
   };
 
-  const addMeatLot = (lot: MeatLot) => setMeatLots(prev => [...prev, lot]);
+  const addMeatLot = (lot: MeatLot) => {
+    setMeatLots(prev => {
+      const next = [...prev, lot];
+      localforage.setItem('@mura-manager:meatlots', next).catch(err => console.error(err));
+      return next;
+    });
+  };
   const editMeatLot = (id: string, updatedLot: Partial<MeatLot>) => {
-    setMeatLots(prev => prev.map(l => l.id === id ? { ...l, ...updatedLot } : l));
+    setMeatLots(prev => {
+      const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
+      localforage.setItem('@mura-manager:meatlots', next).catch(err => console.error(err));
+      return next;
+    });
   };
 
   const updateFarmSettings = (settings: Partial<FarmSettings>) => {
-    setFarmSettings(prev => ({ ...prev, ...settings }));
+    setFarmSettings(prev => {
+      const next = { ...prev, ...settings };
+      localforage.setItem('@mura-manager:settings', next).catch(err => console.error(err));
+      return next;
+    });
+  };
+
+  const importBackup = async (backupData: any) => {
+    if (!backupData) return;
+    if (backupData.breeds) {
+      setBreeds(backupData.breeds);
+      await localforage.setItem('@mura-manager:breeds', backupData.breeds);
+    }
+    if (backupData.birds) {
+      setBirds(backupData.birds);
+      await localforage.setItem('@mura-manager:birds', backupData.birds);
+    }
+    if (backupData.couples) {
+      setCouples(backupData.couples);
+      await localforage.setItem('@mura-manager:couples', backupData.couples);
+    }
+    if (backupData.egglots) {
+      setEggLots(backupData.egglots);
+      await localforage.setItem('@mura-manager:egglots', backupData.egglots);
+    }
+    if (backupData.meatlots) {
+      setMeatLots(backupData.meatlots);
+      await localforage.setItem('@mura-manager:meatlots', backupData.meatlots);
+    }
+    if (backupData.settings) {
+      setFarmSettings(backupData.settings);
+      await localforage.setItem('@mura-manager:settings', backupData.settings);
+    }
   };
 
   const openAddBirdModal = (breedName?: string, birdId?: string) => {
@@ -240,6 +298,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       eggLots, addEggLot, editEggLot,
       meatLots, addMeatLot, editMeatLot,
       farmSettings, updateFarmSettings,
+      importBackup,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
       openAddBirdModal, openBirdProfile, closeModals
     }}>

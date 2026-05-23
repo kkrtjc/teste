@@ -300,16 +300,16 @@ export function Birds() {
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
+            <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
               <h3 className="font-bold text-lg text-white">
                 {breedToEditId ? 'Editar Raça' : 'Cadastrar Nova Raça'}
               </h3>
               <button onClick={() => setShowNewBreedModal(false)} className="text-theme-text-muted hover:text-white">✕</button>
             </div>
             
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 overscroll-contain">
               <div className="flex gap-4 items-center mb-2">
                 <input 
                   type="file" 
@@ -376,7 +376,7 @@ export function Birds() {
               </div>
             </div>
 
-            <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50">
+            <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50 shrink-0">
               <button onClick={() => setShowNewBreedModal(false)} className="px-5 py-2 text-theme-text-muted">Cancelar</button>
               <button onClick={handleSaveBreed} className="btn-primary">
                 {breedToEditId ? 'Salvar Alterações' : 'Salvar Raça'}
