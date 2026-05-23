@@ -38,7 +38,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = "Sele
   return (
     <div ref={wrapperRef} className="relative w-full">
       <div 
-        className={`w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white flex justify-between items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-theme-primary'}`}
+        className={`w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white flex justify-between items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-theme-primary'}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <span className={selectedOption ? 'text-white' : 'text-theme-text-muted'}>
@@ -48,7 +48,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = "Sele
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-theme-surface border border-theme-border rounded-lg shadow-xl overflow-hidden animate-fade-in">
+        <div className="absolute z-[999] w-full mt-1 bg-[#0F172A] border border-theme-border rounded-lg shadow-[0_10px_40px_-10px_rgba(0,0,0,1)] overflow-hidden animate-fade-in drop-shadow-2xl">
           <div className="p-2 border-b border-theme-border bg-theme-base/50">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
@@ -58,7 +58,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = "Sele
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Pesquisar..."
-                className="w-full bg-theme-base border border-theme-border rounded-md py-1.5 pl-8 pr-3 text-xs text-white outline-none focus:border-theme-primary"
+                className="w-full bg-theme-base border border-theme-border rounded-md py-2 pl-8 pr-3 text-base md:text-sm text-white outline-none focus:border-theme-primary"
               />
             </div>
           </div>

@@ -27,6 +27,15 @@ export type Bird = {
   isMaeExterno?: boolean;
 };
 
+export type Couple = {
+  id: string;
+  machoId: string;
+  femeaId: string;
+  objetivo: string;
+  dataInicio: string;
+  status: 'Ativo' | 'Separado';
+};
+
 type AppContextType = {
   breeds: Breed[];
   addBreed: (breed: Breed) => void;
@@ -34,6 +43,9 @@ type AppContextType = {
   birds: Bird[];
   addBird: (bird: Bird) => void;
   editBird: (id: string, updatedBird: Partial<Bird>) => void;
+  couples: Couple[];
+  addCouple: (couple: Couple) => void;
+  editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
   
   // Modals state
   isAddBirdModalOpen: boolean;
@@ -59,6 +71,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [couples, setCouples] = useState<Couple[]>(() => {
+    const saved = localStorage.getItem('@mura-manager:couples');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Save to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('@mura-manager:breeds', JSON.stringify(breeds));
@@ -67,6 +84,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('@mura-manager:birds', JSON.stringify(birds));
   }, [birds]);
+
+  useEffect(() => {
+    localStorage.setItem('@mura-manager:couples', JSON.stringify(couples));
+  }, [couples]);
 
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
@@ -82,6 +103,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBird = (bird: Bird) => setBirds(prev => [...prev, bird]);
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
     setBirds(prev => prev.map(b => b.id === id ? { ...b, ...updatedBird } : b));
+  };
+
+  const addCouple = (couple: Couple) => setCouples(prev => [...prev, couple]);
+  const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
+    setCouples(prev => prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c));
   };
 
   const openAddBirdModal = (breedName?: string, birdId?: string) => {
@@ -106,6 +132,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{ 
       breeds, addBreed, editBreed,
       birds, addBird, editBird,
+      couples, addCouple, editCouple,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
       openAddBirdModal, openBirdProfile, closeModals
     }}>

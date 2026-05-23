@@ -146,7 +146,7 @@ export function AddBirdModal() {
           <button onClick={closeModals} className="text-theme-text-muted hover:text-white p-2">✕</button>
         </div>
         
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-6 overflow-y-auto flex-1 space-y-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
             <input 
               type="file" 
@@ -176,11 +176,11 @@ export function AddBirdModal() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-theme-text-muted uppercase">Anilha / ID *</label>
-                  <input type="text" value={newBirdAnilha} onChange={e => setNewBirdAnilha(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: BR-2024-001" />
+                  <input type="text" value={newBirdAnilha} onChange={e => setNewBirdAnilha(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: BR-2024-001" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-theme-text-muted uppercase">Nome (Opcional)</label>
-                  <input type="text" value={newBirdName} onChange={e => setNewBirdName(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Titan" />
+                  <input type="text" value={newBirdName} onChange={e => setNewBirdName(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Titan" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -238,7 +238,7 @@ export function AddBirdModal() {
                 </label>
               </div>
               {isPaiExterno ? (
-                <input type="text" value={paiNameExterno} onChange={e => setPaiNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Galo Campeão (Criatório X)" />
+                <input type="text" value={paiNameExterno} onChange={e => setPaiNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Galo Campeão (Criatório X)" />
               ) : (
                 <SearchableSelect 
                   options={paiOptions}
@@ -257,7 +257,7 @@ export function AddBirdModal() {
                 </label>
               </div>
               {isMaeExterno ? (
-                <input type="text" value={maeNameExterno} onChange={e => setMaeNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Matriz Importada" />
+                <input type="text" value={maeNameExterno} onChange={e => setMaeNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Matriz Importada" />
               ) : (
                 <SearchableSelect 
                   options={maeOptions}
@@ -272,7 +272,7 @@ export function AddBirdModal() {
           <div className="grid grid-cols-2 gap-4 relative z-20">
             <div className="space-y-1">
               <label className="text-xs font-bold text-theme-text-muted uppercase">Baia de Alojamento</label>
-              <input type="text" value={newBirdBaia} onChange={e => setNewBirdBaia(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: B-04" />
+              <input type="text" value={newBirdBaia} onChange={e => setNewBirdBaia(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: B-04" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-theme-text-muted uppercase">Status</label>
@@ -286,7 +286,7 @@ export function AddBirdModal() {
 
           <div className="space-y-2 relative z-10">
             <label className="text-xs font-bold text-theme-text-muted uppercase">Vacinas e Imunizações</label>
-            <input type="text" value={newBirdVacinas} onChange={e => setNewBirdVacinas(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Marek, Bouba Aviária, Newcastle..." />
+            <input type="text" value={newBirdVacinas} onChange={e => setNewBirdVacinas(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-base md:text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Marek, Bouba Aviária, Newcastle..." />
             
             {(!newBirdVacinas || newBirdVacinas.trim() === '') && (
               <div className="flex items-center gap-2 text-red-400 mt-2 text-xs bg-red-500/10 p-2 rounded border border-red-500/20">
