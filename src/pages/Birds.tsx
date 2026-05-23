@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Edit2, MoreVertical, Camera } from 'lucide-react';
+import { Plus, Edit2, MoreVertical, Camera } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 export function Birds() {
@@ -252,8 +252,9 @@ export function Birds() {
               )}
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </>
+    )}
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && (

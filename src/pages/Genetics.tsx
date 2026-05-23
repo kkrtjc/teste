@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, GitBranch, Filter, MoreVertical, Users } from 'lucide-react';
+import { Search, GitBranch, Filter, MoreVertical, Users } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { SearchableSelect } from '../components/SearchableSelect';
 

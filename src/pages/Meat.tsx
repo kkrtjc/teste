@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Plus, Scale, Beef, Timer, AlertCircle, LineChart } from 'lucide-react';
+import { Plus, Scale, Beef, Timer } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 export function Meat() {
   const { birds, meatLots, addMeatLot } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'lotes' | 'desempenho'>('lotes');
   const [showLotModal, setShowLotModal] = useState(false);
   
   // Modal states
@@ -62,8 +61,7 @@ export function Meat() {
       </div>
 
       {/* Conteúdo: Lotes */}
-      {activeTab === 'lotes' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {meatLots.map(lote => {
             const ageDays = calculateAgeInDays(lote.dataInicio);
             const statusClass = lote.status === 'Terminação' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : lote.status === 'Crescimento' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20';
@@ -125,7 +123,6 @@ export function Meat() {
             </div>
           )}
         </div>
-      )}
 
       {/* Modal Novo Lote */}
       {showLotModal && (

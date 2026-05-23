@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Egg, Thermometer, Droplets, CalendarDays, Plus, Activity, Timer } from 'lucide-react';
 
 import { useAppContext } from '../lib/AppContext';
@@ -10,7 +11,6 @@ export function Eggs() {
   const [showLotModal, setShowLotModal] = useState(false);
   const [baia, setBaia] = useState('');
   const [femeasSelecionadas, setFemeasSelecionadas] = useState<string[]>([]);
-  const [expectativa, setExpectativa] = useState(0);
 
   const femeasDisponiveis = birds.filter(b => b.sexo === 'Fêmea');
 
@@ -36,7 +36,6 @@ export function Eggs() {
     setShowLotModal(false);
     setBaia('');
     setFemeasSelecionadas([]);
-    setExpectativa(0);
   };
 
   return (
