@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-theme-base text-theme-text-main font-sans antialiased selection:bg-theme-primary selection:text-black;
+  }
+}
+
+@layer components {
+  .premium-card {
+    @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium backdrop-blur-xl transition-all duration-300;
+  }
+  
+  .glass-panel {
+    @apply bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-premium;
+  }
+  
+  .btn-primary {
+    @apply px-4 py-2 rounded-xl bg-theme-primary text-black font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 transition-all;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
