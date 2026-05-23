@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, GitBranch, Filter, MoreVertical, Users, X, CheckCircle } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -404,7 +405,7 @@ export function Genetics() {
       )}
 
       {/* Modal Novo Casal */}
-      {showCoupleModal && (
+      {showCoupleModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[92vh] rounded-t-2xl md:rounded-2xl">
             
@@ -521,7 +522,8 @@ export function Genetics() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Edit2, MoreVertical, Camera, Search } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
@@ -299,7 +300,7 @@ export function Birds() {
     )}
 
       {/* Modal Nova Raça / Editar */}
-      {showNewBreedModal && (
+      {showNewBreedModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
@@ -383,7 +384,8 @@ export function Birds() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

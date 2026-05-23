@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Egg, Thermometer, Droplets, CalendarDays, Plus, Activity, Timer } from 'lucide-react';
-
 import { useAppContext } from '../lib/AppContext';
 
 const INCUBATORS: any[] = [];
@@ -231,7 +231,7 @@ export function Eggs() {
       )}
 
       {/* Modal Novo Lote */}
-      {showLotModal && (
+      {showLotModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[90dvh] sm:h-auto sm:max-h-[85vh]">
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
@@ -293,7 +293,8 @@ export function Eggs() {
               <button onClick={handleSaveLot} disabled={!baia} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">Registrar Lote</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
