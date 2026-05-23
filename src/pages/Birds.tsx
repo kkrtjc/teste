@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Plus, Settings2, MoreVertical, Search, Camera, Edit2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, Edit2, MoreVertical, Camera } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 export function Birds() {

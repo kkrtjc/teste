@@ -3,7 +3,6 @@ import { Plus, Search, GitBranch, Filter, MoreVertical, Users } from 'lucide-rea
 import { useAppContext } from '../lib/AppContext';
 import { SearchableSelect } from '../components/SearchableSelect';
 
-const MOCK_COUPLES: any[] = [];
 
 export function Genetics() {
   const { birds, openAddBirdModal, openBirdProfile } = useAppContext();

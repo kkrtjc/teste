@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Egg, Thermometer, Droplets, CalendarDays, Plus, Activity, AlertTriangle } from 'lucide-react';
+import { Egg, Thermometer, Droplets, CalendarDays, Plus, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const EGG_PRODUCTION: any[] = [];

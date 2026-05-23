@@ -96,10 +96,14 @@ export function Layout() {
                 }`
               }
             >
-              <item.icon size={20} className={({ isActive }: any) => isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : ''} />
-              <span className="text-[9px] font-bold truncate px-1 max-w-full text-center">
-                {item.label.split(' ')[0]}
-              </span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={20} className={isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : ''} />
+                  <span className="text-[9px] font-bold truncate px-1 max-w-full text-center">
+                    {item.label.split(' ')[0]}
+                  </span>
+                </>
+              )}
             </NavLink>
           ))}
         </div>

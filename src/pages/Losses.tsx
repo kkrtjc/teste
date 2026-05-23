@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Skull, TrendingDown, AlertOctagon, Plus } from 'lucide-react';
+import { Skull, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const MOCK_LOSSES: any[] = [];
@@ -86,7 +86,7 @@ export function Losses() {
                 <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} width={80} />
                 <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }} itemStyle={{ color: '#fff' }} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
                 <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
-                  {REASON_DATA.map((entry, index) => (
+                  {REASON_DATA.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#EF4444' : '#F59E0B'} />
                   ))}
                 </Bar>
