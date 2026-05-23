@@ -4,7 +4,7 @@ import { useAppContext } from '../lib/AppContext';
 
 export function Birds() {
   const { breeds, addBreed, editBreed, birds, openAddBirdModal, openBirdProfile } = useAppContext();
-  const [activeBreed, setActiveBreed] = useState<string>(breeds[0]?.nome || '');
+  const [activeBreed, setActiveBreed] = useState<string>('');
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   
@@ -19,8 +19,11 @@ export function Birds() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewImage(url);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -68,7 +71,6 @@ export function Birds() {
         totalAves: 0,
         imagem: previewImage || undefined
       });
-      if (!activeBreed) setActiveBreed(newBreedName);
     }
     
     setShowNewBreedModal(false);
@@ -79,87 +81,97 @@ export function Birds() {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">Aves & Raças</h2>
-          <p className="text-xs sm:text-sm text-theme-text-muted mt-1">Gerenciamento de categorias raciais e linhagens.</p>
-        </div>
-        
-        <button onClick={() => openBreedModal()} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
-          <Plus size={18} /> Cadastrar Raça
-        </button>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 sm:gap-6 flex-1 h-full overflow-hidden min-h-0">
-        {/* Sidebar/TopBar de Raças */}
-        <div className="w-full md:w-72 flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pr-2 pb-2 md:pb-4 shrink-0 hide-scrollbar snap-x">
-          <div className="hidden md:block relative mb-2 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={16} />
-            <input type="text" placeholder="Buscar raça..." className="w-full bg-theme-surface border border-theme-border rounded-xl py-2 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none" />
-          </div>
-          
-          {breeds.length === 0 ? (
-            <div className="text-center p-6 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted text-sm shrink-0 w-full">
-              Nenhuma raça cadastrada.
-            </div>
-          ) : (
-            breeds.map(breed => (
-              <button 
-                key={breed.id}
-                onClick={() => setActiveBreed(breed.nome)}
-                className={`w-64 md:w-full shrink-0 text-left p-4 rounded-xl border transition-all relative overflow-hidden group snap-start ${
-                  activeBreed === breed.nome 
-                    ? 'bg-theme-primary/10 border-theme-primary shadow-[0_0_15px_rgba(245,158,11,0.1)]' 
-                    : 'bg-theme-surface border-theme-border hover:border-theme-primary/50'
-                }`}
-              >
-                {breed.imagem && (
-                  <div 
-                    className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity"
-                    style={{ backgroundImage: `url(${breed.imagem})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                  />
-                )}
-                <div className="relative z-10 flex justify-between items-start mb-2">
-                  <h3 className={`font-black text-base sm:text-lg ${activeBreed === breed.nome ? 'text-theme-primary' : 'text-white'}`}>{breed.nome}</h3>
-                  <span className="text-[10px] sm:text-xs bg-theme-base px-2 py-1 rounded-md text-theme-text-muted font-bold">
-                    {birds.filter(b => b.raca === breed.nome).length} aves
-                  </span>
-                </div>
-                <p className="relative z-10 text-xs text-theme-text-muted line-clamp-2 leading-relaxed hidden sm:block">{breed.descricao}</p>
-              </button>
-            ))
-          )}
-        </div>
-
-        {/* Conteúdo Principal */}
-        <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
-          <div className="p-4 sm:p-6 border-b border-theme-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-theme-surface/50 shrink-0">
+      {!activeBreed ? (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <h3 className="font-bold text-lg sm:text-xl text-white flex items-center gap-2">
-                <span className="text-theme-primary">{activeBreed || 'Nenhuma selecionada'}</span>
-              </h3>
-              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">Todos os animais vinculados.</p>
+              <h2 className="text-xl sm:text-2xl font-black text-white">Raças & Linhagens</h2>
+              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">Selecione uma raça para visualizar seu plantel.</p>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <button onClick={() => openAddBirdModal(activeBreed)} className="btn-primary py-2 text-sm flex-1 sm:flex-none justify-center flex items-center gap-2">
-                <Plus size={16} /> Cadastrar Ave
+            
+            <button onClick={() => openBreedModal()} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
+              <Plus size={18} /> Cadastrar Raça
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pb-4">
+            {breeds.length === 0 ? (
+              <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
+                Nenhuma raça cadastrada. Clique no botão acima para começar.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {breeds.map(breed => (
+                  <div 
+                    key={breed.id}
+                    onClick={() => setActiveBreed(breed.nome)}
+                    className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative"
+                  >
+                    <div className="h-40 bg-theme-surface-hover relative overflow-hidden">
+                      {breed.imagem ? (
+                        <img src={breed.imagem} alt={breed.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:scale-110 transition-transform duration-500">
+                          <span className="text-6xl">🐓</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-theme-base via-theme-base/50 to-transparent opacity-90" />
+                      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                        <h3 className="font-black text-xl text-white drop-shadow-md">{breed.nome}</h3>
+                        <span className="text-xs bg-theme-primary text-black px-2 py-1 rounded-md font-bold shadow-lg">
+                          {birds.filter(b => b.raca === breed.nome).length} aves
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 flex flex-col gap-3 flex-1">
+                      <p className="text-sm text-theme-text-muted line-clamp-2 leading-relaxed flex-1">{breed.descricao || 'Sem descrição'}</p>
+                      <div className="flex items-center justify-between mt-auto pt-4 border-t border-theme-border/50">
+                        <span className="text-[10px] font-bold text-theme-text-muted uppercase bg-theme-surface px-2 py-1 rounded">
+                          {breed.foco}
+                        </span>
+                        <div className="flex gap-2">
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); openBreedModal(breed.id); }} 
+                             className="p-1.5 text-theme-text-muted hover:text-white bg-theme-surface rounded-lg hover:border-theme-primary border border-transparent transition-colors"
+                             title="Editar Raça"
+                           >
+                             <Edit2 size={14} />
+                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+            <div>
+              <button onClick={() => setActiveBreed('')} className="text-sm text-theme-text-muted hover:text-white flex items-center gap-2 mb-2 transition-colors">
+                ← Voltar para Raças
               </button>
-              <button 
-                onClick={() => activeBreedObj && openBreedModal(activeBreedObj.id)} 
-                title="Editar Raça"
-                disabled={!activeBreedObj}
-                className="p-2 text-theme-text-muted hover:text-white bg-theme-base rounded-lg border border-theme-border disabled:opacity-50 flex items-center gap-2 text-sm shrink-0"
-              >
-                <Edit2 size={16} /> <span className="hidden sm:inline">Editar</span>
+              <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                Plantel de {activeBreedObj?.nome}
+              </h2>
+              <p className="text-xs sm:text-sm text-theme-text-muted mt-1">{activeBreedObj?.descricao}</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button onClick={() => openAddBirdModal(activeBreed)} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
+                <Plus size={18} /> Cadastrar Ave
               </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-0">
-            {/* Desktop Table */}
-            <div className="hidden md:block">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-theme-surface z-10 shadow-sm">
+          <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
+            <div className="flex-1 overflow-y-auto p-0">
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-theme-surface z-10 shadow-sm">
                   <tr className="border-b border-theme-border text-xs uppercase tracking-wider text-theme-text-muted">
                     <th className="p-4 font-bold">Anilha / Nome</th>
                     <th className="p-4 font-bold">Sexo</th>
@@ -240,8 +252,8 @@ export function Birds() {
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && (

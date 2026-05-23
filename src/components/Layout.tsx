@@ -8,7 +8,7 @@ export function Layout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
     { icon: Dna, label: 'Genética & Cruza', path: '/genetics' },
-    { icon: Beef, label: 'Produção de Corte', path: '/meat' },
+    { icon: Beef, label: 'Engorda', path: '/meat' },
     { icon: Egg, label: 'Postura & Chocadeira', path: '/eggs' },
     { icon: Activity, label: 'Saúde & Vacinas', path: '/health' },
     { icon: Skull, label: 'Baixas & Descartes', path: '/losses' },

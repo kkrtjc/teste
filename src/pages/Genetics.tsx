@@ -5,9 +5,17 @@ import { SearchableSelect } from '../components/SearchableSelect';
 
 
 export function Genetics() {
-  const { birds, couples, addCouple, openAddBirdModal, openBirdProfile } = useAppContext();
+  const { birds, couples, addCouple, openBirdProfile } = useAppContext();
   const [activeTab, setActiveTab] = useState<'plantel' | 'casais' | 'pedigree'>('plantel');
   const [showCoupleModal, setShowCoupleModal] = useState(false);
+
+  // Pagination and Search states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pedigree states
+  const [pedigreeSearch, setPedigreeSearch] = useState('');
+  const [selectedPedigreeBird, setSelectedPedigreeBird] = useState<string | null>(null);
 
   // Form states for Casal
   const [machoId, setMachoId] = useState('');
@@ -48,11 +56,6 @@ export function Genetics() {
         </div>
         
         <div className="flex gap-3">
-          {activeTab === 'plantel' && (
-            <button onClick={() => openAddBirdModal()} className="btn-primary flex items-center gap-2">
-              <Plus size={18} /> Cadastrar Ave
-            </button>
-          )}
           {activeTab === 'casais' && (
             <button onClick={() => setShowCoupleModal(true)} className="btn-primary flex items-center gap-2">
               <Users size={18} /> Novo Casal
@@ -84,22 +87,36 @@ export function Genetics() {
       </div>
 
       {/* Conteúdo: Plantel */}
-      {activeTab === 'plantel' && (
-        <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
-          <div className="p-4 sm:p-6 border-b border-theme-border flex flex-col sm:flex-row justify-between gap-4 shrink-0 bg-theme-surface/50">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-none">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={16} />
-                <input type="text" placeholder="Buscar anilha ou nome..." className="w-full bg-theme-surface border border-theme-border rounded-lg py-2 pl-9 pr-4 text-base md:text-sm text-white focus:border-theme-primary outline-none" />
+      {activeTab === 'plantel' && (() => {
+        const filteredPlantel = birds.filter(b => 
+          b.anilha.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          (b.nome && b.nome.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+        const totalPages = Math.max(1, Math.ceil(filteredPlantel.length / 10));
+        const paginatedPlantel = filteredPlantel.slice((currentPage - 1) * 10, currentPage * 10);
+
+        return (
+          <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
+            <div className="p-4 sm:p-6 border-b border-theme-border flex flex-col sm:flex-row justify-between gap-4 shrink-0 bg-theme-surface/50">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={16} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar anilha ou nome..." 
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-theme-surface border border-theme-border rounded-lg py-2 pl-9 pr-4 text-base md:text-sm text-white focus:border-theme-primary outline-none" 
+                  />
+                </div>
+                <button className="p-2 text-theme-text-muted hover:text-white bg-theme-surface rounded-lg border border-theme-border flex items-center gap-2 text-sm font-medium shrink-0">
+                  <Filter size={16} /> <span className="hidden sm:inline">Filtros</span>
+                </button>
               </div>
-              <button className="p-2 text-theme-text-muted hover:text-white bg-theme-surface rounded-lg border border-theme-border flex items-center gap-2 text-sm font-medium shrink-0">
-                <Filter size={16} /> <span className="hidden sm:inline">Filtros</span>
-              </button>
+              <div className="flex items-center gap-2 text-sm text-theme-text-muted sm:ml-auto">
+                Total: <strong className="text-white">{filteredPlantel.length} aves</strong>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-theme-text-muted sm:ml-auto">
-              Total: <strong className="text-white">{birds.length} aves</strong>
-            </div>
-          </div>
 
           <div className="flex-1 overflow-auto p-0">
             {/* Desktop Table */}
@@ -115,7 +132,7 @@ export function Genetics() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-theme-border/50 text-sm">
-                  {birds.map(bird => (
+                  {paginatedPlantel.map(bird => (
                     <tr key={bird.id} onClick={() => openBirdProfile(bird.id)} className="hover:bg-white/5 transition-colors cursor-pointer group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
@@ -140,7 +157,7 @@ export function Genetics() {
                       </td>
                     </tr>
                   ))}
-                  {birds.length === 0 && (
+                  {paginatedPlantel.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center text-theme-text-muted">
                         Nenhuma ave cadastrada no plantel.
@@ -153,7 +170,7 @@ export function Genetics() {
 
             {/* Mobile Cards */}
             <div className="md:hidden flex flex-col divide-y divide-theme-border/50">
-              {birds.map(bird => (
+              {paginatedPlantel.map(bird => (
                 <div key={bird.id} onClick={() => openBirdProfile(bird.id)} className="p-4 hover:bg-white/5 transition-colors cursor-pointer active:bg-theme-primary/10">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-xl overflow-hidden shrink-0 shadow-inner">
@@ -175,15 +192,37 @@ export function Genetics() {
                   </div>
                 </div>
               ))}
-              {birds.length === 0 && (
+              {paginatedPlantel.length === 0 && (
                 <div className="p-8 text-center text-theme-text-muted text-sm">
                   Nenhuma ave cadastrada.
                 </div>
               )}
             </div>
+            
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-theme-border flex items-center justify-between bg-theme-surface/30">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-theme-base border border-theme-border rounded-md text-sm text-theme-text-muted disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm text-white">Página {currentPage} de {totalPages}</span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-theme-base border border-theme-border rounded-md text-sm text-theme-text-muted disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Conteúdo: Casais */}
       {activeTab === 'casais' && (
@@ -241,10 +280,125 @@ export function Genetics() {
 
       {/* Conteúdo: Pedigree */}
       {activeTab === 'pedigree' && (
-        <div className="flex-1 premium-card p-6 flex flex-col justify-center items-center text-theme-text-muted text-center border-dashed border-2">
-          <GitBranch size={48} className="mb-4 opacity-50" />
-          <h3 className="text-xl font-bold text-white mb-2">Árvore Genealógica (Pedigree)</h3>
-          <p className="max-w-md text-sm">Selecione um animal para visualizar sua linhagem completa de ascendentes e descendentes.</p>
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <div className="premium-card p-4 flex flex-col sm:flex-row gap-4 shrink-0">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={16} />
+              <input 
+                type="text" 
+                placeholder="Pesquisar ave para ver o pedigree (anilha ou nome)..." 
+                value={pedigreeSearch}
+                onChange={e => setPedigreeSearch(e.target.value)}
+                className="w-full bg-theme-surface border border-theme-border rounded-lg py-2 pl-9 pr-4 text-base md:text-sm text-white focus:border-theme-primary outline-none" 
+              />
+            </div>
+          </div>
+          
+          <div className="flex-1 premium-card p-6 overflow-y-auto">
+            {!selectedPedigreeBird ? (
+               <div className="space-y-2 h-full">
+                 {pedigreeSearch.length > 0 ? (
+                   birds.filter(b => b.anilha.toLowerCase().includes(pedigreeSearch.toLowerCase()) || (b.nome && b.nome.toLowerCase().includes(pedigreeSearch.toLowerCase())))
+                   .map(b => (
+                     <div key={b.id} onClick={() => { setSelectedPedigreeBird(b.id); setPedigreeSearch(''); }} className="p-4 bg-theme-surface hover:bg-theme-primary/10 border border-theme-border rounded-lg cursor-pointer flex items-center gap-4 transition-colors">
+                       <div className="w-10 h-10 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0">
+                         {b.imagem ? <img src={b.imagem} className="w-full h-full object-cover" /> : (b.sexo === 'Macho' ? '🐓' : '🐔')}
+                       </div>
+                       <div className="flex flex-col">
+                         <span className="font-bold text-white text-base">{b.anilha}</span>
+                         <span className="text-theme-text-muted text-xs">{b.nome || 'Sem nome'}</span>
+                       </div>
+                     </div>
+                   ))
+                 ) : (
+                    <div className="flex flex-col justify-center items-center text-theme-text-muted text-center h-full border-dashed border-2 border-theme-border/50 rounded-xl p-12">
+                      <GitBranch size={48} className="mb-4 opacity-50 text-theme-primary" />
+                      <h3 className="text-xl font-bold text-white mb-2">Árvore Genealógica (Pedigree)</h3>
+                      <p className="max-w-md text-sm">Pesquise uma ave acima para visualizar sua linhagem completa de ascendentes e descendentes.</p>
+                    </div>
+                 )}
+               </div>
+            ) : (
+                  (() => {
+                     const mainBird = birds.find(b => b.id === selectedPedigreeBird);
+                     if (!mainBird) return null;
+                     
+                     const pai = birds.find(b => b.id === mainBird.paiId);
+                     const mae = birds.find(b => b.id === mainBird.maeId);
+                     const filhos = birds.filter(b => b.paiId === mainBird.id || b.maeId === mainBird.id);
+
+                     return (
+                       <div className="space-y-8 animate-fade-in">
+                         <button onClick={() => setSelectedPedigreeBird(null)} className="text-sm text-theme-text-muted hover:text-white flex items-center gap-2 mb-4">
+                           ← Voltar para pesquisa
+                         </button>
+                         
+                         <div className="text-center">
+                            <div className="w-20 h-20 mx-auto rounded-full bg-theme-surface border-4 border-theme-primary flex items-center justify-center text-3xl overflow-hidden mb-3">
+                               {mainBird.imagem ? <img src={mainBird.imagem} className="w-full h-full object-cover" /> : (mainBird.sexo === 'Macho' ? '🐓' : '🐔')}
+                            </div>
+                            <h3 className="text-2xl font-black text-white">{mainBird.anilha}</h3>
+                            <p className="text-theme-primary font-bold">{mainBird.nome}</p>
+                            <span className="inline-block mt-2 text-xs bg-theme-base px-2 py-1 rounded text-theme-text-muted font-bold">{mainBird.raca}</span>
+                         </div>
+                         
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-b border-theme-border/50 py-8 relative">
+                           <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-theme-border/50 -translate-x-1/2"></div>
+                           
+                           <div>
+                             <h4 className="text-sm font-bold text-blue-400 uppercase mb-4 text-center">Pai</h4>
+                             {pai ? (
+                               <div onClick={() => setSelectedPedigreeBird(pai.id)} className="bg-theme-surface p-4 rounded-xl border border-theme-border cursor-pointer hover:border-blue-500 transition-colors text-center group flex flex-col items-center">
+                                 <div className="w-12 h-12 rounded-full border-2 border-blue-500/50 flex items-center justify-center mb-2 overflow-hidden">
+                                   {pai.imagem ? <img src={pai.imagem} className="w-full h-full object-cover" /> : <span className="text-xl">🐓</span>}
+                                 </div>
+                                 <p className="font-bold text-white group-hover:text-blue-400 transition-colors">{pai.anilha}</p>
+                                 <p className="text-xs text-theme-text-muted">{pai.nome}</p>
+                               </div>
+                             ) : (
+                               <div className="bg-theme-surface/30 p-6 rounded-xl border border-theme-border border-dashed text-center flex items-center justify-center h-full">
+                                 <p className="text-sm text-theme-text-muted font-bold">{mainBird.isPaiExterno ? 'Externo (Fora do sistema)' : 'Desconhecido'}</p>
+                               </div>
+                             )}
+                           </div>
+                           
+                           <div>
+                             <h4 className="text-sm font-bold text-pink-400 uppercase mb-4 text-center">Mãe</h4>
+                             {mae ? (
+                               <div onClick={() => setSelectedPedigreeBird(mae.id)} className="bg-theme-surface p-4 rounded-xl border border-theme-border cursor-pointer hover:border-pink-500 transition-colors text-center group flex flex-col items-center">
+                                 <div className="w-12 h-12 rounded-full border-2 border-pink-500/50 flex items-center justify-center mb-2 overflow-hidden">
+                                   {mae.imagem ? <img src={mae.imagem} className="w-full h-full object-cover" /> : <span className="text-xl">🐔</span>}
+                                 </div>
+                                 <p className="font-bold text-white group-hover:text-pink-400 transition-colors">{mae.anilha}</p>
+                                 <p className="text-xs text-theme-text-muted">{mae.nome}</p>
+                               </div>
+                             ) : (
+                               <div className="bg-theme-surface/30 p-6 rounded-xl border border-theme-border border-dashed text-center flex items-center justify-center h-full">
+                                 <p className="text-sm text-theme-text-muted font-bold">{mainBird.isMaeExterno ? 'Externo (Fora do sistema)' : 'Desconhecida'}</p>
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                         
+                         <div>
+                           <h4 className="text-sm font-bold text-theme-text-muted uppercase mb-4 text-center">Filhotes Mapeados ({filhos.length})</h4>
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                             {filhos.map(f => (
+                               <div key={f.id} onClick={() => setSelectedPedigreeBird(f.id)} className="bg-theme-surface p-3 rounded-xl border border-theme-border cursor-pointer hover:border-theme-primary transition-colors text-center">
+                                 <p className="font-bold text-white text-sm">{f.anilha}</p>
+                                 <p className="text-[10px] text-theme-text-muted mt-1">{f.nome || 'Sem nome'}</p>
+                               </div>
+                             ))}
+                             {filhos.length === 0 && (
+                               <p className="text-sm text-theme-text-muted text-center col-span-full py-4">Nenhum filhote registrado no sistema.</p>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     );
+                  })()
+            )}
+          </div>
         </div>
       )}
 

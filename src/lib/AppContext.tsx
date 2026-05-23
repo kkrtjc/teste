@@ -39,6 +39,24 @@ export type Couple = {
   status: 'Ativo' | 'Separado';
 };
 
+export type EggLot = {
+  id: string;
+  baia: string;
+  femeasIds: string[];
+  expectativaDiaria: number;
+  dataInicio: string;
+  status: 'Ativo' | 'Encerrado';
+};
+
+export type MeatLot = {
+  id: string;
+  baia: string;
+  avesIds: string[];
+  dataInicio: string;
+  pesoMedioInicial: string;
+  status: 'Crescimento' | 'Terminação' | 'Abatido';
+};
+
 type AppContextType = {
   breeds: Breed[];
   addBreed: (breed: Breed) => void;
@@ -49,6 +67,12 @@ type AppContextType = {
   couples: Couple[];
   addCouple: (couple: Couple) => void;
   editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
+  eggLots: EggLot[];
+  addEggLot: (lot: EggLot) => void;
+  editEggLot: (id: string, updatedLot: Partial<EggLot>) => void;
+  meatLots: MeatLot[];
+  addMeatLot: (lot: MeatLot) => void;
+  editMeatLot: (id: string, updatedLot: Partial<MeatLot>) => void;
   
   // Modals state
   isAddBirdModalOpen: boolean;
@@ -79,6 +103,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [eggLots, setEggLots] = useState<EggLot[]>(() => {
+    const saved = localStorage.getItem('@mura-manager:egglots');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [meatLots, setMeatLots] = useState<MeatLot[]>(() => {
+    const saved = localStorage.getItem('@mura-manager:meatlots');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Save to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('@mura-manager:breeds', JSON.stringify(breeds));
@@ -91,6 +125,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('@mura-manager:couples', JSON.stringify(couples));
   }, [couples]);
+
+  useEffect(() => {
+    localStorage.setItem('@mura-manager:egglots', JSON.stringify(eggLots));
+  }, [eggLots]);
+
+  useEffect(() => {
+    localStorage.setItem('@mura-manager:meatlots', JSON.stringify(meatLots));
+  }, [meatLots]);
 
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
@@ -111,6 +153,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCouple = (couple: Couple) => setCouples(prev => [...prev, couple]);
   const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
     setCouples(prev => prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c));
+  };
+
+  const addEggLot = (lot: EggLot) => setEggLots(prev => [...prev, lot]);
+  const editEggLot = (id: string, updatedLot: Partial<EggLot>) => {
+    setEggLots(prev => prev.map(l => l.id === id ? { ...l, ...updatedLot } : l));
+  };
+
+  const addMeatLot = (lot: MeatLot) => setMeatLots(prev => [...prev, lot]);
+  const editMeatLot = (id: string, updatedLot: Partial<MeatLot>) => {
+    setMeatLots(prev => prev.map(l => l.id === id ? { ...l, ...updatedLot } : l));
   };
 
   const openAddBirdModal = (breedName?: string, birdId?: string) => {
@@ -136,6 +188,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       breeds, addBreed, editBreed,
       birds, addBird, editBird,
       couples, addCouple, editCouple,
+      eggLots, addEggLot, editEggLot,
+      meatLots, addMeatLot, editMeatLot,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
       openAddBirdModal, openBirdProfile, closeModals
     }}>
