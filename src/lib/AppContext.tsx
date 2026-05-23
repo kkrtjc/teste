@@ -58,6 +58,13 @@ export type MeatLot = {
   status: 'Crescimento' | 'Terminação' | 'Abatido';
 };
 
+export type FarmSettings = {
+  name: string;
+  photo: string;
+  email: string;
+  phone: string;
+};
+
 type AppContextType = {
   isReady: boolean;
   breeds: Breed[];
@@ -76,6 +83,9 @@ type AppContextType = {
   addMeatLot: (lot: MeatLot) => void;
   editMeatLot: (id: string, updatedLot: Partial<MeatLot>) => void;
   
+  farmSettings: FarmSettings;
+  updateFarmSettings: (settings: Partial<FarmSettings>) => void;
+
   // Modals state
   isAddBirdModalOpen: boolean;
   preSelectedBreedForNewBird: string;
@@ -96,6 +106,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [couples, setCouples] = useState<Couple[]>([]);
   const [eggLots, setEggLots] = useState<EggLot[]>([]);
   const [meatLots, setMeatLots] = useState<MeatLot[]>([]);
+  
+  const [farmSettings, setFarmSettings] = useState<FarmSettings>({
+    name: 'Criatório Mura',
+    photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+    email: '',
+    phone: ''
+  });
 
   // Load data from localforage on mount
   useEffect(() => {
@@ -105,7 +122,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { key: '@mura-manager:birds', setter: setBirds },
         { key: '@mura-manager:couples', setter: setCouples },
         { key: '@mura-manager:egglots', setter: setEggLots },
-        { key: '@mura-manager:meatlots', setter: setMeatLots }
+        { key: '@mura-manager:meatlots', setter: setMeatLots },
+        { key: '@mura-manager:settings', setter: setFarmSettings }
       ];
 
       for (const item of storageItems) {
@@ -156,6 +174,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isReady) localforage.setItem('@mura-manager:meatlots', meatLots);
   }, [meatLots, isReady]);
 
+  useEffect(() => {
+    if (isReady) localforage.setItem('@mura-manager:settings', farmSettings);
+  }, [farmSettings, isReady]);
+
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
   const [preSelectedBreedForNewBird, setPreSelectedBreedForNewBird] = useState('');
@@ -187,6 +209,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setMeatLots(prev => prev.map(l => l.id === id ? { ...l, ...updatedLot } : l));
   };
 
+  const updateFarmSettings = (settings: Partial<FarmSettings>) => {
+    setFarmSettings(prev => ({ ...prev, ...settings }));
+  };
+
   const openAddBirdModal = (breedName?: string, birdId?: string) => {
     setPreSelectedBreedForNewBird(breedName || '');
     setBirdToEditId(birdId || null);
@@ -213,6 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       couples, addCouple, editCouple,
       eggLots, addEggLot, editEggLot,
       meatLots, addMeatLot, editMeatLot,
+      farmSettings, updateFarmSettings,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
       openAddBirdModal, openBirdProfile, closeModals
     }}>

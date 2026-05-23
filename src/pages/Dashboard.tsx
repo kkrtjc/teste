@@ -3,13 +3,9 @@ import { ChevronDown, ChevronUp, Search, Egg, Beef } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 export function Dashboard() {
-  const { birds, eggLots, meatLots, openBirdProfile } = useAppContext();
+  const { birds, eggLots, meatLots, openBirdProfile, farmSettings } = useAppContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mocked photo and farm name, could be moved to AppContext later if needed
-  const farmName = "Criatório Mura";
-  const farmPhoto = "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop"; 
 
   const totalAves = birds.length;
 
@@ -29,10 +25,14 @@ export function Dashboard() {
       
       {/* Farm Name & Photo */}
       <div className="flex flex-col items-center mt-6">
-        <div className="w-32 h-32 rounded-full border-4 border-theme-primary overflow-hidden shadow-lg mb-4">
-          <img src={farmPhoto} alt="Foto do Criatório" className="w-full h-full object-cover" />
+        <div className="w-32 h-32 rounded-full border-4 border-theme-primary overflow-hidden shadow-lg mb-4 bg-theme-base flex items-center justify-center text-theme-text-muted">
+          {farmSettings.photo ? (
+            <img src={farmSettings.photo} alt="Foto do Criatório" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-4xl">🐔</span>
+          )}
         </div>
-        <h2 className="text-3xl font-black text-white">{farmName}</h2>
+        <h2 className="text-3xl font-black text-white text-center">{farmSettings.name || 'Meu Criatório'}</h2>
       </div>
 
       {/* Quantity of Birds */}

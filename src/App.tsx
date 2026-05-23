@@ -8,6 +8,7 @@ import { Eggs } from './pages/Eggs';
 import { Health } from './pages/Health';
 import { Losses } from './pages/Losses';
 import { Birds } from './pages/Birds';
+import { Settings } from './pages/Settings';
 import { Activity } from 'lucide-react';
 
 function AppContent() {
@@ -34,7 +35,7 @@ function AppContent() {
           <Route path="eggs" element={<Eggs />} />
           <Route path="health" element={<Health />} />
           <Route path="losses" element={<Losses />} />
-          <Route path="settings" element={<div className="text-white p-10">Configurações...</div>} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>
