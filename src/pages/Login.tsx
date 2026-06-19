@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Activity, LogIn, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
+import gamecockSilhouette from '../assets/gamefowl_silhouette.png';
 
 export function Login() {
   const { signIn, isLocalMode } = useAuth();
@@ -8,6 +9,27 @@ export function Login() {
   const [cpfInput, setCpfInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [animationPhase, setAnimationPhase] = useState<'walking' | 'flapping' | 'idle'>('walking');
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    // 1. A caminhada dura 2.2s
+    const walkTimeout = setTimeout(() => {
+      setAnimationPhase('flapping');
+    }, 2200);
+
+    // 2. A batida de asas dura 1.6s (total de 3.8s)
+    const flapTimeout = setTimeout(() => {
+      setAnimationPhase('idle');
+      setShowForm(true);
+    }, 3800);
+
+    return () => {
+      clearTimeout(walkTimeout);
+      clearTimeout(flapTimeout);
+    };
+  }, []);
 
   const formatCPF = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -52,73 +74,179 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-theme-base flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* CSS Keyframes for Silhouette Walk and Flap */}
+      <style>{`
+        .gamecock-walk {
+          animation: walkIn 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .gamecock-flap {
+          animation: wingFlap 1.6s ease-in-out forwards;
+        }
+        .gamecock-idle {
+          animation: proudBreath 3s ease-in-out infinite;
+        }
+        .form-fade-in {
+          animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes walkIn {
+          0% {
+            transform: translateX(-120px) translateY(0px) rotate(-4deg);
+            opacity: 0;
+          }
+          15% { transform: translateX(-95px) translateY(-8px) rotate(2deg); opacity: 0.3; }
+          35% { transform: translateX(-70px) translateY(0px) rotate(-3deg); opacity: 0.6; }
+          55% { transform: translateX(-45px) translateY(-8px) rotate(2deg); opacity: 0.8; }
+          75% { transform: translateX(-20px) translateY(0px) rotate(-2deg); opacity: 0.9; }
+          90% { transform: translateX(-5px) translateY(-4px) rotate(1deg); opacity: 0.98; }
+          100% {
+            transform: translateX(0) translateY(0) rotate(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes wingFlap {
+          0%, 100% {
+            transform: scale(1) translateY(0);
+            filter: brightness(0) drop-shadow(0 0 0 rgba(245, 158, 11, 0));
+          }
+          15% {
+            transform: scale(1.18, 0.96) translateY(-14px);
+            filter: brightness(0) drop-shadow(0 0 20px rgba(245, 158, 11, 0.35));
+          }
+          30% {
+            transform: scale(0.93, 1.07) translateY(5px);
+            filter: brightness(0) drop-shadow(0 0 5px rgba(245, 158, 11, 0.15));
+          }
+          45% {
+            transform: scale(1.22, 0.94) translateY(-18px);
+            filter: brightness(0) drop-shadow(0 0 30px rgba(245, 158, 11, 0.55));
+          }
+          60% {
+            transform: scale(0.93, 1.07) translateY(5px);
+            filter: brightness(0) drop-shadow(0 0 5px rgba(245, 158, 11, 0.15));
+          }
+          75% {
+            transform: scale(1.24, 0.95) translateY(-22px);
+            filter: brightness(0) drop-shadow(0 0 35px rgba(245, 158, 11, 0.65));
+          }
+          90% {
+            transform: scale(1.05, 1.02) translateY(-4px);
+            filter: brightness(0) drop-shadow(0 0 15px rgba(245, 158, 11, 0.25));
+          }
+        }
+
+        @keyframes proudBreath {
+          0%, 100% {
+            transform: scale(1) translateY(0);
+            filter: brightness(0) drop-shadow(0 0 10px rgba(245, 158, 11, 0.08));
+          }
+          50% {
+            transform: scale(1.02, 1.03) translateY(-2px);
+            filter: brightness(0) drop-shadow(0 0 18px rgba(245, 158, 11, 0.22));
+          }
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(25px);
+            filter: blur(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+          }
+        }
+      `}</style>
+
       {/* Background glow overlay */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-theme-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md z-10 flex flex-col gap-6">
+      <div className="w-full max-w-md z-10 flex flex-col items-center gap-4">
         
-        {/* Logo Header */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-3 justify-center mb-2 animate-fade-in">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-theme-primary to-orange-600 flex items-center justify-center font-black text-black text-xl shadow-lg shadow-orange-500/10">M</div>
-            <span className="font-bold text-2xl tracking-tight text-white">MURA<span className="text-theme-primary">MANAGER</span></span>
-          </div>
-          <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-black">Elite Poultry System</p>
+        {/* Imposing Malay Gamefowl Silhouette */}
+        <div className="relative h-56 w-56 flex items-center justify-center select-none pointer-events-none mb-2">
+          <img 
+            src={gamecockSilhouette} 
+            alt="Malay Gamefowl Silhouette" 
+            className={`h-48 object-contain select-none pointer-events-none transition-all ${
+              animationPhase === 'walking' 
+                ? 'gamecock-walk' 
+                : animationPhase === 'flapping' 
+                ? 'gamecock-flap' 
+                : 'gamecock-idle'
+            }`}
+            style={{ filter: 'brightness(0)' }}
+          />
         </div>
 
-        {/* Local Test Mode Banner */}
-        {isLocalMode && (
-          <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex gap-3 text-orange-200 text-xs animate-pulse">
-            <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={18} />
-            <div className="space-y-1">
-              <p className="font-bold text-orange-300">Modo de Teste Local Ativo</p>
-              <p className="leading-relaxed">O Supabase não foi configurado. Digite <strong>qualquer CPF de 11 dígitos</strong> para entrar e testar. O CPF <strong>14477751630</strong> ativará as funções de Administrador.</p>
+        {/* Form elements with conditional fade-in */}
+        <div className={`w-full space-y-6 transition-all ${showForm ? 'form-fade-in' : 'opacity-0 pointer-events-none'}`}>
+          {/* Logo Header */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 justify-center mb-1 animate-fade-in">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-theme-primary to-orange-600 flex items-center justify-center font-black text-black text-xl shadow-lg shadow-orange-500/10">M</div>
+              <span className="font-bold text-2xl tracking-tight text-white">MURA<span className="text-theme-primary">MANAGER</span></span>
             </div>
-          </div>
-        )}
-
-        {/* Login Form Card */}
-        <div className="premium-card p-6 border border-theme-border/50 bg-theme-surface/50 backdrop-blur-md space-y-6">
-          <div className="text-center space-y-1">
-            <h2 className="text-xl font-black text-white">Acessar Criatório</h2>
-            <p className="text-xs text-theme-text-muted font-medium">Insira o seu CPF cadastrado para acessar o sistema</p>
+            <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-black">Elite Poultry System</p>
           </div>
 
-          {errorMsg && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-bold text-center">
-              {errorMsg}
+          {/* Local Test Mode Banner */}
+          {isLocalMode && (
+            <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex gap-3 text-orange-200 text-xs animate-pulse">
+              <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={18} />
+              <div className="space-y-1 text-left">
+                <p className="font-bold text-orange-300">Modo de Teste Local Ativo</p>
+                <p className="leading-relaxed">O Supabase não foi configurado. Digite <strong>qualquer CPF de 11 dígitos</strong> para entrar e testar. O CPF <strong>14477751630</strong> ativará as funções de Administrador.</p>
+              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-                <User size={14} className="text-theme-primary" /> CPF do Cliente
-              </label>
-              <input
-                type="text"
-                required
-                value={cpfInput}
-                onChange={handleCpfChange}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors tracking-widest text-center font-bold text-lg"
-                placeholder="000.000.000-00"
-              />
+          {/* Login Form Card */}
+          <div className="premium-card p-6 border border-theme-border/50 bg-theme-surface/50 backdrop-blur-md space-y-6">
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-black text-white">Acessar Criatório</h2>
+              <p className="text-xs text-theme-text-muted font-medium">Insira o seu CPF cadastrado para acessar o sistema</p>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-black text-base shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-            >
-              {loading ? (
-                <Activity size={18} className="animate-spin text-black" />
-              ) : (
-                <>
-                  <LogIn size={18} /> Entrar no Sistema
-                </>
-              )}
-            </button>
-          </form>
+            {errorMsg && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-bold text-center">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
+                  <User size={14} className="text-theme-primary" /> CPF do Cliente
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={cpfInput}
+                  onChange={handleCpfChange}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors tracking-widest text-center font-bold text-lg"
+                  placeholder="000.000.000-00"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-black text-base shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                {loading ? (
+                  <Activity size={18} className="animate-spin text-black" />
+                ) : (
+                  <>
+                    <LogIn size={18} /> Entrar no Sistema
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
