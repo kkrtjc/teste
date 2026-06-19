@@ -65,58 +65,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (rawCpf: string) => {
     const cleanCpf = rawCpf.replace(/\D/g, '');
-    
+
     if (cleanCpf.length !== 11) {
       return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos.' } };
     }
 
     const isAdmin = cleanCpf === ADMIN_CPF;
 
-    // Se estiver usando Supabase, verifica se o CPF está cadastrado e ativo
-    if (isSupabaseConfigured && !isAdmin) {
-      try {
-        const { data: allowedData, error: allowedError } = await supabase!
-          .from('allowed_cpfs')
-          .select('cpf, expires_at')
-          .eq('cpf', cleanCpf)
-          .maybeSingle();
+    // ══════════════════════════════════════════════════════
+    // ADMIN: tenta Supabase primeiro; qualquer falha → bypass
+    // local. Admin NUNCA fica bloqueado.
+    // ══════════════════════════════════════════════════════
+    if (isAdmin) {
+      if (isSupabaseConfigured) {
+        const email    = `${cleanCpf}@mura.com`;
+        const password = `mura-${cleanCpf}-secure`;
 
-        if (allowedError) {
-          console.error('Erro ao consultar allowed_cpfs:', allowedError);
-          return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
-        }
+        try {
+          // Tenta login real
+          const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
 
-        if (!allowedData) {
-          return { error: { message: 'Este CPF não está cadastrado no sistema. Entre em contato com o administrador.' } };
-        }
+          if (!error && data.session) {
+            // Sucesso com Supabase real
+            setSession(data.session);
+            setUser(data.user);
+            return { error: null };
+          }
 
-        if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
-          return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
+          // Login falhou → tenta criar conta
+          if (error) {
+            const { data: signUpData } = await supabase!.auth.signUp({ email, password });
+            if (signUpData?.session) {
+              setSession(signUpData.session);
+              setUser(signUpData.user);
+              return { error: null };
+            }
+          }
+        } catch {
+          // Supabase inacessível → continua para bypass local
         }
-      } catch (err) {
-        return { error: { message: 'Erro de conexão ao verificar o CPF.' } };
       }
+
+      // Fallback: sessão local para admin (funciona offline ou com Supabase indisponível)
+      const adminSession = {
+        session: { access_token: `admin-local-${Date.now()}` },
+        user:    { id: `admin-${cleanCpf}`, email: `${cleanCpf}@mura.com` },
+      };
+      await localforage.setItem('@mura-manager:local-session', adminSession);
+      setUser(adminSession.user);
+      setSession(adminSession.session);
+      return { error: null };
     }
 
+    // ══════════════════════════════════════════════════════
+    // MODO LOCAL (sem Supabase)
+    // ══════════════════════════════════════════════════════
     if (!isSupabaseConfigured) {
-      // Local Mode: verifica se o CPF não-admin está cadastrado e não expirou
-      if (!isAdmin) {
-        const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-        const localData = localAllowedList.find(item => item.cpf === cleanCpf);
-        
-        if (!localData) {
-          return { error: { message: 'Este CPF não está cadastrado no sistema local.' } };
-        }
-        
-        if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
-          return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
-        }
+      const localAllowedList =
+        (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
+      const localData = localAllowedList.find((item) => item.cpf === cleanCpf);
+
+      if (!localData) {
+        return { error: { message: 'Este CPF não está cadastrado no sistema local.' } };
+      }
+      if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
+        return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
       }
 
-      // Login Simulado Local (Bypass Offline)
       const mockSession = {
         session: { access_token: 'mock-token' },
-        user: { id: `local-${cleanCpf}`, email: `${cleanCpf}@mura.com` }
+        user:    { id: `local-${cleanCpf}`, email: `${cleanCpf}@mura.com` },
       };
       await localforage.setItem('@mura-manager:local-session', mockSession);
       setUser(mockSession.user);
@@ -124,89 +142,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     }
 
-    const email = `${cleanCpf}@mura.com`;
+    // ══════════════════════════════════════════════════════
+    // MODO ONLINE — usuário não-admin
+    // ══════════════════════════════════════════════════════
+    const { data: allowedData, error: allowedError } = await supabase!
+      .from('allowed_cpfs')
+      .select('cpf, expires_at')
+      .eq('cpf', cleanCpf)
+      .maybeSingle();
+
+    if (allowedError) {
+      return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
+    }
+    if (!allowedData) {
+      return { error: { message: 'Este CPF não está cadastrado. Entre em contato com o administrador.' } };
+    }
+    if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
+      return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
+    }
+
+    const email    = `${cleanCpf}@mura.com`;
     const password = `mura-${cleanCpf}-secure`;
 
     try {
-      // 1. Tenta fazer login direto
       const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        const needsSignUp =
-          error.message.includes('Invalid login credentials') ||
-          error.message.includes('user not found');
 
-        const needsConfirm =
-          error.message.includes('Email not confirmed');
-
-        // 2a. Conta não existe → cria e tenta logar
-        if (needsSignUp) {
-          console.log('Criando conta de primeiro acesso para o CPF...');
-          const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
-
-          if (signUpError) {
-            // Se já existe mas e-mail não confirmado, admin pode logar mesmo assim via OTP bypass
-            if (signUpError.message.includes('already registered')) {
-              // Força login admin local como fallback
-              if (isAdmin) {
-                const mockSession = {
-                  session: { access_token: 'admin-fallback-token' },
-                  user: { id: `admin-${cleanCpf}`, email }
-                };
-                setUser(mockSession.user);
-                setSession(mockSession.session);
-                return { error: null };
-              }
-            }
-            return { error: signUpError };
-          }
-
-          if (signUpData.session) {
-            setSession(signUpData.session);
-            setUser(signUpData.user);
-            return { error: null };
-          }
-
-          // Se não veio sessão (confirmação pendente), para admin faz bypass local
-          if (isAdmin) {
-            const mockSession = {
-              session: { access_token: 'admin-fallback-token' },
-              user: { id: `admin-${cleanCpf}`, email }
-            };
-            setUser(mockSession.user);
-            setSession(mockSession.session);
-            return { error: null };
-          }
-
-          // Para não-admin tenta logar novamente
-          const { data: retryData, error: retryError } = await supabase!.auth.signInWithPassword({ email, password });
-          if (retryError) {
-            return { error: { message: 'Conta criada mas aguardando confirmação de e-mail. Contate o administrador.' } };
-          }
-          setSession(retryData.session);
-          setUser(retryData.user);
-          return { error: null };
-        }
-
-        // 2b. E-mail não confirmado → admin faz bypass, cliente recebe mensagem
-        if (needsConfirm) {
-          if (isAdmin) {
-            const mockSession = {
-              session: { access_token: 'admin-fallback-token' },
-              user: { id: `admin-${cleanCpf}`, email }
-            };
-            setUser(mockSession.user);
-            setSession(mockSession.session);
-            return { error: null };
-          }
-          return { error: { message: 'Aguardando confirmação de e-mail. Contate o administrador.' } };
-        }
-
-        return { error };
+      if (!error && data.session) {
+        setSession(data.session);
+        setUser(data.user);
+        return { error: null };
       }
-      
-      setSession(data.session);
-      setUser(data.user);
+
+      // Primeiro acesso: cria conta
+      const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
+      if (signUpError) {
+        return { error: signUpError };
+      }
+      if (signUpData?.session) {
+        setSession(signUpData.session);
+        setUser(signUpData.user);
+        return { error: null };
+      }
+
+      // Tentativa final após signup
+      const { data: retry, error: retryErr } = await supabase!.auth.signInWithPassword({ email, password });
+      if (retryErr) {
+        return { error: { message: 'Conta criada, mas confirme o e-mail antes de entrar.' } };
+      }
+      setSession(retry.session);
+      setUser(retry.user);
       return { error: null };
     } catch (err: any) {
       return { error: err };
