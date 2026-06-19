@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Save, Phone, Mail, Home } from 'lucide-react';
+import { Camera, Save, Phone, Mail, Home, LogOut } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 
 export function Settings() {
@@ -9,6 +10,7 @@ export function Settings() {
     breeds, birds, couples, eggLots, meatLots,
     importBackup
   } = useAppContext();
+  const { user, signOut, isLocalMode } = useAuth();
   
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email);
@@ -255,10 +257,17 @@ export function Settings() {
           </div>
         )}
 
-        <div className="border-t border-theme-border/30 pt-4">
-          <p className="text-[10px] text-theme-text-muted leading-relaxed">
-            ℹ️ <strong>Sincronização em Nuvem:</strong> Se você deseja criar uma conta com e-mail/senha para sincronizar seus dados automaticamente na nuvem e acessá-los de qualquer dispositivo sem precisar de arquivos de backup, nos informe para que possamos implementar o banco de dados online na próxima etapa!
-          </p>
+        <div className="border-t border-theme-border/30 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="text-xs text-theme-text-muted">
+            <span className="font-bold text-white block">Sessão Ativa:</span>
+            {user?.email} {isLocalMode ? '(Modo Local Offline)' : '(Sincronizado na Nuvem)'}
+          </div>
+          <button
+            onClick={signOut}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-sm font-bold transition-all active:scale-95 shrink-0"
+          >
+            <LogOut size={16} /> Sair da Conta (Logout)
+          </button>
         </div>
       </div>
     </div>
