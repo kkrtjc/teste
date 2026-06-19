@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Egg, Dna, Activity, Settings, Beef, 
-  Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2 
+  Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
+  Bell, MessageSquare
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -12,6 +13,14 @@ import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import localforage from 'localforage';
 
+export type AllowedCpf = {
+  cpf: string;
+  nome?: string;
+  whatsapp?: string;
+  expires_at?: string;
+  created_at?: string;
+};
+
 export function Layout() {
   const { farmSettings } = useAppContext();
   const navigate = useNavigate();
@@ -19,8 +28,11 @@ export function Layout() {
   const isAdmin = cpf === ADMIN_CPF;
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [allowedCpfs, setAllowedCpfs] = useState<string[]>([]);
+  const [allowedCpfs, setAllowedCpfs] = useState<AllowedCpf[]>([]);
   const [newCpf, setNewCpf] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newWhatsapp, setNewWhatsapp] = useState('');
+  const [newExpiresAt, setNewExpiresAt] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [modalError, setModalError] = useState('');
@@ -30,16 +42,16 @@ export function Layout() {
     setModalError('');
     try {
       if (isLocalMode) {
-        const localAllowed = await localforage.getItem<string[]>('@mura-manager:local-allowed-cpfs') || [];
+        const localAllowed = await localforage.getItem<AllowedCpf[]>('@mura-manager:local-allowed-cpfs') || [];
         setAllowedCpfs(localAllowed);
       } else {
         const { data, error } = await supabase!
           .from('allowed_cpfs')
-          .select('cpf')
+          .select('cpf, nome, whatsapp, expires_at')
           .order('created_at', { ascending: false });
           
         if (error) throw error;
-        setAllowedCpfs(data.map((item: any) => item.cpf));
+        setAllowedCpfs(data || []);
       }
     } catch (err: any) {
       console.error(err);
@@ -48,6 +60,12 @@ export function Layout() {
       setModalLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllowedCpfs();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     if (isAdminModalOpen) {
@@ -66,23 +84,37 @@ export function Layout() {
       setModalError('O CPF do administrador já possui acesso total.');
       return;
     }
-    if (allowedCpfs.includes(cleanCpf)) {
+    if (allowedCpfs.some(c => c.cpf === cleanCpf)) {
       setModalError('Este CPF já está cadastrado.');
+      return;
+    }
+    if (!newExpiresAt) {
+      setModalError('A data de vencimento é obrigatória.');
       return;
     }
 
     setActionLoading(true);
     setModalError('');
     try {
+      const clientPayload = {
+        cpf: cleanCpf,
+        nome: newName.trim() || undefined,
+        whatsapp: newWhatsapp.replace(/\D/g, '') || undefined,
+        expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : undefined
+      };
+
       if (isLocalMode) {
-        const updatedList = [cleanCpf, ...allowedCpfs];
+        const updatedList = [clientPayload, ...allowedCpfs];
         await localforage.setItem('@mura-manager:local-allowed-cpfs', updatedList);
         setAllowedCpfs(updatedList);
         setNewCpf('');
+        setNewName('');
+        setNewWhatsapp('');
+        setNewExpiresAt('');
       } else {
         const { error } = await supabase!
           .from('allowed_cpfs')
-          .insert([{ cpf: cleanCpf }]);
+          .insert([clientPayload]);
           
         if (error) {
           if (error.code === '23505') {
@@ -90,12 +122,15 @@ export function Layout() {
           }
           throw error;
         }
-        setAllowedCpfs([cleanCpf, ...allowedCpfs]);
+        setAllowedCpfs([clientPayload, ...allowedCpfs]);
         setNewCpf('');
+        setNewName('');
+        setNewWhatsapp('');
+        setNewExpiresAt('');
       }
     } catch (err: any) {
       console.error(err);
-      setModalError(err.message || 'Erro ao cadastrar CPF.');
+      setModalError(err.message || 'Erro ao cadastrar cliente.');
     } finally {
       setActionLoading(false);
     }
@@ -111,7 +146,7 @@ export function Layout() {
     setModalError('');
     try {
       if (isLocalMode) {
-        const updatedList = allowedCpfs.filter(c => c !== cpfToRemove);
+        const updatedList = allowedCpfs.filter(c => c.cpf !== cpfToRemove);
         await localforage.setItem('@mura-manager:local-allowed-cpfs', updatedList);
         setAllowedCpfs(updatedList);
       } else {
@@ -121,7 +156,7 @@ export function Layout() {
           .eq('cpf', cpfToRemove);
           
         if (error) throw error;
-        setAllowedCpfs(allowedCpfs.filter(c => c !== cpfToRemove));
+        setAllowedCpfs(allowedCpfs.filter(c => c.cpf !== cpfToRemove));
       }
     } catch (err: any) {
       console.error(err);
@@ -130,6 +165,32 @@ export function Layout() {
       setActionLoading(false);
     }
   };
+
+  const getDaysRemaining = (expiryDateStr?: string) => {
+    if (!expiryDateStr) return null;
+    const expiry = new Date(expiryDateStr);
+    const today = new Date();
+    expiry.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    const diffTime = expiry.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getWhatsappLink = (phone: string, name?: string, days?: number) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const msgDaysStr = days === 0 ? 'hoje' : days === 1 ? 'amanhã' : `em ${days} dias`;
+    const message = encodeURIComponent(
+      `Olá ${name || ''}, aqui é da administração do Mura Manager. Lembramos que seu prazo de acesso vence ${msgDaysStr}. Por favor, realize a renovação para manter o seu sistema funcionando normalmente.`
+    );
+    return `https://wa.me/55${cleanPhone}?text=${message}`;
+  };
+
+  const expiringClients = allowedCpfs.filter(c => {
+    const days = getDaysRemaining(c.expires_at);
+    return days !== null && days <= 3;
+  });
+
+  const expiringCount = expiringClients.length;
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -201,11 +262,16 @@ export function Layout() {
           {isAdmin && (
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              className="mr-3 p-2 bg-theme-primary/10 border border-theme-primary/30 hover:border-theme-primary text-theme-primary rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all hover:bg-theme-primary/20 active:scale-95 shrink-0 ml-auto"
+              className="mr-3 p-2 bg-theme-primary/10 border border-theme-primary/30 hover:border-theme-primary text-theme-primary rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all hover:bg-theme-primary/20 active:scale-95 shrink-0 ml-auto relative"
               title="Cadastrar Clientes"
             >
               <Users size={14} />
               <span className="hidden sm:inline">Cadastrar Cliente</span>
+              {expiringCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-black font-black text-[9px] w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse border border-theme-base shadow-lg shadow-orange-500/20">
+                  {expiringCount}
+                </span>
+              )}
             </button>
           )}
 
@@ -257,12 +323,12 @@ export function Layout() {
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-scale-up">
+          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
             {/* Header */}
             <div className="p-5 border-b border-theme-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="text-theme-primary" size={20} />
-                <h3 className="font-black text-lg text-white">Cadastrar Clientes</h3>
+                <h3 className="font-black text-lg text-white font-serif">Controle de Assinaturas</h3>
               </div>
               <button 
                 onClick={() => setIsAdminModalOpen(false)}
@@ -275,7 +341,7 @@ export function Layout() {
             {/* Content */}
             <div className="p-5 overflow-y-auto space-y-5 flex-1">
               <p className="text-xs text-theme-text-muted leading-relaxed">
-                Adicione o CPF dos clientes para autorizar o acesso deles ao sistema. Apenas CPFs listados abaixo poderão fazer login.
+                Cadastre novos clientes autorizados, defina o prazo de vencimento da mensalidade e receba alertas automáticos de vencimento.
               </p>
               
               {modalError && (
@@ -283,42 +349,157 @@ export function Layout() {
                   {modalError}
                 </div>
               )}
-              
-              {/* Add CPF Form */}
-              <form onSubmit={handleAddCpf} className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    required
-                    value={newCpf}
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
-                      if (clean.length <= 3) setNewCpf(clean);
-                      else if (clean.length <= 6) setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3)}`);
-                      else if (clean.length <= 9) setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
-                      else setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
-                    }}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors font-bold text-center tracking-wider"
-                    placeholder="000.000.000-00"
-                  />
+
+              {/* Expiry Notifications Banner */}
+              {expiringClients.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400">
+                    <Bell size={14} className="animate-bounce" />
+                    <span>Alertas de Vencimento (≤ 3 dias ou expirados)</span>
+                  </div>
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                    {expiringClients.map(c => {
+                      const days = getDaysRemaining(c.expires_at);
+                      const isExpired = days !== null && days < 0;
+                      return (
+                        <div 
+                          key={c.cpf} 
+                          className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs transition-all ${
+                            isExpired 
+                              ? 'bg-red-500/10 border-red-500/20 text-red-300' 
+                              : 'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            <p className="font-bold flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                              {c.nome || 'Cliente Sem Nome'} 
+                              <span className="text-[10px] opacity-75 font-mono">
+                                ({c.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")})
+                              </span>
+                            </p>
+                            <p className="text-[10px] opacity-80 pl-3">
+                              {isExpired 
+                                ? `VENCIDO há ${Math.abs(days!)} ${Math.abs(days!) === 1 ? 'dia' : 'dias'}` 
+                                : days === 0 
+                                ? 'Vence HOJE!' 
+                                : days === 1 
+                                ? 'Vence amanhã!' 
+                                : `Vence em ${days} dias`
+                              } ({c.expires_at ? new Date(c.expires_at).toLocaleDateString('pt-BR') : ''})
+                            </p>
+                          </div>
+                          {c.whatsapp && (
+                            <a
+                              href={getWhatsappLink(c.whatsapp, c.nome, days!)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 font-bold text-[10px] shrink-0 border transition-all active:scale-95 ${
+                                isExpired
+                                  ? 'bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-white'
+                                  : 'bg-orange-500/20 border-orange-500/30 hover:bg-orange-500/30 text-white'
+                              }`}
+                            >
+                              <MessageSquare size={12} />
+                              <span>Notificar WhatsApp</span>
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="btn-primary px-4 rounded-xl flex items-center justify-center font-black text-xs shrink-0 disabled:opacity-50 active:scale-95 transition-all"
-                >
-                  {actionLoading ? (
-                    <Loader2 size={16} className="animate-spin text-black" />
-                  ) : (
-                    "Autorizar"
-                  )}
-                </button>
-              </form>
+              )}
+              
+              {/* Add Client Form */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+                  Cadastrar Novo Cliente
+                </h4>
+                <form onSubmit={handleAddCpf} className="space-y-3 bg-theme-base/30 p-4 border border-theme-border rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">CPF do Cliente</label>
+                      <input
+                        type="text"
+                        required
+                        value={newCpf}
+                        onChange={(e) => {
+                          const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          if (clean.length <= 3) setNewCpf(clean);
+                          else if (clean.length <= 6) setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3)}`);
+                          else if (clean.length <= 9) setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
+                          else setNewCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
+                        }}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold text-center tracking-wider"
+                        placeholder="000.000.000-00"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome Completo</label>
+                      <input
+                        type="text"
+                        required
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold"
+                        placeholder="Ex: João da Silva"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">WhatsApp / Celular</label>
+                      <input
+                        type="text"
+                        required
+                        value={newWhatsapp}
+                        onChange={(e) => {
+                          const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          if (clean.length <= 2) setNewWhatsapp(clean);
+                          else if (clean.length <= 7) setNewWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2)}`);
+                          else setNewWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`);
+                        }}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold text-center"
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Data de Vencimento</label>
+                      <input
+                        type="date"
+                        required
+                        value={newExpiresAt}
+                        onChange={(e) => setNewExpiresAt(e.target.value)}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold text-center text-theme-text-muted"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="btn-primary w-full py-2.5 rounded-xl flex items-center justify-center font-black text-xs gap-2 disabled:opacity-50 active:scale-95 transition-all mt-1"
+                  >
+                    {actionLoading ? (
+                      <Loader2 size={16} className="animate-spin text-black" />
+                    ) : (
+                      <>
+                        <Users size={14} />
+                        <span>Autorizar e Cadastrar Cliente</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
               
               {/* CPFs List */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
-                  CPFs Autorizados ({allowedCpfs.length})
+                  Lista de Clientes Cadastrados ({allowedCpfs.length})
                 </h4>
                 
                 {modalLoading ? (
@@ -330,22 +511,43 @@ export function Layout() {
                     Nenhum cliente cadastrado ainda.
                   </div>
                 ) : (
-                  <div className="border border-theme-border rounded-xl overflow-hidden divide-y divide-theme-border max-h-[250px] overflow-y-auto">
-                    {allowedCpfs.map((cpfItem) => (
-                      <div key={cpfItem} className="p-3 bg-theme-base/20 flex items-center justify-between text-sm">
-                        <span className="font-mono text-white font-bold">
-                          {cpfItem.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveCpf(cpfItem)}
-                          disabled={actionLoading}
-                          className="text-red-400 hover:text-red-300 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg disabled:opacity-50"
-                          title="Revogar Acesso"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="border border-theme-border rounded-xl overflow-hidden divide-y divide-theme-border max-h-[220px] overflow-y-auto pr-1">
+                    {allowedCpfs.map((client) => {
+                      const days = getDaysRemaining(client.expires_at);
+                      const isExpired = days !== null && days < 0;
+                      return (
+                        <div key={client.cpf} className="p-3 bg-theme-base/20 flex items-center justify-between text-xs gap-3">
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-white truncate max-w-[150px]" title={client.nome}>
+                                {client.nome || 'Sem Nome'}
+                              </span>
+                              <span className="font-mono text-[10px] text-theme-text-muted">
+                                {client.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-theme-text-muted flex-wrap">
+                              {client.whatsapp && (
+                                <span>WhatsApp: {client.whatsapp.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")}</span>
+                              )}
+                              {client.expires_at && (
+                                <span className={isExpired ? 'text-red-400 font-bold' : days !== null && days <= 3 ? 'text-orange-400 font-bold' : 'text-green-400'}>
+                                  Vencimento: {new Date(client.expires_at).toLocaleDateString('pt-BR')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveCpf(client.cpf)}
+                            disabled={actionLoading}
+                            className="text-red-400 hover:text-red-300 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg disabled:opacity-50 shrink-0"
+                            title="Revogar Acesso"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -368,4 +570,3 @@ export function Layout() {
     </div>
   );
 }
-

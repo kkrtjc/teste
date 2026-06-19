@@ -72,12 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isAdmin = cleanCpf === ADMIN_CPF;
 
-    // Se estiver usando Supabase, verifica se o CPF está cadastrado
+    // Se estiver usando Supabase, verifica se o CPF está cadastrado e ativo
     if (isSupabaseConfigured && !isAdmin) {
       try {
         const { data: allowedData, error: allowedError } = await supabase!
           .from('allowed_cpfs')
-          .select('cpf')
+          .select('cpf, expires_at')
           .eq('cpf', cleanCpf)
           .maybeSingle();
 
@@ -89,12 +89,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!allowedData) {
           return { error: { message: 'Este CPF não está cadastrado no sistema. Entre em contato com o administrador.' } };
         }
+
+        if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
+          return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
+        }
       } catch (err) {
         return { error: { message: 'Erro de conexão ao verificar o CPF.' } };
       }
     }
 
     if (!isSupabaseConfigured) {
+      // Local Mode: verifica se o CPF não-admin está cadastrado e não expirou
+      if (!isAdmin) {
+        const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+        const localData = localAllowedList.find(item => item.cpf === cleanCpf);
+        
+        if (!localData) {
+          return { error: { message: 'Este CPF não está cadastrado no sistema local.' } };
+        }
+        
+        if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
+          return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
+        }
+      }
+
       // Login Simulado Local (Bypass Offline)
       const mockSession = {
         session: { access_token: 'mock-token' },
@@ -168,6 +186,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user || !user.email) return '';
     return user.email.split('@')[0];
   };
+
+  // Verifica se o CPF logado continua na lista de CPFs autorizados.
+  // Caso tenha sido removido pelo administrador ou expirado, realiza o logout imediatamente.
+  useEffect(() => {
+    if (!user) return;
+
+    const cleanCpf = getCpf();
+    if (!cleanCpf) return;
+
+    // CPF de administrador é permanente e não precisa ser validado
+    if (cleanCpf === ADMIN_CPF) return;
+
+    async function checkCurrentCpfAccess() {
+      try {
+        if (!isSupabaseConfigured) {
+          // Validação local em segundo plano
+          const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+          const localData = localAllowedList.find(item => item.cpf === cleanCpf);
+          if (!localData) {
+            alert('Acesso revogado: Seu CPF não está mais cadastrado no sistema.');
+            signOut();
+          } else if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
+            alert('Acesso expirado: Seu prazo de renovação venceu. Entre em contato com o administrador.');
+            signOut();
+          }
+          return;
+        }
+
+        // Validação online no Supabase
+        const { data, error } = await supabase!
+          .from('allowed_cpfs')
+          .select('cpf, expires_at')
+          .eq('cpf', cleanCpf)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao validar acesso do CPF ativo:', error);
+          return;
+        }
+
+        // Se o CPF não estiver mais na lista de autorizados, ou se estiver vencido, desloga na hora
+        if (!data) {
+          alert('Acesso revogado: Seu CPF não está mais cadastrado como cliente autorizado.');
+          signOut();
+        } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
+          alert('Acesso expirado: Seu prazo de renovação venceu. Entre em contato com o administrador.');
+          signOut();
+        }
+      } catch (err) {
+        console.error('Erro de conexão ao validar CPF:', err);
+      }
+    }
+
+    // Executa no carregamento do app/sessão
+    checkCurrentCpfAccess();
+
+    // Executa periodicamente a cada 5 minutos
+    const interval = setInterval(checkCurrentCpfAccess, 300000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{
