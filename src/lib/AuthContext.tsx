@@ -4,13 +4,15 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import localforage from 'localforage';
 
+export const ADMIN_CPF = '14477751630';
+
 type AuthContextType = {
   user: User | { id: string; email: string } | null;
+  cpf: string;
   session: Session | { access_token: string } | null;
   loading: boolean;
   isLocalMode: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (cpf: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 };
 
@@ -61,12 +63,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (rawCpf: string) => {
+    const cleanCpf = rawCpf.replace(/\D/g, '');
+    
+    if (cleanCpf.length !== 11) {
+      return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos.' } };
+    }
+
+    const isAdmin = cleanCpf === ADMIN_CPF;
+
+    // Se estiver usando Supabase, verifica se o CPF está cadastrado
+    if (isSupabaseConfigured && !isAdmin) {
+      try {
+        const { data: allowedData, error: allowedError } = await supabase!
+          .from('allowed_cpfs')
+          .select('cpf')
+          .eq('cpf', cleanCpf)
+          .maybeSingle();
+
+        if (allowedError) {
+          console.error('Erro ao consultar allowed_cpfs:', allowedError);
+          return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
+        }
+
+        if (!allowedData) {
+          return { error: { message: 'Este CPF não está cadastrado no sistema. Entre em contato com o administrador.' } };
+        }
+      } catch (err) {
+        return { error: { message: 'Erro de conexão ao verificar o CPF.' } };
+      }
+    }
+
     if (!isSupabaseConfigured) {
       // Login Simulado Local (Bypass Offline)
       const mockSession = {
         session: { access_token: 'mock-token' },
-        user: { id: 'local-user', email }
+        user: { id: `local-${cleanCpf}`, email: `${cleanCpf}@mura.com` }
       };
       await localforage.setItem('@mura-manager:local-session', mockSession);
       setUser(mockSession.user);
@@ -74,30 +106,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     }
 
-    try {
-      const { error } = await supabase!.auth.signInWithPassword({ email, password });
-      return { error };
-    } catch (err: any) {
-      return { error: err };
-    }
-  };
+    const email = `${cleanCpf}@mura.com`;
+    const password = `mura-${cleanCpf}-secure`;
 
-  const signUp = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
-      // Cadastro Simulado Local (Bypass Offline)
-      const mockSession = {
-        session: { access_token: 'mock-token' },
-        user: { id: 'local-user', email }
-      };
-      await localforage.setItem('@mura-manager:local-session', mockSession);
-      setUser(mockSession.user);
-      setSession(mockSession.session);
+    try {
+      // 1. Tenta fazer login direto
+      const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        // 2. Se falhar por credenciais/usuário não existente, cria a conta (primeiro acesso)
+        if (
+          error.message.includes('Invalid login credentials') || 
+          error.message.includes('Email not confirmed') ||
+          error.message.includes('user not found')
+        ) {
+          console.log('Criando conta de primeiro acesso para o CPF...');
+          const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
+          
+          if (signUpError) {
+            return { error: signUpError };
+          }
+          
+          if (signUpData.session) {
+            setSession(signUpData.session);
+            setUser(signUpData.user);
+            return { error: null };
+          } else {
+            // Tenta logar novamente pós-cadastro
+            const { data: retryData, error: retryError } = await supabase!.auth.signInWithPassword({ email, password });
+            if (retryError) {
+              return { error: retryError };
+            }
+            setSession(retryData.session);
+            setUser(retryData.user);
+            return { error: null };
+          }
+        }
+        return { error };
+      }
+      
+      setSession(data.session);
+      setUser(data.user);
       return { error: null };
-    }
-
-    try {
-      const { error } = await supabase!.auth.signUp({ email, password });
-      return { error };
     } catch (err: any) {
       return { error: err };
     }
@@ -114,14 +164,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase!.auth.signOut();
   };
 
+  const getCpf = () => {
+    if (!user || !user.email) return '';
+    return user.email.split('@')[0];
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
+      cpf: getCpf(),
       session,
       loading,
       isLocalMode: !isSupabaseConfigured,
       signIn,
-      signUp,
       signOut
     }}>
       {children}

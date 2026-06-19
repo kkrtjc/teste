@@ -1,25 +1,36 @@
 import { useState } from 'react';
-import { Mail, Lock, Activity, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
+import { User, Activity, LogIn, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
 export function Login() {
-  const { signIn, signUp, isLocalMode } = useAuth();
+  const { signIn, isLocalMode } = useAuth();
   
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  
+  const [cpfInput, setCpfInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const formatCPF = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    const limited = digits.slice(0, 11);
+    if (limited.length <= 3) return limited;
+    if (limited.length <= 6) return `${limited.slice(0, 3)}.${limited.slice(3)}`;
+    if (limited.length <= 9) return `${limited.slice(0, 3)}.${limited.slice(3, 6)}.${limited.slice(6)}`;
+    return `${limited.slice(0, 3)}.${limited.slice(3, 6)}.${limited.slice(6, 9)}-${limited.slice(9)}`;
+  };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCpfInput(formatCPF(e.target.value));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setErrorMsg('Por favor, preencha todos os campos.');
+    const cleanCpf = cpfInput.replace(/\D/g, '');
+    if (!cleanCpf) {
+      setErrorMsg('Por favor, preencha o campo de CPF.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMsg('A senha deve ter pelo menos 6 caracteres.');
+    if (cleanCpf.length !== 11) {
+      setErrorMsg('O CPF deve conter exatamente 11 dígitos.');
       return;
     }
 
@@ -27,11 +38,10 @@ export function Login() {
     setLoading(true);
 
     try {
-      const action = isRegistering ? signUp : signIn;
-      const { error } = await action(email, password);
+      const { error } = await signIn(cpfInput);
       
       if (error) {
-        setErrorMsg(error.message || 'Erro ao realizar operação. Verifique seus dados.');
+        setErrorMsg(error.message || 'Erro ao realizar login. Verifique se seu CPF foi cadastrado pelo administrador.');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro inesperado.');
@@ -62,7 +72,7 @@ export function Login() {
             <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={18} />
             <div className="space-y-1">
               <p className="font-bold text-orange-300">Modo de Teste Local Ativo</p>
-              <p className="leading-relaxed">O Supabase não foi configurado no arquivo `.env`. Digite <strong>qualquer e-mail e senha (mínimo de 6 letras)</strong> para entrar e testar de forma offline local.</p>
+              <p className="leading-relaxed">O Supabase não foi configurado. Digite <strong>qualquer CPF de 11 dígitos</strong> para entrar e testar. O CPF <strong>14477751630</strong> ativará as funções de Administrador.</p>
             </div>
           </div>
         )}
@@ -70,12 +80,8 @@ export function Login() {
         {/* Login Form Card */}
         <div className="premium-card p-6 border border-theme-border/50 bg-theme-surface/50 backdrop-blur-md space-y-6">
           <div className="text-center space-y-1">
-            <h2 className="text-xl font-black text-white">
-              {isRegistering ? 'Criar Nova Conta' : 'Acessar Criatório'}
-            </h2>
-            <p className="text-xs text-theme-text-muted font-medium">
-              {isRegistering ? 'Preencha os dados abaixo para se cadastrar' : 'Insira seus dados para sincronizar na nuvem'}
-            </p>
+            <h2 className="text-xl font-black text-white">Acessar Criatório</h2>
+            <p className="text-xs text-theme-text-muted font-medium">Insira o seu CPF cadastrado para acessar o sistema</p>
           </div>
 
           {errorMsg && (
@@ -87,65 +93,35 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-                <Mail size={12} /> E-mail
+                <User size={14} className="text-theme-primary" /> CPF do Cliente
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                placeholder="seuemail@exemplo.com"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-                <Lock size={12} /> Senha
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                placeholder="Mínimo 6 caracteres"
+                value={cpfInput}
+                onChange={handleCpfChange}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors tracking-widest text-center font-bold text-lg"
+                placeholder="000.000.000-00"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-black text-base shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-black text-base shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
               {loading ? (
                 <Activity size={18} className="animate-spin text-black" />
-              ) : isRegistering ? (
-                <>
-                  <UserPlus size={18} /> Cadastrar e Entrar
-                </>
               ) : (
                 <>
-                  <LogIn size={18} /> Entrar no painel
+                  <LogIn size={18} /> Entrar no Sistema
                 </>
               )}
             </button>
           </form>
-
-          {/* Toggle Registering vs Login */}
-          <div className="text-center pt-2 border-t border-theme-border/30">
-            <button
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setErrorMsg('');
-              }}
-              className="text-xs font-bold text-theme-primary hover:text-orange-400 transition-colors"
-            >
-              {isRegistering ? 'Já possui conta? Faça Login' : 'Ainda não tem conta? Cadastre-se'}
-            </button>
-          </div>
         </div>
       </div>
     </div>
   );
 }
+

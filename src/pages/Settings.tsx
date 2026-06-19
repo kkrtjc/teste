@@ -10,7 +10,7 @@ export function Settings() {
     breeds, birds, couples, eggLots, meatLots,
     importBackup
   } = useAppContext();
-  const { user, signOut, isLocalMode } = useAuth();
+  const { signOut, isLocalMode, cpf } = useAuth();
   
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email);
@@ -259,8 +259,8 @@ export function Settings() {
 
         <div className="border-t border-theme-border/30 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="text-xs text-theme-text-muted">
-            <span className="font-bold text-white block">Sessão Ativa:</span>
-            {user?.email} {isLocalMode ? '(Modo Local Offline)' : '(Sincronizado na Nuvem)'}
+            <span className="font-bold text-white block">Sessão Ativa (CPF):</span>
+            {cpf ? cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : ''} {isLocalMode ? '(Modo Local Offline)' : '(Sincronizado na Nuvem)'}
           </div>
           <button
             onClick={signOut}
