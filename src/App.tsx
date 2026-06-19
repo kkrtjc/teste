@@ -11,10 +11,11 @@ import { Losses } from './pages/Losses';
 import { Birds } from './pages/Birds';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+import { OnboardingModal } from './components/modals/OnboardingModal';
 import { Activity } from 'lucide-react';
 
 function AppContent() {
-  const { isReady } = useAppContext();
+  const { isReady, farmSettings } = useAppContext();
   const { user, loading: authLoading } = useAuth();
 
   // 1. Carrega a sessão de autenticação primeiro
@@ -44,21 +45,27 @@ function AppContent() {
     );
   }
 
+  // 4. Primeiro login: email ainda não configurado → exibe onboarding
+  const isFirstLogin = !farmSettings.email;
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="birds" element={<Birds />} />
-          <Route path="genetics" element={<Genetics />} />
-          <Route path="meat" element={<Meat />} />
-          <Route path="eggs" element={<Eggs />} />
-          <Route path="health" element={<Health />} />
-          <Route path="losses" element={<Losses />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </Router>
+    <>
+      {isFirstLogin && <OnboardingModal />}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="birds" element={<Birds />} />
+            <Route path="genetics" element={<Genetics />} />
+            <Route path="meat" element={<Meat />} />
+            <Route path="eggs" element={<Eggs />} />
+            <Route path="health" element={<Health />} />
+            <Route path="losses" element={<Losses />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </Router>
+    </>
   );
 }
 

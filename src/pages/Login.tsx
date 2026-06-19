@@ -48,12 +48,20 @@ export function Login() {
 
       <div className="w-full max-w-xs z-10 flex flex-col items-center gap-8">
 
-        {/* Rooster image (static) */}
-        <img
-          src={gamecockSilhouette}
-          alt="Galo Malaio"
-          className="w-52 h-52 object-contain select-none pointer-events-none"
-          style={{ filter: 'brightness(0)' }}
+        {/* Rooster image — CSS mask so only the silhouette shows, no background square */}
+        <div
+          className="w-52 h-52 select-none pointer-events-none"
+          style={{
+            WebkitMaskImage: `url(${gamecockSilhouette})`,
+            WebkitMaskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center',
+            maskImage: `url(${gamecockSilhouette})`,
+            maskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.88)',
+          }}
         />
 
         {/* Form */}
