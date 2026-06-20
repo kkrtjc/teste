@@ -62,41 +62,76 @@ export function BirdProfileModal() {
           </div>
 
           <div className="p-6 pt-16 space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {/* Anilha */}
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  🔍 Anilha
+                </p>
+                <p className="text-sm text-white font-bold truncate">{bird.anilha}</p>
+              </div>
+
+              {/* Nome */}
+              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  📝 Nome da Ave
+                </p>
+                <p className="text-sm text-white font-bold truncate">{bird.nome || 'Não informado'}</p>
+              </div>
+
+              {/* Sexo */}
+              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  🐓 Gênero / Sexo
+                </p>
+                <p className={`text-sm font-bold truncate ${bird.sexo === 'Macho' ? 'text-blue-400' : 'text-pink-400'}`}>
+                  {bird.sexo}
+                </p>
+              </div>
+
+              {/* Raça */}
+              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
                   <Info size={12} /> Raça
                 </p>
-                <p className="text-sm text-white font-bold truncate">{bird.raca}</p>
+                <p className="text-sm text-white font-bold truncate">{bird.raca || 'Não informada'}</p>
               </div>
+
+              {/* Baia */}
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                  <GitBranch size={12} /> Baia
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  <GitBranch size={12} /> Local / Baia
                 </p>
-                <p className="text-sm text-theme-accent font-mono font-bold truncate">{bird.baia}</p>
+                <p className="text-sm text-theme-accent font-mono font-bold truncate">
+                  {bird.baia ? `Baia ${bird.baia}` : 'Não informada'}
+                </p>
               </div>
+
+              {/* Status */}
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                  <Activity size={12} /> Status
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  <Activity size={12} /> Status / Finalidade
                 </p>
-                <p className="text-sm text-green-400 font-bold truncate">{bird.status}</p>
+                <p className="text-sm text-green-400 font-bold truncate">{bird.status || 'Não informado'}</p>
               </div>
-              {bird.dataNascimento && (
-                <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                  <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                    <Info size={12} /> Nascimento
-                  </p>
-                  <p className="text-sm text-white font-bold">{bird.dataNascimento.split('-').reverse().join('/')}</p>
-                </div>
-              )}
-              {bird.peso && (
-                <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                  <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-2">
-                    <Activity size={12} /> Peso
-                  </p>
-                  <p className="text-sm text-white font-bold">{bird.peso}</p>
-                </div>
-              )}
+
+              {/* Nascimento */}
+              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  📅 Nascimento
+                </p>
+                <p className="text-sm text-white font-bold">
+                  {bird.dataNascimento ? bird.dataNascimento.split('-').reverse().join('/') : 'Não informado'}
+                </p>
+              </div>
+
+              {/* Peso */}
+              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+                  ⚖️ Peso
+                </p>
+                <p className="text-sm text-white font-bold truncate">{bird.peso || 'Não informado'}</p>
+              </div>
             </div>
 
             {bird.vacinas && (
