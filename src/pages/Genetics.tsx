@@ -179,7 +179,9 @@ export function Genetics() {
                           </div>
                         </td>
                         <td className="p-4 font-medium text-theme-text-muted">{bird.raca}</td>
-                        <td className="p-4 font-mono text-theme-accent">{bird.baia}</td>
+                        <td className="p-4 font-mono text-theme-accent">
+                          {bird.baia && bird.baia !== 'ND' ? bird.baia : '—'}
+                        </td>
                         <td className="p-4">
                           <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase bg-green-500/20 text-green-400">
                             {bird.status}
@@ -219,7 +221,9 @@ export function Genetics() {
                         <p className="text-xs text-theme-text-muted truncate">{bird.nome || 'Sem nome'}</p>
                         <div className="flex items-center gap-2 mt-2 text-[10px] text-theme-text-muted font-bold">
                           <span className="bg-theme-base px-2 py-1 rounded border border-theme-border/50 truncate max-w-[100px]">{bird.raca}</span>
-                          <span className="bg-theme-base px-2 py-1 rounded border border-theme-border/50 font-mono text-theme-accent">{bird.baia}</span>
+                          <span className="bg-theme-base px-2 py-1 rounded border border-theme-border/50 font-mono text-theme-accent">
+                            {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Sem Baia'}
+                          </span>
                         </div>
                       </div>
                     </div>

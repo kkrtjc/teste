@@ -137,7 +137,7 @@ export function BirdProfileModal() {
               {/* Anilha */}
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
                 <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  🔍 Anilha
+                  🔍 Número da Anilha
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.anilha}</p>
               </div>
@@ -171,10 +171,10 @@ export function BirdProfileModal() {
               {/* Baia */}
               <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
                 <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  <GitBranch size={12} /> Local / Baia
+                  <GitBranch size={12} /> Local / Baia da Ave
                 </p>
                 <p className="text-sm text-theme-accent font-mono font-bold truncate">
-                  {bird.baia ? `Baia ${bird.baia}` : 'Não informada'}
+                  {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Não informada'}
                 </p>
               </div>
 

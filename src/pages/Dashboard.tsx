@@ -192,7 +192,9 @@ export function Dashboard() {
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-theme-text-muted">Baia {bird.baia}</p>
+                        <p className="text-xs font-bold text-theme-text-muted">
+                          {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Sem Baia'}
+                        </p>
                         <p className={`text-[10px] font-bold ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
                           {bird.status}
                         </p>
@@ -395,7 +397,7 @@ export function Dashboard() {
                         ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
                         {bird.sexo}
                       </span>
-                      {bird.baia && (
+                      {bird.baia && bird.baia !== 'ND' && (
                         <p className="text-[10px] text-theme-accent font-mono font-bold mt-1.5">Baia {bird.baia}</p>
                       )}
                     </div>

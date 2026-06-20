@@ -39,7 +39,7 @@ export function TutorialModal() {
       route: "/",
       selector: "#search-bar-container",
       mobileSelector: "#search-bar-container",
-      content: "Busca Inteligente: Digite o número da anilha ou o nome da ave para ver a ficha dela instantaneamente. Dica: digite o número da baia para ver o resumo completo das aves nela!"
+      content: "Estatísticas e Busca Rápida: Visualize as aves totais, machos, fêmeas e as raças cadastradas em uma grade 2x2 moderna. Ao clicar em Raças Cadastradas, você abre um catálogo completo das raças. Use a barra de pesquisa abaixo para encontrar aves por nome, anilha ou baia."
     },
     {
       title: "Aves & Raças (Seu Plantel) 🐔",
@@ -48,7 +48,7 @@ export function TutorialModal() {
       route: "/birds",
       selector: "#nav-link-birds",
       mobileSelector: "#mobile-nav-link-birds",
-      content: "Gerenciamento de Plantel: Veja suas aves divididas por raça. Aqui você cadastra aves e pode adicionar até 10 fotos por ave com uma galeria moderna."
+      content: "Controle do Plantel: Acesse o catálogo completo de raças e aves. Cadastre novas raças e insira aves vinculadas a elas, com suporte a até 10 fotos por ave para acompanhar seu crescimento e evolução na galeria."
     },
     {
       title: "Genética & Cruzamentos 🧬",
@@ -57,16 +57,16 @@ export function TutorialModal() {
       route: "/genetics",
       selector: "#nav-link-genetics",
       mobileSelector: "#mobile-nav-link-genetics",
-      content: "Controle de Cruzamentos: Monte casais com 1 macho e até 10 fêmeas, colete ovos mapeados por matriz e acompanhe a contagem de choco automaticamente."
+      content: "Melhoramento Genético: Monte cruzadores/casais com 1 macho e até 10 fêmeas. Registre coletas de ovos identificando a matriz mãe e controle o tempo de choco de cada ovo automaticamente."
     },
     {
-      title: "Configurações & Backups ⚙️",
+      title: "Configurações & Segurança ⚙️",
       icon: Settings,
       gradient: "from-stone-400 to-slate-500",
       route: "/settings",
       selector: "#nav-link-settings",
       mobileSelector: "#header-profile-button",
-      content: "Segurança e Cadastro: Personalize o nome e foto do criatório. Dica de ouro: faça backups periódicos nesta página para nunca perder os seus dados!"
+      content: "Personalização e Segurança: Edite o nome do criatório e carregue sua logo personalizada. Utilize esta tela para realizar importação e exportação de backups regulares para manter os seus dados 100% seguros."
     }
   ];
 
@@ -175,11 +175,11 @@ export function TutorialModal() {
 
       {/* ── Floating Tour Card (z-[10000]) ── */}
       <div 
-        className="fixed z-[10000] w-[92vw] max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col bg-theme-surface transition-all duration-300 left-1/2 -translate-x-1/2"
+        className="fixed z-[10000] w-[92vw] max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col bg-theme-surface transition-all duration-300 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
-          bottom: isMobile ? '24px' : '40px',
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1)'
+          background: 'linear-gradient(145deg, rgba(28, 28, 35, 0.98) 0%, rgba(18, 18, 24, 0.99) 100%)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.15)',
+          backdropFilter: 'blur(10px)'
         }}
       >
         {/* Progress indicator */}
@@ -209,7 +209,7 @@ export function TutorialModal() {
 
         {/* Card Content */}
         <div className="p-5 flex-1 select-none">
-          <p className="text-xs text-theme-text-muted leading-relaxed font-medium">
+          <p className="text-sm text-theme-text-muted leading-relaxed font-medium">
             {current.content}
           </p>
         </div>

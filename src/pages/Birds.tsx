@@ -255,7 +255,7 @@ export function Birds() {
                       </div>
 
                       {/* Baia Badge */}
-                      {bird.baia && (
+                      {bird.baia && bird.baia !== 'ND' && (
                         <div className="absolute bottom-2 left-2">
                           <span className="text-[10px] font-black bg-black/70 text-theme-accent px-2 py-0.5 rounded border border-theme-accent/30 shadow-md">
                             Baia {bird.baia}
