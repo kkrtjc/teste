@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Save, Phone, Mail, Home, LogOut } from 'lucide-react';
+import { Camera, Save, Phone, Mail, Home, LogOut, HelpCircle } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
@@ -8,7 +8,7 @@ export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
-    importBackup
+    importBackup, openTutorial
   } = useAppContext();
   const { signOut, isLocalMode, cpf } = useAuth();
   
@@ -199,6 +199,25 @@ export function Settings() {
           </button>
         </div>
 
+      </div>
+
+      {/* Central de Ajuda e Tutorial Card */}
+      <div className="premium-card p-6 border border-theme-border/50 space-y-4">
+        <div>
+          <h3 className="text-lg font-black text-white flex items-center gap-2">
+            <HelpCircle size={20} className="text-theme-primary" /> Central de Ajuda &amp; Tutorial
+          </h3>
+          <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
+            Se você tiver dúvidas sobre o funcionamento de qualquer aba ou recurso do sistema, assista ao nosso tutorial guiado explicativo passo a passo.
+          </p>
+        </div>
+
+        <button
+          onClick={openTutorial}
+          className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-theme-primary to-orange-500 hover:from-amber-400 hover:to-orange-600 text-black rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
+        >
+          📖 Iniciar Tutorial Guiado
+        </button>
       </div>
 
       {/* Backup and Sync Card */}

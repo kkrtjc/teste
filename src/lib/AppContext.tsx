@@ -113,6 +113,11 @@ type AppContextType = {
   openAddBirdModal: (breedName?: string, birdId?: string) => void;
   openBirdProfile: (birdId: string) => void;
   closeModals: () => void;
+  isTutorialOpen: boolean;
+  openTutorial: () => void;
+  closeTutorial: () => void;
+  activeBreed: string;
+  setActiveBreed: (breed: string) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -441,6 +446,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [preSelectedBreedForNewBird, setPreSelectedBreedForNewBird] = useState('');
   const [birdToEditId, setBirdToEditId] = useState<string | null>(null);
   const [selectedBirdProfileId, setSelectedBirdProfileId] = useState<string | null>(null);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [activeBreed, setActiveBreed] = useState('');
+
+  useEffect(() => {
+    if (isReady && farmSettings.email) {
+      localforage.getItem('@mura-manager:has-seen-tutorial').then(val => {
+        if (!val) {
+          setIsTutorialOpen(true);
+        }
+      });
+    }
+  }, [isReady, farmSettings.email]);
 
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {
@@ -841,6 +858,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBirdToEditId(null);
   };
 
+  const openTutorial = () => {
+    setIsTutorialOpen(true);
+  };
+
+  const closeTutorial = () => {
+    setIsTutorialOpen(false);
+    localforage.setItem('@mura-manager:has-seen-tutorial', true).catch(console.error);
+  };
+
   return (
     <AppContext.Provider value={{
       isReady,
@@ -853,7 +879,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       farmSettings, updateFarmSettings,
       importBackup,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-      openAddBirdModal, openBirdProfile, closeModals
+      openAddBirdModal, openBirdProfile, closeModals,
+      isTutorialOpen, openTutorial, closeTutorial,
+      activeBreed, setActiveBreed
     }}>
       {children}
     </AppContext.Provider>

@@ -4,10 +4,11 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Egg, Dna, Activity, Settings, Beef, 
   Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare
+  Bell, MessageSquare, HelpCircle
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
+import { TutorialModal } from './modals/TutorialModal';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -22,7 +23,7 @@ export type AllowedCpf = {
 };
 
 export function Layout() {
-  const { farmSettings } = useAppContext();
+  const { farmSettings, openTutorial } = useAppContext();
   const navigate = useNavigate();
   const { cpf, isLocalMode } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
@@ -216,6 +217,7 @@ export function Layout() {
     <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pb-[env(safe-area-inset-bottom)]">
       <AddBirdModal />
       <BirdProfileModal />
+      <TutorialModal />
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface/30 backdrop-blur-md hidden md:flex flex-col">
@@ -232,6 +234,7 @@ export function Layout() {
             <NavLink
               key={item.path}
               to={item.path}
+              id={`nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-3 rounded-xl transition-all font-medium text-sm ${
                   isActive
@@ -258,11 +261,21 @@ export function Layout() {
           </div>
           <h1 className="font-bold text-lg truncate text-white">{farmSettings.name || 'Mura Manager'}</h1>
           
+          {/* Help / Tutorial Trigger */}
+          <button
+            onClick={openTutorial}
+            className="p-2 hover:bg-white/5 text-theme-text-muted hover:text-white rounded-xl transition-all active:scale-95 shrink-0 ml-auto mr-2 flex items-center gap-1.5 text-xs font-bold"
+            title="Tutorial de Uso"
+          >
+            <HelpCircle size={18} />
+            <span className="hidden sm:inline">Ajuda</span>
+          </button>
+
           {/* Admin panel button if CPF is admin */}
           {isAdmin && (
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              className="mr-3 p-2 bg-theme-primary/10 border border-theme-primary/30 hover:border-theme-primary text-theme-primary rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all hover:bg-theme-primary/20 active:scale-95 shrink-0 ml-auto relative"
+              className="mr-3 p-2 bg-theme-primary/10 border border-theme-primary/30 hover:border-theme-primary text-theme-primary rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all hover:bg-theme-primary/20 active:scale-95 shrink-0 relative"
               title="Cadastrar Clientes"
             >
               <Users size={14} />
@@ -277,8 +290,9 @@ export function Layout() {
 
           {/* Profile photo → goes to settings */}
           <button
+            id="header-profile-button"
             onClick={() => navigate('/settings')}
-            className={`w-10 h-10 rounded-full border-2 border-theme-border hover:border-theme-primary overflow-hidden shrink-0 transition-colors active:scale-95 ${!isAdmin ? 'ml-auto' : ''}`}
+            className="w-10 h-10 rounded-full border-2 border-theme-border hover:border-theme-primary overflow-hidden shrink-0 transition-colors active:scale-95"
             title="Configurações do Criatório"
           >
             {farmSettings.photo ? (
@@ -301,6 +315,7 @@ export function Layout() {
             <NavLink
               key={item.path}
               to={item.path}
+              id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
                   isActive ? 'text-theme-primary' : 'text-theme-text-muted hover:text-white'

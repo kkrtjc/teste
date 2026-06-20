@@ -5,8 +5,7 @@ import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
 export function Birds() {
-  const { breeds, addBreed, editBreed, birds, openAddBirdModal, openBirdProfile } = useAppContext();
-  const [activeBreed, setActiveBreed] = useState<string>('');
+  const { breeds, addBreed, editBreed, birds, openAddBirdModal, openBirdProfile, activeBreed, setActiveBreed } = useAppContext();
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [showAllBreedsModal, setShowAllBreedsModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
