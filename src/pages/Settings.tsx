@@ -108,7 +108,7 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in h-full p-4 max-w-2xl mx-auto">
+    <div className="space-y-6 animate-fade-in p-4 max-w-2xl mx-auto pb-24">
       <div>
         <h2 className="text-2xl font-black text-white">Configurações</h2>
         <p className="text-sm text-theme-text-muted mt-1">Personalize o perfil do seu criatório.</p>
