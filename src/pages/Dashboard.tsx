@@ -1,158 +1,277 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Search, Egg, Beef } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Search, X, ChevronRight, Bird, Users, Egg, Beef, Baby } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
+/* ── helpers ── */
+const statusColor: Record<string, string> = {
+  'Reprodução': 'text-pink-400',
+  'Cruza':      'text-pink-400',
+  'Engorda':    'text-orange-400',
+  'Crescimento':'text-green-400',
+  'Postura':    'text-yellow-400',
+  'Ativo':      'text-emerald-400',
+};
+
 export function Dashboard() {
-  const { birds, eggLots, meatLots, openBirdProfile, farmSettings } = useAppContext();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { birds, couples, eggLots, meatLots, openBirdProfile, farmSettings } = useAppContext();
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const totalAves = birds.length;
+  /* fechar ao clicar fora */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  const searchResultsBirds = birds.filter(b => 
-    b.nome?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    b.anilha?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.baia?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const term = searchTerm.trim().toLowerCase();
+  const hasSearch = term.length > 0;
 
-  const searchResultsEggLots = eggLots.filter(l => l.baia.toLowerCase().includes(searchTerm.toLowerCase()));
-  const searchResultsMeatLots = meatLots.filter(l => l.baia.toLowerCase().includes(searchTerm.toLowerCase()));
+  /* ── resultados ── */
+  const birdResults  = hasSearch ? birds.filter(b =>
+    b.nome?.toLowerCase().includes(term) ||
+    b.anilha?.toLowerCase().includes(term)
+  ) : [];
 
-  const showResults = searchTerm.length > 0;
+  /* busca por baia: agrupa todos os tipos */
+  const baySet = new Set<string>();
+  if (hasSearch) {
+    birds    .filter(b => b.baia?.toLowerCase().includes(term)).forEach(b => baySet.add(b.baia));
+    eggLots  .filter(l => l.baia.toLowerCase().includes(term)).forEach(l => baySet.add(l.baia));
+    meatLots .filter(l => l.baia.toLowerCase().includes(term)).forEach(l => baySet.add(l.baia));
+  }
+  const bayResults = Array.from(baySet);
+
+  const totalAves   = birds.length;
+  const totalMachos = birds.filter(b => b.sexo === 'Macho').length;
+  const totalFemeas = birds.filter(b => b.sexo === 'Fêmea').length;
+
+  /* ── info de uma baia ── */
+  const getBayInfo = (baia: string) => {
+    const avesNaBaia   = birds.filter(b => b.baia === baia);
+    const machos       = avesNaBaia.filter(b => b.sexo === 'Macho');
+    const femeas       = avesNaBaia.filter(b => b.sexo === 'Fêmea');
+    const pintinhos    = avesNaBaia.filter(b => b.origem === 'Cruzamento');
+    const eggLot       = eggLots.find(l => l.baia === baia);
+    const meatLot      = meatLots.find(l => l.baia === baia);
+
+    // casal vinculado (se tem pintinhos)
+    const casalId = pintinhos[0]?.casalId;
+    const casal   = casalId ? couples.find(c => c.id === casalId) : null;
+    const macho   = casal   ? birds.find(b => b.id === casal.machoId) : null;
+    const femea   = casal   ? birds.find(b => b.id === (casal.femeaIds?.[0] || casal.femeaId)) : null;
+
+    // status dominante
+    const statusList = avesNaBaia.map(b => b.status).filter(Boolean);
+    const dominantStatus = statusList.length > 0
+      ? statusList.sort((a, b) =>
+          statusList.filter(s => s === b).length - statusList.filter(s => s === a).length
+        )[0]
+      : '';
+
+    return { avesNaBaia, machos, femeas, pintinhos, eggLot, meatLot, casal, macho, femea, dominantStatus };
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in h-full flex flex-col items-center p-4">
-      
-      {/* Farm Name & Photo */}
-      <div className="flex flex-col items-center mt-6">
-        <div className="w-32 h-32 rounded-full border-4 border-theme-primary overflow-hidden shadow-lg mb-4 bg-theme-base flex items-center justify-center text-theme-text-muted">
-          {farmSettings.photo ? (
-            <img src={farmSettings.photo} alt="Foto do Criatório" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-4xl">🐔</span>
+    <div className="flex flex-col items-center h-full p-4 space-y-6 animate-fade-in">
+
+      {/* ── Farm photo + name ── */}
+      <div className="flex flex-col items-center mt-4 space-y-3">
+        <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-theme-primary
+                        overflow-hidden shadow-xl bg-theme-surface flex items-center justify-center">
+          {farmSettings.photo
+            ? <img src={farmSettings.photo} alt="Criatório" className="w-full h-full object-cover" />
+            : <span className="text-5xl">🐓</span>}
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-black text-white text-center">
+          {farmSettings.name || 'Meu Criatório'}
+        </h2>
+      </div>
+
+      {/* ── Stats row ── */}
+      <div className="flex gap-3 w-full max-w-sm">
+        {[
+          { label: 'Total', value: totalAves,   color: 'text-theme-primary' },
+          { label: 'Machos', value: totalMachos, color: 'text-blue-400' },
+          { label: 'Fêmeas', value: totalFemeas, color: 'text-pink-400' },
+        ].map(s => (
+          <div key={s.label}
+               className="flex-1 bg-theme-surface border border-theme-border/50 rounded-2xl py-3 text-center">
+            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Search ── */}
+      <div className="w-full max-w-sm relative" ref={wrapperRef}>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => { setSearchTerm(e.target.value); setShowResults(true); }}
+            onFocus={() => setShowResults(true)}
+            placeholder="Nome, anilha ou número da baia…"
+            className="w-full bg-theme-surface border border-theme-border/50 text-white
+                       pl-11 pr-10 py-3.5 rounded-xl focus:outline-none focus:border-theme-primary
+                       transition-colors shadow-lg text-sm placeholder-theme-text-muted/50"
+          />
+          {searchTerm && (
+            <button onClick={() => { setSearchTerm(''); setShowResults(false); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white transition-colors">
+              <X size={16} />
+            </button>
           )}
         </div>
-        <h2 className="text-3xl font-black text-white text-center">{farmSettings.name || 'Meu Criatório'}</h2>
-      </div>
 
-      {/* Quantity of Birds */}
-      <div className="flex flex-col items-center mt-2">
-        <div className="bg-theme-surface border border-theme-border/50 px-6 py-3 rounded-2xl shadow-inner text-center">
-          <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Plantel Atual</p>
-          <h3 className="text-4xl font-black text-theme-primary">{totalAves} <span className="text-lg text-theme-text-muted font-bold">aves</span></h3>
-        </div>
-      </div>
+        {/* Dropdown de resultados */}
+        {showResults && hasSearch && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-theme-surface border
+                          border-theme-primary/30 rounded-xl shadow-2xl z-50
+                          max-h-[70vh] overflow-y-auto p-3 space-y-4">
 
-      {/* Search Bar */}
-      <div className="w-full max-w-sm mt-4 relative">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={20} />
-          <input 
-            type="text" 
-            placeholder="Pesquisar Ave, Anilha ou Lote..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-theme-surface border border-theme-border/50 text-white pl-12 pr-4 py-4 rounded-xl focus:outline-none focus:border-theme-primary shadow-lg transition-colors"
-          />
-        </div>
-
-        {showResults && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-theme-surface border border-theme-primary/30 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto p-2 space-y-4">
-            
-            {searchResultsBirds.length > 0 && (
+            {/* Resultados de aves */}
+            {birdResults.length > 0 && (
               <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase px-2 mb-2">Aves Encontradas</p>
-                <div className="space-y-1">
-                  {searchResultsBirds.map(bird => (
-                    <div key={bird.id} onClick={() => openBirdProfile(bird.id)} className="flex flex-col p-3 bg-theme-base/50 hover:bg-theme-primary/10 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-theme-primary/30">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-white flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-theme-surface flex items-center justify-center overflow-hidden shrink-0">
-                            {bird.imagem ? <img src={bird.imagem} className="w-full h-full object-cover" /> : (bird.sexo === 'Macho' ? '🐓' : '🐔')}
+                <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2 flex items-center gap-1">
+                  <Bird size={10} /> Aves encontradas
+                </p>
+                <div className="space-y-1.5">
+                  {birdResults.map(bird => (
+                    <div key={bird.id}
+                         onClick={() => { openBirdProfile(bird.id); setShowResults(false); }}
+                         className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer
+                                    hover:bg-theme-primary/10 border border-transparent
+                                    hover:border-theme-primary/30 transition-all">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-theme-base flex-shrink-0
+                                      flex items-center justify-center">
+                        {bird.imagem
+                          ? <img src={bird.imagem} className="w-full h-full object-cover" alt="" />
+                          : <span className="text-xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm truncate">{bird.anilha}</p>
+                        <p className="text-xs text-theme-text-muted truncate">
+                          {bird.nome || 'Sem nome'} · {bird.raca}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs font-bold text-theme-text-muted">Baia {bird.baia}</p>
+                        <p className={`text-[10px] font-bold ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
+                          {bird.status}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-theme-text-muted flex-shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Resultados de baia */}
+            {bayResults.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2">
+                  📦 Baias encontradas
+                </p>
+                <div className="space-y-3">
+                  {bayResults.map(baia => {
+                    const info = getBayInfo(baia);
+                    return (
+                      <div key={baia}
+                           className="p-3 rounded-xl bg-theme-base/60 border border-theme-border/40 space-y-2.5">
+
+                        {/* Header da baia */}
+                        <div className="flex items-center justify-between">
+                          <span className="font-black text-white text-base">Baia {baia}</span>
+                          {info.dominantStatus && (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-theme-surface
+                                             ${statusColor[info.dominantStatus] || 'text-theme-text-muted'}`}>
+                              {info.dominantStatus}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Contagem */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { icon: <Bird size={12}/>, label: 'Total',    value: info.avesNaBaia.length, color: 'text-white' },
+                            { icon: '🐓',              label: 'Machos',   value: info.machos.length,     color: 'text-blue-400' },
+                            { icon: '🐔',              label: 'Fêmeas',   value: info.femeas.length,     color: 'text-pink-400' },
+                            { icon: <Baby size={12}/>, label: 'Pintinhos',value: info.pintinhos.length,  color: 'text-yellow-400' },
+                          ].map(s => (
+                            <div key={s.label} className="text-center bg-theme-surface rounded-lg py-1.5 px-1">
+                              <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
+                              <div className="text-[9px] text-theme-text-muted font-bold">{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Lot info */}
+                        {info.eggLot && (
+                          <div className="flex items-center gap-2 text-xs text-yellow-400">
+                            <Egg size={12} /> Lote postura ativo · {info.eggLot.femeasIds.length} fêmeas
                           </div>
-                          {bird.anilha}
-                        </span>
-                        <span className="text-[10px] bg-theme-surface px-2 py-1 rounded text-theme-text-muted font-bold">Baia {bird.baia}</span>
+                        )}
+                        {info.meatLot && (
+                          <div className="flex items-center gap-2 text-xs text-orange-400">
+                            <Beef size={12} /> Lote engorda · {info.meatLot.avesIds.length} aves · {info.meatLot.status}
+                          </div>
+                        )}
+
+                        {/* Link ao casal pai (se tem pintinhos) */}
+                        {info.pintinhos.length > 0 && info.casal && (
+                          <div className="flex items-center gap-2 text-xs p-2 bg-theme-surface rounded-lg">
+                            <Users size={12} className="text-theme-primary flex-shrink-0" />
+                            <span className="text-theme-text-muted">Casal pai:</span>
+                            <span className="text-white font-bold truncate">
+                              {info.macho?.anilha || '?'} × {info.femea?.anilha || '?'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Lista de aves clicáveis */}
+                        {info.avesNaBaia.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves na baia</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {info.avesNaBaia.slice(0, 8).map(b => (
+                                <button key={b.id}
+                                        onClick={() => { openBirdProfile(b.id); setShowResults(false); }}
+                                        className="flex items-center gap-1 text-xs bg-theme-surface hover:bg-theme-primary/20
+                                                   border border-theme-border/40 hover:border-theme-primary/50
+                                                   rounded-lg px-2 py-1 transition-all">
+                                  <span>{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                                  <span className="text-white font-bold">{b.anilha}</span>
+                                </button>
+                              ))}
+                              {info.avesNaBaia.length > 8 && (
+                                <span className="text-xs text-theme-text-muted self-center">
+                                  +{info.avesNaBaia.length - 8} mais
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-xs text-theme-text-muted">{bird.nome || 'Sem nome'} • {bird.raca}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {searchResultsEggLots.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase px-2 mb-2">Lotes de Postura</p>
-                <div className="space-y-1">
-                  {searchResultsEggLots.map(lot => (
-                    <div key={lot.id} className="flex flex-col p-3 bg-theme-base/50 rounded-lg border border-transparent hover:border-theme-border/50">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-theme-primary flex items-center gap-1"><Egg size={14}/> Baia {lot.baia}</span>
-                        <span className="text-[10px] bg-theme-surface px-2 py-1 rounded text-theme-text-muted font-bold">{lot.status}</span>
-                      </div>
-                      <span className="text-xs text-theme-text-muted">{lot.femeasIds.length} aves vinculadas</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Nenhum resultado */}
+            {birdResults.length === 0 && bayResults.length === 0 && (
+              <div className="py-6 text-center text-theme-text-muted text-sm">
+                Nenhum resultado para "{searchTerm}"
               </div>
             )}
-
-            {searchResultsMeatLots.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase px-2 mb-2">Lotes de Engorda</p>
-                <div className="space-y-1">
-                  {searchResultsMeatLots.map(lot => (
-                    <div key={lot.id} className="flex flex-col p-3 bg-theme-base/50 rounded-lg border border-transparent hover:border-theme-border/50">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-orange-400 flex items-center gap-1"><Beef size={14}/> Baia {lot.baia}</span>
-                        <span className="text-[10px] bg-theme-surface px-2 py-1 rounded text-theme-text-muted font-bold">{lot.status}</span>
-                      </div>
-                      <span className="text-xs text-theme-text-muted">{lot.avesIds.length} aves vinculadas</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {searchResultsBirds.length === 0 && searchResultsEggLots.length === 0 && searchResultsMeatLots.length === 0 && (
-              <div className="p-4 text-center text-theme-text-muted text-sm">
-                Nenhum resultado encontrado para "{searchTerm}"
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Performance Dropdown Menu */}
-      <div className="w-full max-w-sm mt-4">
-        <button 
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="w-full bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-lg py-4 px-6 rounded-xl flex justify-between items-center transition-colors shadow-lg"
-        >
-          <span>Performance</span>
-          {menuOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-        </button>
-
-        {menuOpen && (
-          <div className="mt-2 bg-theme-surface border border-theme-border rounded-xl shadow-xl overflow-hidden animate-fade-in">
-            <ul className="flex flex-col divide-y divide-theme-border/50">
-              <li className="p-4 hover:bg-white/5 cursor-pointer transition-colors font-bold text-white text-center">
-                Engorda
-              </li>
-              <li className="p-4 hover:bg-white/5 cursor-pointer transition-colors font-bold text-white text-center">
-                Postura
-              </li>
-              <li className="p-4 hover:bg-white/5 cursor-pointer transition-colors font-bold text-white text-center">
-                Competição
-              </li>
-              <li className="p-4 hover:bg-white/5 cursor-pointer transition-colors font-bold text-white text-center">
-                Cruza
-              </li>
-              <li className="p-4 hover:bg-white/5 cursor-pointer transition-colors font-bold text-white text-center">
-                Pintinhos
-              </li>
-            </ul>
           </div>
         )}
       </div>

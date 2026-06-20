@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, MoreVertical, Camera, Search } from 'lucide-react';
+import { Plus, Edit2, Camera, Search } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
@@ -8,6 +8,7 @@ export function Birds() {
   const { breeds, addBreed, editBreed, birds, openAddBirdModal, openBirdProfile } = useAppContext();
   const [activeBreed, setActiveBreed] = useState<string>('');
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
+  const [showAllBreedsModal, setShowAllBreedsModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   const [breedSearch, setBreedSearch] = useState('');
   const [birdSearch, setBirdSearch] = useState('');
@@ -103,9 +104,19 @@ export function Birds() {
               <h2 className="text-xl sm:text-2xl font-black text-white">Raças &amp; Linhagens</h2>
               <p className="text-xs sm:text-sm text-theme-text-muted mt-1">{breeds.length} raça{breeds.length !== 1 ? 's' : ''} cadastrada{breeds.length !== 1 ? 's' : ''}</p>
             </div>
-            <button onClick={() => openBreedModal()} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
-              <Plus size={18} /> Cadastrar Raça
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {breeds.length > 0 && (
+                <button 
+                  onClick={() => setShowAllBreedsModal(true)} 
+                  className="px-4 py-2.5 rounded-xl border border-theme-border/60 text-white font-bold text-sm bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/50 transition-colors flex items-center justify-center gap-2"
+                >
+                  🌐 Todas as Raças
+                </button>
+              )}
+              <button onClick={() => openBreedModal()} className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
+                <Plus size={18} /> Cadastrar Raça
+              </button>
+            </div>
           </div>
 
           {/* Search bar for breeds */}
@@ -209,95 +220,78 @@ export function Birds() {
             />
           </div>
 
-          <div className="flex-1 premium-card flex flex-col overflow-hidden min-h-0">
-            <div className="flex-1 overflow-y-auto p-0">
-              {/* Desktop Table */}
-              <div className="hidden md:block">
-                <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-theme-surface z-10 shadow-sm">
-                  <tr className="border-b border-theme-border text-xs uppercase tracking-wider text-theme-text-muted">
-                    <th className="p-4 font-bold">Anilha / Nome</th>
-                    <th className="p-4 font-bold">Sexo</th>
-                    <th className="p-4 font-bold">Baia</th>
-                    <th className="p-4 font-bold">Status</th>
-                    <th className="p-4 font-bold text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-theme-border/50 text-sm">
-                  {filteredBirds.map(bird => (
-                    <tr key={bird.id} onClick={() => openBirdProfile(bird.id)} className="hover:bg-white/5 transition-colors cursor-pointer group">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0">
-                            {bird.imagem ? <img src={bird.imagem} className="w-full h-full object-cover" /> : (bird.sexo === 'Macho' ? '🐓' : '🐔')}
-                          </div>
-                          <div>
-                            <p className="font-bold text-white group-hover:text-theme-primary transition-colors">{bird.anilha}</p>
-                            <p className="text-xs text-theme-text-muted">{bird.nome}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 font-medium">{bird.sexo}</td>
-                      <td className="p-4 font-mono text-theme-accent">{bird.baia}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                          bird.sexo === 'Macho' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
-                        }`}>
-                          {bird.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button className="p-2 text-theme-text-muted hover:text-white" onClick={(e) => e.stopPropagation()}><MoreVertical size={18} /></button>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredBirds.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-theme-text-muted">
-                        {birdSearch ? `Nenhuma ave encontrada para "${birdSearch}".` : 'Nenhuma ave vinculada a esta raça.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Cards */}
-              <div className="md:hidden flex flex-col divide-y divide-theme-border/50">
+          <div className="flex-1 overflow-y-auto pb-6">
+            {filteredBirds.length === 0 ? (
+              <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
+                {birdSearch ? `Nenhuma ave encontrada para "${birdSearch}".` : 'Nenhuma ave vinculada a esta raça.'}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {filteredBirds.map(bird => (
-                <div key={bird.id} onClick={() => openBirdProfile(bird.id)} className="p-4 hover:bg-white/5 transition-colors cursor-pointer active:bg-theme-primary/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-xl overflow-hidden shrink-0 shadow-inner">
-                      {bird.imagem ? <img src={bird.imagem} className="w-full h-full object-cover" /> : (bird.sexo === 'Macho' ? '🐓' : '🐔')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <p className="font-bold text-white text-base truncate pr-2">{bird.anilha}</p>
-                        <span className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase shrink-0 ${
-                          bird.sexo === 'Macho' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
-                        }`}>
-                          {bird.status}
+                  <div
+                    key={bird.id}
+                    onClick={() => openBirdProfile(bird.id)}
+                    className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface"
+                  >
+                    {/* Imagem 1:1 com min 160px */}
+                    <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
+                      {bird.imagem ? (
+                        <img
+                          src={bird.imagem}
+                          alt={bird.anilha}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <span className="text-5xl group-hover:scale-105 transition-transform duration-500">
+                          {bird.sexo === 'Macho' ? '🐓' : '🐔'}
+                        </span>
+                      )}
+                      
+                      {/* Gênero Badge */}
+                      <div className="absolute top-2 right-2">
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider
+                          ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
+                          {bird.sexo === 'Macho' ? 'Macho' : 'Fêmea'}
                         </span>
                       </div>
-                      <p className="text-xs text-theme-text-muted truncate">{bird.nome || 'Sem nome'}</p>
-                      <div className="flex items-center gap-2 mt-2 text-[10px] text-theme-text-muted font-bold">
-                        <span className="bg-theme-base px-2 py-1 rounded">{bird.sexo}</span>
-                        <span className="bg-theme-base px-2 py-1 rounded font-mono text-theme-accent">{bird.baia}</span>
+
+                      {/* Baia Badge */}
+                      {bird.baia && (
+                        <div className="absolute bottom-2 left-2">
+                          <span className="text-[10px] font-black bg-black/70 text-theme-accent px-2 py-0.5 rounded border border-theme-accent/30 shadow-md">
+                            Baia {bird.baia}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Detalhes da Ave */}
+                    <div className="p-3 flex flex-col justify-between flex-1 gap-2">
+                      <div>
+                        <h4 className="font-black text-white text-sm group-hover:text-theme-primary transition-colors truncate">
+                          {bird.anilha}
+                        </h4>
+                        <p className="text-xs text-theme-text-muted truncate">
+                          {bird.nome || 'Sem nome'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-theme-border/30">
+                        <span className="text-[9px] font-bold text-theme-text-muted uppercase truncate">
+                          {bird.status}
+                        </span>
+                        <span className="text-[10px] text-theme-primary font-black uppercase tracking-wider">
+                          Ver Ficha
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-                {filteredBirds.length === 0 && (
-                  <div className="p-8 text-center text-theme-text-muted text-sm">
-                    {birdSearch ? `Nenhuma ave encontrada para "${birdSearch}".` : 'Nenhuma ave vinculada.'}
-                  </div>
-                )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </>
-    )}
+        </>
+      )}
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && createPortal(
@@ -382,6 +376,49 @@ export function Birds() {
               <button onClick={handleSaveBreed} className="btn-primary">
                 {breedToEditId ? 'Salvar Alterações' : 'Salvar Raça'}
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showAllBreedsModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl">
+            <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
+              <div>
+                <h3 className="font-bold text-lg text-white">Todas as Raças</h3>
+                <p className="text-xs text-theme-text-muted">Selecione uma raça para ver o plantel</p>
+              </div>
+              <button onClick={() => setShowAllBreedsModal(false)} className="text-theme-text-muted hover:text-white">✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {breeds.map(breed => {
+                const count = birds.filter(b => b.raca === breed.nome).length;
+                return (
+                  <div
+                    key={breed.id}
+                    onClick={() => {
+                      setActiveBreed(breed.nome);
+                      setShowAllBreedsModal(false);
+                    }}
+                    className="group relative h-28 rounded-xl border border-theme-border/60 bg-theme-base overflow-hidden cursor-pointer hover:border-theme-primary/50 transition-all flex flex-col justify-end p-3"
+                  >
+                    {breed.imagem ? (
+                      <img src={breed.imagem} alt={breed.nome} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:scale-105 transition-transform duration-500">
+                        <span className="text-4xl">🐓</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                    <div className="relative z-10">
+                      <h4 className="font-black text-white text-sm group-hover:text-theme-primary transition-colors truncate">{breed.nome}</h4>
+                      <p className="text-[10px] text-theme-text-muted font-bold uppercase">{count} ave{count !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>,

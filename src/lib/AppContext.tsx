@@ -36,10 +36,21 @@ export type Bird = {
 export type Couple = {
   id: string;
   machoId: string;
-  femeaId: string;
+  femeaId: string;           // mantido para compat. com dados antigos
+  femeaIds?: string[];       // múltiplas fêmeas (até 10)
+  cageName?: string;         // número/nome do cruzador
+  raca?: string;             // raça do casal
   objetivo: string;
   dataInicio: string;
   status: 'Ativo' | 'Separado';
+};
+
+export type CoupleEgg = {
+  id: string;
+  coupleId: string;
+  femeaId: string;           // qual fêmea botou o ovo
+  status: 'Em Espera' | 'Em Choco' | 'Eclodido' | 'Perdido';
+  dataIntroducao: string;    // data de introdução ao cruzador
 };
 
 export type EggLot = {
@@ -78,6 +89,10 @@ type AppContextType = {
   couples: Couple[];
   addCouple: (couple: Couple) => void;
   editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
+  coupleEggs: CoupleEgg[];
+  addCoupleEgg: (egg: CoupleEgg) => void;
+  editCoupleEgg: (id: string, updated: Partial<CoupleEgg>) => void;
+  removeCoupleEgg: (id: string) => void;
   eggLots: EggLot[];
   addEggLot: (lot: EggLot) => void;
   editEggLot: (id: string, updatedLot: Partial<EggLot>) => void;
@@ -108,6 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [breeds, setBreeds] = useState<Breed[]>([]);
   const [birds, setBirds] = useState<Bird[]>([]);
   const [couples, setCouples] = useState<Couple[]>([]);
+  const [coupleEggs, setCoupleEggs] = useState<CoupleEgg[]>([]);
   const [eggLots, setEggLots] = useState<EggLot[]>([]);
   const [meatLots, setMeatLots] = useState<MeatLot[]>([]);
   
@@ -308,18 +324,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     async function loadFromLocalForage() {
       const storageItems = [
-        { key: '@mura-manager:breeds', setter: setBreeds },
-        { key: '@mura-manager:birds', setter: setBirds },
-        { key: '@mura-manager:couples', setter: setCouples },
-        { key: '@mura-manager:egglots', setter: setEggLots },
-        { key: '@mura-manager:meatlots', setter: setMeatLots },
-        { key: '@mura-manager:settings', setter: setFarmSettings }
+        { key: '@mura-manager:breeds',      setter: setBreeds },
+        { key: '@mura-manager:birds',       setter: setBirds },
+        { key: '@mura-manager:couples',     setter: (d: any) => {
+            // migração: femeaId → femeaIds[]
+            const migrated = (d || []).map((c: any) => ({
+              ...c,
+              femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
+            }));
+            setCouples(migrated);
+          }
+        },
+        { key: '@mura-manager:couple-eggs', setter: setCoupleEggs },
+        { key: '@mura-manager:egglots',     setter: setEggLots },
+        { key: '@mura-manager:meatlots',    setter: setMeatLots },
+        { key: '@mura-manager:settings',    setter: setFarmSettings }
       ];
 
       for (const item of storageItems) {
         try {
           let data: any = await localforage.getItem(item.key);
-          
+
           if (!data) {
             const oldData = localStorage.getItem(item.key);
             if (oldData) {
@@ -328,9 +353,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               localStorage.removeItem(item.key);
             }
           }
-          
+
           if (data) {
-            item.setter(data);
+            (item.setter as any)(data);
           }
         } catch (error) {
           console.error(`Erro ao carregar do localforage (${item.key}):`, error);
@@ -440,7 +465,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCouples(prev => {
       const next = [...prev, couple];
       localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
-      
+
       if (isSupabaseConfigured && user) {
         supabase!
           .from('couples')
@@ -448,7 +473,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             id: couple.id,
             user_id: user.id,
             macho_id: couple.machoId,
-            femea_id: couple.femeaId,
+            femea_id: couple.femeaIds?.[0] || couple.femeaId || '',
             objetivo: couple.objetivo,
             data_inicio: couple.dataInicio,
             status: couple.status
@@ -458,17 +483,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return next;
     });
   };
-  
+
   const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
     setCouples(prev => {
       const next = prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c);
       localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
-      
+
       if (isSupabaseConfigured && user) {
-        const dbUpdate: any = { ...updatedCouple };
-        if (updatedCouple.machoId !== undefined) { dbUpdate.macho_id = updatedCouple.machoId; delete dbUpdate.machoId; }
-        if (updatedCouple.femeaId !== undefined) { dbUpdate.femea_id = updatedCouple.femeaId; delete dbUpdate.femeaId; }
-        if (updatedCouple.dataInicio !== undefined) { dbUpdate.data_inicio = updatedCouple.dataInicio; delete dbUpdate.dataInicio; }
+        const dbUpdate: any = {};
+        if (updatedCouple.machoId !== undefined) dbUpdate.macho_id = updatedCouple.machoId;
+        if (updatedCouple.femeaId !== undefined) dbUpdate.femea_id = updatedCouple.femeaId;
+        if (updatedCouple.femeaIds !== undefined) dbUpdate.femea_id = updatedCouple.femeaIds[0];
+        if (updatedCouple.dataInicio !== undefined) dbUpdate.data_inicio = updatedCouple.dataInicio;
+        if (updatedCouple.objetivo !== undefined) dbUpdate.objetivo = updatedCouple.objetivo;
+        if (updatedCouple.status !== undefined) dbUpdate.status = updatedCouple.status;
 
         supabase!
           .from('couples')
@@ -476,6 +504,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .eq('id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase editCouple:', error); });
       }
+      return next;
+    });
+  };
+
+  /* ── CoupleEgg CRUD (localforage only) ── */
+  const addCoupleEgg = (egg: CoupleEgg) => {
+    setCoupleEggs(prev => {
+      const next = [...prev, egg];
+      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
+      return next;
+    });
+  };
+
+  const editCoupleEgg = (id: string, updated: Partial<CoupleEgg>) => {
+    setCoupleEggs(prev => {
+      const next = prev.map(e => e.id === id ? { ...e, ...updated } : e);
+      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
+      return next;
+    });
+  };
+
+  const removeCoupleEgg = (id: string) => {
+    setCoupleEggs(prev => {
+      const next = prev.filter(e => e.id !== id);
+      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
       return next;
     });
   };
@@ -715,11 +768,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ 
+    <AppContext.Provider value={{
       isReady,
       breeds, addBreed, editBreed,
       birds, addBird, editBird,
       couples, addCouple, editCouple,
+      coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
       eggLots, addEggLot, editEggLot,
       meatLots, addMeatLot, editMeatLot,
       farmSettings, updateFarmSettings,
