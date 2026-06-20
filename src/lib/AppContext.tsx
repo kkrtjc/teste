@@ -158,168 +158,177 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── MODO ONLINE: SUPABASE CONFIGURADO E USUÁRIO LOGADO ──
       if (isSupabaseConfigured && user) {
-        try {
-          // Busca em paralelo todos os dados do Supabase
-          const [
-            resBreeds,
-            resBirds,
-            resCouples,
-            resEggLots,
-            resMeatLots,
-            resSettings
-          ] = await Promise.all([
-            supabase!.from('breeds').select('*').order('nome', { ascending: true }),
-            supabase!.from('birds').select('*').order('anilha', { ascending: true }),
-            supabase!.from('couples').select('*'),
-            supabase!.from('egg_lots').select('*'),
-            supabase!.from('meat_lots').select('*'),
-            supabase!.from('profiles').select('*').eq('id', user.id).maybeSingle()
-          ]);
+        // Carrega dados offline primeiro para resposta instantânea!
+        await loadFromLocalForage();
+        setIsReady(true);
 
-          let sbBreeds = resBreeds.data || [];
-          let sbBirds = resBirds.data || [];
-          let sbCouples = resCouples.data || [];
-          let sbEggLots = resEggLots.data || [];
-          let sbMeatLots = resMeatLots.data || [];
-          let sbSettings = resSettings.data || null;
-
-          // ── PRIMEIRA INICIALIZAÇÃO / MIGRAÇÃO LOCAL ──
-          // Se o banco da nuvem estiver completamente vazio, mas houver dados locais, envia para a nuvem
-          const localBreeds: any = await localforage.getItem('@mura-manager:breeds');
-          const localBirds: any = await localforage.getItem('@mura-manager:birds');
-          const localCouples: any = await localforage.getItem('@mura-manager:couples');
-          const localEggLots: any = await localforage.getItem('@mura-manager:egglots');
-          const localMeatLots: any = await localforage.getItem('@mura-manager:meatlots');
-          const localSettings: any = await localforage.getItem('@mura-manager:settings');
-
-          const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
-          const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
-
-          if (isSbEmpty && hasLocalData) {
-            console.log('Migrando dados locais do IndexedDB para o Supabase...');
-            
-            if (localBreeds && localBreeds.length > 0) {
-              const breedsToInsert = localBreeds.map((b: any) => ({ id: b.id, user_id: user.id, nome: b.nome, foco: b.foco, descricao: b.descricao, imagem: b.imagem }));
-              await supabase!.from('breeds').insert(breedsToInsert);
-              sbBreeds = breedsToInsert;
-            }
-            if (localBirds && localBirds.length > 0) {
-              const birdsToInsert = localBirds.map((b: any) => ({
-                id: b.id,
-                user_id: user.id,
-                anilha: b.anilha,
-                nome: b.nome,
-                sexo: b.sexo,
-                raca: b.raca,
-                baia: b.baia,
-                status: b.status,
-                imagem: b.imagem,
-                vacinas: b.vacinas,
-                origem: b.origem,
-                casal_id: b.casalId,
-                pai_id: b.paiId,
-                mae_id: b.maeId,
-                is_pai_externo: b.isPaiExterno,
-                is_mae_externo: b.isMaeExterno,
-                data_nascimento: b.dataNascimento,
-                peso: b.peso
-              }));
-              await supabase!.from('birds').insert(birdsToInsert);
-              sbBirds = birdsToInsert;
-            }
-            if (localCouples && localCouples.length > 0) {
-              const couplesToInsert = localCouples.map((c: any) => ({
-                id: c.id,
-                user_id: user.id,
-                macho_id: c.machoId,
-                femea_id: c.femeaId,
-                objetivo: c.objetivo,
-                data_inicio: c.dataInicio,
-                status: c.status
-              }));
-              await supabase!.from('couples').insert(couplesToInsert);
-              sbCouples = couplesToInsert;
-            }
-            if (localEggLots && localEggLots.length > 0) {
-              const eggLotsToInsert = localEggLots.map((l: any) => ({
-                id: l.id,
-                user_id: user.id,
-                baia: l.baia,
-                femeas_ids: l.femeasIds,
-                expectativa_diaria: l.expectativaDiaria,
-                data_inicio: l.dataInicio,
-                status: l.status
-              }));
-              await supabase!.from('egg_lots').insert(eggLotsToInsert);
-              sbEggLots = eggLotsToInsert;
-            }
-            if (localMeatLots && localMeatLots.length > 0) {
-              const meatLotsToInsert = localMeatLots.map((l: any) => ({
-                id: l.id,
-                user_id: user.id,
-                baia: l.baia,
-                aves_ids: l.avesIds,
-                data_inicio: l.dataInicio,
-                peso_medio_inicial: l.pesoMedioInicial,
-                status: l.status
-              }));
-              await supabase!.from('meat_lots').insert(meatLotsToInsert);
-              sbMeatLots = meatLotsToInsert;
-            }
-            if (localSettings) {
-              const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
-              await supabase!.from('profiles').upsert(settingsToInsert);
-              sbSettings = settingsToInsert;
-            }
-          }
-
-          // Grava no estado e sincroniza no cache localforage
-          setBreeds(sbBreeds);
-          await localforage.setItem('@mura-manager:breeds', sbBreeds);
-
-          setBirds(sbBirds);
-          await localforage.setItem('@mura-manager:birds', sbBirds);
-
-          setCouples(sbCouples);
-          await localforage.setItem('@mura-manager:couples', sbCouples);
-
-          setEggLots(sbEggLots);
-          await localforage.setItem('@mura-manager:egglots', sbEggLots);
-
-          setMeatLots(sbMeatLots);
-          await localforage.setItem('@mura-manager:meatlots', sbMeatLots);
-
-          if (sbSettings) {
-            const settingsData = {
-              name: sbSettings.name || 'Criatório Mura',
-              photo: sbSettings.photo || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
-              email: sbSettings.email || '',
-              phone: sbSettings.phone || ''
-            };
-            setFarmSettings(settingsData);
-            await localforage.setItem('@mura-manager:settings', settingsData);
-          } else {
-            const defaultSettings = {
-              name: 'Criatório Mura',
-              photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
-              email: user.email || '',
-              phone: ''
-            };
-            setFarmSettings(defaultSettings);
-            await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
-            await localforage.setItem('@mura-manager:settings', defaultSettings);
-          }
-
-        } catch (err) {
-          console.error('Erro ao sincronizar dados com o Supabase, usando backup offline:', err);
-          await loadFromLocalForage();
-        }
+        // Executa sincronização em segundo plano sem travar o carregamento inicial
+        syncWithSupabaseBackground().catch(err => {
+          console.error('Erro na sincronização em segundo plano:', err);
+        });
       } else {
         // ── MODO OFFLINE (Bypass Local / Offline tradicional) ──
         await loadFromLocalForage();
+        setIsReady(true);
+      }
+    }
+
+    async function syncWithSupabaseBackground() {
+      if (!isSupabaseConfigured || !user) return;
+
+      const [
+        resBreeds,
+        resBirds,
+        resCouples,
+        resEggLots,
+        resMeatLots,
+        resSettings
+      ] = await Promise.all([
+        supabase!.from('breeds').select('*').order('nome', { ascending: true }),
+        supabase!.from('birds').select('*').order('anilha', { ascending: true }),
+        supabase!.from('couples').select('*'),
+        supabase!.from('egg_lots').select('*'),
+        supabase!.from('meat_lots').select('*'),
+        supabase!.from('profiles').select('*').eq('id', user.id).maybeSingle()
+      ]);
+
+      let sbBreeds = resBreeds.data || [];
+      let sbBirds = resBirds.data || [];
+      let sbCouples = resCouples.data || [];
+      let sbEggLots = resEggLots.data || [];
+      let sbMeatLots = resMeatLots.data || [];
+      let sbSettings = resSettings.data || null;
+
+      // ── PRIMEIRA INICIALIZAÇÃO / MIGRAÇÃO LOCAL ──
+      const localBreeds: any = await localforage.getItem('@mura-manager:breeds');
+      const localBirds: any = await localforage.getItem('@mura-manager:birds');
+      const localCouples: any = await localforage.getItem('@mura-manager:couples');
+      const localEggLots: any = await localforage.getItem('@mura-manager:egglots');
+      const localMeatLots: any = await localforage.getItem('@mura-manager:meatlots');
+      const localSettings: any = await localforage.getItem('@mura-manager:settings');
+
+      const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
+      const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
+
+      if (isSbEmpty && hasLocalData) {
+        console.log('Migrando dados locais do IndexedDB para o Supabase...');
+        
+        if (localBreeds && localBreeds.length > 0) {
+          const breedsToInsert = localBreeds.map((b: any) => ({ id: b.id, user_id: user.id, nome: b.nome, foco: b.foco, descricao: b.descricao, imagem: b.imagem }));
+          await supabase!.from('breeds').insert(breedsToInsert);
+          sbBreeds = breedsToInsert;
+        }
+        if (localBirds && localBirds.length > 0) {
+          const birdsToInsert = localBirds.map((b: any) => ({
+            id: b.id,
+            user_id: user.id,
+            anilha: b.anilha,
+            nome: b.nome,
+            sexo: b.sexo,
+            raca: b.raca,
+            baia: b.baia,
+            status: b.status,
+            imagem: b.imagem,
+            vacinas: b.vacinas,
+            origem: b.origem,
+            casal_id: b.casalId,
+            pai_id: b.paiId,
+            mae_id: b.maeId,
+            is_pai_externo: b.isPaiExterno,
+            is_mae_externo: b.isMaeExterno,
+            data_nascimento: b.dataNascimento,
+            peso: b.peso
+          }));
+          await supabase!.from('birds').insert(birdsToInsert);
+          sbBirds = birdsToInsert;
+        }
+        if (localCouples && localCouples.length > 0) {
+          const couplesToInsert = localCouples.map((c: any) => ({
+            id: c.id,
+            user_id: user.id,
+            macho_id: c.machoId,
+            femea_id: c.femeaId,
+            objetivo: c.objetivo,
+            data_inicio: c.dataInicio,
+            status: c.status
+          }));
+          await supabase!.from('couples').insert(couplesToInsert);
+          sbCouples = couplesToInsert;
+        }
+        if (localEggLots && localEggLots.length > 0) {
+          const eggLotsToInsert = localEggLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            baia: l.baia,
+            femeas_ids: l.femeasIds,
+            expectativa_diaria: l.expectativaDiaria,
+            data_inicio: l.dataInicio,
+            status: l.status
+          }));
+          await supabase!.from('egg_lots').insert(eggLotsToInsert);
+          sbEggLots = eggLotsToInsert;
+        }
+        if (localMeatLots && localMeatLots.length > 0) {
+          const meatLotsToInsert = localMeatLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            baia: l.baia,
+            aves_ids: l.avesIds,
+            data_inicio: l.dataInicio,
+            peso_medio_inicial: l.pesoMedioInicial,
+            status: l.status
+          }));
+          await supabase!.from('meat_lots').insert(meatLotsToInsert);
+          sbMeatLots = meatLotsToInsert;
+        }
+        if (localSettings) {
+          const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
+          await supabase!.from('profiles').upsert(settingsToInsert);
+          sbSettings = settingsToInsert;
+        }
       }
 
-      setIsReady(true);
+      // Grava no estado e sincroniza no cache localforage
+      setBreeds(sbBreeds);
+      await localforage.setItem('@mura-manager:breeds', sbBreeds);
+
+      setBirds(sbBirds);
+      await localforage.setItem('@mura-manager:birds', sbBirds);
+
+      // Migração: femeaId → femeaIds[] no carregamento/sincronização do casal
+      const migratedCouples = sbCouples.map((c: any) => ({
+        ...c,
+        femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
+      }));
+      setCouples(migratedCouples);
+      await localforage.setItem('@mura-manager:couples', migratedCouples);
+
+      setEggLots(sbEggLots);
+      await localforage.setItem('@mura-manager:egglots', sbEggLots);
+
+      setMeatLots(sbMeatLots);
+      await localforage.setItem('@mura-manager:meatlots', sbMeatLots);
+
+      if (sbSettings) {
+        const settingsData = {
+          name: sbSettings.name || 'Criatório Mura',
+          photo: sbSettings.photo || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+          email: sbSettings.email || '',
+          phone: sbSettings.phone || ''
+        };
+        setFarmSettings(settingsData);
+        await localforage.setItem('@mura-manager:settings', settingsData);
+      } else {
+        const defaultSettings = {
+          name: 'Criatório Mura',
+          photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+          email: user.email || '',
+          phone: ''
+        };
+        setFarmSettings(defaultSettings);
+        await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
+        await localforage.setItem('@mura-manager:settings', defaultSettings);
+      }
     }
 
     async function loadFromLocalForage() {
