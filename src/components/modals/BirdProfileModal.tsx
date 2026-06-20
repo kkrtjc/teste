@@ -1,8 +1,14 @@
-import { Camera, GitBranch, Activity, Info, Edit2, Syringe } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 
 export function BirdProfileModal() {
   const { selectedBirdProfileId, closeModals, birds, openAddBirdModal } = useAppContext();
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentImgIndex(0);
+  }, [selectedBirdProfileId]);
 
   if (!selectedBirdProfileId) return null;
 
@@ -11,6 +17,24 @@ export function BirdProfileModal() {
   if (!bird) {
     return null;
   }
+
+  const images = bird.imagens && bird.imagens.length > 0
+    ? bird.imagens
+    : bird.imagem
+    ? [bird.imagem]
+    : [];
+
+  const currentImage = images[currentImgIndex];
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImgIndex(prev => (prev + 1) % images.length);
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImgIndex(prev => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
@@ -26,37 +50,84 @@ export function BirdProfileModal() {
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          {/* Cover / Header section */}
-          <div className="relative h-48 bg-theme-base">
-            {bird.imagem ? (
-              <div 
-                className="absolute inset-0 opacity-40"
-                style={{ backgroundImage: `url(${bird.imagem})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-              />
+          {/* Cover / Header section with Carousel */}
+          <div className="relative h-64 bg-theme-base select-none">
+            {images.length > 0 ? (
+              <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center">
+                {/* Background Blur */}
+                <div 
+                  className="absolute inset-0 opacity-30 blur-md scale-105"
+                  style={{ backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                />
+                {/* Foreground Image */}
+                <img src={currentImage} alt={bird.nome} className="relative z-10 h-full max-w-full object-contain shadow-2xl" />
+
+                {/* Left/Right Chevrons */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrev}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/80 text-white rounded-full p-2.5 transition-all active:scale-95 shadow-lg border border-white/10"
+                      aria-label="Imagem anterior"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/80 text-white rounded-full p-2.5 transition-all active:scale-95 shadow-lg border border-white/10"
+                      aria-label="Próxima imagem"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </>
+                )}
+
+                {/* Slide dots and counter overlay */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
+                    <div className="flex gap-1.5">
+                      {images.map((_, i) => (
+                        <div
+                          key={i}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i); }}
+                          className={`w-2 h-2 rounded-full cursor-pointer transition-all ${
+                            i === currentImgIndex ? 'bg-theme-primary w-4' : 'bg-white/40 hover:bg-white/70'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                      {currentImgIndex + 1} de {images.length}
+                    </span>
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                <Camera size={64} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-20 text-theme-text-muted">
+                <Camera size={64} className="mb-2" />
+                <span className="text-xs font-bold uppercase tracking-wide">Sem fotos cadastradas</span>
               </div>
             )}
             
-            <div className="absolute -bottom-12 left-6 flex items-end gap-4">
-              <div className="w-24 h-24 rounded-2xl bg-theme-surface border-4 border-theme-base overflow-hidden flex items-center justify-center text-4xl shadow-xl">
-                {bird.imagem ? (
-                  <img src={bird.imagem} alt={bird.nome} className="w-full h-full object-cover" />
+            {/* Avatar / Title Overlays */}
+            <div className="absolute -bottom-12 left-6 flex items-end gap-4 z-30">
+              <div className="w-24 h-24 rounded-2xl bg-theme-surface border-4 border-theme-base overflow-hidden flex items-center justify-center text-4xl shadow-xl shrink-0">
+                {currentImage ? (
+                  <img src={currentImage} alt={bird.nome} className="w-full h-full object-cover" />
                 ) : (
                   bird.sexo === 'Macho' ? '🐓' : '🐔'
                 )}
               </div>
               <div className="mb-2">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-3xl font-black text-white">{bird.anilha}</h2>
+                  <h2 className="text-3xl font-black text-white drop-shadow">{bird.anilha}</h2>
                   <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                    bird.sexo === 'Macho' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
+                    bird.sexo === 'Macho' ? 'bg-blue-500/25 text-blue-400 border border-blue-500/30' : 'bg-pink-500/25 text-pink-400 border border-pink-500/30'
                   }`}>
                     {bird.sexo}
                   </span>
                 </div>
-                {bird.nome && <p className="text-lg text-theme-primary font-bold">{bird.nome}</p>}
+                {bird.nome && <p className="text-lg text-theme-primary font-bold drop-shadow">{bird.nome}</p>}
               </div>
             </div>
           </div>

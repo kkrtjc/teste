@@ -22,6 +22,7 @@ export type Bird = {
   baia: string;
   status: string;
   imagem?: string;
+  imagens?: string[];
   vacinas?: string;
   origem?: 'Criatório' | 'Externo' | 'Cruzamento';
   casalId?: string;
@@ -292,22 +293,82 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setBreeds(sbBreeds);
       await localforage.setItem('@mura-manager:breeds', sbBreeds);
 
-      setBirds(sbBirds);
-      await localforage.setItem('@mura-manager:birds', sbBirds);
+      // Mapeamento e mesclagem de imagens das aves
+      const mappedBirds = sbBirds.map((b: any) => {
+        const localBird = (localBirds || []).find((x: any) => x.id === b.id);
+        let birdImagens = localBird?.imagens || [];
+        
+        if (birdImagens.length === 0 && b.imagem) {
+          birdImagens = [b.imagem];
+        } else if (b.imagem && birdImagens[0] !== b.imagem) {
+          birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
+        }
 
-      // Migração: femeaId → femeaIds[] no carregamento/sincronização do casal
-      const migratedCouples = sbCouples.map((c: any) => ({
-        ...c,
-        femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
+        return {
+          id: b.id,
+          anilha: b.anilha || '',
+          nome: b.nome || '',
+          sexo: b.sexo || 'Macho',
+          raca: b.raca || '',
+          baia: b.baia || 'ND',
+          status: b.status || 'Reprodutor',
+          imagem: b.imagem,
+          imagens: birdImagens,
+          vacinas: b.vacinas,
+          origem: b.origem,
+          casalId: b.casal_id || b.casalId,
+          paiId: b.pai_id || b.paiId,
+          maeId: b.mae_id || b.maeId,
+          isPaiExterno: b.is_pai_externo !== undefined ? b.is_pai_externo : b.isPaiExterno,
+          isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
+          dataNascimento: b.data_nascimento || b.dataNascimento,
+          peso: b.peso
+        };
+      });
+
+      setBirds(mappedBirds);
+      await localforage.setItem('@mura-manager:birds', mappedBirds);
+
+      // Mapeia casais de snake_case para camelCase
+      const mappedCouples = sbCouples.map((c: any) => {
+        const mapped = {
+          id: c.id,
+          machoId: c.macho_id || c.machoId || '',
+          femeaId: c.femea_id || c.femeaId || '',
+          objetivo: c.objetivo || '',
+          dataInicio: c.data_inicio || c.dataInicio || '',
+          status: c.status || 'Ativo',
+          femeaIds: c.femeaIds || []
+        };
+        mapped.femeaIds = mapped.femeaIds.length > 0 ? mapped.femeaIds : (mapped.femeaId ? [mapped.femeaId] : []);
+        return mapped;
+      });
+      setCouples(mappedCouples);
+      await localforage.setItem('@mura-manager:couples', mappedCouples);
+
+      // Mapeia lotes de ovos de snake_case para camelCase
+      const mappedEggLots = sbEggLots.map((l: any) => ({
+        id: l.id,
+        baia: l.baia || '',
+        femeasIds: l.femeas_ids || l.femeasIds || [],
+        expectativaDiaria: l.expectativa_diaria !== undefined ? l.expectativa_diaria : (l.expectativaDiaria || 0),
+        dataInicio: l.data_inicio || l.dataInicio || '',
+        status: l.status || 'Ativo'
       }));
-      setCouples(migratedCouples);
-      await localforage.setItem('@mura-manager:couples', migratedCouples);
+      setEggLots(mappedEggLots);
+      await localforage.setItem('@mura-manager:egglots', mappedEggLots);
 
-      setEggLots(sbEggLots);
-      await localforage.setItem('@mura-manager:egglots', sbEggLots);
-
-      setMeatLots(sbMeatLots);
-      await localforage.setItem('@mura-manager:meatlots', sbMeatLots);
+      // Mapeia lotes de corte de snake_case para camelCase
+      const mappedMeatLots = sbMeatLots.map((l: any) => ({
+        id: l.id,
+        baia: l.baia || '',
+        avesIds: l.aves_ids || l.avesIds || [],
+        dataInicio: l.data_inicio || l.dataInicio || '',
+        pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
+        status: l.status || 'Crescimento'
+      }));
+      setMeatLots(mappedMeatLots);
+      await localforage.setItem('@mura-manager:meatlots', mappedMeatLots);
 
       if (sbSettings) {
         const settingsData = {
@@ -429,7 +490,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             raca: bird.raca,
             baia: bird.baia,
             status: bird.status,
-            imagem: bird.imagem,
+            imagem: bird.imagens?.[0] || bird.imagem,
             vacinas: bird.vacinas,
             origem: bird.origem,
             casal_id: bird.casalId,
@@ -459,6 +520,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedBird.isPaiExterno !== undefined) { dbUpdate.is_pai_externo = updatedBird.isPaiExterno; delete dbUpdate.isPaiExterno; }
         if (updatedBird.isMaeExterno !== undefined) { dbUpdate.is_mae_externo = updatedBird.isMaeExterno; delete dbUpdate.isMaeExterno; }
         if (updatedBird.dataNascimento !== undefined) { dbUpdate.data_nascimento = updatedBird.dataNascimento; delete dbUpdate.dataNascimento; }
+        if (updatedBird.imagens !== undefined) {
+          dbUpdate.imagem = updatedBird.imagens?.[0] || null;
+          delete dbUpdate.imagens;
+        }
 
         supabase!
           .from('birds')

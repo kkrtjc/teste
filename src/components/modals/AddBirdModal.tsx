@@ -61,7 +61,7 @@ export function AddBirdModal() {
   const [vacinas, setVacinas] = useState('');
   const [dataNasc, setDataNasc] = useState('');
   const [peso, setPeso] = useState('');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
 
   // ── Origin ──
   const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null); // null = not answered yet
@@ -89,7 +89,7 @@ export function AddBirdModal() {
         setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
         setBaia(b.baia); setStatus(b.status); setVacinas(b.vacinas || '');
         setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
-        setPreviewImage(b.imagem || null);
+        setPreviewImages(b.imagens || (b.imagem ? [b.imagem] : []));
         const orig = b.origem || 'Criatório';
         setNascidaAqui(orig !== 'Externo');
         setCasalId(b.casalId || '');
@@ -103,7 +103,7 @@ export function AddBirdModal() {
       setAnilha(''); setNome(''); setSexo('Macho');
       setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
       setBaia(''); setStatus('Reprodutor'); setVacinas('');
-      setDataNasc(''); setPeso(''); setPreviewImage(null);
+      setDataNasc(''); setPeso(''); setPreviewImages([]);
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
     }
@@ -120,10 +120,30 @@ export function AddBirdModal() {
   if (!isAddBirdModalOpen) return null;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try { setPreviewImage(await compressImage(file, 500, 500, 0.65)); }
-      catch (err) { console.error(err); }
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const remainingSlots = 10 - previewImages.length;
+      if (remainingSlots <= 0) {
+        alert('Você já atingiu o limite máximo de 10 imagens.');
+        return;
+      }
+
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
+      const compressed: string[] = [];
+
+      for (const file of filesToUpload) {
+        try {
+          const comp = await compressImage(file, 500, 500, 0.65);
+          compressed.push(comp);
+        } catch (err) {
+          console.error('Erro ao comprimir imagem:', err);
+        }
+      }
+
+      setPreviewImages(prev => [...prev, ...compressed]);
+    }
+    if (e.target) {
+      e.target.value = '';
     }
   };
 
@@ -145,7 +165,8 @@ export function AddBirdModal() {
       isMaeExterno,
       maeId: isMaeExterno ? maeExterno : maeId,
       dataNascimento: dataNasc, peso,
-      imagem: previewImage || undefined,
+      imagem: previewImages[0] || undefined,
+      imagens: previewImages,
       observacoes: descricaoOrigem || undefined,
     };
 
@@ -213,46 +234,77 @@ export function AddBirdModal() {
     // ── STEP 0: Basic info ─────────────────────────────────────────────────
     if (step === 0) return (
       <div className="space-y-5">
-        {/* Photo + Anilha */}
-        <div className="flex gap-4 items-start">
-          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="w-24 h-24 rounded-2xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base shrink-0 overflow-hidden relative group transition-colors"
-          >
-            {previewImage ? (
-              <>
-                <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Camera size={20} className="text-white" />
-                </div>
-              </>
-            ) : (
-              <>
-                <Camera size={22} className="mb-1" />
-                <span className="text-[9px] font-bold uppercase text-center">Foto</span>
-              </>
+        {/* Anilha e Nome lado a lado */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
+            <input
+              type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
+              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+              placeholder="Ex: BR-2024-001"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome (opcional)</label>
+            <input
+              type="text" value={nome} onChange={e => setNome(e.target.value)}
+              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+              placeholder="Ex: Titan, Guerreiro..."
+            />
+          </div>
+        </div>
+
+        {/* Galeria de Fotos (até 10) */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
+            Fotos da Ave (Mín. 1, Máx. 10 — A 1ª é a Capa)
+          </label>
+          <div className="grid grid-cols-5 gap-2">
+            {previewImages.map((img, idx) => (
+              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
+                <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                
+                {/* Badge Capa */}
+                {idx === 0 && (
+                  <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">
+                    Capa
+                  </span>
+                )}
+                
+                {/* Delete button */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-90 transition-opacity shadow flex items-center justify-center"
+                >
+                  <X size={10} />
+                </button>
+                
+                {/* Order Indicator */}
+                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">
+                  {idx + 1}
+                </span>
+              </div>
+            ))}
+            
+            {previewImages.length < 10 && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
+              >
+                <Camera size={20} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
+              </div>
             )}
           </div>
-
-          <div className="flex-1 space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
-              <input
-                type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                placeholder="Ex: BR-2024-001"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome (opcional)</label>
-              <input
-                type="text" value={nome} onChange={e => setNome(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                placeholder="Ex: Titan, Guerreiro..."
-              />
-            </div>
-          </div>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            className="hidden"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
