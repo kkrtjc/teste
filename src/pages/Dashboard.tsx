@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, ChevronRight, Bird, Users, Egg, Beef, Baby } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -16,6 +17,8 @@ export function Dashboard() {
   const { birds, couples, eggLots, meatLots, openBirdProfile, farmSettings } = useAppContext();
   const [searchTerm, setSearchTerm]   = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [activeStatsFilter, setActiveStatsFilter] = useState<'Total' | 'Machos' | 'Fêmeas' | null>(null);
+  const [statsSearch, setStatsSearch] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   /* fechar ao clicar fora */
@@ -96,12 +99,14 @@ export function Dashboard() {
       {/* ── Stats row ── */}
       <div className="flex gap-3 w-full max-w-sm">
         {[
-          { label: 'Total', value: totalAves,   color: 'text-theme-primary' },
-          { label: 'Machos', value: totalMachos, color: 'text-blue-400' },
-          { label: 'Fêmeas', value: totalFemeas, color: 'text-pink-400' },
+          { label: 'Total', value: totalAves,   color: 'text-theme-primary', filter: 'Total' as const },
+          { label: 'Machos', value: totalMachos, color: 'text-blue-400', filter: 'Machos' as const },
+          { label: 'Fêmeas', value: totalFemeas, color: 'text-pink-400', filter: 'Fêmeas' as const },
         ].map(s => (
           <div key={s.label}
-               className="flex-1 bg-theme-surface border border-theme-border/50 rounded-2xl py-3 text-center">
+               onClick={() => { setActiveStatsFilter(s.filter); setStatsSearch(''); }}
+               className="flex-1 bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          >
             <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">{s.label}</p>
           </div>
@@ -275,6 +280,118 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* ── Stats List Modal ── */}
+      {activeStatsFilter && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
+            {/* Header */}
+            <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
+              <div>
+                <h3 className="font-black text-lg text-white">
+                  Lista de Aves ({activeStatsFilter})
+                </h3>
+                <p className="text-xs text-theme-text-muted">
+                  Exibindo {
+                    activeStatsFilter === 'Total' ? birds.length :
+                    activeStatsFilter === 'Machos' ? birds.filter(b => b.sexo === 'Macho').length :
+                    birds.filter(b => b.sexo === 'Fêmea').length
+                  } aves encontradas
+                </p>
+              </div>
+              <button 
+                onClick={() => { setActiveStatsFilter(null); setStatsSearch(''); }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Local Search input inside modal */}
+            <div className="p-4 border-b border-theme-border bg-theme-base/30 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={16} />
+                <input
+                  type="text"
+                  placeholder="Filtrar por anilha ou nome..."
+                  value={statsSearch}
+                  onChange={e => setStatsSearch(e.target.value)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 overscroll-contain">
+              {(() => {
+                let list = birds;
+                if (activeStatsFilter === 'Machos') list = birds.filter(b => b.sexo === 'Macho');
+                if (activeStatsFilter === 'Fêmeas') list = birds.filter(b => b.sexo === 'Fêmea');
+
+                const query = statsSearch.trim().toLowerCase();
+                if (query) {
+                  list = list.filter(b => 
+                    b.anilha.toLowerCase().includes(query) ||
+                    (b.nome || '').toLowerCase().includes(query)
+                  );
+                }
+
+                if (list.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-theme-text-muted text-sm italic">
+                      Nenhuma ave correspondente encontrada.
+                    </div>
+                  );
+                }
+
+                return list.map(bird => (
+                  <div
+                    key={bird.id}
+                    onClick={() => {
+                      openBirdProfile(bird.id);
+                      setActiveStatsFilter(null);
+                      setStatsSearch('');
+                    }}
+                    className="p-3 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 rounded-xl cursor-pointer flex items-center gap-3 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0 shadow-inner">
+                      {bird.imagem ? (
+                        <img src={bird.imagem} className="w-full h-full object-cover" />
+                      ) : (
+                        bird.sexo === 'Macho' ? '🐓' : '🐔'
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{bird.anilha}</p>
+                      <p className="text-xs text-theme-text-muted truncate">{bird.nome || 'Sem nome'}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider
+                        ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
+                        {bird.sexo}
+                      </span>
+                      {bird.baia && (
+                        <p className="text-[10px] text-theme-accent font-mono font-bold mt-1.5">Baia {bird.baia}</p>
+                      )}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-end shrink-0">
+              <button
+                onClick={() => { setActiveStatsFilter(null); setStatsSearch(''); }}
+                className="px-5 py-2.5 bg-theme-base hover:bg-theme-surface-hover text-white text-sm font-bold rounded-xl border border-theme-border/60 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
