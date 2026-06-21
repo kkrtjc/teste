@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Egg, Dna, Activity, Settings, Beef, 
+  LayoutDashboard, Dna, Activity, Settings, 
   Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle
 } from 'lucide-react';
@@ -197,8 +197,6 @@ export function Layout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
     { icon: Dna, label: 'Genética & Cruza', path: '/genetics' },
-    { icon: Beef, label: 'Engorda', path: '/meat' },
-    { icon: Egg, label: 'Postura & Chocadeira', path: '/eggs' },
     { icon: Activity, label: 'Saúde & Vacinas', path: '/health' },
     { icon: Skull, label: 'Baixas & Descartes', path: '/losses' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
@@ -207,10 +205,10 @@ export function Layout() {
   // Mobile bottom nav: first 5 items (no settings — access via profile photo)
   const mobileNavItems = [
     navItems[0], // Dashboard
-    navItems[1], // Aves
-    navItems[2], // Genética
-    navItems[3], // Engorda
-    navItems[4], // Postura
+    navItems[1], // Aves & Raças
+    navItems[2], // Genética & Cruza
+    navItems[3], // Saúde & Vacinas
+    navItems[4], // Baixas & Descartes
   ];
 
   return (

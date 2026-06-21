@@ -9,8 +9,8 @@ import { Activity } from 'lucide-react';
 // Lazy load all pages to reduce initial bundle size and optimize startup performance
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Genetics = lazy(() => import('./pages/Genetics').then(m => ({ default: m.Genetics })));
-const Meat = lazy(() => import('./pages/Meat').then(m => ({ default: m.Meat })));
-const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
+// const Meat = lazy(() => import('./pages/Meat').then(m => ({ default: m.Meat })));
+// const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 const Health = lazy(() => import('./pages/Health').then(m => ({ default: m.Health })));
 const Losses = lazy(() => import('./pages/Losses').then(m => ({ default: m.Losses })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
@@ -75,8 +75,8 @@ function AppContent() {
               <Route index element={<Dashboard />} />
               <Route path="birds" element={<Birds />} />
               <Route path="genetics" element={<Genetics />} />
-              <Route path="meat" element={<Meat />} />
-              <Route path="eggs" element={<Eggs />} />
+              {/* <Route path="meat" element={<Meat />} /> */}
+              {/* <Route path="eggs" element={<Eggs />} /> */}
               <Route path="health" element={<Health />} />
               <Route path="losses" element={<Losses />} />
               <Route path="settings" element={<Settings />} />

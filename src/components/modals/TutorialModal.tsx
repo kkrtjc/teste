@@ -128,6 +128,62 @@ export function TutorialModal() {
     };
   }, [currentSlide, isTutorialOpen, isMobile, current.selector, current.mobileSelector]);
 
+
+  const getCardPositionStyle = (): React.CSSProperties => {
+    const baseStyle: React.CSSProperties = {
+      background: 'linear-gradient(145deg, rgba(28, 28, 35, 0.98) 0%, rgba(18, 18, 24, 0.99) 100%)',
+      boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.15)',
+      backdropFilter: 'blur(10px)',
+      position: 'fixed',
+      zIndex: 10000,
+      left: '50%',
+    };
+
+    if (!activeElementRect) {
+      // Center of the screen
+      return {
+        ...baseStyle,
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+      };
+    }
+
+    const spotlightCenterY = activeElementRect.top + activeElementRect.height / 2;
+    const screenHeight = window.innerHeight;
+
+    if (spotlightCenterY < screenHeight / 2) {
+      // Spotlight is in the upper half of the screen -> Place card in the lower half
+      if (isMobile) {
+        return {
+          ...baseStyle,
+          bottom: '100px', // above bottom bar and safe area
+          transform: 'translateX(-50%)',
+        };
+      } else {
+        return {
+          ...baseStyle,
+          top: '60%',
+          transform: 'translateX(-50%)',
+        };
+      }
+    } else {
+      // Spotlight is in the lower half of the screen -> Place card in the upper half
+      if (isMobile) {
+        return {
+          ...baseStyle,
+          top: '100px', // below header and safe area
+          transform: 'translateX(-50%)',
+        };
+      } else {
+        return {
+          ...baseStyle,
+          top: '20%',
+          transform: 'translateX(-50%)',
+        };
+      }
+    }
+  };
+
   if (!isTutorialOpen) return null;
 
   const handleNext = () => {
@@ -175,12 +231,8 @@ export function TutorialModal() {
 
       {/* ── Floating Tour Card (z-[10000]) ── */}
       <div 
-        className="fixed z-[10000] w-[92vw] max-w-md rounded-2xl border border-white/10 shadow-2xl flex flex-col bg-theme-surface transition-all duration-300 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        style={{
-          background: 'linear-gradient(145deg, rgba(28, 28, 35, 0.98) 0%, rgba(18, 18, 24, 0.99) 100%)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.15)',
-          backdropFilter: 'blur(10px)'
-        }}
+        className="w-[92vw] max-w-md rounded-2xl border border-white/10 flex flex-col bg-theme-surface transition-all duration-300"
+        style={getCardPositionStyle()}
       >
         {/* Progress indicator */}
         <div className="h-1 w-full bg-theme-border overflow-hidden rounded-t-2xl">

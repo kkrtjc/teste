@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, ChevronRight, Bird, Users, Egg, Beef, Baby } from 'lucide-react';
+import { Search, X, ChevronRight, Bird, Users, Baby } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 /* ── helpers ── */
@@ -15,7 +15,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function Dashboard() {
-  const { birds, couples, eggLots, meatLots, openBirdProfile, farmSettings, breeds, setActiveBreed } = useAppContext();
+  const { birds, couples, openBirdProfile, farmSettings, breeds, setActiveBreed } = useAppContext();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm]   = useState('');
   const [showResults, setShowResults] = useState(false);
@@ -44,12 +44,10 @@ export function Dashboard() {
     b.anilha?.toLowerCase().includes(term)
   ) : [];
 
-  /* busca por baia: agrupa todos os tipos */
+  /* busca por baia: agrupa todas as aves */
   const baySet = new Set<string>();
   if (hasSearch) {
-    birds    .filter(b => b.baia?.toLowerCase().includes(term)).forEach(b => baySet.add(b.baia));
-    eggLots  .filter(l => l.baia.toLowerCase().includes(term)).forEach(l => baySet.add(l.baia));
-    meatLots .filter(l => l.baia.toLowerCase().includes(term)).forEach(l => baySet.add(l.baia));
+    birds.filter(b => b.baia?.toLowerCase().includes(term)).forEach(b => baySet.add(b.baia));
   }
   const bayResults = Array.from(baySet);
 
@@ -63,8 +61,6 @@ export function Dashboard() {
     const machos       = avesNaBaia.filter(b => b.sexo === 'Macho');
     const femeas       = avesNaBaia.filter(b => b.sexo === 'Fêmea');
     const pintinhos    = avesNaBaia.filter(b => b.origem === 'Cruzamento');
-    const eggLot       = eggLots.find(l => l.baia === baia);
-    const meatLot      = meatLots.find(l => l.baia === baia);
 
     // casal vinculado (se tem pintinhos)
     const casalId = pintinhos[0]?.casalId;
@@ -80,7 +76,7 @@ export function Dashboard() {
         )[0]
       : '';
 
-    return { avesNaBaia, machos, femeas, pintinhos, eggLot, meatLot, casal, macho, femea, dominantStatus };
+    return { avesNaBaia, machos, femeas, pintinhos, casal, macho, femea, dominantStatus };
   };
 
   return (
@@ -245,17 +241,7 @@ export function Dashboard() {
                           ))}
                         </div>
 
-                        {/* Lot info */}
-                        {info.eggLot && (
-                          <div className="flex items-center gap-2 text-xs text-yellow-400">
-                            <Egg size={12} /> Lote postura ativo · {info.eggLot.femeasIds.length} fêmeas
-                          </div>
-                        )}
-                        {info.meatLot && (
-                          <div className="flex items-center gap-2 text-xs text-orange-400">
-                            <Beef size={12} /> Lote engorda · {info.meatLot.avesIds.length} aves · {info.meatLot.status}
-                          </div>
-                        )}
+
 
                         {/* Link ao casal pai (se tem pintinhos) */}
                         {info.pintinhos.length > 0 && info.casal && (
