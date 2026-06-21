@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, ChevronLeft, ChevronRight, LayoutDashboard, Bird, 
-  Dna, Settings, HelpCircle, Check
+  Dna, Settings, HelpCircle, Check, Activity, Skull
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 
@@ -24,49 +24,67 @@ export function TutorialModal() {
 
   const slides = [
     {
-      title: "Bem-vindo ao Mura Manager!",
+      title: "Introdução ao Mura Manager",
       icon: HelpCircle,
       gradient: "from-amber-400 to-orange-500",
       route: "/",
       selector: null,
       mobileSelector: null,
-      content: "Este é o seu painel de controle premium para gerenciamento de criatórios de aves de elite. Vamos fazer um tour guiado de 2 minutos para você conhecer e dominar cada função sem erro!"
+      content: "Este guia rápido apresentará as principais ferramentas da plataforma. Aprenda a gerenciar seu plantel, monitorar cruzamentos, registrar vacinas e manter seus dados de produção totalmente seguros."
     },
     {
-      title: "Dashboard & Busca Rápida 📊",
+      title: "Painel de Controle (Dashboard)",
       icon: LayoutDashboard,
       gradient: "from-blue-400 to-indigo-500",
       route: "/",
       selector: "#search-bar-container",
       mobileSelector: "#search-bar-container",
-      content: "Estatísticas e Busca Rápida: Visualize as aves totais, machos, fêmeas e as raças cadastradas em uma grade 2x2 moderna. Ao clicar em Raças Cadastradas, você abre um catálogo completo das raças. Use a barra de pesquisa abaixo para encontrar aves por nome, anilha ou baia."
+      content: "Acompanhe métricas consolidadas do plantel (aves registradas, gênero e raças). Clique em qualquer indicador para abrir listagens rápidas filtradas. Use a barra de pesquisa para localizar instantaneamente aves ou baias."
     },
     {
-      title: "Aves & Raças (Seu Plantel) 🐔",
+      title: "Gestão do Plantel",
       icon: Bird,
       gradient: "from-green-400 to-emerald-500",
       route: "/birds",
       selector: "#nav-link-birds",
       mobileSelector: "#mobile-nav-link-birds",
-      content: "Controle do Plantel: Acesse o catálogo completo de raças e aves. Cadastre novas raças e insira aves vinculadas a elas, com suporte a até 10 fotos por ave para acompanhar seu crescimento e evolução na galeria."
+      content: "Cadastre e catalogue suas aves e raças. Cada ficha individual suporta informações detalhadas como número de anilha, sexo, peso, baia atual e galeria com até 10 fotos para acompanhamento evolutivo."
     },
     {
-      title: "Genética & Cruzamentos 🧬",
+      title: "Reprodução & Pedigree",
       icon: Dna,
       gradient: "from-purple-400 to-pink-500",
       route: "/genetics",
       selector: "#nav-link-genetics",
       mobileSelector: "#mobile-nav-link-genetics",
-      content: "Melhoramento Genético: Monte cruzadores/casais com 1 macho e até 10 fêmeas. Registre coletas de ovos identificando a matriz mãe e controle o tempo de choco de cada ovo automaticamente."
+      content: "Monte cruzadores indicando o reprodutor e as matrizes. Registre as coletas de ovos, monitore o status de incubação e consulte a aba de Pedigree Visual para navegar pelas linhas de parentesco de cada animal."
     },
     {
-      title: "Configurações & Segurança ⚙️",
+      title: "Controle Sanitário & Vacinas",
+      icon: Activity,
+      gradient: "from-teal-400 to-cyan-500",
+      route: "/health",
+      selector: "#nav-link-health",
+      mobileSelector: "#mobile-nav-link-health",
+      content: "Mantenha o calendário sanitário do seu criatório em dia. Registre vacinas aplicadas e vermífugos administrados, vinculando-os diretamente às aves tratadas para manter o controle biológico."
+    },
+    {
+      title: "Baixas & Descartes",
+      icon: Skull,
+      gradient: "from-red-400 to-rose-500",
+      route: "/losses",
+      selector: "#nav-link-losses",
+      mobileSelector: "#mobile-nav-link-losses",
+      content: "Registre óbitos e descartes de aves do plantel, indicando a data e a causa (enfermidades, acidentes ou causas naturais). Esta ferramenta mantém as métricas ativas e o histórico de produção atualizado."
+    },
+    {
+      title: "Configurações & Backup",
       icon: Settings,
       gradient: "from-stone-400 to-slate-500",
       route: "/settings",
       selector: "#nav-link-settings",
       mobileSelector: "#header-profile-button",
-      content: "Personalização e Segurança: Edite o nome do criatório e carregue sua logo personalizada. Utilize esta tela para realizar importação e exportação de backups regulares para manter os seus dados 100% seguros."
+      content: "Personalize os dados de perfil do criatório. Nesta aba, você também pode exportar backups completos em formato JSON ou importar arquivos salvos anteriormente para evitar qualquer perda de informações."
     }
   ];
 

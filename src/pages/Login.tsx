@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Activity, LogIn } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
-import gamecockSilhouette from '../assets/gamefowl_silhouette.webp';
+import gamecockSilhouette from '../assets/gamefowl_silhouette.png';
 
 export function Login() {
   const { signIn, isLocalMode } = useAuth();
@@ -48,12 +48,11 @@ export function Login() {
 
       <div className="w-full max-w-xs z-10 flex flex-col items-center gap-8">
 
-        {/* Galo — invert(1) torna preto→branco, fundo transparente fica transparente */}
+        {/* Galo */}
         <img
           src={gamecockSilhouette}
           alt="Galo Malaio"
           className="w-52 h-52 object-contain select-none pointer-events-none"
-          style={{ filter: 'invert(1)' }}
         />
 
         {/* Form */}
