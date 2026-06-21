@@ -3,7 +3,7 @@ import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, Chevron
 import { useAppContext } from '../../lib/AppContext';
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   useEffect(() => {
@@ -224,26 +224,153 @@ export function BirdProfileModal() {
               </div>
             )}
 
-            <div className="border border-theme-border rounded-xl overflow-hidden">
-              <div className="bg-theme-base p-4 border-b border-theme-border">
+            {/* Ascendência / Pedigree */}
+            <div className="border border-theme-border rounded-xl overflow-hidden bg-theme-surface/50">
+              <div className="bg-theme-base p-4 border-b border-theme-border flex justify-between items-center">
                 <h4 className="font-bold text-white flex items-center gap-2 text-sm">
-                  <GitBranch size={16} className="text-theme-primary" /> Ascendência / Pedigree
+                  <GitBranch size={16} className="text-theme-primary" /> Ascendência &amp; Pedigree
                 </h4>
+                <button 
+                  onClick={() => openAddBirdModal('', bird.id)}
+                  className="text-xs text-theme-primary hover:text-orange-400 font-bold uppercase transition-colors"
+                >
+                  Editar Genealogia
+                </button>
               </div>
-              <div className="p-6 text-center text-theme-text-muted bg-theme-surface">
-                {bird.origem === 'Cruzamento' ? (
+              <div className="p-4 space-y-4">
+                {/* Parents Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Father (Pai) */}
                   <div className="space-y-2">
-                    <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-md text-xs font-bold uppercase border border-purple-500/30">Nascido de Cruzamento Local</span>
-                    <p className="text-sm text-white mt-4 font-medium">Os pais foram preenchidos automaticamente na ficha da ave pelo registro do casal.</p>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Pai (Reprodutor)</p>
+                    {bird.paiId ? (
+                      bird.isPaiExterno ? (
+                        <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0 shadow-inner">
+                            🐓
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-white text-sm truncate">{bird.paiId}</p>
+                            <p className="text-[10px] text-orange-400 font-bold uppercase">Externo / Fora do Criatório</p>
+                          </div>
+                        </div>
+                      ) : (() => {
+                        const fatherBird = birds.find(b => b.id === bird.paiId);
+                        return fatherBird ? (
+                          <div 
+                            onClick={() => openBirdProfile(fatherBird.id)}
+                            className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300"
+                          >
+                            <div className="w-10 h-10 rounded-full border-2 border-blue-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                              {fatherBird.imagem ? (
+                                <img src={fatherBird.imagem} className="w-full h-full object-cover" alt="" />
+                              ) : (
+                                <span className="text-lg">🐓</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-white text-sm truncate">{fatherBird.anilha}</p>
+                              <p className="text-xs text-theme-text-muted truncate">{fatherBird.nome || 'Sem nome'}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center gap-2 text-theme-text-muted text-xs italic">
+                            ID: {bird.paiId} (Não encontrado no plantel)
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center justify-center text-theme-text-muted text-xs italic min-h-[66px]">
+                        Pai não cadastrado
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <p className="text-sm">{bird.origem === 'Externo' ? 'Ave externa.' : 'Árvore genealógica'} (Pai e Mãe) não vinculada no módulo de casais.</p>
-                    <button onClick={() => openAddBirdModal('', bird.id)} className="mt-4 px-4 py-2 border border-theme-border rounded-lg text-xs font-bold uppercase hover:border-theme-primary hover:text-theme-primary transition-colors">
-                      Vincular / Editar Pai e Mãe
-                    </button>
-                  </>
-                )}
+
+                  {/* Mother (Mãe) */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-pink-400 uppercase tracking-wider">Mãe (Matriz)</p>
+                    {bird.maeId ? (
+                      bird.isMaeExterno ? (
+                        <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0 shadow-inner">
+                            🐔
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-white text-sm truncate">{bird.maeId}</p>
+                            <p className="text-[10px] text-orange-400 font-bold uppercase">Externa / Fora do Criatório</p>
+                          </div>
+                        </div>
+                      ) : (() => {
+                        const motherBird = birds.find(b => b.id === bird.maeId);
+                        return motherBird ? (
+                          <div 
+                            onClick={() => openBirdProfile(motherBird.id)}
+                            className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300"
+                          >
+                            <div className="w-10 h-10 rounded-full border-2 border-pink-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                              {motherBird.imagem ? (
+                                <img src={motherBird.imagem} className="w-full h-full object-cover" alt="" />
+                              ) : (
+                                <span className="text-lg">🐔</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-white text-sm truncate">{motherBird.anilha}</p>
+                              <p className="text-xs text-theme-text-muted truncate">{motherBird.nome || 'Sem nome'}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center gap-2 text-theme-text-muted text-xs italic">
+                            ID: {bird.maeId} (Não encontrada no plantel)
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center justify-center text-theme-text-muted text-xs italic min-h-[66px]">
+                        Mãe não cadastrada
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Children Section */}
+                <div className="border-t border-theme-border/40 pt-4 space-y-2">
+                  {(() => {
+                    const children = birds.filter(b => b.paiId === bird.id || b.maeId === bird.id);
+                    return (
+                      <>
+                        <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider">
+                          Filhotes Mapeados ({children.length})
+                        </p>
+                        {children.length > 0 ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {children.map(child => (
+                              <div
+                                key={child.id}
+                                onClick={() => openBirdProfile(child.id)}
+                                className="p-2.5 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-2.5 transition-all duration-300"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-theme-surface border border-theme-border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                  {child.imagem ? (
+                                    <img src={child.imagem} className="w-full h-full object-cover" alt="" />
+                                  ) : (
+                                    child.sexo === 'Macho' ? '🐓' : '🐔'
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-white text-xs truncate">{child.anilha}</p>
+                                  <p className="text-[9px] text-theme-text-muted truncate">{child.nome || 'Sem nome'}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-theme-text-muted italic py-1">Nenhum filhote registrado descendente desta ave.</p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           </div>
