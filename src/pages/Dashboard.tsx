@@ -456,8 +456,8 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Breeds Grid */}
-            <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
+            {/* Breeds List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 overscroll-contain">
               {(() => {
                 const query = statsSearch.trim().toLowerCase();
                 const filtered = breeds.filter(breed => 
@@ -473,51 +473,41 @@ export function Dashboard() {
                   );
                 }
 
-                return (
-                  <div className="grid grid-cols-2 gap-3 pb-2">
-                    {filtered.map(breed => {
-                      const count = birds.filter(b => b.raca === breed.nome).length;
-                      return (
-                        <div
-                          key={breed.id}
-                          onClick={() => {
-                            setActiveBreed(breed.nome);
-                            setShowBreedsDashboardModal(false);
-                            setStatsSearch('');
-                            navigate('/birds');
-                          }}
-                          className="p-3 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 hover:border-theme-primary/30 rounded-xl cursor-pointer flex flex-col gap-2.5 transition-all duration-300 relative group overflow-hidden"
-                        >
-                          <div className="w-full h-24 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
-                            {breed.imagem ? (
-                              <img 
-                                src={breed.imagem} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                                alt={breed.nome} 
-                              />
-                            ) : (
-                              <span className="text-3xl group-hover:scale-105 transition-transform duration-300">🐓</span>
-                            )}
-                            <span className="absolute bottom-1.5 right-1.5 text-[9px] bg-theme-primary text-black font-extrabold px-1.5 py-0.5 rounded shadow-lg">
-                              {count} ave{count !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <p className="font-bold text-white text-sm truncate">{breed.nome}</p>
-                              {breed.descricao && (
-                                <p className="text-[10px] text-theme-text-muted line-clamp-1 mt-0.5">{breed.descricao}</p>
-                              )}
-                            </div>
-                            <span className="text-[8px] font-bold text-theme-text-muted uppercase bg-theme-surface px-1.5 py-0.5 rounded self-start mt-2">
-                              {breed.foco}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
+                return filtered.map(breed => {
+                  const count = birds.filter(b => b.raca === breed.nome).length;
+                  return (
+                    <div
+                      key={breed.id}
+                      onClick={() => {
+                        setActiveBreed(breed.nome);
+                        setShowBreedsDashboardModal(false);
+                        setStatsSearch('');
+                        navigate('/birds');
+                      }}
+                      className="p-3 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0 shadow-inner">
+                        {breed.imagem ? (
+                          <img src={breed.imagem} className="w-full h-full object-cover" alt={breed.nome} />
+                        ) : (
+                          <span className="text-xl">🐓</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-white text-sm truncate">{breed.nome}</p>
+                        <p className="text-xs text-theme-text-muted truncate">{breed.descricao || 'Sem descrição'}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-theme-surface border border-theme-border/50 text-theme-text-muted">
+                          {breed.foco.split(' ')[0]}
+                        </span>
+                        <p className="text-[10px] text-theme-accent font-mono font-bold mt-1.5">
+                          {count} ave{count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                });
               })()}
             </div>
 
