@@ -140,16 +140,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     phone: ''
   });
 
+  const getStorageKey = (keyName: string) => {
+    if (!user) return `@mura-manager:guest:${keyName}`;
+    return `@mura-manager:${user.id}:${keyName}`;
+  };
+
   // Load data from Supabase or LocalForage on mount / user change
   useEffect(() => {
     async function loadData() {
       setIsReady(false);
 
-      // Se o Supabase estiver ativo mas NÃO houver usuário logado, limpa o estado
-      if (isSupabaseConfigured && !user) {
+      if (!user) {
         setBreeds([]);
         setBirds([]);
         setCouples([]);
+        setCoupleEggs([]);
         setEggLots([]);
         setMeatLots([]);
         setFarmSettings({
@@ -158,6 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           email: '',
           phone: ''
         });
+        setActiveBreed('');
         setIsReady(true);
         return;
       }
@@ -206,12 +212,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbSettings = resSettings.data || null;
 
       // ── PRIMEIRA INICIALIZAÇÃO / MIGRAÇÃO LOCAL ──
-      const localBreeds: any = await localforage.getItem('@mura-manager:breeds');
-      const localBirds: any = await localforage.getItem('@mura-manager:birds');
-      const localCouples: any = await localforage.getItem('@mura-manager:couples');
-      const localEggLots: any = await localforage.getItem('@mura-manager:egglots');
-      const localMeatLots: any = await localforage.getItem('@mura-manager:meatlots');
-      const localSettings: any = await localforage.getItem('@mura-manager:settings');
+      const localBreeds: any = await localforage.getItem(getStorageKey('breeds'));
+      const localBirds: any = await localforage.getItem(getStorageKey('birds'));
+      const localCouples: any = await localforage.getItem(getStorageKey('couples'));
+      const localEggLots: any = await localforage.getItem(getStorageKey('egglots'));
+      const localMeatLots: any = await localforage.getItem(getStorageKey('meatlots'));
+      const localSettings: any = await localforage.getItem(getStorageKey('settings'));
 
       const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
       const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
@@ -296,7 +302,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Grava no estado e sincroniza no cache localforage
       setBreeds(sbBreeds);
-      await localforage.setItem('@mura-manager:breeds', sbBreeds);
+      await localforage.setItem(getStorageKey('breeds'), sbBreeds);
 
       // Mapeamento e mesclagem de imagens das aves
       const mappedBirds = sbBirds.map((b: any) => {
@@ -332,7 +338,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       setBirds(mappedBirds);
-      await localforage.setItem('@mura-manager:birds', mappedBirds);
+      await localforage.setItem(getStorageKey('birds'), mappedBirds);
 
       // Mapeia casais de snake_case para camelCase
       const mappedCouples = sbCouples.map((c: any) => {
@@ -349,7 +355,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return mapped;
       });
       setCouples(mappedCouples);
-      await localforage.setItem('@mura-manager:couples', mappedCouples);
+      await localforage.setItem(getStorageKey('couples'), mappedCouples);
 
       // Mapeia lotes de ovos de snake_case para camelCase
       const mappedEggLots = sbEggLots.map((l: any) => ({
@@ -361,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: l.status || 'Ativo'
       }));
       setEggLots(mappedEggLots);
-      await localforage.setItem('@mura-manager:egglots', mappedEggLots);
+      await localforage.setItem(getStorageKey('egglots'), mappedEggLots);
 
       // Mapeia lotes de corte de snake_case para camelCase
       const mappedMeatLots = sbMeatLots.map((l: any) => ({
@@ -373,7 +379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: l.status || 'Crescimento'
       }));
       setMeatLots(mappedMeatLots);
-      await localforage.setItem('@mura-manager:meatlots', mappedMeatLots);
+      await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
       if (sbSettings) {
         const settingsData = {
@@ -383,7 +389,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone: sbSettings.phone || ''
         };
         setFarmSettings(settingsData);
-        await localforage.setItem('@mura-manager:settings', settingsData);
+        await localforage.setItem(getStorageKey('settings'), settingsData);
       } else {
         const defaultSettings = {
           name: 'Criatório Mura',
@@ -393,16 +399,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
         setFarmSettings(defaultSettings);
         await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
-        await localforage.setItem('@mura-manager:settings', defaultSettings);
+        await localforage.setItem(getStorageKey('settings'), defaultSettings);
       }
     }
 
     async function loadFromLocalForage() {
+      if (!user) return;
       const storageItems = [
-        { key: '@mura-manager:breeds',      setter: setBreeds },
-        { key: '@mura-manager:birds',       setter: setBirds },
-        { key: '@mura-manager:couples',     setter: (d: any) => {
-            // migração: femeaId → femeaIds[]
+        { suffix: 'breeds',      setter: setBreeds },
+        { suffix: 'birds',       setter: setBirds },
+        { suffix: 'couples',     setter: (d: any) => {
             const migrated = (d || []).map((c: any) => ({
               ...c,
               femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
@@ -410,22 +416,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setCouples(migrated);
           }
         },
-        { key: '@mura-manager:couple-eggs', setter: setCoupleEggs },
-        { key: '@mura-manager:egglots',     setter: setEggLots },
-        { key: '@mura-manager:meatlots',    setter: setMeatLots },
-        { key: '@mura-manager:settings',    setter: setFarmSettings }
+        { suffix: 'couple-eggs', setter: setCoupleEggs },
+        { suffix: 'egglots',     setter: setEggLots },
+        { suffix: 'meatlots',    setter: setMeatLots },
+        { suffix: 'settings',    setter: setFarmSettings }
       ];
 
       for (const item of storageItems) {
         try {
-          let data: any = await localforage.getItem(item.key);
+          const userKey = getStorageKey(item.suffix);
+          let data: any = await localforage.getItem(userKey);
 
+          // Fallback para chaves antigas sem prefixo
           if (!data) {
-            const oldData = localStorage.getItem(item.key);
-            if (oldData) {
-              data = JSON.parse(oldData);
-              await localforage.setItem(item.key, data);
-              localStorage.removeItem(item.key);
+            const legacyKey = `@mura-manager:${item.suffix}`;
+            const legacyData = await localforage.getItem(legacyKey);
+            if (legacyData) {
+              data = legacyData;
+              await localforage.setItem(userKey, data);
+              await localforage.removeItem(legacyKey);
+            } else {
+              const oldData = localStorage.getItem(legacyKey);
+              if (oldData) {
+                data = JSON.parse(oldData);
+                await localforage.setItem(userKey, data);
+                localStorage.removeItem(legacyKey);
+              }
             }
           }
 
@@ -433,7 +449,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             (item.setter as any)(data);
           }
         } catch (error) {
-          console.error(`Erro ao carregar do localforage (${item.key}):`, error);
+          console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
         }
       }
     }
@@ -451,7 +467,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isReady && farmSettings.email) {
-      localforage.getItem('@mura-manager:has-seen-tutorial').then(val => {
+      localforage.getItem(getStorageKey('has-seen-tutorial')).then(val => {
         if (!val) {
           setIsTutorialOpen(true);
         }
@@ -462,7 +478,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {
       const next = [...prev, breed];
-      localforage.setItem('@mura-manager:breeds', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -477,7 +493,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editBreed = (id: string, updatedBreed: Partial<Breed>) => {
     setBreeds(prev => {
       const next = prev.map(b => b.id === id ? { ...b, ...updatedBreed } : b);
-      localforage.setItem('@mura-manager:breeds', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -493,7 +509,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBird = (bird: Bird) => {
     setBirds(prev => {
       const next = [...prev, bird];
-      localforage.setItem('@mura-manager:birds', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -527,7 +543,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
     setBirds(prev => {
       const next = prev.map(b => b.id === id ? { ...b, ...updatedBird } : b);
-      localforage.setItem('@mura-manager:birds', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = { ...updatedBird };
@@ -555,7 +571,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCouple = (couple: Couple) => {
     setCouples(prev => {
       const next = [...prev, couple];
-      localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
 
       if (isSupabaseConfigured && user) {
         supabase!
@@ -578,7 +594,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
     setCouples(prev => {
       const next = prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c);
-      localforage.setItem('@mura-manager:couples', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
 
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = {};
@@ -603,7 +619,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCoupleEgg = (egg: CoupleEgg) => {
     setCoupleEggs(prev => {
       const next = [...prev, egg];
-      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
+      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
       return next;
     });
   };
@@ -611,7 +627,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editCoupleEgg = (id: string, updated: Partial<CoupleEgg>) => {
     setCoupleEggs(prev => {
       const next = prev.map(e => e.id === id ? { ...e, ...updated } : e);
-      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
+      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
       return next;
     });
   };
@@ -619,7 +635,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const removeCoupleEgg = (id: string) => {
     setCoupleEggs(prev => {
       const next = prev.filter(e => e.id !== id);
-      localforage.setItem('@mura-manager:couple-eggs', next).catch(console.error);
+      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
       return next;
     });
   };
@@ -627,7 +643,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addEggLot = (lot: EggLot) => {
     setEggLots(prev => {
       const next = [...prev, lot];
-      localforage.setItem('@mura-manager:egglots', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -650,7 +666,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editEggLot = (id: string, updatedLot: Partial<EggLot>) => {
     setEggLots(prev => {
       const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
-      localforage.setItem('@mura-manager:egglots', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = { ...updatedLot };
@@ -671,7 +687,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addMeatLot = (lot: MeatLot) => {
     setMeatLots(prev => {
       const next = [...prev, lot];
-      localforage.setItem('@mura-manager:meatlots', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('meatlots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -694,7 +710,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editMeatLot = (id: string, updatedLot: Partial<MeatLot>) => {
     setMeatLots(prev => {
       const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
-      localforage.setItem('@mura-manager:meatlots', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('meatlots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = { ...updatedLot };
@@ -715,7 +731,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateFarmSettings = (settings: Partial<FarmSettings>) => {
     setFarmSettings(prev => {
       const next = { ...prev, ...settings };
-      localforage.setItem('@mura-manager:settings', next).catch(err => console.error(err));
+      localforage.setItem(getStorageKey('settings'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -732,7 +748,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     if (backupData.breeds) {
       setBreeds(backupData.breeds);
-      await localforage.setItem('@mura-manager:breeds', backupData.breeds);
+      await localforage.setItem(getStorageKey('breeds'), backupData.breeds);
       if (isSupabaseConfigured && user) {
         await supabase!.from('breeds').delete().eq('user_id', user.id);
         const toInsert = backupData.breeds.map((b: any) => ({
@@ -748,7 +764,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (backupData.birds) {
       setBirds(backupData.birds);
-      await localforage.setItem('@mura-manager:birds', backupData.birds);
+      await localforage.setItem(getStorageKey('birds'), backupData.birds);
       if (isSupabaseConfigured && user) {
         await supabase!.from('birds').delete().eq('user_id', user.id);
         const toInsert = backupData.birds.map((b: any) => ({
@@ -776,7 +792,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (backupData.couples) {
       setCouples(backupData.couples);
-      await localforage.setItem('@mura-manager:couples', backupData.couples);
+      await localforage.setItem(getStorageKey('couples'), backupData.couples);
       if (isSupabaseConfigured && user) {
         await supabase!.from('couples').delete().eq('user_id', user.id);
         const toInsert = backupData.couples.map((c: any) => ({
@@ -793,7 +809,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (backupData.egglots) {
       setEggLots(backupData.egglots);
-      await localforage.setItem('@mura-manager:egglots', backupData.egglots);
+      await localforage.setItem(getStorageKey('egglots'), backupData.egglots);
       if (isSupabaseConfigured && user) {
         await supabase!.from('egg_lots').delete().eq('user_id', user.id);
         const toInsert = backupData.egglots.map((l: any) => ({
@@ -810,7 +826,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (backupData.meatlots) {
       setMeatLots(backupData.meatlots);
-      await localforage.setItem('@mura-manager:meatlots', backupData.meatlots);
+      await localforage.setItem(getStorageKey('meatlots'), backupData.meatlots);
       if (isSupabaseConfigured && user) {
         await supabase!.from('meat_lots').delete().eq('user_id', user.id);
         const toInsert = backupData.meatlots.map((l: any) => ({
@@ -827,7 +843,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (backupData.settings) {
       setFarmSettings(backupData.settings);
-      await localforage.setItem('@mura-manager:settings', backupData.settings);
+      await localforage.setItem(getStorageKey('settings'), backupData.settings);
       if (isSupabaseConfigured && user) {
         await supabase!.from('profiles').upsert({
           id: user.id,
@@ -864,7 +880,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const closeTutorial = () => {
     setIsTutorialOpen(false);
-    localforage.setItem('@mura-manager:has-seen-tutorial', true).catch(console.error);
+    localforage.setItem(getStorageKey('has-seen-tutorial'), true).catch(console.error);
   };
 
   return (
