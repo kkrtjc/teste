@@ -18,7 +18,7 @@ const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.S
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 
 function AppContent() {
-  const { isReady, farmSettings } = useAppContext();
+  const { isReady, farmSettings, isTutorialOpen } = useAppContext();
   const { user, loading: authLoading } = useAuth();
 
   // 1. Carrega a sessão de autenticação primeiro
@@ -57,12 +57,13 @@ function AppContent() {
     );
   }
 
-  // 4. Primeiro login: email ainda não configurado → exibe onboarding
-  const isFirstLogin = !farmSettings.email;
+  // 4. Primeiro login: perfil não configurado E tutorial concluído → exibe onboarding
+  const isProfileConfigured = !!(farmSettings.name && farmSettings.email);
+  const showOnboarding = !isProfileConfigured && !isTutorialOpen;
 
   return (
     <>
-      {isFirstLogin && <OnboardingModal />}
+      {showOnboarding && <OnboardingModal />}
       <Router>
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center min-h-[300px] w-full text-center text-theme-text-muted">

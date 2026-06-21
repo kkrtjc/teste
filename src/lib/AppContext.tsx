@@ -134,8 +134,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [meatLots, setMeatLots] = useState<MeatLot[]>([]);
   
   const [farmSettings, setFarmSettings] = useState<FarmSettings>({
-    name: 'Criatório Mura',
-    photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+    name: '',
+    photo: '',
     email: '',
     phone: ''
   });
@@ -158,8 +158,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setEggLots([]);
         setMeatLots([]);
         setFarmSettings({
-          name: 'Criatório Mura',
-          photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+          name: '',
+          photo: '',
           email: '',
           phone: ''
         });
@@ -383,8 +383,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (sbSettings) {
         const settingsData = {
-          name: sbSettings.name || 'Criatório Mura',
-          photo: sbSettings.photo || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
+          name: sbSettings.name || '',
+          photo: sbSettings.photo || '',
           email: sbSettings.email || '',
           phone: sbSettings.phone || ''
         };
@@ -392,9 +392,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await localforage.setItem(getStorageKey('settings'), settingsData);
       } else {
         const defaultSettings = {
-          name: 'Criatório Mura',
-          photo: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop',
-          email: user.email || '',
+          name: '',
+          photo: '',
+          email: '',
           phone: ''
         };
         setFarmSettings(defaultSettings);
@@ -466,14 +466,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeBreed, setActiveBreed] = useState('');
 
   useEffect(() => {
-    if (isReady && farmSettings.email) {
+    if (isReady) {
       localforage.getItem(getStorageKey('has-seen-tutorial')).then(val => {
         if (!val) {
           setIsTutorialOpen(true);
         }
       });
     }
-  }, [isReady, farmSettings.email]);
+  }, [isReady]);
 
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {
