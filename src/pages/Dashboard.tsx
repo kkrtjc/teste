@@ -294,10 +294,49 @@ export function Dashboard() {
         )}
       </div>
 
+      {/* ── Recent Birds Section ── */}
+      {birds.length > 0 && (
+        <div className="w-full max-w-sm space-y-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-xs text-theme-text-muted uppercase tracking-wider">Aves Recentes</h3>
+            <button onClick={() => navigate('/birds')} className="text-xs font-bold text-theme-primary hover:underline">Ver todas</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {birds.slice(-4).reverse().map(bird => (
+              <div
+                key={bird.id}
+                onClick={() => openBirdProfile(bird.id)}
+                className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface"
+              >
+                <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
+                  {bird.imagem ? (
+                    <img src={bird.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={bird.anilha} />
+                  ) : (
+                    <span className="text-3xl group-hover:scale-105 transition-transform duration-500">
+                      {bird.sexo === 'Macho' ? '🐓' : '🐔'}
+                    </span>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md uppercase tracking-wider
+                      ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
+                      {bird.sexo === 'Macho' ? 'M' : 'F'}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-2 flex flex-col gap-0.5">
+                  <h4 className="font-black text-white text-xs truncate group-hover:text-theme-primary transition-colors">{bird.anilha}</h4>
+                  <p className="text-[10px] text-theme-text-muted truncate">{bird.raca || 'Sem raça'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Stats List Modal ── */}
       {activeStatsFilter && createPortal(
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
               <div>
@@ -335,7 +374,7 @@ export function Dashboard() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 overscroll-contain">
+            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 overscroll-contain align-start content-start">
               {(() => {
                 let list = birds;
                 if (activeStatsFilter === 'Machos') list = birds.filter(b => b.sexo === 'Macho');
@@ -351,7 +390,7 @@ export function Dashboard() {
 
                 if (list.length === 0) {
                   return (
-                    <div className="text-center py-12 text-theme-text-muted text-sm italic">
+                    <div className="text-center py-12 text-theme-text-muted text-sm italic col-span-2">
                       Nenhuma ave correspondente encontrada.
                     </div>
                   );
@@ -365,27 +404,44 @@ export function Dashboard() {
                       setActiveStatsFilter(null);
                       setStatsSearch('');
                     }}
-                    className="p-3 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 rounded-xl cursor-pointer flex items-center gap-3 transition-colors"
+                    className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-base/40 border border-theme-border/50 rounded-xl"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0 shadow-inner">
+                    {/* Image block 1:1 */}
+                    <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
                       {bird.imagem ? (
-                        <img src={bird.imagem} className="w-full h-full object-cover" />
+                        <img src={bird.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
-                        bird.sexo === 'Macho' ? '🐓' : '🐔'
+                        <span className="text-4xl group-hover:scale-105 transition-transform duration-500">
+                          {bird.sexo === 'Macho' ? '🐓' : '🐔'}
+                        </span>
                       )}
+                      {/* Gender Badge */}
+                      <div className="absolute top-2 right-2">
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md uppercase tracking-wider
+                          ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
+                          {bird.sexo === 'Macho' ? 'Macho' : 'Fêmea'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white text-sm truncate">{bird.anilha}</p>
-                      <p className="text-xs text-theme-text-muted truncate">{bird.nome || 'Sem nome'}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider
-                        ${bird.sexo === 'Macho' ? 'bg-blue-600/90 text-white' : 'bg-pink-600/90 text-white'}`}>
-                        {bird.sexo}
-                      </span>
-                      {bird.baia && bird.baia !== 'ND' && (
-                        <p className="text-[10px] text-theme-accent font-mono font-bold mt-1.5">Baia {bird.baia}</p>
-                      )}
+
+                    {/* Details block */}
+                    <div className="p-2.5 flex flex-col justify-between flex-1 gap-1">
+                      <div>
+                        <h4 className="font-black text-white text-xs group-hover:text-theme-primary transition-colors truncate">
+                          {bird.anilha}
+                        </h4>
+                        <p className="text-[10px] text-theme-text-muted truncate">
+                          {bird.nome || 'Sem nome'}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between mt-auto pt-1 border-t border-theme-border/30">
+                        {bird.baia && bird.baia !== 'ND' ? (
+                          <span className="text-[9px] font-bold text-theme-accent truncate">Baia {bird.baia}</span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-theme-text-muted truncate">{bird.status}</span>
+                        )}
+                        <span className="text-[9px] text-theme-primary font-black uppercase">Ver</span>
+                      </div>
                     </div>
                   </div>
                 ));
@@ -409,7 +465,7 @@ export function Dashboard() {
       {/* ── Breeds Selection Modal ── */}
       {showBreedsDashboardModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
+          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
               <div>
@@ -442,8 +498,8 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Breeds List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 overscroll-contain">
+            {/* Breeds Grid */}
+            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 overscroll-contain align-start content-start">
               {(() => {
                 const query = statsSearch.trim().toLowerCase();
                 const filtered = breeds.filter(breed => 
@@ -453,7 +509,7 @@ export function Dashboard() {
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="text-center py-12 text-theme-text-muted text-sm italic">
+                    <div className="text-center py-12 text-theme-text-muted text-sm italic col-span-2">
                       Nenhuma raça correspondente encontrada.
                     </div>
                   );
@@ -470,24 +526,33 @@ export function Dashboard() {
                         setStatsSearch('');
                         navigate('/birds');
                       }}
-                      className="p-3 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-colors"
+                      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-base/40 border border-theme-border/50 rounded-xl"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center text-lg overflow-hidden shrink-0 shadow-inner">
+                      {/* Image block 1:1 */}
+                      <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
                         {breed.imagem ? (
-                          <img src={breed.imagem} className="w-full h-full object-cover" alt={breed.nome} />
+                          <img src={breed.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={breed.nome} />
                         ) : (
-                          <span className="text-xl">🐓</span>
+                          <span className="text-4xl group-hover:scale-105 transition-transform duration-500">🐓</span>
                         )}
+                        <div className="absolute top-2 right-2">
+                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider bg-theme-surface border border-theme-border/50 text-theme-text-muted">
+                            {breed.foco.split(' ')[0]}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-white text-sm truncate">{breed.nome}</p>
-                        <p className="text-xs text-theme-text-muted truncate">{breed.descricao || 'Sem descrição'}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-theme-surface border border-theme-border/50 text-theme-text-muted">
-                          {breed.foco.split(' ')[0]}
-                        </span>
-                        <p className="text-[10px] text-theme-accent font-mono font-bold mt-1.5">
+
+                      {/* Details block */}
+                      <div className="p-3 flex flex-col justify-between flex-1 gap-1">
+                        <div>
+                          <h4 className="font-black text-white text-sm group-hover:text-theme-primary transition-colors truncate">
+                            {breed.nome}
+                          </h4>
+                          <p className="text-xs text-theme-text-muted truncate">
+                            {breed.descricao || 'Sem descrição'}
+                          </p>
+                        </div>
+                        <p className="text-[10px] text-theme-accent font-mono font-bold mt-auto pt-1 border-t border-theme-border/30">
                           {count} ave{count !== 1 ? 's' : ''}
                         </p>
                       </div>

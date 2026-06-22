@@ -132,28 +132,28 @@ export function BirdProfileModal() {
             </div>
           </div>
 
-          <div className="p-6 pt-16 space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="p-5 pt-14 space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {/* Anilha */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  🔍 Número da Anilha
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  🔍 Anilha
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.anilha}</p>
               </div>
 
               {/* Nome */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  📝 Nome da Ave
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  📝 Nome
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.nome || 'Não informado'}</p>
               </div>
 
               {/* Sexo */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  🐓 Gênero / Sexo
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  🐓 Gênero
                 </p>
                 <p className={`text-sm font-bold truncate ${bird.sexo === 'Macho' ? 'text-blue-400' : 'text-pink-400'}`}>
                   {bird.sexo}
@@ -161,17 +161,17 @@ export function BirdProfileModal() {
               </div>
 
               {/* Raça */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  <Info size={12} /> Raça
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  <Info size={11} /> Raça
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.raca || 'Não informada'}</p>
               </div>
 
               {/* Baia */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  <GitBranch size={12} /> Local / Baia da Ave
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  <GitBranch size={11} /> Local / Baia
                 </p>
                 <p className="text-sm text-theme-accent font-mono font-bold truncate">
                   {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Não informada'}
@@ -179,16 +179,16 @@ export function BirdProfileModal() {
               </div>
 
               {/* Status */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
-                  <Activity size={12} /> Status / Finalidade
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  <Activity size={11} /> Status
                 </p>
                 <p className="text-sm text-green-400 font-bold truncate">{bird.status || 'Não informado'}</p>
               </div>
 
               {/* Nascimento */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
                   📅 Nascimento
                 </p>
                 <p className="text-sm text-white font-bold">
@@ -197,8 +197,8 @@ export function BirdProfileModal() {
               </div>
 
               {/* Peso */}
-              <div className="bg-theme-base/50 border border-theme-border p-4 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-1 flex items-center gap-1.5">
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
                   ⚖️ Peso
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.peso || 'Não informado'}</p>
