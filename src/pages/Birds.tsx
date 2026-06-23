@@ -108,9 +108,9 @@ export function Birds() {
     b.nome.toLowerCase().includes(breedSearch.toLowerCase())
   );
 
-  const currentBirds = activeBreed
+  const currentBirds = (activeBreed
     ? birds.filter(b => b.raca === activeBreed)
-    : birds;
+    : birds).filter(b => b.status !== 'Crescimento');
 
   const filteredBirds = currentBirds.filter(b =>
     b.anilha.toLowerCase().includes(birdSearch.toLowerCase()) ||
@@ -130,7 +130,7 @@ export function Birds() {
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {activeBreed 
                   ? `Filtrado: ${activeBreed} (${filteredBirds.length} aves)`
-                  : `Total: ${birds.length} aves`
+                  : `Total: ${birds.filter(b => b.status !== 'Crescimento').length} aves`
                 }
               </p>
             </>

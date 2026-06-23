@@ -44,6 +44,9 @@ export type Couple = {
   objetivo: string;
   dataInicio: string;
   status: 'Ativo' | 'Separado';
+  ovosDisponiveis?: number;
+  isHibrido?: boolean;
+  racaFemea?: string;
 };
 
 export type CoupleEgg = {
@@ -90,6 +93,7 @@ type AppContextType = {
   couples: Couple[];
   addCouple: (couple: Couple) => void;
   editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
+  removeCouple: (id: string) => void;
   coupleEggs: CoupleEgg[];
   addCoupleEgg: (egg: CoupleEgg) => void;
   editCoupleEgg: (id: string, updated: Partial<CoupleEgg>) => void;
@@ -615,6 +619,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const removeCouple = (id: string) => {
+    setCouples(prev => {
+      const next = prev.filter(c => c.id !== id);
+      localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
+
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('couples')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeCouple:', error); });
+      }
+      return next;
+    });
+  };
+
   /* ── CoupleEgg CRUD (localforage only) ── */
   const addCoupleEgg = (egg: CoupleEgg) => {
     setCoupleEggs(prev => {
@@ -888,7 +908,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isReady,
       breeds, addBreed, editBreed,
       birds, addBird, editBird,
-      couples, addCouple, editCouple,
+      couples, addCouple, editCouple, removeCouple,
       coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
       eggLots, addEggLot, editEggLot,
       meatLots, addMeatLot, editMeatLot,
