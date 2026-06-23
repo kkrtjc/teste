@@ -34,6 +34,7 @@ export type Bird = {
   isMaeExterno?: boolean;
   dataNascimento?: string;
   peso?: string;
+  dataBaixa?: string;
 };
 
 export type Couple = {
@@ -92,6 +93,7 @@ type AppContextType = {
   birds: Bird[];
   addBird: (bird: Bird) => void;
   editBird: (id: string, updatedBird: Partial<Bird>) => void;
+  removeBird: (id: string) => void;
   couples: Couple[];
   addCouple: (couple: Couple) => void;
   editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
@@ -352,7 +354,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           isPaiExterno: b.is_pai_externo !== undefined ? b.is_pai_externo : b.isPaiExterno,
           isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
           dataNascimento: b.data_nascimento || b.dataNascimento,
-          peso: b.peso
+          peso: b.peso,
+          dataBaixa: localBird?.dataBaixa
         };
       });
 
@@ -623,7 +626,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
     setBirds(prev => {
-      const next = prev.map(b => b.id === id ? { ...b, ...updatedBird } : b);
+      const next = prev.map(b => {
+        if (b.id === id) {
+          const nextFields = { ...updatedBird };
+          if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu') && !b.dataBaixa) {
+            nextFields.dataBaixa = new Date().toISOString().split('T')[0];
+          }
+          if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu') {
+            nextFields.dataBaixa = undefined;
+          }
+          return { ...b, ...nextFields };
+        }
+        return b;
+      });
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
@@ -638,12 +653,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dbUpdate.imagem = updatedBird.imagens?.[0] || null;
           delete dbUpdate.imagens;
         }
+        delete dbUpdate.dataBaixa;
 
         supabase!
           .from('birds')
           .update(dbUpdate)
           .eq('id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase editBird:', error); });
+      }
+      return next;
+    });
+  };
+
+  const removeBird = (id: string) => {
+    setBirds(prev => {
+      const next = prev.filter(b => b.id !== id);
+      localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('birds')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeBird:', error); });
       }
       return next;
     });
@@ -984,7 +1016,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       isReady,
       breeds, addBreed, editBreed,
-      birds, addBird, editBird,
+      birds, addBird, editBird, removeBird,
       couples, addCouple, editCouple, removeCouple,
       coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
       eggLots, addEggLot, editEggLot,
