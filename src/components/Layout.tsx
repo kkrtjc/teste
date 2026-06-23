@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Dna, Activity, Settings, 
+  LayoutDashboard, Dna, Layers, Settings, 
   Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle
 } from 'lucide-react';
@@ -197,7 +197,7 @@ export function Layout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
     { icon: Dna, label: 'Genética & Cruza', path: '/genetics' },
-    { icon: Activity, label: 'Saúde & Vacinas', path: '/health' },
+    { icon: Layers, label: 'Lotes', path: '/lots' },
     { icon: Skull, label: 'Baixas & Descartes', path: '/losses' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
@@ -207,7 +207,7 @@ export function Layout() {
     navItems[0], // Dashboard
     navItems[1], // Aves & Raças
     navItems[2], // Genética & Cruza
-    navItems[3], // Saúde & Vacinas
+    navItems[3], // Lotes
     navItems[4], // Baixas & Descartes
   ];
 

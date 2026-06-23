@@ -198,7 +198,7 @@ export function Dashboard() {
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-theme-base flex-shrink-0
                                     flex items-center justify-center border border-theme-border/30">
                       {bird.imagem
-                        ? <img src={bird.imagem} className="w-full h-full object-cover" alt="" />
+                        ? <img src={bird.imagem} className="w-full h-full object-cover" alt="" loading="lazy" />
                         : <span className="text-xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -320,7 +320,7 @@ export function Dashboard() {
                 {/* Foto quadrada limpa, sem sobreposição */}
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
                   {bird.imagem ? (
-                    <img src={bird.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={bird.anilha} />
+                    <img src={bird.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={bird.anilha} loading="lazy" />
                   ) : (
                     <span className="text-3xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
                       {bird.sexo === 'Macho' ? '🐓' : '🐔'}
@@ -503,6 +503,7 @@ export function Dashboard() {
                         <img
                           src={bird.imagem}
                           alt={bird.anilha}
+                          loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
