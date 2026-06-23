@@ -15,11 +15,11 @@ const statusColor: Record<string, string> = {
 };
 
 export function Dashboard() {
-  const { birds, couples, openBirdProfile, farmSettings, breeds, setActiveBreed } = useAppContext();
+  const { birds, couples, coupleEggs, openBirdProfile, farmSettings, breeds, setActiveBreed } = useAppContext();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm]   = useState('');
   const [showResults, setShowResults] = useState(false);
-  const [activeStatsFilter, setActiveStatsFilter] = useState<'Total' | 'Machos' | 'Fêmeas' | null>(null);
+  const [activeStatsFilter, setActiveStatsFilter] = useState<'Total' | 'Machos' | 'Fêmeas' | 'Crescimento' | 'Eclosão' | null>(null);
   const [showBreedsDashboardModal, setShowBreedsDashboardModal] = useState(false);
   const [statsSearch, setStatsSearch] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -54,6 +54,8 @@ export function Dashboard() {
   const totalAves   = birds.length;
   const totalMachos = birds.filter(b => b.sexo === 'Macho').length;
   const totalFemeas = birds.filter(b => b.sexo === 'Fêmea').length;
+  const totalCrescimento = birds.filter(b => b.status === 'Crescimento').length;
+  const totalEclosao     = (coupleEggs || []).filter(e => e.status === 'Em Choco').length;
 
   /* ── info de uma baia ── */
   const getBayInfo = (baia: string) => {
@@ -95,7 +97,7 @@ export function Dashboard() {
         </h2>
       </div>
 
-      {/* ── Stats grid 2x2 ── */}
+      {/* ── Stats grid 3x2 ── */}
       <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
         {/* Total Aves Card */}
         <div 
@@ -132,6 +134,24 @@ export function Dashboard() {
           <p className="text-2xl font-black text-pink-400">{totalFemeas}</p>
           <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Fêmeas</p>
         </div>
+
+        {/* Aves em Crescimento Card */}
+        <div 
+          onClick={() => { setActiveStatsFilter('Crescimento'); setStatsSearch(''); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+        >
+          <p className="text-2xl font-black text-green-400">{totalCrescimento}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Aves em Crescimento</p>
+        </div>
+
+        {/* Ovos em Eclosão Card */}
+        <div 
+          onClick={() => { setActiveStatsFilter('Eclosão'); setStatsSearch(''); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+        >
+          <p className="text-2xl font-black text-yellow-400">{totalEclosao}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Ovos em Eclosão</p>
+        </div>
       </div>
 
       {/* ── Search ── */}
@@ -155,147 +175,134 @@ export function Dashboard() {
             </button>
           )}
         </div>
-
-        {/* Dropdown de resultados */}
-        {showResults && hasSearch && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-theme-surface/60 backdrop-blur-md border
-                          border-theme-border/50 rounded-2xl shadow-2xl z-50
-                          max-h-[70vh] overflow-y-auto p-3 space-y-4">
-
-            {/* Resultados de aves */}
-            {birdResults.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2 flex items-center gap-1">
-                  <Bird size={10} /> Aves encontradas
-                </p>
-                <div className="space-y-1.5">
-                  {birdResults.map(bird => (
-                    <div key={bird.id}
-                         onClick={() => { openBirdProfile(bird.id); setShowResults(false); }}
-                         className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer
-                                    hover:bg-theme-primary/10 border border-transparent
-                                    hover:border-theme-primary/30 transition-all">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-theme-base flex-shrink-0
-                                      flex items-center justify-center">
-                        {bird.imagem
-                          ? <img src={bird.imagem} className="w-full h-full object-cover" alt="" />
-                          : <span className="text-xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-white text-sm truncate">{bird.anilha}</p>
-                        <p className="text-xs text-theme-text-muted truncate">
-                          {bird.nome || 'Sem nome'} · {bird.raca}
-                        </p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-theme-text-muted">
-                          {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Sem Baia'}
-                        </p>
-                        <p className={`text-[10px] font-bold ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
-                          {bird.status}
-                        </p>
-                      </div>
-                      <ChevronRight size={14} className="text-theme-text-muted flex-shrink-0" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Resultados de baia */}
-            {bayResults.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2">
-                  📦 Baias encontradas
-                </p>
-                <div className="space-y-3">
-                  {bayResults.map(baia => {
-                    const info = getBayInfo(baia);
-                    return (
-                      <div key={baia}
-                           className="p-3 rounded-xl bg-theme-base/60 border border-theme-border/40 space-y-2.5">
-
-                        {/* Header da baia */}
-                        <div className="flex items-center justify-between">
-                          <span className="font-black text-white text-base">Baia {baia}</span>
-                          {info.dominantStatus && (
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-theme-surface
-                                             ${statusColor[info.dominantStatus] || 'text-theme-text-muted'}`}>
-                              {info.dominantStatus}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Contagem */}
-                        <div className="grid grid-cols-4 gap-2">
-                          {[
-                            { icon: <Bird size={12}/>, label: 'Total',    value: info.avesNaBaia.length, color: 'text-white' },
-                            { icon: '🐓',              label: 'Machos',   value: info.machos.length,     color: 'text-blue-400' },
-                            { icon: '🐔',              label: 'Fêmeas',   value: info.femeas.length,     color: 'text-pink-400' },
-                            { icon: <Baby size={12}/>, label: 'Pintinhos',value: info.pintinhos.length,  color: 'text-yellow-400' },
-                          ].map(s => (
-                            <div key={s.label} className="text-center bg-theme-surface rounded-lg py-1.5 px-1">
-                              <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
-                              <div className="text-[9px] text-theme-text-muted font-bold">{s.label}</div>
-                            </div>
-                          ))}
-                        </div>
-
-
-
-                        {/* Link ao casal pai (se tem pintinhos) */}
-                        {info.pintinhos.length > 0 && info.casal && (
-                          <div className="flex items-center gap-2 text-xs p-2 bg-theme-surface rounded-lg">
-                            <Users size={12} className="text-theme-primary flex-shrink-0" />
-                            <span className="text-theme-text-muted">Casal pai:</span>
-                            <span className="text-white font-bold truncate">
-                              {info.macho?.anilha || '?'} × {info.femea?.anilha || '?'}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Lista de aves clicáveis */}
-                        {info.avesNaBaia.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves na baia</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {info.avesNaBaia.slice(0, 8).map(b => (
-                                <button key={b.id}
-                                        onClick={() => { openBirdProfile(b.id); setShowResults(false); }}
-                                        className="flex items-center gap-1 text-xs bg-theme-surface hover:bg-theme-primary/20
-                                                   border border-theme-border/40 hover:border-theme-primary/50
-                                                   rounded-lg px-2 py-1 transition-all">
-                                  <span>{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
-                                  <span className="text-white font-bold">{b.anilha}</span>
-                                </button>
-                              ))}
-                              {info.avesNaBaia.length > 8 && (
-                                <span className="text-xs text-theme-text-muted self-center">
-                                  +{info.avesNaBaia.length - 8} mais
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Nenhum resultado */}
-            {birdResults.length === 0 && bayResults.length === 0 && (
-              <div className="py-6 text-center text-theme-text-muted text-sm">
-                Nenhum resultado para "{searchTerm}"
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
+      {/* ── Search Results Area (In-Line, replacing overlay) ── */}
+      {showResults && hasSearch && (
+        <div className="w-full max-w-sm bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-2xl shadow-premium p-3.5 space-y-4 animate-fade-in z-10">
+          {/* Resultados de aves */}
+          {birdResults.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2 flex items-center gap-1">
+                <Bird size={10} /> Aves encontradas
+              </p>
+              <div className="space-y-2">
+                {birdResults.map(bird => (
+                  <div key={bird.id}
+                       onClick={() => { openBirdProfile(bird.id); setShowResults(false); }}
+                       className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer
+                                  hover:bg-theme-primary/10 border border-transparent
+                                  hover:border-theme-primary/30 transition-all bg-theme-surface/20 animate-fade-in">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-theme-base flex-shrink-0
+                                    flex items-center justify-center border border-theme-border/30">
+                      {bird.imagem
+                        ? <img src={bird.imagem} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{bird.anilha}</p>
+                      <p className="text-xs text-theme-text-muted truncate">
+                        {bird.nome || 'Sem nome'} · {bird.raca}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs font-bold text-theme-text-muted">
+                        {bird.baia && bird.baia !== 'ND' ? `Baia ${bird.baia}` : 'Sem Baia'}
+                      </p>
+                      <p className={`text-[10px] font-bold ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
+                        {bird.status}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} className="text-theme-text-muted flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resultados de baia */}
+          {bayResults.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider px-1 mb-2">
+                📦 Baias encontradas
+              </p>
+              <div className="space-y-3">
+                {bayResults.map(baia => {
+                  const info = getBayInfo(baia);
+                  return (
+                    <div key={baia}
+                         className="p-3 rounded-xl bg-theme-base/60 border border-theme-border/40 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-white text-base">Baia {baia}</span>
+                        {info.dominantStatus && (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-theme-surface
+                                           ${statusColor[info.dominantStatus] || 'text-theme-text-muted'}`}>
+                            {info.dominantStatus}
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { icon: <Bird size={12}/>, label: 'Total',    value: info.avesNaBaia.length, color: 'text-white' },
+                          { icon: '🐓',              label: 'Machos',   value: info.machos.length,     color: 'text-blue-400' },
+                          { icon: '🐔',              label: 'Fêmeas',   value: info.femeas.length,     color: 'text-pink-400' },
+                          { icon: <Baby size={12}/>, label: 'Pintinhos',value: info.pintinhos.length,  color: 'text-yellow-400' },
+                        ].map(s => (
+                          <div key={s.label} className="text-center bg-theme-surface rounded-lg py-1.5 px-1">
+                            <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
+                            <div className="text-[9px] text-theme-text-muted font-bold">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {info.pintinhos.length > 0 && info.casal && (
+                        <div className="flex items-center gap-2 text-xs p-2 bg-theme-surface rounded-lg">
+                          <Users size={12} className="text-theme-primary flex-shrink-0" />
+                          <span className="text-theme-text-muted">Casal pai:</span>
+                          <span className="text-white font-bold truncate">
+                            {info.macho?.anilha || '?'} × {info.femea?.anilha || '?'}
+                          </span>
+                        </div>
+                      )}
+                      {info.avesNaBaia.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves na baia</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {info.avesNaBaia.slice(0, 8).map(b => (
+                              <button key={b.id}
+                                      onClick={() => { openBirdProfile(b.id); setShowResults(false); }}
+                                      className="flex items-center gap-1 text-xs bg-theme-surface hover:bg-theme-primary/20
+                                                 border border-theme-border/40 hover:border-theme-primary/50
+                                                 rounded-lg px-2 py-1 transition-all">
+                                <span>{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                                <span className="text-white font-bold">{b.anilha}</span>
+                              </button>
+                            ))}
+                            {info.avesNaBaia.length > 8 && (
+                              <span className="text-xs text-theme-text-muted self-center">
+                                +{info.avesNaBaia.length - 8} mais
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Nenhum resultado */}
+          {birdResults.length === 0 && bayResults.length === 0 && (
+            <div className="py-6 text-center text-theme-text-muted text-sm">
+              Nenhum resultado para "{searchTerm}"
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Recent Birds Section ── */}
-      {birds.length > 0 && (
+      {!hasSearch && birds.length > 0 && (
         <div className="w-full max-w-sm space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-xs text-theme-text-muted uppercase tracking-wider">Aves Recentes</h3>
@@ -358,14 +365,16 @@ export function Dashboard() {
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="font-black text-lg text-white">
-                  Lista de Aves ({activeStatsFilter})
+                  Lista ({activeStatsFilter})
                 </h3>
                 <p className="text-xs text-theme-text-muted">
                   Exibindo {
-                    activeStatsFilter === 'Total' ? birds.length :
-                    activeStatsFilter === 'Machos' ? birds.filter(b => b.sexo === 'Macho').length :
-                    birds.filter(b => b.sexo === 'Fêmea').length
-                  } aves encontradas
+                    activeStatsFilter === 'Total' ? `${birds.length} aves` :
+                    activeStatsFilter === 'Machos' ? `${birds.filter(b => b.sexo === 'Macho').length} machos` :
+                    activeStatsFilter === 'Fêmeas' ? `${birds.filter(b => b.sexo === 'Fêmea').length} fêmeas` :
+                    activeStatsFilter === 'Crescimento' ? `${birds.filter(b => b.status === 'Crescimento').length} aves` :
+                    `${(coupleEggs || []).filter(e => e.status === 'Em Choco').length} ovos`
+                  }
                 </p>
               </div>
               <button 
@@ -393,9 +402,72 @@ export function Dashboard() {
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-2.5 overscroll-contain">
               {(() => {
+                if (activeStatsFilter === 'Eclosão') {
+                  const query = statsSearch.trim().toLowerCase();
+                  let eggsList = (coupleEggs || []).filter(e => e.status === 'Em Choco');
+                  if (query) {
+                    eggsList = eggsList.filter(egg => {
+                      const couple = couples.find(c => c.id === egg.coupleId);
+                      const macho = couple ? birds.find(b => b.id === couple.machoId) : null;
+                      const mae = birds.find(b => b.id === egg.femeaId);
+                      return (macho?.anilha || '').toLowerCase().includes(query) ||
+                             (mae?.anilha || '').toLowerCase().includes(query) ||
+                             (macho?.nome || '').toLowerCase().includes(query) ||
+                             (mae?.nome || '').toLowerCase().includes(query);
+                    });
+                  }
+
+                  if (eggsList.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-theme-text-muted text-sm italic w-full">
+                        Nenhum ovo em eclosão correspondente encontrado.
+                      </div>
+                    );
+                  }
+
+                  return eggsList.map(egg => {
+                    const couple = couples.find(c => c.id === egg.coupleId);
+                    const macho = couple ? birds.find(b => b.id === couple.machoId) : null;
+                    const mae = birds.find(b => b.id === egg.femeaId);
+                    return (
+                      <div
+                        key={egg.id}
+                        className="flex items-center gap-3.5 p-3 rounded-2xl border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group animate-fade-in"
+                      >
+                        {/* Ovo em quadrado limpo */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
+                          <span className="text-3xl sm:text-4xl select-none">🥚</span>
+                        </div>
+
+                        {/* Detalhes */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between h-16 sm:h-20 py-0.5">
+                          <div>
+                            <h4 className="font-black text-white text-sm sm:text-base truncate">
+                              Ovo {egg.id.slice(-4)}
+                            </h4>
+                            <p className="text-xs text-theme-text-muted truncate mt-0.5">
+                              Pai: {macho?.anilha || '?'} × Mãe: {mae?.anilha || '?'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-theme-border/30 mt-1">
+                            <span className="text-[10px] sm:text-xs text-theme-text-muted font-bold">
+                              Choco: {new Date(egg.dataIntroducao).toLocaleDateString('pt-BR')}
+                            </span>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-yellow-400">
+                              Em Choco
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                }
+
                 let list = birds;
                 if (activeStatsFilter === 'Machos') list = birds.filter(b => b.sexo === 'Macho');
                 if (activeStatsFilter === 'Fêmeas') list = birds.filter(b => b.sexo === 'Fêmea');
+                if (activeStatsFilter === 'Crescimento') list = birds.filter(b => b.status === 'Crescimento');
 
                 const query = statsSearch.trim().toLowerCase();
                 if (query) {
