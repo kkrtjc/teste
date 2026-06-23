@@ -119,45 +119,70 @@ export function Birds() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in h-full flex flex-col pb-24">
+    <div className="space-y-3.5 animate-fade-in h-full flex flex-col pb-24">
       
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex items-center justify-between gap-3 shrink-0">
         <div>
           {activeTab === 'aves' ? (
             <>
-              <h2 className="text-2xl font-black text-white">Plantel de Aves</h2>
-              <p className="text-sm text-theme-text-muted mt-1">
+              <h2 className="text-base sm:text-lg font-black text-white leading-none">Plantel de Aves</h2>
+              <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {activeBreed 
-                  ? `Filtrado por: ${activeBreed} (${filteredBirds.length} ave${filteredBirds.length !== 1 ? 's' : ''} encontrada${filteredBirds.length !== 1 ? 's' : ''})`
-                  : `Total de ${birds.length} ave${birds.length !== 1 ? 's' : ''} cadastrada${birds.length !== 1 ? 's' : ''}`
+                  ? `Filtrado: ${activeBreed} (${filteredBirds.length} aves)`
+                  : `Total: ${birds.length} aves`
                 }
               </p>
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-black text-white">Raças &amp; Linhagens</h2>
-              <p className="text-sm text-theme-text-muted mt-1">
-                {breeds.length} raça{breeds.length !== 1 ? 's' : ''} cadastrada{breeds.length !== 1 ? 's' : ''}
+              <h2 className="text-base sm:text-lg font-black text-white leading-none">Raças &amp; Linhagens</h2>
+              <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
+                {breeds.length} raça{breeds.length !== 1 ? 's' : ''}
               </p>
             </>
           )}
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {activeTab === 'aves' && (
+            <div className="flex items-center gap-1 shrink-0">
+              <select
+                value={activeBreed}
+                onChange={e => setActiveBreed(e.target.value)}
+                className="bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white px-2.5 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-[10px] sm:text-xs outline-none font-bold max-w-[90px] sm:max-w-[120px] truncate"
+              >
+                <option value="" className="bg-theme-surface">Raças</option>
+                {breeds.map(b => (
+                  <option key={b.id} value={b.nome} className="bg-theme-surface">{b.nome}</option>
+                ))}
+              </select>
+
+              {activeBreed && (
+                <button
+                  onClick={() => setActiveBreed('')}
+                  className="p-1 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 rounded-full transition-all shrink-0 animate-fade-in"
+                  title="Limpar Filtro"
+                >
+                  <X size={10} />
+                </button>
+              )}
+            </div>
+          )}
+
           {activeTab === 'aves' ? (
             <button 
               onClick={() => openAddBirdModal(activeBreed)} 
-              className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2"
+              className="btn-primary !px-3 !py-1.5 !text-[10px] sm:!text-xs flex items-center gap-1 shrink-0"
             >
-              <Plus size={18} /> Cadastrar Ave
+              <Plus size={12} /> Cadastrar Ave
             </button>
           ) : (
             <button 
               onClick={() => openBreedModal()} 
-              className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2"
+              className="btn-primary !px-3 !py-1.5 !text-[10px] sm:!text-xs flex items-center gap-1 shrink-0"
             >
-              <Plus size={18} /> Cadastrar Raça
+              <Plus size={12} /> Cadastrar Raça
             </button>
           )}
         </div>
@@ -167,7 +192,7 @@ export function Birds() {
       <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
-          className={`flex-1 sm:flex-none text-center px-5 py-2.5 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
             activeTab === 'aves' 
               ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
               : 'text-theme-text-muted hover:text-white hover:bg-white/5'
@@ -177,7 +202,7 @@ export function Birds() {
         </button>
         <button 
           onClick={() => { setActiveTab('racas'); }}
-          className={`flex-1 sm:flex-none text-center px-5 py-2.5 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
             activeTab === 'racas' 
               ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
               : 'text-theme-text-muted hover:text-white hover:bg-white/5'
@@ -189,43 +214,18 @@ export function Birds() {
 
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
-        <div className="flex-1 flex flex-col space-y-4 min-h-0">
-          {/* Search + Filter Row */}
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
+        <div className="flex-1 flex flex-col space-y-3 min-h-0">
+          {/* Search Row */}
+          <div className="w-full shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
               <input
                 type="text"
                 placeholder="Pesquisar por anilha, nome ou baia..."
                 value={birdSearch}
                 onChange={e => setBirdSearch(e.target.value)}
-                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
+                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
               />
-            </div>
-
-            {/* Breed Filter Select (Full width on mobile, glassmorphic & rounded-full) */}
-            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-              <select
-                value={activeBreed}
-                onChange={e => setActiveBreed(e.target.value)}
-                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white px-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm outline-none font-bold"
-              >
-                <option value="" className="bg-theme-surface">Todas as Raças</option>
-                {breeds.map(b => (
-                  <option key={b.id} value={b.nome} className="bg-theme-surface">{b.nome}</option>
-                ))}
-              </select>
-
-              {activeBreed && (
-                <button
-                  onClick={() => setActiveBreed('')}
-                  className="p-3.5 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 rounded-full transition-all shrink-0"
-                  title="Limpar Filtro de Raça"
-                >
-                  <X size={16} />
-                </button>
-              )}
             </div>
           </div>
 
