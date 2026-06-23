@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 
 function calculateExactAge(birthDateStr: string): string {
@@ -27,7 +27,7 @@ function calculateExactAge(birthDateStr: string): string {
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   useEffect(() => {
@@ -85,6 +85,17 @@ export function BirdProfileModal() {
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (confirm(`Deseja excluir permanentemente a ave ${bird.anilha} do plantel?`)) {
+                  removeBird(bird.id);
+                  closeModals();
+                }
+              }}
+              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={16} /> <span className="hidden sm:inline">Excluir</span>
+            </button>
             <button onClick={() => openAddBirdModal('', bird.id)} className="flex items-center gap-2 text-sm font-bold text-theme-primary hover:text-orange-400 transition-colors">
               <Edit2 size={16} /> <span className="hidden sm:inline">Editar</span>
             </button>

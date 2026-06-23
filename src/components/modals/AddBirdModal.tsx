@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, AlertTriangle, ShieldAlert, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, AlertTriangle, ShieldAlert, CheckCircle, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 
@@ -47,7 +47,7 @@ function StepDots({ total, current }: { total: number; current: number }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 export function AddBirdModal() {
   const {
-    isAddBirdModalOpen, closeModals, breeds, addBird, editBird,
+    isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
     preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple
   } = useAppContext();
 
@@ -572,9 +572,24 @@ export function AddBirdModal() {
               <ChevronLeft size={16} /> Voltar
             </button>
           ) : (
-            <button onClick={closeModals} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">
-              Cancelar
-            </button>
+            <div className="flex gap-2">
+              <button onClick={closeModals} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">
+                Cancelar
+              </button>
+              {birdToEditId && (
+                <button
+                  onClick={() => {
+                    if (confirm('Deseja excluir permanentemente esta ave?')) {
+                      removeBird(birdToEditId);
+                      closeModals();
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} /> Excluir
+                </button>
+              )}
+            </div>
           )}
 
           {step < TOTAL_STEPS - 1 ? (
