@@ -966,14 +966,14 @@ export function Genetics() {
                   >
                     <option value="">— Selecione o macho —</option>
                     {birds
-                      .filter(b => b.sexo === 'Macho' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaMacho))
+                      .filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaMacho))
                       .map(b => (
                         <option key={b.id} value={b.id}>
                           {b.anilha} {b.nome ? `(${b.nome})` : ''}
                         </option>
                       ))}
                   </select>
-                  {birds.filter(b => b.sexo === 'Macho' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaMacho)).length === 0 && (
+                  {birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaMacho)).length === 0 && (
                     <p className="text-[9px] text-orange-400 mt-1">Nenhum reprodutor cadastrado para esta raça.</p>
                   )}
                 </div>
@@ -986,11 +986,11 @@ export function Genetics() {
                     Matrizes (Fêmeas, até 6) * ({selectedFemeas.length} selecionadas)
                   </label>
                   <div className="bg-theme-base border border-theme-border rounded-xl p-3 max-h-36 overflow-y-auto space-y-2">
-                    {birds.filter(b => b.sexo === 'Fêmea' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaFemea)).length === 0 ? (
+                    {birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaFemea)).length === 0 ? (
                       <p className="text-xs text-theme-text-muted italic">Nenhuma matriz desta raça cadastrada.</p>
                     ) : (
                       birds
-                        .filter(b => b.sexo === 'Fêmea' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaFemea))
+                        .filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.raca === (tipoCruzamento === 'puro' ? racaCasal : racaFemea))
                         .map(f => {
                           const isChecked = selectedFemeas.includes(f.id);
                           return (

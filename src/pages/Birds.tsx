@@ -120,7 +120,7 @@ export function Birds() {
 
   const currentBirds = (activeBreed
     ? birds.filter(b => b.raca === activeBreed)
-    : birds).filter(b => b.status !== 'Crescimento');
+    : birds).filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu');
 
   const filteredBirds = currentBirds.filter(b =>
     b.anilha.toLowerCase().includes(birdSearch.toLowerCase()) ||
@@ -140,7 +140,7 @@ export function Birds() {
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {activeBreed 
                   ? `Filtrado: ${activeBreed} (${filteredBirds.length} aves)`
-                  : `Total: ${birds.filter(b => b.status !== 'Crescimento').length} aves`
+                  : `Total: ${birds.filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves`
                 }
               </p>
             </>
@@ -308,7 +308,9 @@ export function Birds() {
                           ${bird.status === 'Adulto' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
                             bird.status === 'Reprodutor' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
                             bird.status === 'Matriz' ? 'text-pink-400 border-pink-500/20 bg-pink-500/10' :
-                            bird.status === 'Crescimento' ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
+                            bird.status === 'Crescimento' ? 'text-green-400 border-green-500/20 bg-green-500/10' :
+                            bird.status === 'Vendido' ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
+                            bird.status === 'Faleceu' ? 'text-red-400 border-red-500/20 bg-red-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
                           {bird.status}
                         </span>
                       </div>

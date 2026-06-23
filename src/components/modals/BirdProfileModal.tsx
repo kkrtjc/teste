@@ -27,7 +27,7 @@ function calculateExactAge(birthDateStr: string): string {
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   useEffect(() => {
@@ -41,6 +41,25 @@ export function BirdProfileModal() {
   if (!bird) {
     return null;
   }
+
+  const getStatusColorClass = (status: string) => {
+    switch (status) {
+      case 'Adulto':
+        return 'text-emerald-400';
+      case 'Reprodutor':
+        return 'text-blue-400';
+      case 'Matriz':
+        return 'text-pink-400';
+      case 'Crescimento':
+        return 'text-green-400';
+      case 'Vendido':
+        return 'text-amber-400';
+      case 'Faleceu':
+        return 'text-red-400';
+      default:
+        return 'text-white';
+    }
+  };
 
   const images = bird.imagens && bird.imagens.length > 0
     ? bird.imagens
@@ -207,7 +226,18 @@ export function BirdProfileModal() {
                 <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
                   <Activity size={11} /> Status
                 </p>
-                <p className="text-sm text-green-400 font-bold truncate">{bird.status || 'Não informado'}</p>
+                <select
+                  value={bird.status || ''}
+                  onChange={(e) => editBird(bird.id, { status: e.target.value })}
+                  className={`bg-transparent text-sm font-bold outline-none border-none cursor-pointer w-full p-0 ${getStatusColorClass(bird.status)}`}
+                >
+                  <option value="Adulto" className="bg-theme-surface text-white">Adulto</option>
+                  <option value="Reprodutor" className="bg-theme-surface text-white">Reprodutor</option>
+                  <option value="Matriz" className="bg-theme-surface text-white">Matriz</option>
+                  <option value="Crescimento" className="bg-theme-surface text-white">Crescimento</option>
+                  <option value="Vendido" className="bg-theme-surface text-white">Vendido</option>
+                  <option value="Faleceu" className="bg-theme-surface text-white">Faleceu</option>
+                </select>
               </div>
 
               {/* Nascimento */}

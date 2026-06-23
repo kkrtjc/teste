@@ -10,6 +10,8 @@ const statusColor: Record<string, string> = {
   'Reprodutor': 'text-blue-400',
   'Matriz': 'text-pink-400',
   'Crescimento': 'text-green-400',
+  'Vendido': 'text-amber-400',
+  'Faleceu': 'text-red-400',
 };
 
 export function Dashboard() {
@@ -38,8 +40,10 @@ export function Dashboard() {
 
   /* ── resultados ── */
   const birdResults  = hasSearch ? birds.filter(b =>
-    b.nome?.toLowerCase().includes(term) ||
-    b.anilha?.toLowerCase().includes(term)
+    b.status !== 'Vendido' && b.status !== 'Faleceu' && (
+      b.nome?.toLowerCase().includes(term) ||
+      b.anilha?.toLowerCase().includes(term)
+    )
   ) : [];
 
   /* busca por baia: agrupa todas as aves */
@@ -49,9 +53,9 @@ export function Dashboard() {
   }
   const bayResults = Array.from(baySet);
 
-  const totalAves   = birds.length;
-  const totalMachos = birds.filter(b => b.sexo === 'Macho').length;
-  const totalFemeas = birds.filter(b => b.sexo === 'Fêmea').length;
+  const totalAves   = birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length;
+  const totalMachos = birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
+  const totalFemeas = birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
   const totalCrescimento = birds.filter(b => b.status === 'Crescimento').length;
   const totalEclosao     = (coupleEggs || []).filter(e => e.status === 'Em Choco').length;
 
@@ -307,7 +311,7 @@ export function Dashboard() {
             <button onClick={() => navigate('/birds')} className="text-xs font-bold text-theme-primary hover:underline">Ver todas</button>
           </div>
           <div className="flex flex-col space-y-2.5">
-            {birds.slice(-4).reverse().map(bird => (
+            {birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').slice(-4).reverse().map(bird => (
               <div
                 key={bird.id}
                 onClick={() => openBirdProfile(bird.id)}
@@ -367,9 +371,9 @@ export function Dashboard() {
                 </h3>
                 <p className="text-xs text-theme-text-muted">
                   Exibindo {
-                    activeStatsFilter === 'Total' ? `${birds.length} aves` :
-                    activeStatsFilter === 'Machos' ? `${birds.filter(b => b.sexo === 'Macho').length} machos` :
-                    activeStatsFilter === 'Fêmeas' ? `${birds.filter(b => b.sexo === 'Fêmea').length} fêmeas` :
+                    activeStatsFilter === 'Total' ? `${birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves` :
+                    activeStatsFilter === 'Machos' ? `${birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').length} machos` :
+                    activeStatsFilter === 'Fêmeas' ? `${birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').length} fêmeas` :
                     activeStatsFilter === 'Crescimento' ? `${birds.filter(b => b.status === 'Crescimento').length} aves` :
                     `${(coupleEggs || []).filter(e => e.status === 'Em Choco').length} ovos`
                   }
@@ -462,9 +466,9 @@ export function Dashboard() {
                   });
                 }
 
-                let list = birds;
-                if (activeStatsFilter === 'Machos') list = birds.filter(b => b.sexo === 'Macho');
-                if (activeStatsFilter === 'Fêmeas') list = birds.filter(b => b.sexo === 'Fêmea');
+                let list = birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu');
+                if (activeStatsFilter === 'Machos') list = list.filter(b => b.sexo === 'Macho');
+                if (activeStatsFilter === 'Fêmeas') list = list.filter(b => b.sexo === 'Fêmea');
                 if (activeStatsFilter === 'Crescimento') list = birds.filter(b => b.status === 'Crescimento');
 
                 const query = statsSearch.trim().toLowerCase();

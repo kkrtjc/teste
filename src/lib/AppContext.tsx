@@ -494,13 +494,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [isReady]);
 
-  // Autopromoção de 'Crescimento' para 'Adulto'
+  // Autopromoção de 'Crescimento' para 'Adulto' e migração de status obsoletos ('Ativo')
   useEffect(() => {
-    if (!isReady || birds.length === 0 || breeds.length === 0) return;
+    if (!isReady || birds.length === 0) return;
 
     let hasUpdates = false;
     const updatedBirds = birds.map(bird => {
-      if (bird.status === 'Crescimento' && bird.dataNascimento) {
+      let nextStatus = bird.status;
+
+      // Migrar status obsoleto 'Ativo' para 'Adulto'
+      if (bird.status === 'Ativo') {
+        nextStatus = 'Adulto';
+        hasUpdates = true;
+      }
+
+      // Autopromoção de 'Crescimento' para 'Adulto'
+      if (bird.status === 'Crescimento' && bird.dataNascimento && breeds.length > 0) {
         const breedObj = breeds.find(b => b.nome === bird.raca);
         const tempoCrescimento = breedObj?.tempoCrescimento || 0;
         if (tempoCrescimento > 0) {
@@ -512,13 +521,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
           if (diffDays >= tempoCrescimento) {
+            nextStatus = 'Adulto';
             hasUpdates = true;
-            return {
-              ...bird,
-              status: 'Adulto'
-            };
           }
         }
+      }
+
+      if (nextStatus !== bird.status) {
+        return { ...bird, status: nextStatus };
       }
       return bird;
     });

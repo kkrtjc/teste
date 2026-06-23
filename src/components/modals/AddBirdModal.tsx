@@ -205,6 +205,8 @@ export function AddBirdModal() {
     { label: 'Reprodutor', value: 'Reprodutor' },
     { label: 'Matriz', value: 'Matriz' },
     { label: 'Crescimento', value: 'Crescimento' },
+    { label: 'Vendido', value: 'Vendido' },
+    { label: 'Faleceu', value: 'Faleceu' },
   ];
   const machoOptions = [
     { label: 'Desconhecido', value: '' },
