@@ -20,17 +20,25 @@ export function Health() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-theme-border">
+      {/* Tabs (Glassmorphic Pill Bar) */}
+      <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => setActiveTab('vacinas')}
-          className={`pb-3 text-sm font-bold transition-all ${activeTab === 'vacinas' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'}`}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'vacinas' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
         >
           Calendário Vacinal
         </button>
         <button 
           onClick={() => setActiveTab('prontuario')}
-          className={`pb-3 text-sm font-bold transition-all ${activeTab === 'prontuario' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'}`}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'prontuario' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
         >
           Prontuário e Tratamentos
         </button>

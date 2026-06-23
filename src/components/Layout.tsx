@@ -306,32 +306,34 @@ export function Layout() {
         </div>
       </main>
 
-      {/* Bottom Navigation (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-theme-surface/90 backdrop-blur-lg border-t border-theme-border z-50 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex justify-around items-center h-16 px-2">
-          {mobileNavItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
-                  isActive ? 'text-theme-primary' : 'text-theme-text-muted hover:text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon size={20} className={isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : ''} />
-                  <span className="text-[9px] font-bold truncate px-1 max-w-full text-center">
-                    {item.label.split(' ')[0]}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      {/* Floating Bottom Navigation (Glassmorphic Mobile Dock) */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+        <nav className="bg-theme-surface/60 border border-theme-border/50 backdrop-blur-md rounded-2xl shadow-premium px-2 py-2">
+          <div className="flex justify-around items-center h-14">
+            {mobileNavItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl ${
+                    isActive ? 'text-theme-primary' : 'text-theme-text-muted hover:text-white'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon size={18} className={isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-105' : ''} />
+                    <span className="text-[9px] font-black tracking-wide truncate px-1 max-w-full text-center">
+                      {item.label.split(' ')[0]}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(

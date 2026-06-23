@@ -97,23 +97,35 @@ export function Genetics() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-theme-border overflow-x-auto hide-scrollbar shrink-0">
+      {/* Tabs (Glassmorphic Pill Bar) */}
+      <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => setActiveTab('plantel')}
-          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'plantel' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'}`}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'plantel' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
         >
           Plantel
         </button>
         <button 
           onClick={() => setActiveTab('casais')}
-          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'casais' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'}`}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'casais' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
         >
           Casais &amp; Cruza
         </button>
         <button 
           onClick={() => setActiveTab('pedigree')}
-          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'pedigree' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'}`}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'pedigree' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
         >
           Pedigree Visual
         </button>
@@ -139,10 +151,10 @@ export function Genetics() {
                     placeholder="Buscar anilha ou nome..." 
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    className="w-full bg-theme-surface border border-theme-border rounded-lg py-2 pl-9 pr-4 text-base md:text-sm text-white focus:border-theme-primary outline-none" 
+                    className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-full py-2 pl-9 pr-4 text-base md:text-sm text-white focus:border-theme-primary outline-none shadow-inner" 
                   />
                 </div>
-                <button className="p-2 text-theme-text-muted hover:text-white bg-theme-surface rounded-lg border border-theme-border flex items-center gap-2 text-sm font-medium shrink-0">
+                <button className="p-2 text-theme-text-muted hover:text-white bg-theme-surface/30 backdrop-blur-md rounded-full border border-theme-border flex items-center gap-2 text-sm font-medium shrink-0">
                   <Filter size={16} /> <span className="hidden sm:inline">Filtros</span>
                 </button>
               </div>

@@ -144,9 +144,9 @@ export function Dashboard() {
             onChange={e => { setSearchTerm(e.target.value); setShowResults(true); }}
             onFocus={() => setShowResults(true)}
             placeholder="Nome, anilha ou número da baia…"
-            className="w-full bg-theme-surface border border-theme-border/50 text-white
-                       pl-11 pr-10 py-3.5 rounded-xl focus:outline-none focus:border-theme-primary
-                       transition-colors shadow-lg text-sm placeholder-theme-text-muted/50"
+            className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white
+                       pl-11 pr-10 py-3.5 rounded-full focus:outline-none focus:border-theme-primary
+                       transition-colors shadow-lg text-sm placeholder-theme-text-muted/50 shadow-inner"
           />
           {searchTerm && (
             <button onClick={() => { setSearchTerm(''); setShowResults(false); }}
@@ -158,8 +158,8 @@ export function Dashboard() {
 
         {/* Dropdown de resultados */}
         {showResults && hasSearch && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-theme-surface border
-                          border-theme-primary/30 rounded-xl shadow-2xl z-50
+          <div className="absolute top-full left-0 right-0 mt-2 bg-theme-surface/60 backdrop-blur-md border
+                          border-theme-border/50 rounded-2xl shadow-2xl z-50
                           max-h-[70vh] overflow-y-auto p-3 space-y-4">
 
             {/* Resultados de aves */}
@@ -385,7 +385,7 @@ export function Dashboard() {
                   placeholder="Filtrar por anilha ou nome..."
                   value={statsSearch}
                   onChange={e => setStatsSearch(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                  className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
                 />
               </div>
             </div>
@@ -526,7 +526,7 @@ export function Dashboard() {
                   placeholder="Filtrar por nome ou descrição..."
                   value={statsSearch}
                   onChange={e => setStatsSearch(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                  className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
                 />
               </div>
             </div>

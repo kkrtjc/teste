@@ -163,20 +163,24 @@ export function Birds() {
         </div>
       </div>
 
-      {/* ── Tabs (Identical to other pages) ── */}
-      <div className="flex items-center gap-6 border-b border-theme-border overflow-x-auto hide-scrollbar shrink-0">
+      {/* ── Tabs (Glassmorphic Pill Bar) ── */}
+      <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
-          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${
-            activeTab === 'aves' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'
+          className={`flex-1 sm:flex-none text-center px-5 py-2.5 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'aves' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
           }`}
         >
           Plantel de Aves
         </button>
         <button 
           onClick={() => { setActiveTab('racas'); }}
-          className={`pb-3 text-sm font-bold transition-all whitespace-nowrap ${
-            activeTab === 'racas' ? 'text-theme-primary border-b-2 border-theme-primary' : 'text-theme-text-muted hover:text-white'
+          className={`flex-1 sm:flex-none text-center px-5 py-2.5 text-xs sm:text-sm font-black transition-all rounded-full whitespace-nowrap ${
+            activeTab === 'racas' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
           }`}
         >
           Raças &amp; Linhagens
@@ -196,27 +200,27 @@ export function Birds() {
                 placeholder="Pesquisar por anilha, nome ou baia..."
                 value={birdSearch}
                 onChange={e => setBirdSearch(e.target.value)}
-                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-sm"
+                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
               />
             </div>
 
-            {/* Breed Filter Select */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Breed Filter Select (Full width on mobile, glassmorphic & rounded-full) */}
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
               <select
                 value={activeBreed}
                 onChange={e => setActiveBreed(e.target.value)}
-                className="bg-theme-surface border border-theme-border/50 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-sm outline-none font-bold"
+                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white px-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm outline-none font-bold"
               >
-                <option value="">Todas as Raças</option>
+                <option value="" className="bg-theme-surface">Todas as Raças</option>
                 {breeds.map(b => (
-                  <option key={b.id} value={b.nome}>{b.nome}</option>
+                  <option key={b.id} value={b.nome} className="bg-theme-surface">{b.nome}</option>
                 ))}
               </select>
 
               {activeBreed && (
                 <button
                   onClick={() => setActiveBreed('')}
-                  className="p-3 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 rounded-xl transition-all"
+                  className="p-3.5 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 rounded-full transition-all shrink-0"
                   title="Limpar Filtro de Raça"
                 >
                   <X size={16} />
@@ -318,7 +322,7 @@ export function Birds() {
               placeholder="Pesquisar raça..."
               value={breedSearch}
               onChange={e => setBreedSearch(e.target.value)}
-              className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-sm"
+              className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
             />
           </div>
 
