@@ -301,38 +301,48 @@ export function Dashboard() {
             <h3 className="font-bold text-xs text-theme-text-muted uppercase tracking-wider">Aves Recentes</h3>
             <button onClick={() => navigate('/birds')} className="text-xs font-bold text-theme-primary hover:underline">Ver todas</button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col space-y-2.5">
             {birds.slice(-4).reverse().map(bird => (
               <div
                 key={bird.id}
                 onClick={() => openBirdProfile(bird.id)}
-                className="aspect-[3/4] w-full rounded-2xl overflow-hidden relative cursor-pointer group hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium"
+                className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group"
               >
-                {/* Background photo */}
-                <div className="absolute inset-0 w-full h-full bg-theme-base flex items-center justify-center overflow-hidden">
+                {/* Foto quadrada limpa, sem sobreposição */}
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
                   {bird.imagem ? (
                     <img src={bird.imagem} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={bird.anilha} />
                   ) : (
-                    <span className="text-5xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
+                    <span className="text-3xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
                       {bird.sexo === 'Macho' ? '🐓' : '🐔'}
                     </span>
                   )}
                 </div>
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 z-0 pointer-events-none" />
-                
-                {/* Gender badge */}
-                <div className="absolute top-2 right-2 z-10">
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md backdrop-blur-md border backdrop-saturate-150
-                    ${bird.sexo === 'Macho' ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
-                    {bird.sexo === 'Macho' ? 'M' : 'F'}
-                  </span>
-                </div>
-                
-                {/* Floating details panel */}
-                <div className="absolute bottom-2 left-2 right-2 p-1.5 rounded-lg backdrop-blur-md bg-black/50 border border-white/10 space-y-0.5 shadow-md z-10">
-                  <h4 className="font-black text-white text-[10px] truncate group-hover:text-theme-primary transition-colors">{bird.anilha}</h4>
-                  <p className="text-[9px] text-white/70 truncate">{bird.raca || 'Sem raça'}</p>
+
+                {/* Detalhes à direita */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between h-16 py-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-black text-white text-sm truncate group-hover:text-theme-primary transition-colors">
+                      {bird.anilha}
+                    </h4>
+                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border
+                      ${bird.sexo === 'Macho' ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
+                      {bird.sexo === 'Macho' ? 'Macho' : 'Fêmea'}
+                    </span>
+                  </div>
+                  
+                  <p className="text-[11px] text-theme-text-muted truncate">
+                    {bird.nome || 'Sem nome'}
+                  </p>
+
+                  <div className="flex items-center justify-between gap-1 mt-1 text-[10px]">
+                    <span className="text-theme-text-muted truncate max-w-[120px]">
+                      {bird.raca}
+                    </span>
+                    <span className={`font-bold shrink-0 ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
+                      {bird.status}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -381,7 +391,7 @@ export function Dashboard() {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 overscroll-contain align-start content-start">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-2.5 overscroll-contain">
               {(() => {
                 let list = birds;
                 if (activeStatsFilter === 'Machos') list = birds.filter(b => b.sexo === 'Macho');
@@ -397,7 +407,7 @@ export function Dashboard() {
 
                 if (list.length === 0) {
                   return (
-                    <div className="text-center py-12 text-theme-text-muted text-sm italic col-span-2">
+                    <div className="text-center py-12 text-theme-text-muted text-sm italic w-full">
                       Nenhuma ave correspondente encontrada.
                     </div>
                   );
@@ -411,10 +421,10 @@ export function Dashboard() {
                       setActiveStatsFilter(null);
                       setStatsSearch('');
                     }}
-                    className="aspect-[3/4] w-full rounded-2xl overflow-hidden relative cursor-pointer group hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium"
+                    className="flex items-center gap-3.5 p-3 rounded-2xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group animate-fade-in"
                   >
-                    {/* Background photo covering 100% */}
-                    <div className="absolute inset-0 w-full h-full bg-theme-base flex items-center justify-center overflow-hidden">
+                    {/* Foto quadrada limpa, sem sobreposição */}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
                       {bird.imagem ? (
                         <img
                           src={bird.imagem}
@@ -422,49 +432,47 @@ export function Dashboard() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <span className="text-5xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
+                        <span className="text-3xl sm:text-4xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
                           {bird.sexo === 'Macho' ? '🐓' : '🐔'}
                         </span>
                       )}
                     </div>
 
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 z-0 pointer-events-none" />
+                    {/* Detalhes à direita */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between h-16 sm:h-20 py-0.5">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
+                            {bird.anilha}
+                          </h4>
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border backdrop-blur-md
+                            ${bird.sexo === 'Macho' 
+                              ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
+                              : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
+                            {bird.sexo}
+                          </span>
+                        </div>
+                        <p className="text-xs text-theme-text-muted truncate mt-0.5">
+                          {bird.nome || 'Sem nome'}
+                        </p>
+                      </div>
 
-                    {/* Top glass badges */}
-                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-                      {/* Baia Badge */}
-                      {bird.baia && bird.baia !== 'ND' ? (
-                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg backdrop-blur-md bg-black/45 border border-theme-accent/20 text-theme-accent shadow-md">
-                          Baia {bird.baia}
-                        </span>
-                      ) : (
-                        <div />
-                      )}
-                      
-                      {/* Gender Badge */}
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md backdrop-blur-md border backdrop-saturate-150
-                        ${bird.sexo === 'Macho' 
-                          ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
-                          : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
-                        {bird.sexo}
-                      </span>
-                    </div>
-
-                    {/* Floating Glassmorphic Details Overlay (Bottom) */}
-                    <div className="absolute bottom-2.5 left-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md bg-black/50 border border-white/10 space-y-0.5 shadow-lg z-10 hover:bg-black/60 transition-colors">
-                      <h4 className="font-black text-white text-xs truncate group-hover:text-theme-primary transition-colors">
-                        {bird.anilha}
-                      </h4>
-                      <p className="text-[10px] text-white/70 truncate">
-                        {bird.nome || 'Sem nome'}
-                      </p>
-                      <div className="flex items-center justify-between pt-1 border-t border-white/10 mt-1">
-                        <span className="text-[9px] font-bold text-theme-primary uppercase tracking-wider truncate">
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-theme-border/30 mt-1">
+                        <div className="flex items-center gap-1.5 truncate text-[10px] sm:text-xs">
+                          <span className="text-theme-text-muted font-bold truncate">
+                            {bird.raca}
+                          </span>
+                          {bird.baia && bird.baia !== 'ND' && (
+                            <>
+                              <span className="text-theme-border/50">•</span>
+                              <span className="font-black text-theme-accent uppercase tracking-wider">
+                                Baia {bird.baia}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-wider shrink-0 ${statusColor[bird.status] || 'text-theme-text-muted'}`}>
                           {bird.status}
-                        </span>
-                        <span className="text-[9px] text-white font-black uppercase tracking-wider">
-                          Ver
                         </span>
                       </div>
                     </div>
