@@ -364,7 +364,7 @@ export function Genetics() {
   };
 
   const promoteChick = (chickId: string) => {
-    editBird(chickId, { status: 'Ativo' });
+    editBird(chickId, { status: 'Adulto' });
   };
 
   /* ── RENDERING ── */

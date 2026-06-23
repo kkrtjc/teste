@@ -22,6 +22,8 @@ export function Birds() {
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
   const [newBreedDesc, setNewBreedDesc] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [newBreedTempoCrescimento, setNewBreedTempoCrescimento] = useState(0);
+  const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +67,8 @@ export function Birds() {
         setNewBreedFocus(breed.foco);
         setNewBreedDesc(breed.descricao);
         setPreviewImage(breed.imagem || null);
+        setNewBreedTempoCrescimento(breed.tempoCrescimento || 0);
+        setNewBreedPesoMedio(breed.pesoMedio || '');
       }
     } else {
       setBreedToEditId(null);
@@ -72,6 +76,8 @@ export function Birds() {
       setNewBreedFocus('Misto (Carne e Ovos)');
       setNewBreedDesc('');
       setPreviewImage(null);
+      setNewBreedTempoCrescimento(0);
+      setNewBreedPesoMedio('');
     }
     setShowNewBreedModal(true);
   };
@@ -84,7 +90,9 @@ export function Birds() {
         nome: newBreedName,
         descricao: newBreedDesc,
         foco: newBreedFocus,
-        imagem: previewImage || undefined
+        imagem: previewImage || undefined,
+        tempoCrescimento: newBreedTempoCrescimento,
+        pesoMedio: newBreedPesoMedio
       });
       const oldBreed = breeds.find(b => b.id === breedToEditId);
       if (oldBreed && activeBreed === oldBreed.nome) {
@@ -97,7 +105,9 @@ export function Birds() {
         descricao: newBreedDesc,
         foco: newBreedFocus,
         totalAves: 0,
-        imagem: previewImage || undefined
+        imagem: previewImage || undefined,
+        tempoCrescimento: newBreedTempoCrescimento,
+        pesoMedio: newBreedPesoMedio
       });
     }
     
@@ -295,10 +305,10 @@ export function Birds() {
                         </div>
                         
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-theme-base/60 border border-theme-border/50
-                          ${bird.status === 'Ativo' ? 'text-emerald-400 border-emerald-500/20' :
-                            bird.status === 'Reprodução' || bird.status === 'Cruza' ? 'text-pink-400 border-pink-500/20' :
-                            bird.status === 'Postura' ? 'text-yellow-400 border-yellow-500/20' :
-                            bird.status === 'Engorda' ? 'text-orange-400 border-orange-500/20' : 'text-theme-primary border-theme-primary/20'}`}>
+                          ${bird.status === 'Adulto' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
+                            bird.status === 'Reprodutor' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
+                            bird.status === 'Matriz' ? 'text-pink-400 border-pink-500/20 bg-pink-500/10' :
+                            bird.status === 'Crescimento' ? 'text-green-400 border-green-500/20 bg-green-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
                           {bird.status}
                         </span>
                       </div>
@@ -381,6 +391,18 @@ export function Birds() {
                           <p className="text-xs text-theme-text-muted truncate">
                             {breed.descricao || 'Sem descrição'}
                           </p>
+                          <div className="flex flex-wrap gap-1 mt-1 text-[9px] font-bold">
+                            {breed.tempoCrescimento && breed.tempoCrescimento > 0 ? (
+                              <span className="bg-theme-base/60 text-emerald-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
+                                ⏱ {breed.tempoCrescimento} dias
+                              </span>
+                            ) : null}
+                            {breed.pesoMedio ? (
+                              <span className="bg-theme-base/60 text-amber-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
+                                ⚖️ {breed.pesoMedio}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                         
                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-theme-border/30">
@@ -470,6 +492,30 @@ export function Birds() {
                   <option>Combate / Esporte</option>
                   <option>Ornamental</option>
                 </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase">Tempo de Crescimento (Dias)</label>
+                  <input 
+                    type="number" 
+                    min={0}
+                    value={newBreedTempoCrescimento}
+                    onChange={(e) => setNewBreedTempoCrescimento(parseInt(e.target.value) || 0)}
+                    className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" 
+                    placeholder="Ex: 150" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase">Peso Médio</label>
+                  <input 
+                    type="text" 
+                    value={newBreedPesoMedio}
+                    onChange={(e) => setNewBreedPesoMedio(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" 
+                    placeholder="Ex: 4.5 kg" 
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">

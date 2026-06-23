@@ -11,6 +11,8 @@ export type Breed = {
   descricao: string;
   totalAves: number;
   imagem?: string;
+  tempoCrescimento?: number;
+  pesoMedio?: string;
 };
 
 export type Bird = {
@@ -304,9 +306,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Grava no estado e sincroniza no cache localforage
-      setBreeds(sbBreeds);
-      await localforage.setItem(getStorageKey('breeds'), sbBreeds);
+      // Grava no estado e sincroniza no cache localforage com preservação de propriedades locais
+      const mappedBreeds = sbBreeds.map((b: any) => {
+        const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
+        return {
+          id: b.id,
+          nome: b.nome || '',
+          foco: b.foco || '',
+          descricao: b.descricao || '',
+          imagem: b.imagem,
+          totalAves: b.total_aves || b.totalAves || 0,
+          tempoCrescimento: localBreed?.tempoCrescimento || 0,
+          pesoMedio: localBreed?.pesoMedio || ''
+        };
+      });
+      setBreeds(mappedBreeds);
+      await localforage.setItem(getStorageKey('breeds'), mappedBreeds);
 
       // Mapeamento e mesclagem de imagens das aves
       const mappedBirds = sbBirds.map((b: any) => {
@@ -479,6 +494,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [isReady]);
 
+  // Autopromoção de 'Crescimento' para 'Adulto'
+  useEffect(() => {
+    if (!isReady || birds.length === 0 || breeds.length === 0) return;
+
+    let hasUpdates = false;
+    const updatedBirds = birds.map(bird => {
+      if (bird.status === 'Crescimento' && bird.dataNascimento) {
+        const breedObj = breeds.find(b => b.nome === bird.raca);
+        const tempoCrescimento = breedObj?.tempoCrescimento || 0;
+        if (tempoCrescimento > 0) {
+          const birthDate = new Date(bird.dataNascimento);
+          const today = new Date();
+          birthDate.setHours(0,0,0,0);
+          today.setHours(0,0,0,0);
+          const diffTime = today.getTime() - birthDate.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays >= tempoCrescimento) {
+            hasUpdates = true;
+            return {
+              ...bird,
+              status: 'Adulto'
+            };
+          }
+        }
+      }
+      return bird;
+    });
+
+    if (hasUpdates) {
+      setBirds(updatedBirds);
+      localforage.setItem(getStorageKey('birds'), updatedBirds).catch(err => console.error(err));
+      if (isSupabaseConfigured && user) {
+        const promises = updatedBirds
+          .filter((b, idx) => b.status !== birds[idx].status)
+          .map(b => 
+            supabase!
+              .from('birds')
+              .update({ status: b.status })
+              .eq('id', b.id)
+          );
+        Promise.all(promises).catch(err => console.error('Erro ao atualizar status Supabase:', err));
+      }
+    }
+  }, [isReady, birds, breeds, user]);
+
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {
       const next = [...prev, breed];
@@ -500,9 +561,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        const dbUpdate: any = {};
+        if (updatedBreed.nome !== undefined) dbUpdate.nome = updatedBreed.nome;
+        if (updatedBreed.foco !== undefined) dbUpdate.foco = updatedBreed.foco;
+        if (updatedBreed.descricao !== undefined) dbUpdate.descricao = updatedBreed.descricao;
+        if (updatedBreed.imagem !== undefined) dbUpdate.imagem = updatedBreed.imagem;
+
         supabase!
           .from('breeds')
-          .update(updatedBreed)
+          .update(dbUpdate)
           .eq('id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase editBreed:', error); });
       }

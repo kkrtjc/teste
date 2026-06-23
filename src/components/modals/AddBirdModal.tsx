@@ -102,7 +102,7 @@ export function AddBirdModal() {
     } else {
       setAnilha(''); setNome(''); setSexo('Macho');
       setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
-      setBaia(''); setStatus('Reprodutor'); setVacinas('');
+      setBaia(''); setStatus('Adulto'); setVacinas('');
       setDataNasc(''); setPeso(''); setPreviewImages([]);
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
@@ -201,10 +201,10 @@ export function AddBirdModal() {
   const breedOptions = breeds.map(b => ({ label: b.nome, value: b.nome }));
   const sexOptions   = [{ label: 'Macho 🐓', value: 'Macho' }, { label: 'Fêmea 🐔', value: 'Fêmea' }];
   const statusOptions = [
+    { label: 'Adulto', value: 'Adulto' },
     { label: 'Reprodutor', value: 'Reprodutor' },
     { label: 'Matriz', value: 'Matriz' },
     { label: 'Crescimento', value: 'Crescimento' },
-    { label: 'Descarte', value: 'Descarte' },
   ];
   const machoOptions = [
     { label: 'Desconhecido', value: '' },

@@ -6,12 +6,10 @@ import { useAppContext } from '../lib/AppContext';
 
 /* ── helpers ── */
 const statusColor: Record<string, string> = {
-  'Reprodução': 'text-pink-400',
-  'Cruza':      'text-pink-400',
-  'Engorda':    'text-orange-400',
-  'Crescimento':'text-green-400',
-  'Postura':    'text-yellow-400',
-  'Ativo':      'text-emerald-400',
+  'Adulto': 'text-emerald-400',
+  'Reprodutor': 'text-blue-400',
+  'Matriz': 'text-pink-400',
+  'Crescimento': 'text-green-400',
 };
 
 export function Dashboard() {
