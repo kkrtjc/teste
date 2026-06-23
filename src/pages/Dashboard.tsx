@@ -80,7 +80,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 space-y-6 animate-fade-in pb-24">
+    <div className="flex flex-col items-center p-4 space-y-6 animate-fade-in">
 
       {/* ── Farm photo + name ── */}
       <div className="flex flex-col items-center mt-4 space-y-3">

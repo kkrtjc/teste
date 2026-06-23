@@ -7,7 +7,7 @@ export function Health() {
   const [activeTab, setActiveTab] = useState<'vacinas' | 'prontuario'>('vacinas');
 
   return (
-    <div className="space-y-6 animate-fade-in flex flex-col pb-24">
+    <div className="space-y-6 animate-fade-in flex flex-col">
       {/* Header do Módulo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

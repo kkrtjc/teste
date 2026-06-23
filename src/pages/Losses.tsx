@@ -9,7 +9,7 @@ export function Losses() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="space-y-6 animate-fade-in flex flex-col pb-24">
+    <div className="space-y-6 animate-fade-in flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-white">Baixas e Descartes</h2>

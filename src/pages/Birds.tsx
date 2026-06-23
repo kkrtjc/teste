@@ -119,7 +119,7 @@ export function Birds() {
   );
 
   return (
-    <div className="space-y-3.5 animate-fade-in h-full flex flex-col pb-24">
+    <div className="space-y-3.5 animate-fade-in h-full flex flex-col">
       
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 shrink-0">

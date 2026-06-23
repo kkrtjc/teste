@@ -301,7 +301,7 @@ export function Layout() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6 z-10 relative pb-20 md:pb-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
           <Outlet />
         </div>
       </main>
