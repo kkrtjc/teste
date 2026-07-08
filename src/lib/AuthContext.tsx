@@ -21,7 +21,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (!isSupabaseConfigured) return true; // Será rápido (lê do localforage no useEffect)
+    
+    // Se estiver online com Supabase, verifica se há token salvo de antemão
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          return true; // Existe token, aguarda verificação/refresh
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao ler localStorage:', e);
+    }
+    return false; // Nenhum token encontrado, não precisa carregar/esperar
+  });
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -44,10 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Modo Online com Supabase
+    // Adiciona um timeout de segurança (ex: 1.5 segundos) para garantir que a tela de login
+    // apareça mesmo se o Supabase estiver fora do ar ou com latência altíssima na rede.
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+
     // 1. Pega a sessão atual de forma assíncrona
     supabase!.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Erro ao buscar sessão do Supabase:', err);
       setLoading(false);
     });
 
@@ -60,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
