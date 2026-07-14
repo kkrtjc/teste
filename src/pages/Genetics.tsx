@@ -1,23 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Users, X, CheckCircle, Trash2, Edit2, Eye, Egg, Check, Sparkles, AlertTriangle } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
-import { useAuth } from '../lib/AuthContext';
-import localforage from 'localforage';
-
-export type IncubationLot = {
-  id: string;
-  coupleId: string;
-  numeroLote: string;
-  quantidadeOvos: number;
-  dataInicio: string;
-  baia: string;
-  ovoscopia1Realizada?: boolean;
-  ovoscopia2Realizada?: boolean;
-  ovosDescartados1?: number;
-  ovosDescartados2?: number;
-  eclodido?: boolean;
-};
+import type { IncubationLot } from '../lib/AppContext';
 
 /* ── Função de Cálculo de Co-sanguinidade ── */
 function calculateInbreeding(machoId: string, femeaId: string, birds: any[]): { coefficient: number; label: string; details: string; color: string } {
@@ -113,35 +98,16 @@ export function Genetics() {
     addBird,
     editBird,
     breeds,
-    openBirdProfile
+    openBirdProfile,
+    incubationLots,
+    addIncubationLot,
+    editIncubationLot,
+    removeIncubationLot
   } = useAppContext();
-
-  const { user } = useAuth();
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'casais' | 'eclosao' | 'crescimento'>('casais');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Incubation lots
-  const [incubationLots, setIncubationLots] = useState<IncubationLot[]>([]);
-
-  // Load lots
-  useEffect(() => {
-    if (user) {
-      const key = `@mura-manager:${user.id}:incubation-lots`;
-      localforage.getItem<IncubationLot[]>(key).then(data => {
-        if (data) setIncubationLots(data);
-      });
-    }
-  }, [user]);
-
-  const saveIncubationLots = (nextLots: IncubationLot[]) => {
-    setIncubationLots(nextLots);
-    if (user) {
-      const key = `@mura-manager:${user.id}:incubation-lots`;
-      localforage.setItem(key, nextLots).catch(console.error);
-    }
-  };
 
   /* ── MODALS STATE ── */
   const [showCoupleModal, setShowCoupleModal] = useState(false);
@@ -274,7 +240,7 @@ export function Genetics() {
       eclodido: false
     };
 
-    saveIncubationLots([...incubationLots, newLot]);
+    addIncubationLot(newLot);
     setIncubatingCoupleId(null);
   };
 
@@ -284,31 +250,22 @@ export function Genetics() {
     const lot = incubationLots.find(l => l.id === ovoscopyLotId);
     if (!lot) return;
 
-    const nextLots = incubationLots.map(l => {
-      if (l.id === ovoscopyLotId) {
-        const discards = Math.min(l.quantidadeOvos, Math.max(0, discardCount));
-        if (ovoscopyStep === 1) {
-          return {
-            ...l,
-            quantidadeOvos: l.quantidadeOvos - discards,
-            ovovscopia1Realizada: true,
-            ovosDescartados1: discards,
-            ovoscopia1Realizada: true
-          };
-        } else {
-          return {
-            ...l,
-            quantidadeOvos: l.quantidadeOvos - discards,
-            ovovscopia2Realizada: true,
-            ovosDescartados2: discards,
-            ovoscopia2Realizada: true
-          };
-        }
-      }
-      return l;
-    });
+    const discards = Math.min(lot.quantidadeOvos, Math.max(0, discardCount));
+    const nextQtd = lot.quantidadeOvos - discards;
+    if (ovoscopyStep === 1) {
+      editIncubationLot(lot.id, {
+        quantidadeOvos: nextQtd,
+        ovosDescartados1: discards,
+        ovoscopia1Realizada: true
+      });
+    } else {
+      editIncubationLot(lot.id, {
+        quantidadeOvos: nextQtd,
+        ovosDescartados2: discards,
+        ovoscopia2Realizada: true
+      });
+    }
 
-    saveIncubationLots(nextLots);
     setOvoscopyLotId(null);
     setOvoscopyStep(null);
     setDiscardCount(0);
@@ -342,8 +299,7 @@ export function Genetics() {
     }
 
     // Remove lot from eclosão
-    const nextLots = incubationLots.filter(l => l.id !== hatchLotId);
-    saveIncubationLots(nextLots);
+    removeIncubationLot(hatchLotId);
     setHatchLotId(null);
     setBoldCount(0);
   };

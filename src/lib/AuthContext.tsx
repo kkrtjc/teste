@@ -12,7 +12,7 @@ type AuthContextType = {
   session: Session | { access_token: string } | null;
   loading: boolean;
   isLocalMode: boolean;
-  signIn: (cpf: string) => Promise<{ error: any }>;
+  signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 };
 
@@ -88,14 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (rawCpf: string) => {
-    const cleanCpf = rawCpf.replace(/\D/g, '');
+  const signIn = async (identifier: string, passwordInput?: string) => {
+    const isEmail = identifier.includes('@');
+    const cleanId = isEmail ? identifier.trim() : identifier.replace(/\D/g, '');
 
-    if (cleanCpf.length !== 11) {
-      return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos.' } };
+    if (!isEmail && cleanId.length !== 11) {
+      return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos ou um e-mail válido.' } };
     }
 
-    const isAdmin = cleanCpf === ADMIN_CPF;
+    const isAdmin = cleanId === ADMIN_CPF;
 
     // ══════════════════════════════════════════════════════
     // ADMIN: tenta Supabase primeiro; qualquer falha → bypass
@@ -103,8 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ══════════════════════════════════════════════════════
     if (isAdmin) {
       if (isSupabaseConfigured) {
-        const email    = `${cleanCpf}@mura.com`;
-        const password = `mura-${cleanCpf}-secure`;
+        const email    = `${ADMIN_CPF}@mura.com`;
+        const password = passwordInput || `mura-${ADMIN_CPF}-secure`;
 
         try {
           // Tenta login real
@@ -117,8 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return { error: null };
           }
 
-          // Login falhou → tenta criar conta
-          if (error) {
+          // Login falhou → tenta criar conta se for a primeira vez e sem senha manual
+          if (error && !passwordInput) {
             const { data: signUpData } = await supabase!.auth.signUp({ email, password });
             if (signUpData?.session) {
               setSession(signUpData.session);
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback: sessão local para admin (funciona offline ou com Supabase indisponível)
       const adminSession = {
         session: { access_token: `admin-local-${Date.now()}` },
-        user:    { id: `admin-${cleanCpf}`, email: `${cleanCpf}@mura.com` },
+        user:    { id: `admin-${ADMIN_CPF}`, email: `${ADMIN_CPF}@mura.com` },
       };
       await localforage.setItem('@mura-manager:local-session', adminSession);
       setUser(adminSession.user);
@@ -148,18 +149,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured) {
       const localAllowedList =
         (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
-      const localData = localAllowedList.find((item) => item.cpf === cleanCpf);
+      const localData = localAllowedList.find(
+        (item) => item.cpf === cleanId || item.email === cleanId
+      );
 
       if (!localData) {
-        return { error: { message: 'Este CPF não está cadastrado no sistema local.' } };
+        return { error: { message: 'Este usuário não está cadastrado no sistema local.' } };
       }
       if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
         return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
       }
+      if (passwordInput && localData.senha && localData.senha !== passwordInput) {
+        return { error: { message: 'Senha incorreta.' } };
+      }
 
       const mockSession = {
         session: { access_token: 'mock-token' },
-        user:    { id: `local-${cleanCpf}`, email: `${cleanCpf}@mura.com` },
+        user:    { id: `local-${localData.cpf}`, email: localData.email || `${localData.cpf}@mura.com` },
       };
       await localforage.setItem('@mura-manager:local-session', mockSession);
       setUser(mockSession.user);
@@ -170,27 +176,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ══════════════════════════════════════════════════════
     // MODO ONLINE — usuário não-admin
     // ══════════════════════════════════════════════════════
-    const { data: allowedData, error: allowedError } = await supabase!
-      .from('allowed_cpfs')
-      .select('cpf, expires_at')
-      .eq('cpf', cleanCpf)
-      .maybeSingle();
+    let resolvedEmail = '';
+    let targetCpf = '';
 
-    if (allowedError) {
-      return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
-    }
-    if (!allowedData) {
-      return { error: { message: 'Este CPF não está cadastrado. Entre em contato com o administrador.' } };
-    }
-    if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
-      return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
+    if (isEmail) {
+      resolvedEmail = cleanId;
+      const { data: allowedData, error: allowedError } = await supabase!
+        .from('allowed_cpfs')
+        .select('cpf, expires_at, email')
+        .eq('email', cleanId)
+        .maybeSingle();
+
+      if (allowedError) {
+        return { error: { message: 'Erro ao verificar permissão do e-mail. Tente novamente.' } };
+      }
+      if (!allowedData) {
+        return { error: { message: 'Este e-mail não está cadastrado. Realize a assinatura na página inicial.' } };
+      }
+      if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
+        return { error: { message: 'Seu acesso expirou. Por favor, regularize sua assinatura.' } };
+      }
+      targetCpf = allowedData.cpf;
+    } else {
+      const { data: allowedData, error: allowedError } = await supabase!
+        .from('allowed_cpfs')
+        .select('cpf, expires_at, email')
+        .eq('cpf', cleanId)
+        .maybeSingle();
+
+      if (allowedError) {
+        return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
+      }
+      if (!allowedData) {
+        return { error: { message: 'Este CPF não está cadastrado. Realize a assinatura na página inicial.' } };
+      }
+      if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
+        return { error: { message: 'Seu acesso expirou. Por favor, regularize sua assinatura.' } };
+      }
+      resolvedEmail = allowedData.email || `${cleanId}@mura.com`;
+      targetCpf = allowedData.cpf;
     }
 
-    const email    = `${cleanCpf}@mura.com`;
-    const password = `mura-${cleanCpf}-secure`;
+    const password = passwordInput || `mura-${targetCpf || cleanId}-secure`;
 
     try {
-      const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password });
 
       if (!error && data.session) {
         setSession(data.session);
@@ -198,25 +228,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null };
       }
 
-      // Primeiro acesso: cria conta
-      const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
-      if (signUpError) {
-        return { error: signUpError };
-      }
-      if (signUpData?.session) {
-        setSession(signUpData.session);
-        setUser(signUpData.user);
+      // Se for login por CPF tradicional sem senha e falhou no primeiro login, tenta criar conta
+      if (error && !passwordInput) {
+        const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email: resolvedEmail, password });
+        if (signUpError) {
+          return { error: signUpError };
+        }
+        if (signUpData?.session) {
+          setSession(signUpData.session);
+          setUser(signUpData.user);
+          return { error: null };
+        }
+
+        // Tentativa final após signup
+        const { data: retry, error: retryErr } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password });
+        if (retryErr) {
+          return { error: { message: 'Conta criada, mas confirme o e-mail antes de entrar.' } };
+        }
+        setSession(retry.session);
+        setUser(retry.user);
         return { error: null };
       }
 
-      // Tentativa final após signup
-      const { data: retry, error: retryErr } = await supabase!.auth.signInWithPassword({ email, password });
-      if (retryErr) {
-        return { error: { message: 'Conta criada, mas confirme o e-mail antes de entrar.' } };
-      }
-      setSession(retry.session);
-      setUser(retry.user);
-      return { error: null };
+      return { error: error || { message: 'Dados de acesso incorretos.' } };
     } catch (err: any) {
       return { error: err };
     }

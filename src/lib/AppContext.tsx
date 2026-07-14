@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import localforage from 'localforage';
 import { useAuth } from './AuthContext';
@@ -35,6 +35,21 @@ export type Bird = {
   dataNascimento?: string;
   peso?: string;
   dataBaixa?: string;
+  observacoes?: string;
+};
+
+export type IncubationLot = {
+  id: string;
+  coupleId: string;
+  numeroLote: string;
+  quantidadeOvos: number;
+  dataInicio: string;
+  baia: string;
+  ovoscopia1Realizada?: boolean;
+  ovoscopia2Realizada?: boolean;
+  ovosDescartados1?: number;
+  ovosDescartados2?: number;
+  eclodido?: boolean;
 };
 
 export type Couple = {
@@ -126,6 +141,11 @@ type AppContextType = {
   closeTutorial: () => void;
   activeBreed: string;
   setActiveBreed: (breed: string) => void;
+
+  incubationLots: IncubationLot[];
+  addIncubationLot: (lot: IncubationLot) => void;
+  editIncubationLot: (id: string, updatedLot: Partial<IncubationLot>) => void;
+  removeIncubationLot: (id: string) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -140,6 +160,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [coupleEggs, setCoupleEggs] = useState<CoupleEgg[]>([]);
   const [eggLots, setEggLots] = useState<EggLot[]>([]);
   const [meatLots, setMeatLots] = useState<MeatLot[]>([]);
+  const [incubationLots, setIncubationLots] = useState<IncubationLot[]>([]);
   
   const [farmSettings, setFarmSettings] = useState<FarmSettings>({
     name: '',
@@ -165,6 +186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCoupleEggs([]);
         setEggLots([]);
         setMeatLots([]);
+        setIncubationLots([]);
         setFarmSettings({
           name: '',
           photo: '',
@@ -202,14 +224,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resCouples,
         resEggLots,
         resMeatLots,
-        resSettings
+        resSettings,
+        resCoupleEggs,
+        resIncubationLots
       ] = await Promise.all([
         supabase!.from('breeds').select('*').order('nome', { ascending: true }),
         supabase!.from('birds').select('*').order('anilha', { ascending: true }),
         supabase!.from('couples').select('*'),
         supabase!.from('egg_lots').select('*'),
         supabase!.from('meat_lots').select('*'),
-        supabase!.from('profiles').select('*').eq('id', user.id).maybeSingle()
+        supabase!.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        supabase!.from('couple_eggs').select('*'),
+        supabase!.from('incubation_lots').select('*')
       ]);
 
       let sbBreeds = resBreeds.data || [];
@@ -218,6 +244,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbEggLots = resEggLots.data || [];
       let sbMeatLots = resMeatLots.data || [];
       let sbSettings = resSettings.data || null;
+      let sbCoupleEggs = resCoupleEggs.data || [];
+      let sbIncubationLots = resIncubationLots.data || [];
 
       // ── PRIMEIRA INICIALIZAÇÃO / MIGRAÇÃO LOCAL ──
       const localBreeds: any = await localforage.getItem(getStorageKey('breeds'));
@@ -226,6 +254,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localEggLots: any = await localforage.getItem(getStorageKey('egglots'));
       const localMeatLots: any = await localforage.getItem(getStorageKey('meatlots'));
       const localSettings: any = await localforage.getItem(getStorageKey('settings'));
+      const localCoupleEggs: any = await localforage.getItem(getStorageKey('couple-eggs'));
+      const localIncubationLots: any = await localforage.getItem(getStorageKey('incubation-lots'));
 
       const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
       const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
@@ -234,7 +264,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.log('Migrando dados locais do IndexedDB para o Supabase...');
         
         if (localBreeds && localBreeds.length > 0) {
-          const breedsToInsert = localBreeds.map((b: any) => ({ id: b.id, user_id: user.id, nome: b.nome, foco: b.foco, descricao: b.descricao, imagem: b.imagem }));
+          const breedsToInsert = localBreeds.map((b: any) => ({
+            id: b.id,
+            user_id: user.id,
+            nome: b.nome,
+            foco: b.foco,
+            descricao: b.descricao,
+            imagem: b.imagem,
+            tempo_crescimento: b.tempoCrescimento || 0,
+            peso_medio: b.pesoMedio || ''
+          }));
           await supabase!.from('breeds').insert(breedsToInsert);
           sbBreeds = breedsToInsert;
         }
@@ -257,7 +296,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             is_pai_externo: b.isPaiExterno,
             is_mae_externo: b.isMaeExterno,
             data_nascimento: b.dataNascimento,
-            peso: b.peso
+            peso: b.peso,
+            imagens: b.imagens || [],
+            observacoes: b.observacoes || ''
           }));
           await supabase!.from('birds').insert(birdsToInsert);
           sbBirds = birdsToInsert;
@@ -301,6 +342,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
           await supabase!.from('meat_lots').insert(meatLotsToInsert);
           sbMeatLots = meatLotsToInsert;
         }
+        if (localCoupleEggs && localCoupleEggs.length > 0) {
+          const coupleEggsToInsert = localCoupleEggs.map((e: any) => ({
+            id: e.id,
+            user_id: user.id,
+            couple_id: e.coupleId,
+            femea_id: e.femeaId,
+            status: e.status,
+            data_introducao: e.dataIntroducao
+          }));
+          await supabase!.from('couple_eggs').insert(coupleEggsToInsert);
+        }
+        if (localIncubationLots && localIncubationLots.length > 0) {
+          const incubationLotsToInsert = localIncubationLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            couple_id: l.coupleId,
+            numero_lote: l.numeroLote,
+            quantidade_ovos: l.quantidadeOvos,
+            data_inicio: l.dataInicio,
+            baia: l.baia,
+            ovoscopia1_realizada: l.ovoscopia1Realizada || false,
+            ovoscopia2_realizada: l.ovoscopia2Realizada || false,
+            ovos_descartados1: l.ovosDescartados1 || 0,
+            ovos_descartados2: l.ovosDescartados2 || 0,
+            eclodido: l.eclodido || false
+          }));
+          await supabase!.from('incubation_lots').insert(incubationLotsToInsert);
+        }
         if (localSettings) {
           const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
           await supabase!.from('profiles').upsert(settingsToInsert);
@@ -318,8 +387,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           descricao: b.descricao || '',
           imagem: b.imagem,
           totalAves: b.total_aves || b.totalAves || 0,
-          tempoCrescimento: localBreed?.tempoCrescimento || 0,
-          pesoMedio: localBreed?.pesoMedio || ''
+          tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || 0),
+          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || '')
         };
       });
       setBreeds(mappedBreeds);
@@ -328,7 +397,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Mapeamento e mesclagem de imagens das aves
       const mappedBirds = sbBirds.map((b: any) => {
         const localBird = (localBirds || []).find((x: any) => x.id === b.id);
-        let birdImagens = localBird?.imagens || [];
+        let birdImagens = b.imagens || localBird?.imagens || [];
         
         if (birdImagens.length === 0 && b.imagem) {
           birdImagens = [b.imagem];
@@ -355,7 +424,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
           dataNascimento: b.data_nascimento || b.dataNascimento,
           peso: b.peso,
-          dataBaixa: localBird?.dataBaixa
+          dataBaixa: localBird?.dataBaixa,
+          observacoes: b.observacoes || localBird?.observacoes || ''
         };
       });
 
@@ -403,6 +473,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMeatLots(mappedMeatLots);
       await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
+      // Mapeia ovos de casais de snake_case para camelCase
+      const mappedCoupleEggs = sbCoupleEggs.map((e: any) => ({
+        id: e.id,
+        coupleId: e.couple_id || e.coupleId || '',
+        femeaId: e.femea_id || e.femeaId || '',
+        status: e.status || 'Em Espera',
+        dataIntroducao: e.data_introducao || e.dataIntroducao || ''
+      }));
+      setCoupleEggs(mappedCoupleEggs);
+      await localforage.setItem(getStorageKey('couple-eggs'), mappedCoupleEggs);
+
+      // Mapeia lotes de incubação de snake_case para camelCase
+      const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
+        id: l.id,
+        coupleId: l.couple_id || l.coupleId || '',
+        numeroLote: l.numero_lote || l.numeroLote || '',
+        quantidadeOvos: l.quantidade_ovos !== undefined ? l.quantidade_ovos : (l.quantidadeOvos || 0),
+        dataInicio: l.data_inicio || l.dataInicio || '',
+        baia: l.baia || '',
+        ovoscopia1Realizada: l.ovoscopia1_realizada !== undefined ? l.ovoscopia1_realizada : l.ovoscopia1Realizada,
+        ovoscopia2Realizada: l.ovoscopia2_realizada !== undefined ? l.ovoscopia2_realizada : l.ovoscopia2Realizada,
+        ovosDescartados1: l.ovos_descartados1 !== undefined ? l.ovos_descartados1 : l.ovosDescartados1,
+        ovosDescartados2: l.ovos_descartados2 !== undefined ? l.ovos_descartados2 : l.ovosDescartados2,
+        eclodido: l.eclodido !== undefined ? l.eclodido : l.eclodido
+      }));
+      setIncubationLots(mappedIncubationLots);
+      await localforage.setItem(getStorageKey('incubation-lots'), mappedIncubationLots);
+
       if (sbSettings) {
         const settingsData = {
           name: sbSettings.name || '',
@@ -428,9 +526,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async function loadFromLocalForage() {
       if (!user) return;
       const storageItems = [
-        { suffix: 'breeds',      setter: setBreeds },
-        { suffix: 'birds',       setter: setBirds },
-        { suffix: 'couples',     setter: (d: any) => {
+        { suffix: 'breeds',          setter: setBreeds },
+        { suffix: 'birds',           setter: setBirds },
+        { suffix: 'couples',         setter: (d: any) => {
             const migrated = (d || []).map((c: any) => ({
               ...c,
               femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
@@ -438,10 +536,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setCouples(migrated);
           }
         },
-        { suffix: 'couple-eggs', setter: setCoupleEggs },
-        { suffix: 'egglots',     setter: setEggLots },
-        { suffix: 'meatlots',    setter: setMeatLots },
-        { suffix: 'settings',    setter: setFarmSettings }
+        { suffix: 'couple-eggs',     setter: setCoupleEggs },
+        { suffix: 'egglots',         setter: setEggLots },
+        { suffix: 'meatlots',        setter: setMeatLots },
+        { suffix: 'incubation-lots', setter: setIncubationLots },
+        { suffix: 'settings',        setter: setFarmSettings }
       ];
 
       for (const item of storageItems) {
@@ -561,7 +660,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured && user) {
         supabase!
           .from('breeds')
-          .insert({ id: breed.id, user_id: user.id, nome: breed.nome, foco: breed.foco, descricao: breed.descricao, imagem: breed.imagem })
+          .insert({
+            id: breed.id,
+            user_id: user.id,
+            nome: breed.nome,
+            foco: breed.foco,
+            descricao: breed.descricao,
+            imagem: breed.imagem,
+            tempo_crescimento: breed.tempoCrescimento || 0,
+            peso_medio: breed.pesoMedio || ''
+          })
           .then(({ error }) => { if (error) console.error('Erro Supabase addBreed:', error); });
       }
       return next;
@@ -579,6 +687,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedBreed.foco !== undefined) dbUpdate.foco = updatedBreed.foco;
         if (updatedBreed.descricao !== undefined) dbUpdate.descricao = updatedBreed.descricao;
         if (updatedBreed.imagem !== undefined) dbUpdate.imagem = updatedBreed.imagem;
+        if (updatedBreed.tempoCrescimento !== undefined) dbUpdate.tempo_crescimento = updatedBreed.tempoCrescimento;
+        if (updatedBreed.pesoMedio !== undefined) dbUpdate.peso_medio = updatedBreed.pesoMedio;
 
         supabase!
           .from('breeds')
@@ -616,7 +726,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             is_pai_externo: bird.isPaiExterno,
             is_mae_externo: bird.isMaeExterno,
             data_nascimento: bird.dataNascimento,
-            peso: bird.peso
+            peso: bird.peso,
+            imagens: bird.imagens || [],
+            observacoes: bird.observacoes || ''
           })
           .then(({ error }) => { if (error) console.error('Erro Supabase addBird:', error); });
       }
@@ -651,7 +763,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedBird.dataNascimento !== undefined) { dbUpdate.data_nascimento = updatedBird.dataNascimento; delete dbUpdate.dataNascimento; }
         if (updatedBird.imagens !== undefined) {
           dbUpdate.imagem = updatedBird.imagens?.[0] || null;
-          delete dbUpdate.imagens;
+          dbUpdate.imagens = updatedBird.imagens;
+        }
+        if (updatedBird.observacoes !== undefined) {
+          dbUpdate.observacoes = updatedBird.observacoes;
         }
         delete dbUpdate.dataBaixa;
 
@@ -744,11 +859,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  /* ── CoupleEgg CRUD (localforage only) ── */
+  /* ── CoupleEgg CRUD ── */
   const addCoupleEgg = (egg: CoupleEgg) => {
     setCoupleEggs(prev => {
       const next = [...prev, egg];
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('couple_eggs')
+          .insert({
+            id: egg.id,
+            user_id: user.id,
+            couple_id: egg.coupleId,
+            femea_id: egg.femeaId,
+            status: egg.status,
+            data_introducao: egg.dataIntroducao
+          })
+          .then(({ error }) => { if (error) console.error('Erro Supabase addCoupleEgg:', error); });
+      }
       return next;
     });
   };
@@ -757,6 +886,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCoupleEggs(prev => {
       const next = prev.map(e => e.id === id ? { ...e, ...updated } : e);
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        const dbUpdate: any = {};
+        if (updated.coupleId !== undefined) dbUpdate.couple_id = updated.coupleId;
+        if (updated.femeaId !== undefined) dbUpdate.femea_id = updated.femeaId;
+        if (updated.status !== undefined) dbUpdate.status = updated.status;
+        if (updated.dataIntroducao !== undefined) dbUpdate.data_introducao = updated.dataIntroducao;
+
+        supabase!
+          .from('couple_eggs')
+          .update(dbUpdate)
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase editCoupleEgg:', error); });
+      }
       return next;
     });
   };
@@ -765,6 +908,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCoupleEggs(prev => {
       const next = prev.filter(e => e.id !== id);
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('couple_eggs')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeCoupleEgg:', error); });
+      }
+      return next;
+    });
+  };
+
+  /* ── IncubationLot CRUD ── */
+  const addIncubationLot = (lot: IncubationLot) => {
+    setIncubationLots(prev => {
+      const next = [...prev, lot];
+      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('incubation_lots')
+          .insert({
+            id: lot.id,
+            user_id: user.id,
+            couple_id: lot.coupleId,
+            numero_lote: lot.numeroLote,
+            quantidade_ovos: lot.quantidadeOvos,
+            data_inicio: lot.dataInicio,
+            baia: lot.baia,
+            ovoscopia1_realizada: lot.ovoscopia1Realizada || false,
+            ovoscopia2_realizada: lot.ovoscopia2Realizada || false,
+            ovos_descartados1: lot.ovosDescartados1 || 0,
+            ovos_descartados2: lot.ovosDescartados2 || 0,
+            eclodido: lot.eclodido || false
+          })
+          .then(({ error }) => { if (error) console.error('Erro Supabase addIncubationLot:', error); });
+      }
+      return next;
+    });
+  };
+
+  const editIncubationLot = (id: string, updatedLot: Partial<IncubationLot>) => {
+    setIncubationLots(prev => {
+      const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
+      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        const dbUpdate: any = {};
+        if (updatedLot.coupleId !== undefined) dbUpdate.couple_id = updatedLot.coupleId;
+        if (updatedLot.numeroLote !== undefined) dbUpdate.numero_lote = updatedLot.numeroLote;
+        if (updatedLot.coupleId !== undefined) dbUpdate.couple_id = updatedLot.coupleId;
+        if (updatedLot.quantidadeOvos !== undefined) dbUpdate.quantidade_ovos = updatedLot.quantidadeOvos;
+        if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
+        if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;
+        if (updatedLot.ovoscopia1Realizada !== undefined) dbUpdate.ovoscopia1_realizada = updatedLot.ovoscopia1Realizada;
+        if (updatedLot.ovoscopia2Realizada !== undefined) dbUpdate.ovoscopia2_realizada = updatedLot.ovoscopia2Realizada;
+        if (updatedLot.ovosDescartados1 !== undefined) dbUpdate.ovos_descartados1 = updatedLot.ovosDescartados1;
+        if (updatedLot.ovosDescartados2 !== undefined) dbUpdate.ovos_descartados2 = updatedLot.ovosDescartados2;
+        if (updatedLot.eclodido !== undefined) dbUpdate.eclodido = updatedLot.eclodido;
+
+        supabase!
+          .from('incubation_lots')
+          .update(dbUpdate)
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase editIncubationLot:', error); });
+      }
+      return next;
+    });
+  };
+
+  const removeIncubationLot = (id: string) => {
+    setIncubationLots(prev => {
+      const next = prev.filter(l => l.id !== id);
+      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('incubation_lots')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeIncubationLot:', error); });
+      }
       return next;
     });
   };
@@ -886,7 +1111,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           nome: b.nome,
           foco: b.foco,
           descricao: b.descricao,
-          imagem: b.imagem
+          imagem: b.imagem,
+          tempo_crescimento: b.tempoCrescimento || 0,
+          peso_medio: b.pesoMedio || ''
         }));
         await supabase!.from('breeds').insert(toInsert);
       }
@@ -914,7 +1141,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           is_pai_externo: b.isPaiExterno,
           is_mae_externo: b.isMaeExterno,
           data_nascimento: b.dataNascimento,
-          peso: b.peso
+          peso: b.peso,
+          imagens: b.imagens || [],
+          observacoes: b.observacoes || ''
         }));
         await supabase!.from('birds').insert(toInsert);
       }
@@ -970,6 +1199,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await supabase!.from('meat_lots').insert(toInsert);
       }
     }
+    if (backupData.coupleEggs) {
+      setCoupleEggs(backupData.coupleEggs);
+      await localforage.setItem(getStorageKey('couple-eggs'), backupData.coupleEggs);
+      if (isSupabaseConfigured && user) {
+        await supabase!.from('couple_eggs').delete().eq('user_id', user.id);
+        const toInsert = backupData.coupleEggs.map((e: any) => ({
+          id: e.id,
+          user_id: user.id,
+          couple_id: e.coupleId,
+          femea_id: e.femeaId,
+          status: e.status,
+          data_introducao: e.dataIntroducao
+        }));
+        await supabase!.from('couple_eggs').insert(toInsert);
+      }
+    }
+    if (backupData.incubationLots) {
+      setIncubationLots(backupData.incubationLots);
+      await localforage.setItem(getStorageKey('incubation-lots'), backupData.incubationLots);
+      if (isSupabaseConfigured && user) {
+        await supabase!.from('incubation_lots').delete().eq('user_id', user.id);
+        const toInsert = backupData.incubationLots.map((l: any) => ({
+          id: l.id,
+          user_id: user.id,
+          couple_id: l.coupleId,
+          numero_lote: l.numeroLote,
+          quantidade_ovos: l.quantidadeOvos,
+          data_inicio: l.dataInicio,
+          baia: l.baia,
+          ovoscopia1_realizada: l.ovoscopia1Realizada || false,
+          ovoscopia2_realizada: l.ovoscopia2Realizada || false,
+          ovos_descartados1: l.ovosDescartados1 || 0,
+          ovos_descartados2: l.ovosDescartados2 || 0,
+          eclodido: l.eclodido || false
+        }));
+        await supabase!.from('incubation_lots').insert(toInsert);
+      }
+    }
     if (backupData.settings) {
       setFarmSettings(backupData.settings);
       await localforage.setItem(getStorageKey('settings'), backupData.settings);
@@ -1012,22 +1279,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localforage.setItem(getStorageKey('has-seen-tutorial'), true).catch(console.error);
   };
 
+  const contextValue = useMemo(() => ({
+    isReady,
+    breeds, addBreed, editBreed,
+    birds, addBird, editBird, removeBird,
+    couples, addCouple, editCouple, removeCouple,
+    coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
+    eggLots, addEggLot, editEggLot,
+    meatLots, addMeatLot, editMeatLot,
+    farmSettings, updateFarmSettings,
+    importBackup,
+    isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
+    openAddBirdModal, openBirdProfile, closeModals,
+    isTutorialOpen, openTutorial, closeTutorial,
+    activeBreed, setActiveBreed,
+    incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot
+  }), [
+    isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
+    isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
+    isTutorialOpen, activeBreed, incubationLots
+  ]);
+
   return (
-    <AppContext.Provider value={{
-      isReady,
-      breeds, addBreed, editBreed,
-      birds, addBird, editBird, removeBird,
-      couples, addCouple, editCouple, removeCouple,
-      coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
-      eggLots, addEggLot, editEggLot,
-      meatLots, addMeatLot, editMeatLot,
-      farmSettings, updateFarmSettings,
-      importBackup,
-      isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-      openAddBirdModal, openBirdProfile, closeModals,
-      isTutorialOpen, openTutorial, closeTutorial,
-      activeBreed, setActiveBreed
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
