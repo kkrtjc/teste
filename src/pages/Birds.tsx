@@ -160,7 +160,7 @@ export function Birds() {
               <select
                 value={activeBreed}
                 onChange={e => setActiveBreed(e.target.value)}
-                className="bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white px-2.5 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-[10px] sm:text-xs outline-none font-bold max-w-[90px] sm:max-w-[120px] truncate"
+                className="bg-theme-surface border border-theme-border/50 text-white px-2.5 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-[10px] sm:text-xs outline-none font-bold max-w-[90px] sm:max-w-[120px] truncate"
               >
                 <option value="" className="bg-theme-surface">Raças</option>
                 {breeds.map(b => (
@@ -199,7 +199,7 @@ export function Birds() {
       </div>
 
       {/* ── Tabs (Glassmorphic Pill Bar) ── */}
-      <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
+      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
           className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
@@ -234,7 +234,7 @@ export function Birds() {
                 placeholder="Pesquisar por anilha, nome ou baia..."
                 value={birdSearch}
                 onChange={e => setBirdSearch(e.target.value)}
-                className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export function Birds() {
                   <div
                     key={bird.id}
                     onClick={() => openBirdProfile(bird.id)}
-                    className="flex items-center gap-4 p-3 rounded-2xl cursor-pointer border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium hover:border-theme-primary/50 transition-all w-full group"
+                    className="flex items-center gap-4 p-3 rounded-2xl cursor-pointer border border-theme-border/50 bg-theme-surface/50 shadow-premium hover:border-theme-primary/50 transition-all w-full group"
                   >
                     {/* Imagem em quadrado limpo, sem sobreposição */}
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
@@ -278,7 +278,7 @@ export function Birds() {
                           <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
                             {bird.anilha}
                           </h4>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border backdrop-blur-md
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border
                             ${bird.sexo === 'Macho' 
                               ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
                               : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
@@ -335,7 +335,7 @@ export function Birds() {
               placeholder="Pesquisar raça..."
               value={breedSearch}
               onChange={e => setBreedSearch(e.target.value)}
-              className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
+              className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
             />
           </div>
 
@@ -432,7 +432,7 @@ export function Birds() {
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
               <h3 className="font-bold text-lg text-white">

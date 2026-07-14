@@ -166,7 +166,7 @@ export function Dashboard() {
             onChange={e => { setSearchTerm(e.target.value); setShowResults(true); }}
             onFocus={() => setShowResults(true)}
             placeholder="Nome, anilha ou número da baia…"
-            className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white
+            className="w-full bg-theme-surface border border-theme-border/50 text-white
                        pl-11 pr-10 py-3.5 rounded-full focus:outline-none focus:border-theme-primary
                        transition-colors shadow-lg text-sm placeholder-theme-text-muted/50 shadow-inner"
           />
@@ -181,7 +181,7 @@ export function Dashboard() {
 
       {/* ── Search Results Area (In-Line, replacing overlay) ── */}
       {showResults && hasSearch && (
-        <div className="w-full max-w-sm bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-2xl shadow-premium p-3.5 space-y-4 animate-fade-in z-10">
+        <div className="w-full max-w-sm bg-theme-surface border border-theme-border/50 rounded-2xl shadow-premium p-3.5 space-y-4 animate-fade-in z-10">
           {/* Resultados de aves */}
           {birdResults.length > 0 && (
             <div>
@@ -315,7 +315,7 @@ export function Dashboard() {
               <div
                 key={bird.id}
                 onClick={() => openBirdProfile(bird.id)}
-                className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group"
+                className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/50 shadow-premium w-full group"
               >
                 {/* Foto quadrada limpa, sem sobreposição */}
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
@@ -361,7 +361,7 @@ export function Dashboard() {
 
       {/* ── Stats List Modal ── */}
       {activeStatsFilter && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
@@ -396,7 +396,7 @@ export function Dashboard() {
                   placeholder="Filtrar por anilha ou nome..."
                   value={statsSearch}
                   onChange={e => setStatsSearch(e.target.value)}
-                  className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
+                  className="w-full bg-theme-surface border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
                 />
               </div>
             </div>
@@ -434,7 +434,7 @@ export function Dashboard() {
                     return (
                       <div
                         key={egg.id}
-                        className="flex items-center gap-3.5 p-3 rounded-2xl border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group animate-fade-in"
+                        className="flex items-center gap-3.5 p-3 rounded-2xl border border-theme-border/50 bg-theme-surface/50 shadow-premium w-full group animate-fade-in"
                       >
                         {/* Ovo em quadrado limpo */}
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
@@ -495,7 +495,7 @@ export function Dashboard() {
                       setActiveStatsFilter(null);
                       setStatsSearch('');
                     }}
-                    className="flex items-center gap-3.5 p-3 rounded-2xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md shadow-premium w-full group animate-fade-in"
+                    className="flex items-center gap-3.5 p-3 rounded-2xl cursor-pointer hover:border-theme-primary/50 transition-all border border-theme-border/50 bg-theme-surface/50 shadow-premium w-full group animate-fade-in"
                   >
                     {/* Foto quadrada limpa, sem sobreposição */}
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
@@ -520,8 +520,8 @@ export function Dashboard() {
                           <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
                             {bird.anilha}
                           </h4>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border backdrop-blur-md
-                            ${bird.sexo === 'Macho' 
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border
+                             ${bird.sexo === 'Macho' 
                               ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
                               : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
                             {bird.sexo}
@@ -572,7 +572,7 @@ export function Dashboard() {
 
       {/* ── Breeds Selection Modal ── */}
       {showBreedsDashboardModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col h-[80dvh] md:h-[70vh] rounded-t-2xl md:rounded-2xl">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
@@ -601,7 +601,7 @@ export function Dashboard() {
                   placeholder="Filtrar por nome ou descrição..."
                   value={statsSearch}
                   onChange={e => setStatsSearch(e.target.value)}
-                  className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
+                  className="w-full bg-theme-surface border border-theme-border/50 rounded-full py-2.5 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none transition-colors shadow-inner"
                 />
               </div>
             </div>

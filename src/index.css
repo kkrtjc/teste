@@ -24,11 +24,11 @@
 
 @layer components {
   .premium-card {
-    @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium backdrop-blur-xl transition-all duration-300;
+    @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium transition-all duration-300;
   }
   
   .glass-panel {
-    @apply bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-premium;
+    @apply bg-theme-surface border border-theme-border/50 shadow-premium;
   }
   
   .btn-primary {
@@ -50,4 +50,25 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Hardware-Accelerated Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out forwards;
+  will-change: opacity;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }

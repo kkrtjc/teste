@@ -23,7 +23,7 @@ export type AllowedCpf = {
 };
 
 export function Layout() {
-  const { farmSettings, openTutorial } = useAppContext();
+  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen } = useAppContext();
   const navigate = useNavigate();
   const { cpf, isLocalMode } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
@@ -213,12 +213,12 @@ export function Layout() {
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pb-[env(safe-area-inset-bottom)]">
-      <AddBirdModal />
-      <BirdProfileModal />
-      <TutorialModal />
+      {isAddBirdModalOpen && <AddBirdModal />}
+      {selectedBirdProfileId && <BirdProfileModal />}
+      {isTutorialOpen && <TutorialModal />}
       
       {/* Sidebar (Desktop) */}
-      <aside className="w-64 border-r border-theme-border bg-theme-surface/30 backdrop-blur-md hidden md:flex flex-col">
+      <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
         <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded bg-gradient-to-br from-theme-primary to-orange-600 flex items-center justify-center font-black text-black">M</div>
@@ -253,7 +253,7 @@ export function Layout() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/5 rounded-full blur-[100px] pointer-events-none" />
         
         {/* Header */}
-        <header className="h-16 border-b border-theme-border bg-theme-surface/50 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-10 shrink-0 mt-[env(safe-area-inset-top)]">
+        <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0 mt-[env(safe-area-inset-top)]">
           <div className="md:hidden flex items-center gap-2 mr-2">
             <div className="w-6 h-6 rounded bg-gradient-to-br from-theme-primary to-orange-600 flex items-center justify-center font-black text-black text-xs">M</div>
           </div>
@@ -306,9 +306,9 @@ export function Layout() {
         </div>
       </main>
 
-      {/* Floating Bottom Navigation (Glassmorphic Mobile Dock) */}
+      {/* Floating Bottom Navigation (Mobile Dock) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
-        <nav className="bg-theme-surface/60 border border-theme-border/50 backdrop-blur-md rounded-2xl shadow-premium px-2 py-2">
+        <nav className="bg-theme-surface/95 border border-theme-border/50 rounded-2xl shadow-premium px-2 py-2">
           <div className="flex justify-around items-center h-14">
             {mobileNavItems.map((item) => (
               <NavLink
@@ -337,7 +337,7 @@ export function Layout() {
 
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
             {/* Header */}
             <div className="p-5 border-b border-theme-border flex items-center justify-between">

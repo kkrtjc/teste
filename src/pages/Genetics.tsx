@@ -388,7 +388,7 @@ export function Genetics() {
       </div>
 
       {/* Tabs */}
-      <div className="flex p-1 bg-theme-surface/30 border border-theme-border/40 backdrop-blur-md rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
+      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
         <button 
           onClick={() => { setActiveTab('casais'); setSearchQuery(''); }}
           className={`flex-1 text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
@@ -434,7 +434,7 @@ export function Genetics() {
             }
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-theme-surface/30 backdrop-blur-md border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+            className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
           />
         </div>
       </div>
@@ -464,7 +464,7 @@ export function Genetics() {
                   const femeas = birds.filter(b => couple.femeaIds?.includes(b.id) || b.id === couple.femeaId);
 
                   return (
-                    <div key={couple.id} className="premium-card p-3 flex flex-col gap-3.5 border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md rounded-2xl relative shadow-premium group">
+                    <div key={couple.id} className="premium-card p-3 flex flex-col gap-3.5 border border-theme-border/50 bg-theme-surface/50 rounded-2xl relative shadow-premium group">
                       {/* Top header */}
                       <div className="flex justify-between items-start border-b border-theme-border/30 pb-2">
                         <div>
@@ -602,7 +602,7 @@ export function Genetics() {
                   const status = getIncubationStatus(lot.dataInicio);
 
                   return (
-                    <div key={lot.id} className="premium-card p-3.5 flex flex-col gap-3.5 border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md rounded-2xl relative shadow-premium">
+                    <div key={lot.id} className="premium-card p-3.5 flex flex-col gap-3.5 border border-theme-border/50 bg-theme-surface/50 rounded-2xl relative shadow-premium">
                       {/* Header */}
                       <div className="flex justify-between items-start border-b border-theme-border/30 pb-2">
                         <div>
@@ -753,7 +753,7 @@ export function Genetics() {
                   const isEditing = editingChickId === chick.id;
 
                   return (
-                    <div key={chick.id} className="premium-card p-3 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/20 backdrop-blur-md rounded-2xl relative shadow-premium">
+                    <div key={chick.id} className="premium-card p-3 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50 rounded-2xl relative shadow-premium">
                       {/* Header */}
                       <div className="flex justify-between items-start border-b border-theme-border/30 pb-2">
                         <div>
@@ -845,7 +845,7 @@ export function Genetics() {
 
       {/* ── MODAL: CADASTRO / EDIÇÃO DE CASAL ── */}
       {showCoupleModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[92vh] rounded-t-2xl md:rounded-2xl">
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
@@ -1128,7 +1128,7 @@ export function Genetics() {
         const available = couple?.ovosDisponiveis || 0;
 
         return createPortal(
-          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
             <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col rounded-t-2xl md:rounded-2xl">
               <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center">
                 <div>
@@ -1196,7 +1196,7 @@ export function Genetics() {
       {ovoscopyLotId && ovoscopyStep && (() => {
         const lot = incubationLots.find(l => l.id === ovoscopyLotId);
         return createPortal(
-          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
             <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col rounded-t-2xl md:rounded-2xl">
               <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center">
                 <div>
@@ -1239,7 +1239,7 @@ export function Genetics() {
       {hatchLotId && (() => {
         const lot = incubationLots.find(l => l.id === hatchLotId);
         return createPortal(
-          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
             <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col rounded-t-2xl md:rounded-2xl">
               <div className="px-5 pt-4 pb-3 border-b border-theme-border bg-theme-base/50 flex justify-between items-center">
                 <div>

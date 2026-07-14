@@ -457,7 +457,7 @@ export function Lots() {
 
       {/* Modal: Cadastrar Lote Postura */}
       {showPosturaModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
             <div className="p-5 border-b border-theme-border flex items-center justify-between">
               <h3 className="font-black text-lg text-white flex items-center gap-2">
@@ -633,7 +633,7 @@ export function Lots() {
 
       {/* Modal: Cadastrar Lote Engorda */}
       {showEngordaModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
             <div className="p-5 border-b border-theme-border flex items-center justify-between">
               <h3 className="font-black text-lg text-white flex items-center gap-2">

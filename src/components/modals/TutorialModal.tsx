@@ -244,7 +244,7 @@ export function TutorialModal() {
         />
       ) : (
         /* Full overlay fallback when no element targeted */
-        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm pointer-events-none transition-all duration-300" />
+        <div className="fixed inset-0 z-[9999] bg-black/85 pointer-events-none transition-all duration-300" />
       )}
 
       {/* ── Floating Tour Card (z-[10000]) ── */}

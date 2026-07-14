@@ -80,7 +80,7 @@ export function BirdProfileModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
       <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
@@ -138,7 +138,7 @@ export function BirdProfileModal() {
 
                 {/* Slide dots and counter overlay */}
                 {images.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 bg-black/70 px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
                     <div className="flex gap-1.5">
                       {images.map((_, i) => (
                         <div

@@ -169,7 +169,7 @@ export function Losses() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-theme-surface border border-red-500/30 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.15)] w-full max-w-md overflow-hidden flex flex-col">
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-red-500/5">
               <h3 className="font-bold text-lg text-red-400 flex items-center gap-2">
