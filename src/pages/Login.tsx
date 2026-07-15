@@ -1,44 +1,43 @@
 import { useState, useRef } from 'react';
 import { 
-  Activity, 
-  LogIn, 
-  Check, 
-  Sparkles, 
-  ShieldCheck, 
-  Layers, 
-  Dna, 
-  TrendingUp, 
-  History, 
-  Smartphone, 
-  ArrowDown, 
-  CreditCard, 
-  QrCode, 
-  Clipboard, 
-  Lock, 
-  User, 
-  Mail, 
-  FileText, 
-  X, 
-  ChevronRight,
-  AlertTriangle
+  Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
+  TrendingUp, History, Smartphone, ArrowDown, CreditCard, QrCode,
+  Clipboard, Lock, User, Mail, FileText, X, ChevronRight, AlertTriangle, Star
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
-import gamecockSilhouette from '../assets/gamefowl_silhouette.png';
+import muraLogo from '../assets/mura_logo.jpg';
+import heroBg from '../assets/hero_bg.jpg';
+
+/* ── STATS ANIMADOS ─────────────────────────────────────── */
+const stats = [
+  { value: '12k+', label: 'Aves Gerenciadas' },
+  { value: '380+', label: 'Criadores Ativos' },
+  { value: '99.8%', label: 'Uptime na Nuvem' },
+  { value: '4.9★', label: 'Avaliação Média' },
+];
+
+/* ── FEATURES ────────────────────────────────────────────── */
+const features = [
+  { icon: Dna, title: 'Controle Genético Completo', desc: 'Forme casais de puro sangue ou híbridos, monitore cruzamentos e visualize a árvore genealógica, evitando consanguinidade indesejada.', color: 'from-amber-500/20 to-amber-500/5', border: 'border-amber-500/20' },
+  { icon: Layers, title: 'Gestão Inteligente de Lotes', desc: 'Lotes de postura com coleta diária automatizada e lotes de engorda com transição ágil de status, peso e terminação.', color: 'from-emerald-500/15 to-emerald-500/5', border: 'border-emerald-500/15' },
+  { icon: History, title: 'Histórico de Baixas e Perdas', desc: 'Gerencie saídas por venda ou falecimento. Analise a taxa de mortalidade e mantenha relatórios limpos do plantel ativo.', color: 'from-rose-500/15 to-rose-500/5', border: 'border-rose-500/15' },
+  { icon: Smartphone, title: 'Multi-Dispositivo Real', desc: 'Ultra-rápido no Android, iOS, tablet e PC. Sincronização instantânea em tempo real entre todos os seus aparelhos.', color: 'from-blue-500/15 to-blue-500/5', border: 'border-blue-500/15' },
+  { icon: TrendingUp, title: 'Alertas de Postura e Previsões', desc: 'Acompanhe a produção real contra a meta teórica baseada em 85% de postura. Projeções e gráficos de rendimento do criatório.', color: 'from-violet-500/15 to-violet-500/5', border: 'border-violet-500/15' },
+  { icon: ShieldCheck, title: 'Assinatura Inteligente e Segura', desc: 'Cobrança automática no cartão ou notificações Pix 3 dias antes do vencimento. Zero perda de acesso aos seus dados genéticos.', color: 'from-amber-500/15 to-amber-500/5', border: 'border-amber-500/15' },
+];
 
 export function Login() {
   const { signIn, isLocalMode } = useAuth();
   const detailsRef = useRef<HTMLDivElement>(null);
 
-  // Estados de Autenticação / Login
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Estados de Assinatura / Checkout
   const [selectedPlan, setSelectedPlan] = useState<'mensal' | 'anual' | null>(null);
   const [checkoutStep, setCheckoutStep] = useState<'form' | 'payment' | 'success'>('form');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
@@ -46,19 +45,16 @@ export function Login() {
   const [checkoutError, setCheckoutError] = useState('');
   const [copiedPix, setCopiedPix] = useState(false);
 
-  // Form de Cadastro na compra
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
 
-  // Form de Cartão de Crédito
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCVV, setCardCVV] = useState('');
 
-  // Utilitários de Máscara e Formatação
   const formatCPF = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
     if (d.length <= 3) return d;
@@ -67,27 +63,15 @@ export function Login() {
     return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
   };
 
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCpf(formatCPF(e.target.value));
-  };
-
-  const scrollToDetails = () => {
-    detailsRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // Envio do Login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) { setLoginError('Preencha seu e-mail ou CPF.'); return; }
     if (!password.trim()) { setLoginError('Preencha sua senha.'); return; }
-    
     setLoginError('');
     setLoginLoading(true);
     try {
       const { error } = await signIn(identifier, password);
-      if (error) {
-        setLoginError(error.message || 'Credenciais inválidas ou acesso negado.');
-      }
+      if (error) setLoginError(error.message || 'Credenciais inválidas ou acesso negado.');
     } catch (err: any) {
       setLoginError(err.message || 'Erro inesperado ao autenticar.');
     } finally {
@@ -95,76 +79,37 @@ export function Login() {
     }
   };
 
-  // Finalização do Checkout (Compra simulada com registro real)
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCpf = cpf.replace(/\D/g, '');
-    
     if (!nome.trim()) { setCheckoutError('Por favor, informe seu nome.'); return; }
     if (!email.trim() || !email.includes('@')) { setCheckoutError('E-mail inválido.'); return; }
     if (cleanCpf.length !== 11) { setCheckoutError('CPF inválido.'); return; }
     if (senha.length < 6) { setCheckoutError('A senha deve ter pelo menos 6 caracteres.'); return; }
-
     setCheckoutError('');
-    
-    // Avança para a etapa de pagamento
     setCheckoutStep('payment');
   };
 
   const handleConfirmPayment = async () => {
     setCheckoutLoading(true);
     setCheckoutError('');
-    
     const cleanCpf = cpf.replace(/\D/g, '');
     const durationDays = selectedPlan === 'anual' ? 365 : 30;
     const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
     try {
       if (isSupabaseConfigured) {
-        // 1. Tenta inserir na tabela allowed_cpfs
-        const { error: insertErr } = await supabase!
-          .from('allowed_cpfs')
-          .insert({
-            cpf: cleanCpf,
-            email: email.trim().toLowerCase(),
-            senha: senha, // Senha de referência
-            expires_at: expiresAt
-          });
-
+        const { error: insertErr } = await supabase!.from('allowed_cpfs').insert({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
         if (insertErr) {
-          console.warn('RLS do allowed_cpfs impediu inserção direta. Usando cache local de teste.', insertErr);
-          // Fallback local caso a tabela tenha políticas de segurança restritivas para convidados
           const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-          localAllowedList.push({
-            cpf: cleanCpf,
-            email: email.trim().toLowerCase(),
-            senha: senha,
-            expires_at: expiresAt
-          });
+          localAllowedList.push({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
           await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
         }
-
-        // 2. Tenta cadastrar o usuário no Supabase Auth para habilitar login
-        const { error: authErr } = await supabase!.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password: senha
-        });
-
-        if (authErr) {
-          console.error('Erro de Auth do Supabase:', authErr);
-        }
+        await supabase!.auth.signUp({ email: email.trim().toLowerCase(), password: senha });
       } else {
-        // Modo Local/Offline tradicional: salva localmente no IndexedDB
         const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-        localAllowedList.push({
-          cpf: cleanCpf,
-          email: email.trim().toLowerCase(),
-          senha: senha,
-          expires_at: expiresAt
-        });
+        localAllowedList.push({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
       }
-
       setCheckoutStep('success');
     } catch (err: any) {
       setCheckoutError(err.message || 'Erro ao processar assinatura.');
@@ -175,190 +120,210 @@ export function Login() {
 
   const handleAutoLoginAfterSuccess = async () => {
     setLoginLoading(true);
-    try {
-      await signIn(email, senha);
-    } catch (err) {
-      console.error(err);
-      setShowLoginForm(true);
-      setSelectedPlan(null);
-    } finally {
-      setLoginLoading(false);
-    }
+    try { await signIn(email, senha); } catch { setShowLoginForm(true); setSelectedPlan(null); } finally { setLoginLoading(false); }
   };
 
   const copyPixCode = () => {
-    navigator.clipboard.writeText('00020126580014BR.GOV.BCB.PIX0136pzkzvcflyfdbizhvpamj.supabase.co520400005303986540559.905802BR5912MURA_MANAGER6009SAO_PAULO62070503***6304E21A');
+    navigator.clipboard.writeText('00020126580014BR.GOV.BCB.PIX0136pzkzvcflyfdbizhvpamj.supabase.co5204000053039865405' + (selectedPlan === 'anual' ? '639.90' : '59.90') + '5802BR5912MURA_MANAGER6009SAO_PAULO62070503***6304E21A');
     setCopiedPix(true);
-    setTimeout(() => setCopiedPix(false), 2000);
+    setTimeout(() => setCopiedPix(false), 2500);
   };
 
   return (
-    <div className="h-screen w-full overflow-y-auto overflow-x-hidden scroll-smooth bg-black text-white relative font-sans">
-      
-      {/* Glow de fundo principal */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2
-                      w-[500px] h-[500px] bg-theme-primary/5 rounded-full blur-[140px] pointer-events-none" />
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#0a0a0b] text-white font-sans">
 
-      {/* ── NAVBAR FLUTUANTE ── */}
-      <nav className="sticky top-0 w-full bg-black/80 backdrop-blur-md border-b border-theme-border/30 px-6 py-4 flex justify-between items-center z-45">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-black text-white tracking-widest uppercase">
-            MURA<span className="text-theme-primary">.</span>MANAGER
-          </span>
+      {/* ── AURORA BACKGROUND ───────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+        {/* Hero image overlay */}
+        <div className="absolute inset-0"
+          style={{ backgroundImage: `url(${heroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.12 }} />
+        
+        {/* Gradient mesh */}
+        <div className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,158,11,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 50%, rgba(22,101,52,0.08) 0%, transparent 50%), radial-gradient(ellipse 50% 70% at 10% 80%, rgba(120,53,15,0.06) 0%, transparent 50%)' }} />
+
+        {/* Animated aurora blobs */}
+        <div className="absolute top-[-15%] left-[-10%] w-[70vw] h-[70vh] rounded-full animate-aurora"
+          style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vh] rounded-full animate-aurora delay-400"
+          style={{ background: 'radial-gradient(circle, rgba(22,101,52,0.06) 0%, transparent 70%)', filter: 'blur(80px)', animationDuration: '16s' }} />
+
+        {/* Noise grain texture */}
+        <div className="absolute inset-0 opacity-[0.025]"
+          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat' }} />
+
+        {/* Grid lines subtle */}
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+      </div>
+
+      {/* ── NAVBAR ──────────────────────────────────────────── */}
+      <nav className="sticky top-0 w-full border-b border-white/[0.06] px-6 py-3 flex justify-between items-center z-40"
+        style={{ background: 'rgba(10,10,11,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+        
+        <div className="flex items-center gap-3">
+          <img src={muraLogo} alt="Mura Manager" className="w-9 h-9 rounded-lg object-cover border border-amber-500/20" />
+          <div className="flex flex-col leading-none">
+            <span className="text-sm font-black tracking-[0.2em] uppercase text-white">MURA</span>
+            <span className="text-[9px] font-bold tracking-[0.3em] uppercase text-amber-500/70">MANAGER</span>
+          </div>
         </div>
+
+        <div className="hidden sm:flex items-center gap-6 text-xs font-semibold text-white/50">
+          <button onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors">Recursos</button>
+          <button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors">Planos</button>
+        </div>
+
         <button 
           onClick={() => { setShowLoginForm(true); setLoginError(''); }}
-          className="px-4 py-2 text-xs font-black uppercase text-theme-primary hover:text-white border border-theme-primary/30 rounded-full hover:border-theme-primary transition-all active:scale-95 flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-black bg-amber-500 rounded-full hover:bg-amber-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)]"
         >
-          <LogIn size={13} /> Acesse sua Conta
+          <LogIn size={12} /> Entrar
         </button>
       </nav>
 
-      {/* ── SEÇÃO 1: HERO / APRESENTAÇÃO (PRIMEIRA DOBRA) ── */}
-      <section className="min-h-[85vh] flex flex-col justify-center items-center px-6 text-center relative max-w-4xl mx-auto py-12">
-        <img
-          src={gamecockSilhouette}
-          alt="Mura Manager Silhouette"
-          className="w-48 h-48 sm:w-56 sm:h-56 object-contain select-none pointer-events-none mb-6 animate-fade-in"
-        />
+      {/* ── HERO ────────────────────────────────────────────── */}
+      <section className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 text-center pt-12 pb-20 max-w-5xl mx-auto" style={{ zIndex: 1 }}>
+        
+        {/* Badge topo */}
+        <div className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/20 bg-amber-500/5 text-amber-400 text-[10px] font-bold tracking-widest uppercase animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards' }}>
+          <Star size={10} fill="currentColor" />
+          A gestão profissional que seu criatório merece
+          <Star size={10} fill="currentColor" />
+        </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-none">
-          Gestão Profissional para <br />
-          <span className="bg-gradient-to-r from-theme-primary via-yellow-500 to-amber-600 bg-clip-text text-transparent">
-            Criatórios de Elite
-          </span>
+        {/* Logo flutuando */}
+        <div className="mb-8 animate-float opacity-0 animate-fade-in-up delay-100" style={{ animationFillMode: 'forwards' }}>
+          <img 
+            src={muraLogo} 
+            alt="Mura Manager"
+            className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl object-cover shadow-2xl border border-amber-500/20"
+            style={{ boxShadow: '0 0 60px rgba(245,158,11,0.15), 0 20px 60px rgba(0,0,0,0.5)' }}
+          />
+        </div>
+
+        {/* Headline */}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200" style={{ animationFillMode: 'forwards' }}>
+          <span className="text-white">Gestão de </span>
+          <br />
+          <span className="text-shimmer">Criatórios de Elite.</span>
         </h1>
 
-        <p className="mt-6 text-sm sm:text-lg text-theme-text-muted max-w-xl font-medium">
-          Organize casais, acompanhe o pedigree de forma visual, gerencie lotes de eclosão e controle finanças e baixas em uma única plataforma fluida e veloz.
+        <p className="mt-6 text-sm sm:text-base text-white/50 max-w-lg leading-relaxed font-medium opacity-0 animate-fade-in-up delay-300" style={{ animationFillMode: 'forwards' }}>
+          Controle genético, lotes de incubação, postura e baixas — tudo em uma plataforma ultra-rápida e sincronizada para Android, iOS e computador.
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center">
+        {/* CTAs */}
+        <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards' }}>
           <button 
             onClick={() => { setShowLoginForm(true); setLoginError(''); }}
-            className="w-full sm:w-auto btn-primary !px-8 !py-3.5 !text-xs uppercase flex items-center justify-center gap-2 shadow-lg"
+            className="group relative px-8 py-4 text-xs font-black uppercase tracking-widest text-black bg-amber-500 rounded-2xl overflow-hidden active:scale-95 transition-all"
+            style={{ boxShadow: '0 0 30px rgba(245,158,11,0.4)' }}
           >
-            <LogIn size={14} /> Acesse sua Conta
+            <span className="relative z-10 flex items-center gap-2"><LogIn size={14} /> Acesse sua Conta</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-amber-600 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
           </button>
 
           <button 
-            onClick={scrollToDetails}
-            className="w-full sm:w-auto px-8 py-3.5 text-xs font-black uppercase text-theme-primary border border-theme-primary/30 hover:border-theme-primary rounded-full transition-all active:scale-95 flex items-center justify-center gap-2 group"
+            onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            className="flex items-center gap-2 px-8 py-4 text-xs font-black uppercase tracking-widest text-amber-400 border border-amber-500/25 rounded-2xl hover:border-amber-500/50 hover:bg-amber-500/5 active:scale-95 transition-all"
           >
-            Conhecer o Produto <ArrowDown size={14} className="group-hover:translate-y-1 transition-transform" />
+            Ver Recursos <ArrowDown size={13} />
           </button>
         </div>
-      </section>
 
-      {/* ── SEÇÃO 2: DETALHES DO PRODUTO (SEGUNDA DOBRA) ── */}
-      <section ref={detailsRef} id="product-details" className="py-24 border-t border-theme-border/20 px-6 max-w-5xl mx-auto space-y-16">
-        <div className="text-center space-y-3">
-          <h2 className="text-2xl sm:text-4xl font-black text-white">
-            Tudo o que seu criatório precisa
-          </h2>
-          <p className="text-xs sm:text-sm text-theme-text-muted max-w-md mx-auto">
-            Desenvolvido sob medida para criadores de aves de alto padrão que exigem controle, rastreabilidade e simplicidade.
-          </p>
+        {/* Stats bar */}
+        <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-12 opacity-0 animate-fade-in-up delay-600" style={{ animationFillMode: 'forwards' }}>
+          {stats.map((s, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <span className="text-2xl sm:text-3xl font-black text-white">{s.value}</span>
+              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">{s.label}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Grade de Recursos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <Dna size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Controle Genético Completo</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Forme casais de puro sangue ou híbridos, monitore cruzamentos e visualize a árvore genealógica de forma integrada, evitando consanguinidade indesejada.
-            </p>
-          </div>
-
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <Layers size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Gestão Inteligente de Lotes</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Crie lotes específicos para postura (coleta diária de ovos com metas automatizadas) e lotes de engorda com transição ágil de status para abate ou terminação.
-            </p>
-          </div>
-
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <History size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Histórico de Baixas e Perdas</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Gerencie a saída de aves por vendas ou falecimento de forma prática. Analise a taxa de mortalidade e tenha relatórios limpos do plantel ativo.
-            </p>
-          </div>
-
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <Smartphone size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Multi-Dispositivo de Verdade</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Desenvolvido com tecnologia de ponta para rodar de forma ultra-rápida no Android, iOS, tablets e computadores, sincronizando tudo na nuvem em tempo real.
-            </p>
-          </div>
-
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <TrendingUp size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Previsão e Alertas de Postura</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Acompanhe a produção real de ovos contra a expectativa teórica baseada em 85% de postura. Veja projeções e gráficos claros de rendimento do criatório.
-            </p>
-          </div>
-
-          <div className="premium-card p-6 flex flex-col gap-3 border border-theme-border/50 bg-theme-surface/50">
-            <div className="w-10 h-10 rounded-xl bg-theme-primary/10 border border-theme-primary/20 flex items-center justify-center text-theme-primary">
-              <ShieldCheck size={20} />
-            </div>
-            <h3 className="text-base font-black text-white">Acesso por Assinatura Inteligente</h3>
-            <p className="text-xs text-theme-text-muted leading-relaxed">
-              Faturamento automático direto no cartão ou avisos de Pix recorrentes 3 dias antes do vencimento para você nunca perder acesso à sua base de dados genéticos.
-            </p>
-          </div>
+        {/* Scroll indicator */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-40">
+          <div className="w-px h-10 bg-gradient-to-b from-transparent via-amber-500/60 to-transparent animate-pulse" />
         </div>
       </section>
 
-      {/* ── SEÇÃO 3: PLANOS E VALORES ── */}
-      <section className="py-24 border-t border-theme-border/20 bg-theme-surface/10 px-6">
-        <div className="max-w-4xl mx-auto space-y-16">
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl sm:text-4xl font-black text-white">
-              Escolha o plano ideal para seu criatório
+      {/* ── FEATURES ────────────────────────────────────────── */}
+      <section ref={detailsRef} className="relative py-24 px-6" style={{ zIndex: 1 }}>
+        <div className="max-w-6xl mx-auto">
+          
+          {/* Section header */}
+          <div className="text-center mb-16 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Plataforma Completa</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+              Tudo que seu criatório<br />precisa em um só lugar
             </h2>
-            <p className="text-xs sm:text-sm text-theme-text-muted max-w-sm mx-auto">
-              Sem taxas escondidas. Cancele ou altere o plano quando desejar.
+            <p className="text-sm text-white/40 max-w-md mx-auto">
+              Desenvolvido especialmente para criadores que exigem controle total, rastreabilidade e agilidade.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-stretch">
+          {/* Features grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((f, i) => (
+              <div 
+                key={i}
+                className={`glass-card glass-card-hover relative rounded-2xl p-6 flex flex-col gap-4 cursor-default transition-all duration-300 ${f.border}`}
+                style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)` }}
+              >
+                {/* Icon */}
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center border ${f.border}`}>
+                  <f.icon size={20} className="text-amber-400" />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-black text-white mb-2">{f.title}</h3>
+                  <p className="text-xs text-white/45 leading-relaxed">{f.desc}</p>
+                </div>
+
+                {/* Corner accent */}
+                <div className={`absolute top-0 right-0 w-16 h-16 rounded-tr-2xl bg-gradient-to-bl ${f.color} opacity-30`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ─────────────────────────────────────────── */}
+      <section id="pricing" className="relative py-24 px-6" style={{ zIndex: 1 }}>
+        {/* Divider glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent via-amber-500/30 to-transparent" />
+
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Planos e Preços</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">Escolha seu plano</h2>
+            <p className="text-sm text-white/40 max-w-sm mx-auto">Sem taxas ocultas. Cancele quando quiser. Seu criatório sempre online.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             
             {/* PLANO MENSAL */}
-            <div className="premium-card p-8 flex flex-col justify-between border border-theme-border/50 bg-theme-surface/40 relative">
+            <div className="glass-card rounded-3xl p-8 flex flex-col justify-between gap-8 relative overflow-hidden group hover:border-amber-500/20 transition-all duration-300">
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-black text-white">Plano Mensal</h3>
-                  <p className="text-xs text-theme-text-muted mt-1">Acesso contínuo mês a mês</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Mensal</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-black text-white/60">R$</span>
+                    <span className="text-6xl font-black text-white tracking-tighter leading-none">59</span>
+                    <span className="text-xl font-black text-white/60">,90</span>
+                    <span className="text-xs text-white/30 ml-1 font-bold">/mês</span>
+                  </div>
+                  <p className="text-xs text-white/30 mt-2 font-medium">Renova todo mês. Cancele quando quiser.</p>
                 </div>
 
-                <div className="flex items-baseline gap-1 text-white">
-                  <span className="text-2xl font-black">R$</span>
-                  <span className="text-5xl font-black tracking-tight">59</span>
-                  <span className="text-2xl font-black">,90</span>
-                  <span className="text-xs text-theme-text-muted font-bold ml-1">/mês</span>
-                </div>
-
-                <ul className="space-y-3 border-t border-theme-border/30 pt-6">
-                  {['Gestão de aves e lotes ilimitados', 'Mapeamento genealógico e consanguinidade', 'Sincronização multi-dispositivo na nuvem', 'Backup diário dos dados', 'Suporte técnico prioritário'].map((feat, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-theme-text-muted">
-                      <Check size={14} className="text-theme-primary shrink-0 mt-0.5" />
-                      <span>{feat}</span>
+                <ul className="space-y-3">
+                  {['Aves e lotes ilimitados', 'Árvore genealógica e consanguinidade', 'Sincronização em nuvem multi-dispositivo', 'Backup diário automático', 'Suporte prioritário'].map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-xs text-white/60">
+                      <div className="w-4 h-4 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                        <Check size={9} className="text-amber-400" />
+                      </div>
+                      {f}
                     </li>
                   ))}
                 </ul>
@@ -366,38 +331,46 @@ export function Login() {
 
               <button 
                 onClick={() => { setSelectedPlan('mensal'); setCheckoutStep('form'); setCheckoutError(''); }}
-                className="mt-8 w-full py-3 rounded-xl border border-theme-primary/30 hover:border-theme-primary text-theme-primary hover:text-white font-black text-xs uppercase transition-all hover:bg-theme-primary/5 active:scale-95"
+                className="w-full py-4 rounded-2xl border border-amber-500/25 text-amber-400 text-xs font-black uppercase tracking-widest hover:bg-amber-500/8 hover:border-amber-500/50 active:scale-95 transition-all"
               >
-                Assinar Plano Mensal
+                Começar Agora
               </button>
+
+              <div className="absolute bottom-0 right-0 w-40 h-40 rounded-full opacity-5"
+                style={{ background: 'radial-gradient(circle, #f59e0b 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
             </div>
 
             {/* PLANO ANUAL */}
-            <div className="premium-card p-8 flex flex-col justify-between border-2 border-theme-primary bg-theme-surface/60 relative shadow-[0_0_40px_rgba(245,158,11,0.05)]">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-theme-primary text-black font-black uppercase text-[9px] tracking-wider px-3.5 py-1 rounded-full shadow-lg">
-                Melhor Valor — Economize R$ 78,90
+            <div className="relative rounded-3xl p-8 flex flex-col justify-between gap-8 overflow-hidden group"
+              style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(217,119,6,0.04) 100%)', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 60px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+              
+              {/* Recomendado badge */}
+              <div className="absolute top-5 right-5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black bg-amber-500">
+                Recomendado
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-black text-white flex items-center gap-1.5">
-                    Plano Anual <Sparkles size={16} className="text-theme-primary" />
-                  </h3>
-                  <p className="text-xs text-theme-text-muted mt-1">Acesso garantido por 1 ano completo</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/80 mb-1">Anual</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-black text-white/60">R$</span>
+                    <span className="text-6xl font-black text-white tracking-tighter leading-none">639</span>
+                    <span className="text-xl font-black text-white/60">,90</span>
+                    <span className="text-xs text-white/30 ml-1 font-bold">/ano</span>
+                  </div>
+                  <p className="text-xs text-amber-500/60 mt-2 font-bold flex items-center gap-1.5">
+                    <Sparkles size={10} />
+                    Economize R$ 78,90 em relação ao mensal
+                  </p>
                 </div>
 
-                <div className="flex items-baseline gap-1 text-white">
-                  <span className="text-2xl font-black">R$</span>
-                  <span className="text-5xl font-black tracking-tight">639</span>
-                  <span className="text-2xl font-black">,90</span>
-                  <span className="text-xs text-theme-text-muted font-bold ml-1">/ano</span>
-                </div>
-
-                <ul className="space-y-3 border-t border-theme-border/30 pt-6">
-                  {['Tudo do plano mensal incluído', 'Desconto equivalente a mais de 1 mensalidade grátis', 'Acesso prioritário a novas funcionalidades', 'Notificações de vencimento inteligentes', 'Relatório anual de desempenho genético'].map((feat, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-theme-text-muted">
-                      <Check size={14} className="text-theme-primary shrink-0 mt-0.5" />
-                      <span>{feat}</span>
+                <ul className="space-y-3">
+                  {['Tudo do plano mensal', 'Mais de 1 mês gratuito incluso', 'Acesso antecipado a novos recursos', 'Notificações inteligentes de vencimento', 'Relatório anual de desempenho genético'].map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-xs text-white/70">
+                      <div className="w-4 h-4 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                        <Check size={9} className="text-amber-400" />
+                      </div>
+                      {f}
                     </li>
                   ))}
                 </ul>
@@ -405,93 +378,120 @@ export function Login() {
 
               <button 
                 onClick={() => { setSelectedPlan('anual'); setCheckoutStep('form'); setCheckoutError(''); }}
-                className="mt-8 w-full btn-primary py-3 rounded-xl flex items-center justify-center font-black text-xs uppercase"
+                className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 transition-all"
+                style={{ boxShadow: '0 0 30px rgba(245,158,11,0.3)' }}
               >
                 Assinar Plano Anual
               </button>
-            </div>
 
+              {/* Background glow */}
+              <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full opacity-10 pointer-events-none"
+                style={{ background: 'radial-gradient(circle, #f59e0b 0%, transparent 70%)', transform: 'translate(30%, 30%)' }} />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="py-12 border-t border-theme-border/20 text-center text-xs text-theme-text-muted max-w-4xl mx-auto px-6">
-        <p className="font-bold">MURA MANAGER © {new Date().getFullYear()} · Todos os direitos reservados.</p>
-        <p className="mt-2 text-[10px] text-theme-text-muted/60">Acesso sujeito a termos de assinatura e termos de uso do serviço de banco de dados na nuvem.</p>
+      {/* ── FOOTER ──────────────────────────────────────────── */}
+      <footer className="relative border-t border-white/[0.06] py-10 px-6" style={{ zIndex: 1 }}>
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <img src={muraLogo} alt="Mura Manager" className="w-7 h-7 rounded-lg object-cover opacity-60" />
+            <span className="text-xs font-black tracking-widest uppercase text-white/30">MURA MANAGER</span>
+          </div>
+          <p className="text-[10px] text-white/20 font-medium">© {new Date().getFullYear()} Mura Manager. Todos os direitos reservados.</p>
+        </div>
       </footer>
 
-      {/* ── MODAL DE LOGIN / ACESSO À CONTA ── */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* MODAL LOGIN                                           */}
+      {/* ══════════════════════════════════════════════════════ */}
       {showLoginForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-scale-up relative">
-            <button 
-              onClick={() => setShowLoginForm(false)}
-              className="absolute right-4 top-4 text-theme-text-muted hover:text-white"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="p-6 border-b border-theme-border flex items-center gap-3 bg-theme-base/50">
-              <LogIn size={20} className="text-theme-primary" />
-              <div>
-                <h3 className="font-black text-base text-white">Acesse sua Conta</h3>
-                <p className="text-[10px] text-theme-text-muted">Informe suas credenciais registradas</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up border border-white/10"
+            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: '0 0 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)' }}>
+            
+            {/* Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-white/[0.07] flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <img src={muraLogo} alt="Mura Manager" className="w-10 h-10 rounded-xl object-cover border border-amber-500/20" />
+                <div>
+                  <h3 className="font-black text-base text-white tracking-wide">Acesse sua Conta</h3>
+                  <p className="text-[10px] text-white/35 mt-0.5">Bem-vindo de volta ao Mura Manager</p>
+                </div>
               </div>
+              <button onClick={() => setShowLoginForm(false)} className="text-white/30 hover:text-white transition-colors p-1">
+                <X size={18} />
+              </button>
             </div>
 
-            <form onSubmit={handleLoginSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleLoginSubmit} className="px-8 py-7 space-y-5">
               {loginError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-bold text-center">
+                <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/8 text-red-400 text-xs font-bold text-center">
                   {loginError}
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-theme-text-muted uppercase">E-mail ou CPF</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Seu e-mail ou 000.000.000-00"
-                  value={identifier}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val.includes('@') || val.match(/[a-zA-Z]/)) {
-                      setIdentifier(val);
-                    } else {
-                      setIdentifier(formatCPF(val));
-                    }
-                  }}
-                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                />
+              {/* E-mail ou CPF */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">E-mail ou CPF</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25 group-focus-within:text-amber-400 transition-colors">
+                    <User size={14} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="email@exemplo.com ou 000.000.000-00"
+                    value={identifier}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.includes('@') || /[a-zA-Z]/.test(val)) setIdentifier(val);
+                      else setIdentifier(formatCPF(val));
+                    }}
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 focus:bg-amber-500/[0.03] outline-none transition-all"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-theme-text-muted uppercase">Senha de Acesso</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                />
+              {/* Senha */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">Senha</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/25 group-focus-within:text-amber-400 transition-colors">
+                    <Lock size={14} />
+                  </div>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 focus:bg-amber-500/[0.03] outline-none transition-all"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full btn-primary py-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 mt-2"
+                className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2"
+                style={{ boxShadow: '0 0 25px rgba(245,158,11,0.25)' }}
               >
-                {loginLoading 
-                  ? <Activity size={16} className="animate-spin" />
-                  : <><LogIn size={16} /> Entrar no Criatório</>
-                }
+                {loginLoading ? <Activity size={16} className="animate-spin" /> : <><LogIn size={15} /> Entrar na Plataforma</>}
               </button>
 
+              <p className="text-center text-[10px] text-white/25">
+                Ainda não é cliente?{' '}
+                <button type="button" onClick={() => { setShowLoginForm(false); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-amber-500/60 hover:text-amber-400 transition-colors">
+                  Conheça nossos planos
+                </button>
+              </p>
+
               {isLocalMode && (
-                <div className="p-2 bg-orange-500/5 border border-orange-500/10 rounded-lg text-orange-300/40 text-[9px] text-center mt-3">
-                  Modo Offline Local Ativo · Admin: 14477751630 (sem senha)
+                <div className="p-2 rounded-lg border border-orange-500/10 bg-orange-500/5 text-orange-300/30 text-[9px] text-center">
+                  Modo Offline Local · Admin: 14477751630
                 </div>
               )}
             </form>
@@ -499,285 +499,172 @@ export function Login() {
         </div>
       )}
 
-      {/* ── MODAL DE CHECKOUT / COMPRA / CADASTRO ── */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* MODAL CHECKOUT / ASSINATURA                           */}
+      {/* ══════════════════════════════════════════════════════ */}
       {selectedPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-scale-up flex flex-col max-h-[92vh] border border-white/10"
+            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: '0 0 80px rgba(0,0,0,0.8)' }}>
             
-            {/* Botão fechar */}
-            {checkoutStep !== 'success' && (
-              <button 
-                onClick={() => setSelectedPlan(null)}
-                className="absolute right-4 top-4 text-theme-text-muted hover:text-white z-10"
-              >
-                <X size={20} />
-              </button>
-            )}
-
-            {/* Cabeçalho */}
-            <div className="p-6 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
-              <div className="flex items-center gap-2">
-                <Sparkles size={20} className="text-theme-primary" />
+            {/* Header */}
+            <div className="px-7 pt-7 pb-5 border-b border-white/[0.07] flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <Sparkles size={16} className="text-amber-400" />
+                </div>
                 <div>
-                  <h3 className="font-black text-base text-white">Assinar Mura Manager</h3>
-                  <p className="text-[10px] text-theme-text-muted">
-                    Plano selecionado: <span className="text-theme-primary font-bold capitalize">{selectedPlan}</span>
+                  <h3 className="font-black text-sm text-white">Assinar Mura Manager</h3>
+                  <p className="text-[10px] text-white/30">
+                    Plano <span className="text-amber-400 font-bold capitalize">{selectedPlan}</span> · R$ {selectedPlan === 'anual' ? '639,90/ano' : '59,90/mês'}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-xs text-theme-text-muted font-bold block">Valor</span>
-                <span className="text-lg font-black text-white">
-                  R$ {selectedPlan === 'anual' ? '639,90' : '59,90'}
-                </span>
-              </div>
+              {checkoutStep !== 'success' && (
+                <button onClick={() => setSelectedPlan(null)} className="text-white/30 hover:text-white transition-colors p-1">
+                  <X size={18} />
+                </button>
+              )}
             </div>
 
-            {/* Conteúdo dinâmico com base no passo */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto px-7 py-6">
               {checkoutError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-bold text-center mb-4">
+                <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/8 text-red-400 text-xs font-bold text-center mb-5">
                   {checkoutError}
                 </div>
               )}
 
-              {/* PASSO 1: DADOS CADASTRAIS */}
+              {/* STEP 1: DADOS */}
               {checkoutStep === 'form' && (
                 <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome Completo</label>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 pb-1">Seus Dados de Acesso</p>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">Nome Completo</label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ex: João Silva"
-                        value={nome}
-                        onChange={e => setNome(e.target.value)}
-                        className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none"
-                      />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                      <input type="text" required placeholder="João da Silva" value={nome} onChange={e => setNome(e.target.value)}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">E-mail</label>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">E-mail</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                        <input
-                          type="email"
-                          required
-                          placeholder="seuemail@exemplo.com"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none"
-                        />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                        <input type="email" required placeholder="email@exemplo.com" value={email} onChange={e => setEmail(e.target.value)}
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                       </div>
                     </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">CPF (Acesso)</label>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">CPF</label>
                       <div className="relative">
-                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                        <input
-                          type="text"
-                          required
-                          placeholder="000.000.000-00"
-                          value={cpf}
-                          onChange={handleCpfChange}
-                          className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none"
-                        />
+                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                        <input type="text" required placeholder="000.000.000-00" value={cpf} onChange={e => setCpf(formatCPF(e.target.value))}
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-theme-text-muted uppercase">Senha da Plataforma</label>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">Senha da Plataforma</label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                      <input
-                        type="password"
-                        required
-                        placeholder="Mínimo 6 caracteres"
-                        value={senha}
-                        onChange={e => setSenha(e.target.value)}
-                        className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-9 pr-4 text-sm text-white focus:border-theme-primary outline-none"
-                      />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                      <input type="password" required placeholder="Mínimo 6 caracteres" value={senha} onChange={e => setSenha(e.target.value)}
+                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full btn-primary py-3.5 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-1.5 mt-4"
-                  >
+                  <button type="submit" className="w-full py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"
+                    style={{ boxShadow: '0 0 25px rgba(245,158,11,0.2)' }}>
                     Prosseguir para o Pagamento <ChevronRight size={14} />
                   </button>
                 </form>
               )}
 
-              {/* PASSO 2: ESCOLHER PAGAMENTO (PIX OU CARTÃO) */}
+              {/* STEP 2: PAGAMENTO */}
               {checkoutStep === 'payment' && (
-                <div className="space-y-6">
-                  {/* Abas */}
-                  <div className="flex bg-theme-base border border-theme-border rounded-xl p-1 gap-1">
-                    <button
-                      onClick={() => setPaymentMethod('pix')}
-                      className={`flex-1 py-3.5 rounded-lg text-xs font-black uppercase flex items-center justify-center gap-2 transition-all ${
-                        paymentMethod === 'pix' 
-                          ? 'bg-theme-primary text-black' 
-                          : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <QrCode size={15} /> Pagamento via Pix
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`flex-1 py-3.5 rounded-lg text-xs font-black uppercase flex items-center justify-center gap-2 transition-all ${
-                        paymentMethod === 'card' 
-                          ? 'bg-theme-primary text-black' 
-                          : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      <CreditCard size={15} /> Cartão de Crédito
-                    </button>
+                <div className="space-y-6 animate-fade-in">
+                  {/* Tabs Pix/Cartão */}
+                  <div className="flex gap-2 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+                    {(['pix', 'card'] as const).map(m => (
+                      <button key={m} onClick={() => setPaymentMethod(m)}
+                        className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${paymentMethod === m ? 'bg-amber-500 text-black shadow-md' : 'text-white/40 hover:text-white/70'}`}>
+                        {m === 'pix' ? <><QrCode size={13} /> Pix</> : <><CreditCard size={13} /> Cartão</>}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Detalhe do método */}
                   {paymentMethod === 'pix' ? (
-                    <div className="flex flex-col items-center text-center space-y-4 animate-fade-in">
-                      <div className="p-4 bg-white rounded-2xl border-4 border-theme-primary shadow-md">
-                        {/* Mock Pix QR Code */}
-                        <div className="w-40 h-40 flex items-center justify-center bg-zinc-100 relative">
-                          <QrCode size={120} className="text-zinc-900" />
-                          <div className="absolute inset-0 bg-zinc-900/10 flex items-center justify-center">
-                            <span className="bg-theme-primary text-black text-[9px] font-black tracking-widest px-2 py-0.5 rounded shadow">
-                              MURA PIX
-                            </span>
+                    <div className="flex flex-col items-center gap-5 animate-fade-in">
+                      {/* QR Code simulado */}
+                      <div className="p-4 bg-white rounded-2xl shadow-lg">
+                        <div className="w-36 h-36 relative flex items-center justify-center bg-gray-50">
+                          <QrCode size={112} className="text-gray-900" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="bg-amber-500 text-black text-[8px] font-black tracking-wider px-2 py-0.5 rounded-md shadow">MURA</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <p className="text-xs text-theme-text-muted leading-relaxed max-w-sm mx-auto">
-                          Escaneie o QR Code acima no app do seu banco ou utilize o botão copiar código Pix abaixo para realizar o pagamento.
-                        </p>
-                        <div className="flex items-center justify-center gap-2 p-2 text-[10px] text-yellow-500 font-bold bg-yellow-500/5 border border-yellow-500/10 rounded-lg max-w-xs mx-auto mt-2">
-                          <AlertTriangle size={14} className="shrink-0" />
-                          <span>O vencimento Pix avisa 3 dias antes do bloqueio automático.</span>
+                      <div className="text-center space-y-2">
+                        <p className="text-xs text-white/45 max-w-xs">Escaneie o QR Code no app do seu banco ou copie o código Pix abaixo.</p>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/8 border border-amber-500/15 text-amber-400/70 text-[10px] font-bold">
+                          <AlertTriangle size={11} /> Aviso 3 dias antes do vencimento por Pix
                         </div>
                       </div>
 
-                      <button
-                        onClick={copyPixCode}
-                        className={`px-5 py-2.5 rounded-full text-xs font-black flex items-center gap-2 border transition-all ${
-                          copiedPix 
-                            ? 'bg-emerald-500 border-emerald-600 text-white' 
-                            : 'border-theme-primary/30 hover:border-theme-primary text-theme-primary'
-                        }`}
-                      >
-                        <Clipboard size={14} />
-                        {copiedPix ? 'Código Pix Copiado!' : 'Copiar Código Pix'}
+                      <button onClick={copyPixCode}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${copiedPix ? 'bg-emerald-500 text-white' : 'border border-amber-500/25 text-amber-400 hover:border-amber-500/50 hover:bg-amber-500/5'}`}>
+                        <Clipboard size={13} />
+                        {copiedPix ? 'Código Copiado!' : 'Copiar Código Pix'}
                       </button>
 
-                      <div className="w-full pt-4 border-t border-theme-border/30 flex justify-between gap-4">
-                        <button 
-                          onClick={() => setCheckoutStep('form')}
-                          className="px-4 py-2 text-xs font-bold text-theme-text-muted hover:text-white"
-                        >
-                          Voltar
-                        </button>
-                        <button
-                          onClick={handleConfirmPayment}
-                          disabled={checkoutLoading}
-                          className="btn-primary !px-6 !py-2.5 !text-xs uppercase flex items-center gap-1.5"
-                        >
-                          {checkoutLoading 
-                            ? <Activity size={14} className="animate-spin" />
-                            : <><Check size={14} /> Confirmar Pagamento</>
-                          }
+                      <div className="w-full border-t border-white/[0.07] pt-5 flex justify-between items-center">
+                        <button onClick={() => setCheckoutStep('form')} className="text-xs text-white/30 hover:text-white font-bold transition-colors">← Voltar</button>
+                        <button onClick={handleConfirmPayment} disabled={checkoutLoading}
+                          className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 transition-all flex items-center gap-2">
+                          {checkoutLoading ? <Activity size={14} className="animate-spin" /> : <><Check size={14} /> Confirmar</>}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <form 
-                      onSubmit={e => { e.preventDefault(); handleConfirmPayment(); }} 
-                      className="space-y-4 animate-fade-in"
-                    >
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Número do Cartão</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="0000 0000 0000 0000"
-                          value={cardNumber}
-                          onChange={e => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})/g, '$1 ').trim())}
-                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                        />
+                    <form onSubmit={e => { e.preventDefault(); handleConfirmPayment(); }} className="space-y-4 animate-fade-in">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">Número do Cartão</label>
+                        <input type="text" required placeholder="0000 0000 0000 0000" value={cardNumber}
+                          onChange={e => setCardNumber(e.target.value.replace(/\D/g,'').slice(0,16).replace(/(\d{4})/g,'$1 ').trim())}
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                       </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome no Cartão</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="NOME IGUAL NO CARTÃO"
-                          value={cardName}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">Nome no Cartão</label>
+                        <input type="text" required placeholder="NOME NO CARTÃO" value={cardName}
                           onChange={e => setCardName(e.target.value.toUpperCase())}
-                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                        />
+                          className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-theme-text-muted uppercase">Validade</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="MM/AA"
-                            value={cardExpiry}
-                            onChange={e => {
-                              let v = e.target.value.replace(/\D/g, '').slice(0, 4);
-                              if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2)}`;
-                              setCardExpiry(v);
-                            }}
-                            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                          />
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">Validade</label>
+                          <input type="text" required placeholder="MM/AA" value={cardExpiry}
+                            onChange={e => { let v = e.target.value.replace(/\D/g,'').slice(0,4); if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`; setCardExpiry(v); }}
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                         </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-theme-text-muted uppercase">CVV</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="000"
-                            value={cardCVV}
-                            onChange={e => setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                          />
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-white/25">CVV</label>
+                          <input type="text" required placeholder="000" value={cardCVV}
+                            onChange={e => setCardCVV(e.target.value.replace(/\D/g,'').slice(0,3))}
+                            className="w-full bg-white/[0.04] border border-white/10 rounded-xl p-3.5 text-sm text-white placeholder-white/20 focus:border-amber-500/50 outline-none transition-all" />
                         </div>
                       </div>
+                      <p className="text-center text-[10px] text-white/25 font-bold">🔒 Cobrança recorrente automática todo {selectedPlan === 'anual' ? 'ano' : 'mês'}.</p>
 
-                      <p className="text-[10px] text-theme-text-muted font-bold text-center">
-                        🔒 Cobrança automática recorrente. O valor será debitado todo {selectedPlan === 'anual' ? 'ano' : 'mês'}.
-                      </p>
-
-                      <div className="w-full pt-4 border-t border-theme-border/30 flex justify-between gap-4">
-                        <button 
-                          onClick={() => setCheckoutStep('form')}
-                          type="button"
-                          className="px-4 py-2 text-xs font-bold text-theme-text-muted hover:text-white"
-                        >
-                          Voltar
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={checkoutLoading}
-                          className="btn-primary !px-6 !py-2.5 !text-xs uppercase flex items-center gap-1.5"
-                        >
-                          {checkoutLoading 
-                            ? <Activity size={14} className="animate-spin" />
-                            : <><Check size={14} /> Ativar Assinatura Recorrente</>
-                          }
+                      <div className="border-t border-white/[0.07] pt-5 flex justify-between items-center">
+                        <button type="button" onClick={() => setCheckoutStep('form')} className="text-xs text-white/30 hover:text-white font-bold transition-colors">← Voltar</button>
+                        <button type="submit" disabled={checkoutLoading}
+                          className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 disabled:opacity-50 transition-all flex items-center gap-2">
+                          {checkoutLoading ? <Activity size={14} className="animate-spin" /> : <><Check size={14} /> Ativar Assinatura</>}
                         </button>
                       </div>
                     </form>
@@ -785,51 +672,32 @@ export function Login() {
                 </div>
               )}
 
-              {/* PASSO 3: COMPRA FINALIZADA COM SUCESSO */}
+              {/* STEP 3: SUCESSO */}
               {checkoutStep === 'success' && (
-                <div className="flex flex-col items-center text-center space-y-5 py-8 animate-scale-up">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 animate-pulse">
-                    <Check size={32} />
+                <div className="flex flex-col items-center text-center gap-5 py-6 animate-scale-up">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/50 flex items-center justify-center text-emerald-400">
+                    <Check size={28} />
                   </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-xl font-black text-white">Assinatura Ativada com Sucesso!</h4>
-                    <p className="text-xs text-theme-text-muted leading-relaxed max-w-sm mx-auto">
-                      Parabéns, {nome.split(' ')[0]}! Sua conta do Mura Manager foi criada com sucesso e seu acesso já está 100% liberado.
-                    </p>
+                  <div>
+                    <h4 className="text-lg font-black text-white mb-2">Assinatura Ativada!</h4>
+                    <p className="text-xs text-white/40 max-w-xs mx-auto">Parabéns, {nome.split(' ')[0]}! Sua conta foi criada e seu acesso já está ativo.</p>
                   </div>
-
-                  <div className="p-4 bg-theme-base/50 border border-theme-border rounded-xl text-left w-full max-w-xs space-y-2.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-theme-text-muted font-bold">Identificador de Acesso:</span>
-                      <span className="text-white font-mono font-bold">{cpf}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-theme-text-muted font-bold">Senha Cadastrada:</span>
-                      <span className="text-white font-mono font-bold">••••••</span>
-                    </div>
-                    <div className="flex justify-between text-xs border-t border-theme-border pt-2 mt-2">
-                      <span className="text-theme-text-muted font-bold">Expiração da Licença:</span>
-                      <span className="text-yellow-500 font-bold">
-                        {new Date(Date.now() + (selectedPlan === 'anual' ? 365 : 30) * 24 * 60 * 60 * 1000).toLocaleDateString()}
-                      </span>
+                  <div className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left space-y-3">
+                    <div className="flex justify-between text-xs"><span className="text-white/35 font-bold">Identificador</span><span className="text-white font-mono">{cpf}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-white/35 font-bold">Senha</span><span className="text-white font-mono">••••••</span></div>
+                    <div className="flex justify-between text-xs border-t border-white/[0.07] pt-3">
+                      <span className="text-white/35 font-bold">Validade</span>
+                      <span className="text-amber-400 font-bold">{new Date(Date.now() + (selectedPlan === 'anual' ? 365 : 30) * 86400000).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleAutoLoginAfterSuccess}
-                    disabled={loginLoading}
-                    className="btn-primary !px-8 !py-3.5 !text-xs uppercase flex items-center justify-center gap-2 mt-4"
-                  >
-                    {loginLoading 
-                      ? <Activity size={16} className="animate-spin" />
-                      : <><LogIn size={16} /> Entrar na Plataforma</>
-                    }
+                  <button onClick={handleAutoLoginAfterSuccess} disabled={loginLoading}
+                    className="w-full max-w-xs py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    style={{ boxShadow: '0 0 25px rgba(245,158,11,0.25)' }}>
+                    {loginLoading ? <Activity size={16} className="animate-spin" /> : <><LogIn size={15} /> Entrar na Plataforma</>}
                   </button>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}
