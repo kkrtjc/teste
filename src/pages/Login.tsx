@@ -193,7 +193,7 @@ export function Login() {
   };
 
   return (
-    <div className="h-screen w-full overflow-y-auto scroll-smooth bg-black text-white relative font-sans">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden scroll-smooth bg-black text-white relative font-sans">
       
       {/* Glow de fundo principal */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2

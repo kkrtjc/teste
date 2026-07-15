@@ -1,18 +1,19 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense } from 'react';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { Activity } from 'lucide-react';
-
-import { Dashboard } from './pages/Dashboard';
-import { Genetics } from './pages/Genetics';
-import { Lots } from './pages/Lots';
-import { Losses } from './pages/Losses';
-import { Birds } from './pages/Birds';
-import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
+
+// Lazy loading das páginas internas para otimização de bundle inicial no celular
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Genetics = lazy(() => import('./pages/Genetics').then(m => ({ default: m.Genetics })));
+const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
+const Losses = lazy(() => import('./pages/Losses').then(m => ({ default: m.Losses })));
+const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 
 function AppContent() {
   const { isReady, farmSettings, isTutorialOpen } = useAppContext();
