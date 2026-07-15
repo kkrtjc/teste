@@ -164,50 +164,47 @@ export function Login() {
           backgroundSize: '300px 300px',
         }} />
 
+        {/* ── GALO INTEGRADO AO FUNDO (GPU layer, sticker overlay effect) ── */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 'clamp(280px, 35vw, 480px)',
+            display: 'flex',
+            alignItems: 'stretch',
+            /* GPU compositing */
+            transform: 'translateZ(0)',
+            willChange: 'transform',
+          }}
+        >
+          <img
+            src={roosterImg}
+            alt="Galo Mura Manager"
+            fetchPriority="high"
+            decoding="async"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              /* mix-blend-mode screen remove o fundo preto da imagem perfeitamente */
+              mixBlendMode: 'screen',
+              opacity: 0.75,
+              /* Máscara de fade para integrar o galo ao fundo escuro */
+              WebkitMaskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+              maskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+            }}
+          />
+        </div>
+
         {/* Subtle grid */}
         <div style={{
           position: 'absolute', inset: 0, opacity: 0.025,
           backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
           backgroundSize: '80px 80px',
         }} />
-      </div>
-
-      {/* ── GALO FIXO NA LATERAL ESQUERDA (GPU layer, sticker overlay effect) ── */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 1,
-          pointerEvents: 'none',
-          /* GPU compositing */
-          transform: 'translateZ(0)',
-          willChange: 'transform',
-          width: 'clamp(280px, 35vw, 480px)',
-          display: 'flex',
-          alignItems: 'stretch',
-        }}
-      >
-        <img
-          src={roosterImg}
-          alt="Galo Mura Manager"
-          fetchPriority="high"
-          decoding="async"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center top',
-            /* mix-blend-mode screen remove o fundo preto da imagem perfeitamente */
-            mixBlendMode: 'screen',
-            opacity: 0.75,
-            /* Máscara de fade para integrar o galo ao fundo escuro */
-            WebkitMaskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-            maskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-          }}
-        />
       </div>
 
       {/* ── NAVBAR ── */}
