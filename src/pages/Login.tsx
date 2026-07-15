@@ -235,21 +235,18 @@ export function Login() {
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center">
           <button 
+            onClick={() => { setShowLoginForm(true); setLoginError(''); }}
+            className="w-full sm:w-auto btn-primary !px-8 !py-3.5 !text-xs uppercase flex items-center justify-center gap-2 shadow-lg"
+          >
+            <LogIn size={14} /> Acesse sua Conta
+          </button>
+
+          <button 
             onClick={scrollToDetails}
-            className="w-full sm:w-auto btn-primary !px-8 !py-3.5 !text-xs uppercase flex items-center justify-center gap-2 group"
+            className="w-full sm:w-auto px-8 py-3.5 text-xs font-black uppercase text-theme-primary border border-theme-primary/30 hover:border-theme-primary rounded-full transition-all active:scale-95 flex items-center justify-center gap-2 group"
           >
             Conhecer o Produto <ArrowDown size={14} className="group-hover:translate-y-1 transition-transform" />
           </button>
-          
-          <div className="text-xs text-theme-text-muted font-bold py-2">
-            Já é nosso cliente?{' '}
-            <button 
-              onClick={() => { setShowLoginForm(true); setLoginError(''); }}
-              className="text-theme-primary hover:underline"
-            >
-              Acessem sua conta
-            </button>
-          </div>
         </div>
       </section>
 
