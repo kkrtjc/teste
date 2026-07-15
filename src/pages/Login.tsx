@@ -172,7 +172,7 @@ export function Login() {
         }} />
       </div>
 
-      {/* ── GALO FIXO NA LATERAL ESQUERDA (GPU layer, sticker effect) ── */}
+      {/* ── GALO FIXO NA LATERAL ESQUERDA (GPU layer, sticker overlay effect) ── */}
       <div
         aria-hidden="true"
         style={{
@@ -180,13 +180,12 @@ export function Login() {
           left: 0,
           top: 0,
           bottom: 0,
-          zIndex: 2,
+          zIndex: 1,
           pointerEvents: 'none',
-          /* GPU compositing - zero CPU repaints */
+          /* GPU compositing */
           transform: 'translateZ(0)',
           willChange: 'transform',
-          /* Width: 28% em desktop, 18% em mobile — ajuste via width inline */
-          width: 'clamp(120px, 22vw, 340px)',
+          width: 'clamp(280px, 35vw, 480px)',
           display: 'flex',
           alignItems: 'stretch',
         }}
@@ -201,14 +200,12 @@ export function Login() {
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center top',
-            /* Blend com o fundo para efeito de adesivo natural */
-            mixBlendMode: 'luminosity',
-            opacity: 0.55,
-            /* Máscara de fade nas bordas top/bottom para integrar ao fundo */
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 8%, rgba(0,0,0,0.85) 20%, black 45%, black 75%, rgba(0,0,0,0.6) 90%, transparent 100%), linear-gradient(to right, transparent 0%, black 30%, black 100%)',
-            WebkitMaskComposite: 'destination-in',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 8%, rgba(0,0,0,0.85) 20%, black 45%, black 75%, rgba(0,0,0,0.6) 90%, transparent 100%), linear-gradient(to right, transparent 0%, black 30%, black 100%)',
-            maskComposite: 'intersect',
+            /* mix-blend-mode screen remove o fundo preto da imagem perfeitamente */
+            mixBlendMode: 'screen',
+            opacity: 0.75,
+            /* Máscara de fade para integrar o galo ao fundo escuro */
+            WebkitMaskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+            maskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
           }}
         />
       </div>
@@ -249,8 +246,8 @@ export function Login() {
 
       {/* ── HERO ── */}
       <section
-        className="relative flex flex-col justify-center items-center text-center py-20 px-6"
-        style={{ zIndex: 3, minHeight: '88vh', paddingLeft: 'clamp(140px, 25vw, 370px)' }}
+        className="relative flex flex-col justify-center items-center text-center py-20 px-6 max-w-4xl mx-auto"
+        style={{ zIndex: 3, minHeight: '88vh' }}
       >
         {/* Badge */}
         <div className="mb-7 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0" style={{ border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.06)', color: '#f59e0b', animationFillMode: 'forwards' }}>
@@ -308,8 +305,8 @@ export function Login() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section ref={detailsRef} className="relative py-24 px-6" style={{ zIndex: 3, paddingLeft: 'clamp(140px, 25vw, 370px)' }}>
-        <div className="max-w-4xl">
+      <section ref={detailsRef} className="relative py-24 px-6 mx-auto max-w-5xl" style={{ zIndex: 3 }}>
+        <div className="max-w-4xl mx-auto">
           <div className="mb-12 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Plataforma Completa</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">Tudo que seu criatório<br />precisa em um só lugar</h2>
@@ -337,8 +334,8 @@ export function Login() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="relative py-24 px-6" style={{ zIndex: 3, paddingLeft: 'clamp(140px, 25vw, 370px)' }}>
-        <div className="max-w-3xl">
+      <section id="pricing" className="relative py-24 px-6 mx-auto max-w-4xl" style={{ zIndex: 3 }}>
+        <div className="max-w-3xl mx-auto">
           <div className="mb-12 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Planos e Preços</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha seu plano</h2>
