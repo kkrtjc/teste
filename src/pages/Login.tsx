@@ -247,28 +247,69 @@ export function Login() {
             willChange: 'transform',
           }}
         />
+        {/* Scrim radial escuro centrado — garante legibilidade dos textos sobre o galo */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            /* Gradiente radial escuro atrás do bloco de texto central */
+            background: 'radial-gradient(ellipse 70% 80% at 55% 45%, rgba(0,0,0,0.55) 0%, transparent 75%)',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
+
         {/* Badge */}
-        <div className="mb-7 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0" style={{ border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.06)', color: '#f59e0b', animationFillMode: 'forwards' }}>
+        <div
+          className="mb-7 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0"
+          style={{
+            border: '1px solid rgba(245,158,11,0.25)',
+            background: 'rgba(10,10,11,0.55)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            color: '#f59e0b',
+            animationFillMode: 'forwards',
+            position: 'relative', zIndex: 1,
+          }}
+        >
           <Star size={9} fill="currentColor" /> A gestão que seu criatório merece <Star size={9} fill="currentColor" />
         </div>
 
         {/* Logo flutuante */}
-        <div className="mb-7 animate-float opacity-0 animate-fade-in-up delay-100" style={{ animationFillMode: 'forwards' }}>
+        <div className="mb-7 animate-float opacity-0 animate-fade-in-up delay-100" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
           <img src={muraLogo} alt="Mura Manager" className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover"
             style={{ border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 0 50px rgba(245,158,11,0.12), 0 20px 50px rgba(0,0,0,0.5)' }} />
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200" style={{ animationFillMode: 'forwards' }}>
+        <h1
+          className="text-4xl sm:text-6xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200"
+          style={{
+            animationFillMode: 'forwards',
+            position: 'relative', zIndex: 1,
+            /* text-shadow duplo: sombra escura próxima + glow difuso — garante leitura sobre o galo */
+            textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)',
+          }}
+        >
           Gestão de<br /><span className="text-shimmer">Criatórios de Elite.</span>
         </h1>
 
-        <p className="mt-5 text-sm text-white/45 max-w-sm leading-relaxed font-medium opacity-0 animate-fade-in-up delay-300" style={{ animationFillMode: 'forwards' }}>
+        <p
+          className="mt-5 text-sm max-w-sm leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
+          style={{
+            animationFillMode: 'forwards',
+            position: 'relative', zIndex: 1,
+            color: 'rgba(255,255,255,0.75)',
+            /* sombra de leitura no parágrafo */
+            textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.8)',
+          }}
+        >
           Genética, lotes, postura e baixas — em uma plataforma sincronizada para Android, iOS e computador.
         </p>
 
         {/* CTAs */}
-        <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards' }}>
+        <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
           <button
             onClick={() => { setShowLoginForm(true); setLoginError(''); }}
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-transform flex items-center gap-2"
@@ -280,24 +321,46 @@ export function Login() {
           <button
             onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })}
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-colors flex items-center gap-2"
-            style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.22)' }}
+            style={{
+              color: '#f59e0b',
+              border: '1px solid rgba(245,158,11,0.22)',
+              background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+            }}
           >
             Ver Recursos <ArrowDown size={12} />
           </button>
         </div>
 
         {/* Stats */}
-        <div className="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards' }}>
+        <div
+          className="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 opacity-0 animate-fade-in-up delay-500"
+          style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}
+        >
           {stats.map((s, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-2xl font-black text-white">{s.value}</span>
-              <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</span>
+              <span
+                className="text-2xl font-black text-white"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)' }}
+              >
+                {s.value}
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-widest font-bold"
+                style={{
+                  color: 'rgba(255,255,255,0.6)',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.95)',
+                }}
+              >
+                {s.label}
+              </span>
             </div>
           ))}
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 opacity-20">
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 opacity-20" style={{ zIndex: 1 }}>
           <div style={{ width: 1, height: 36, background: 'linear-gradient(to bottom, transparent, #f59e0b, transparent)' }} className="animate-pulse" />
         </div>
       </section>
