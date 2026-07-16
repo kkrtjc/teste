@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isAdmin) {
       if (isSupabaseConfigured) {
         const email    = `${ADMIN_CPF}@mura.com`;
-        const password = passwordInput || `mura-${ADMIN_CPF}-secure`;
+        const password = passwordInput || `mura2026`;
 
         try {
           // Tenta login real
@@ -118,14 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return { error: null };
           }
 
-          // Login falhou → tenta criar conta se for a primeira vez e sem senha manual
-          if (error && !passwordInput) {
-            const { data: signUpData } = await supabase!.auth.signUp({ email, password });
-            if (signUpData?.session) {
-              setSession(signUpData.session);
-              setUser(signUpData.user);
-              return { error: null };
-            }
+          // Se falhou login real, tenta criar conta (caso tenha sido deletado do Auth para resetar senha)
+          const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
+          if (!signUpError && signUpData?.session) {
+            setSession(signUpData.session);
+            setUser(signUpData.user);
+            return { error: null };
           }
         } catch {
           // Supabase inacessível → continua para bypass local
@@ -133,14 +131,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fallback: sessão local para admin (funciona offline ou com Supabase indisponível)
-      const adminSession = {
-        session: { access_token: `admin-local-${Date.now()}` },
-        user:    { id: `admin-${ADMIN_CPF}`, email: `${ADMIN_CPF}@mura.com` },
-      };
-      await localforage.setItem('@mura-manager:local-session', adminSession);
-      setUser(adminSession.user);
-      setSession(adminSession.session);
-      return { error: null };
+      // Permite login com a senha 'mura2026' ou bypass caso esteja offline
+      if (!passwordInput || passwordInput === 'mura2026') {
+        const adminSession = {
+          session: { access_token: `admin-local-${Date.now()}` },
+          user:    { id: `admin-${ADMIN_CPF}`, email: `${ADMIN_CPF}@mura.com` },
+        };
+        await localforage.setItem('@mura-manager:local-session', adminSession);
+        setUser(adminSession.user);
+        setSession(adminSession.session);
+        return { error: null };
+      } else {
+        return { error: { message: 'Senha incorreta para a conta de administrador.' } };
+      }
     }
 
     // ══════════════════════════════════════════════════════
