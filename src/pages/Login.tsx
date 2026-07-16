@@ -164,41 +164,6 @@ export function Login() {
           backgroundSize: '300px 300px',
         }} />
 
-        {/* ── GALO INTEGRADO AO FUNDO (GPU layer, sticker overlay effect) ── */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 'clamp(280px, 35vw, 480px)',
-            display: 'flex',
-            alignItems: 'stretch',
-            /* GPU compositing */
-            transform: 'translateZ(0)',
-            willChange: 'transform',
-          }}
-        >
-          <img
-            src={roosterImg}
-            alt="Galo Mura Manager"
-            fetchPriority="high"
-            decoding="async"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              /* mix-blend-mode screen remove o fundo preto da imagem perfeitamente */
-              mixBlendMode: 'screen',
-              opacity: 0.75,
-              /* Máscara de fade para integrar o galo ao fundo escuro */
-              WebkitMaskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-              maskImage: 'linear-gradient(to right, black 40%, rgba(0,0,0,0.3) 75%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-            }}
-          />
-        </div>
-
         {/* Subtle grid */}
         <div style={{
           position: 'absolute', inset: 0, opacity: 0.025,
@@ -244,8 +209,44 @@ export function Login() {
       {/* ── HERO ── */}
       <section
         className="relative flex flex-col justify-center items-center text-center py-20 px-6 max-w-4xl mx-auto"
-        style={{ zIndex: 3, minHeight: '88vh' }}
+        style={{ zIndex: 3, minHeight: '88vh', overflow: 'hidden' }}
       >
+        {/*
+         * GALO: posicionado como no site de referência — absolute, canto inferior
+         * esquerdo, dentro da section do hero. Fica confinado apenas à 1ª dobra.
+         * mix-blend-mode:screen torna o fundo preto da imagem 100% transparente.
+         * A máscara suaviza o topo e a borda direita para fusão natural.
+         */}
+        <img
+          src={roosterImg}
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            /* altura = 90% da section para emergir de baixo como no exemplo */
+            height: '90%',
+            width: 'auto',
+            maxWidth: 'clamp(220px, 30vw, 420px)',
+            objectFit: 'contain',
+            objectPosition: 'bottom left',
+            /* Remove o fundo preto da imagem via screen blend */
+            mixBlendMode: 'screen',
+            opacity: 0.85,
+            /* Fade no topo e na borda direita para integração natural */
+            WebkitMaskImage:
+              'linear-gradient(to top, black 50%, rgba(0,0,0,0.7) 75%, transparent 100%), linear-gradient(to right, black 55%, rgba(0,0,0,0.4) 80%, transparent 100%)',
+            maskImage:
+              'linear-gradient(to top, black 50%, rgba(0,0,0,0.7) 75%, transparent 100%), linear-gradient(to right, black 55%, rgba(0,0,0,0.4) 80%, transparent 100%)',
+            zIndex: 0,
+            pointerEvents: 'none',
+            transform: 'translateZ(0)',
+            willChange: 'transform',
+          }}
+        />
         {/* Badge */}
         <div className="mb-7 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0" style={{ border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.06)', color: '#f59e0b', animationFillMode: 'forwards' }}>
           <Star size={9} fill="currentColor" /> A gestão que seu criatório merece <Star size={9} fill="currentColor" />
