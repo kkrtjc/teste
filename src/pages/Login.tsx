@@ -282,7 +282,7 @@ export function Login() {
 
         {/* Headline */}
         <h1
-          className="text-4xl sm:text-6xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200"
+          className="text-4xl sm:text-6xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200 text-white"
           style={{
             animationFillMode: 'forwards',
             position: 'relative', zIndex: 1,
@@ -290,11 +290,11 @@ export function Login() {
             textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)',
           }}
         >
-          Gestão de<br /><span className="text-shimmer">Criatórios de Elite.</span>
+          Gestão de<br />Criatórios de Elite.
         </h1>
 
         <p
-          className="mt-5 text-sm max-w-sm leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
+          className="mt-5 text-sm max-w-md leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
           style={{
             animationFillMode: 'forwards',
             position: 'relative', zIndex: 1,
@@ -303,7 +303,7 @@ export function Login() {
             textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.8)',
           }}
         >
-          Genética, lotes, postura e baixas — em uma plataforma sincronizada para Android, iOS e computador.
+          Gestão de Ovos: tenha o controle de quantos ovos seu plantel está produzindo todos os dias e saiba exatamente o quanto seu plantel está produzindo.
         </p>
 
         {/* CTAs */}
