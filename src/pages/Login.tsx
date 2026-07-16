@@ -9,7 +9,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import muraLogo from '../assets/mura_logo.jpg';
 import heroBg from '../assets/hero_bg.jpg';
-import roosterImg from '../assets/rooster_sticker.jpg';
+import roosterImg from '../assets/rooster_sticker.png';
 
 const stats = [
   { value: '12k+', label: 'Aves Gerenciadas' },
@@ -232,9 +232,7 @@ export function Login() {
             width: 'auto',
             maxWidth: 'clamp(220px, 30vw, 420px)',
             objectFit: 'contain',
-            objectPosition: 'bottom left',
-            /* Remove o fundo preto da imagem via screen blend */
-            mixBlendMode: 'screen',
+            /* Imagem agora possui transparência real (.png) */
             opacity: 0.85,
             /* Fade no topo e na borda direita para integração natural */
             WebkitMaskImage:
