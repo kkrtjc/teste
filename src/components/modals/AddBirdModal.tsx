@@ -75,6 +75,8 @@ export function AddBirdModal() {
   // ── Steps ──
   const TOTAL_STEPS = 3;
   const [step, setStep] = useState(0);
+  const [showOptional, setShowOptional] = useState(false);
+  const [showPhotos, setShowPhotos] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,6 +108,7 @@ export function AddBirdModal() {
       setDataNasc(''); setPeso(''); setPreviewImages([]);
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
+      setShowOptional(false); setShowPhotos(false);
     }
   }, [isAddBirdModalOpen, birdToEditId]);
 
@@ -198,8 +201,6 @@ export function AddBirdModal() {
   };
 
   // ─── Options ─────────────────────────────────────────────────────────────
-  const breedOptions = breeds.map(b => ({ label: b.nome, value: b.nome }));
-  const sexOptions   = [{ label: 'Macho 🐓', value: 'Macho' }, { label: 'Fêmea 🐔', value: 'Fêmea' }];
   const statusOptions = [
     { label: 'Adulto', value: 'Adulto' },
     { label: 'Reprodutor', value: 'Reprodutor' },
@@ -233,116 +234,197 @@ export function AddBirdModal() {
 
   // ─── Step content ─────────────────────────────────────────────────────────
   const renderStep = () => {
-    // ── STEP 0: Basic info ─────────────────────────────────────────────────
+    // ── STEP 0: Basic info — Progressive Disclosure ─────────────────────────
     if (step === 0) return (
-      <div className="space-y-5">
-        {/* Anilha e Nome lado a lado */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
-            <input
-              type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-              placeholder="Ex: BR-2024-001"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome (opcional)</label>
-            <input
-              type="text" value={nome} onChange={e => setNome(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-              placeholder="Ex: Titan, Guerreiro..."
-            />
-          </div>
-        </div>
+      <div className="space-y-6">
 
-        {/* Galeria de Fotos (até 10) */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
-            Fotos da Ave (Mín. 1, Máx. 10 — A 1ª é a Capa)
+        {/* ── 1. Anilha — campo primário grande ── */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
+            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
+            Anilha / ID *
           </label>
-          <div className="grid grid-cols-5 gap-2">
-            {previewImages.map((img, idx) => (
-              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
-                <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                
-                {/* Badge Capa */}
-                {idx === 0 && (
-                  <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">
-                    Capa
-                  </span>
-                )}
-                
-                {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
-                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-90 transition-opacity shadow flex items-center justify-center"
-                >
-                  <X size={10} />
-                </button>
-                
-                {/* Order Indicator */}
-                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">
-                  {idx + 1}
-                </span>
-              </div>
-            ))}
-            
-            {previewImages.length < 10 && (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
-              >
-                <Camera size={20} className="mb-0.5" />
-                <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
-              </div>
-            )}
-          </div>
           <input
-            type="file"
-            accept="image/*"
-            multiple
-            ref={fileInputRef}
-            onChange={handleImageUpload}
-            className="hidden"
+            type="text"
+            value={anilha}
+            onChange={e => setAnilha(e.target.value)}
+            autoFocus
+            className="w-full bg-theme-base border-2 border-theme-border rounded-2xl p-4 text-lg font-black text-white focus:border-theme-primary outline-none transition-colors placeholder:text-theme-text-muted/40"
+            placeholder="Ex: BR-2024-001"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <NativeSelect label="Raça / Genética *" value={raca} onChange={setRaca}
-            options={breedOptions.length ? breedOptions : [{ label: 'Sem raças cadastradas', value: '' }]} />
-          <NativeSelect label="Sexo *" value={sexo} onChange={setSexo} options={sexOptions} />
+        {/* ── 2. Sexo — toggle visual ── */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
+            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
+            Sexo *
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSexo('Macho')}
+              className={`py-4 px-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+                sexo === 'Macho'
+                  ? 'border-blue-500 bg-blue-500/10 text-white'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-blue-500/40 hover:text-white'
+              }`}
+            >
+              <span className="text-3xl leading-none">🐓</span>
+              <span className="font-black text-sm">Macho</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSexo('Fêmea')}
+              className={`py-4 px-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+                sexo === 'Fêmea'
+                  ? 'border-pink-500 bg-pink-500/10 text-white'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-pink-500/40 hover:text-white'
+              }`}
+            >
+              <span className="text-3xl leading-none">🐔</span>
+              <span className="font-black text-sm">Fêmea</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Baia</label>
-            <input
-              type="text" value={baia} onChange={e => setBaia(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-              placeholder="Ex: B-04"
-            />
-          </div>
-          <NativeSelect label="Status" value={status} onChange={setStatus} options={statusOptions} />
+        {/* ── 3. Raça — cards pill (≤6 raças) ou select (>6) ── */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
+            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
+            Raça / Genética *
+          </label>
+          {breeds.length === 0 ? (
+            <div className="p-4 rounded-2xl border-2 border-dashed border-theme-border text-center text-sm text-theme-text-muted">
+              Nenhuma raça cadastrada. Cadastre uma raça primeiro.
+            </div>
+          ) : breeds.length <= 6 ? (
+            <div className="flex flex-wrap gap-2">
+              {breeds.map(b => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setRaca(b.nome)}
+                  className={`px-4 py-2.5 rounded-full border-2 text-sm font-black transition-all ${
+                    raca === b.nome
+                      ? 'border-theme-primary bg-theme-primary text-black'
+                      : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50 hover:text-white'
+                  }`}
+                >
+                  {b.nome}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <select
+              value={raca}
+              onChange={e => setRaca(e.target.value)}
+              className="w-full bg-theme-base border-2 border-theme-border rounded-2xl p-4 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            >
+              {breeds.map(b => <option key={b.id} value={b.nome}>{b.nome}</option>)}
+            </select>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nascimento</label>
-            <input
-              type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark] transition-colors"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Peso</label>
-            <input
-              type="text" value={peso} onChange={e => setPeso(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-              placeholder="Ex: 3.2 kg"
-            />
-          </div>
+        {/* ── 4. Mais Detalhes — colapsável ── */}
+        <div className="rounded-2xl border border-theme-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowOptional(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
+          >
+            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+              Mais Detalhes {(nome || baia || dataNasc || peso) ? <span className="text-theme-primary ml-1">·</span> : null}
+            </span>
+            <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showOptional ? 'rotate-90' : ''}`} />
+          </button>
+          {showOptional && (
+            <div className="p-4 space-y-4 border-t border-theme-border bg-theme-surface/50 animate-fade-in">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome / Apelido</label>
+                  <input
+                    type="text" value={nome} onChange={e => setNome(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                    placeholder="Ex: Titan"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Baia</label>
+                  <input
+                    type="text" value={baia} onChange={e => setBaia(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                    placeholder="Ex: B-04"
+                  />
+                </div>
+              </div>
+              <NativeSelect label="Status" value={status} onChange={setStatus} options={statusOptions} />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nascimento</label>
+                  <input
+                    type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark] transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Peso</label>
+                  <input
+                    type="text" value={peso} onChange={e => setPeso(e.target.value)}
+                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+                    placeholder="Ex: 3.2 kg"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 5. Fotos — colapsável ── */}
+        <div className="rounded-2xl border border-theme-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowPhotos(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
+          >
+            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
+              <Camera size={12} />
+              Fotos da Ave {previewImages.length > 0 ? `(${previewImages.length}/10)` : ''}
+            </span>
+            <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showPhotos ? 'rotate-90' : ''}`} />
+          </button>
+          {showPhotos && (
+            <div className="p-4 border-t border-theme-border bg-theme-surface/50 animate-fade-in">
+              <div className="grid grid-cols-5 gap-2">
+                {previewImages.map((img, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
+                    <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">Capa</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
+                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow flex items-center justify-center"
+                    >
+                      <X size={10} />
+                    </button>
+                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{idx + 1}</span>
+                  </div>
+                ))}
+                {previewImages.length < 10 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
+                  >
+                    <Camera size={20} className="mb-0.5" />
+                    <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
+                  </div>
+                )}
+              </div>
+              <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+            </div>
+          )}
         </div>
       </div>
     );

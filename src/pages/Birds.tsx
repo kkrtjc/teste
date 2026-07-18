@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Camera, Search, X } from 'lucide-react';
+import { Plus, Edit2, Camera, Search, X, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
@@ -24,6 +24,7 @@ export function Birds() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [newBreedTempoCrescimento, setNewBreedTempoCrescimento] = useState(0);
   const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('');
+  const [showAdvancedBreed, setShowAdvancedBreed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +80,7 @@ export function Birds() {
       setNewBreedTempoCrescimento(0);
       setNewBreedPesoMedio('');
     }
+    setShowAdvancedBreed(false);
     setShowNewBreedModal(true);
   };
 
@@ -441,18 +443,14 @@ export function Birds() {
               <button onClick={() => setShowNewBreedModal(false)} className="text-theme-text-muted hover:text-white">✕</button>
             </div>
             
-            <div className="p-6 space-y-5 overflow-y-auto flex-1 overscroll-contain">
-              <div className="flex gap-4 items-center mb-2">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  ref={fileInputRef} 
-                  onChange={handleImageUpload} 
-                  className="hidden" 
-                />
-                <div 
+            <div className="p-5 space-y-5 overflow-y-auto flex-1 overscroll-contain">
+
+              {/* ── Nome + Foto em linha ── */}
+              <div className="flex gap-3 items-start">
+                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-all overflow-hidden relative group"
+                  className="w-16 h-16 shrink-0 rounded-2xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-all overflow-hidden relative group"
                 >
                   {previewImage ? (
                     <>
@@ -461,75 +459,100 @@ export function Birds() {
                     </>
                   ) : (
                     <>
-                      <Camera size={20} className="mb-1" />
-                      <span className="text-[10px] font-bold uppercase">Imagem</span>
+                      <Camera size={16} className="mb-0.5" />
+                      <span className="text-[9px] font-bold uppercase">Foto</span>
                     </>
                   )}
                 </div>
-                <p className="text-xs text-theme-text-muted leading-relaxed flex-1">
-                  Adicione uma imagem de referência visual desta raça/linhagem. Clique na caixa para selecionar.
-                </p>
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome da Raça / Linhagem *</label>
+                  <input
+                    type="text"
+                    value={newBreedName}
+                    onChange={(e) => setNewBreedName(e.target.value)}
+                    autoFocus
+                    className="w-full bg-theme-base border-2 border-theme-border rounded-2xl p-3.5 text-base font-bold text-white focus:border-theme-primary outline-none transition-colors"
+                    placeholder="Ex: Brahma, Shamo, Índio Gigante..."
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-theme-text-muted uppercase">Nome da Raça / Linhagem *</label>
-                <input 
-                  type="text" 
-                  value={newBreedName}
-                  onChange={(e) => setNewBreedName(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" 
-                  placeholder="Ex: Brahma, Shamo, Índio Gigante..." 
-                />
+              {/* ── Foco como cards visuais ── */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Foco Principal</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { label: 'Misto (Carne e Ovos)', icon: '🥩🥚', short: 'Misto' },
+                    { label: 'Postura (Ovos)', icon: '🥚', short: 'Postura' },
+                    { label: 'Corte (Carne)', icon: '🥩', short: 'Corte' },
+                    { label: 'Combate / Esporte', icon: '⚔️', short: 'Combate' },
+                    { label: 'Ornamental', icon: '🌸', short: 'Ornamental' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setNewBreedFocus(opt.label)}
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all ${
+                        newBreedFocus === opt.label
+                          ? 'border-theme-primary bg-theme-primary/10 text-white'
+                          : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/40 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xl leading-none">{opt.icon}</span>
+                      <span className="text-[10px] font-black uppercase text-center leading-tight">{opt.short}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-theme-text-muted uppercase">Foco Principal</label>
-                <select 
-                  value={newBreedFocus}
-                  onChange={(e) => setNewBreedFocus(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white"
+
+              {/* ── Detalhes Técnicos — colapsável ── */}
+              <div className="rounded-2xl border border-theme-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedBreed(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
                 >
-                  <option>Misto (Carne e Ovos)</option>
-                  <option>Postura (Ovos)</option>
-                  <option>Corte (Carne)</option>
-                  <option>Combate / Esporte</option>
-                  <option>Ornamental</option>
-                </select>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Tempo de Crescimento (Dias)</label>
-                  <input 
-                    type="number" 
-                    min={0}
-                    value={newBreedTempoCrescimento}
-                    onChange={(e) => setNewBreedTempoCrescimento(parseInt(e.target.value) || 0)}
-                    className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" 
-                    placeholder="Ex: 150" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Peso Médio</label>
-                  <input 
-                    type="text" 
-                    value={newBreedPesoMedio}
-                    onChange={(e) => setNewBreedPesoMedio(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" 
-                    placeholder="Ex: 4.5 kg" 
-                  />
-                </div>
+                  <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Detalhes Técnicos</span>
+                  <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showAdvancedBreed ? 'rotate-90' : ''}`} />
+                </button>
+                {showAdvancedBreed && (
+                  <div className="p-4 space-y-4 border-t border-theme-border bg-theme-surface/50 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-theme-text-muted uppercase">Crescimento (dias)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={newBreedTempoCrescimento}
+                          onChange={(e) => setNewBreedTempoCrescimento(parseInt(e.target.value) || 0)}
+                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                          placeholder="Ex: 150"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-theme-text-muted uppercase">Peso Médio</label>
+                        <input
+                          type="text"
+                          value={newBreedPesoMedio}
+                          onChange={(e) => setNewBreedPesoMedio(e.target.value)}
+                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                          placeholder="Ex: 4.5 kg"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-theme-text-muted uppercase">Descrição / Características</label>
+                      <textarea
+                        value={newBreedDesc}
+                        onChange={(e) => setNewBreedDesc(e.target.value)}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white h-20 resize-none"
+                        placeholder="Anotações sobre as características genéticas desta raça..."
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-theme-text-muted uppercase">Descrição / Características</label>
-                <textarea 
-                  value={newBreedDesc}
-                  onChange={(e) => setNewBreedDesc(e.target.value)}
-                  className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white h-24 resize-none" 
-                  placeholder="Anotações sobre as características genéticas desta raça..."
-                ></textarea>
-              </div>
             </div>
 
             <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50 shrink-0">
