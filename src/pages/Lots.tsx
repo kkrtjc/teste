@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
-  DollarSign, Info, ChevronDown, Users, Trash2
+  DollarSign, Info, ChevronDown, Users, Trash2, Baby
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -89,11 +90,21 @@ function BirdPicker({ birds, selected, onToggle, onSelectAll, search, onSearch, 
 }
 
 export function Lots() {
+  const location = useLocation();
   const { 
     birds, breeds, eggLots, addEggLot, editEggLot, removeEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot 
   } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'postura'|'engorda'>('postura');
+  const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
+
+  useEffect(() => {
+    if (location.state) {
+      const stateObj = location.state as any;
+      if (stateObj.tab) {
+        setActiveTab(stateObj.tab);
+      }
+    }
+  }, [location.state]);
 
   const [showPostura, setShowPostura] = useState(false);
   const [pBaia, setPBaia] = useState('');
@@ -120,8 +131,37 @@ export function Lots() {
   const [ePesoMeta, setEPesoMeta] = useState('');
   const [eObs, setEObs] = useState('');
 
+  // Pintinhos Lot states
+  const [showPintinhos, setShowPintinhos] = useState(false);
+  const [piBaia, setPiBaia] = useState('');
+  const [piRaca, setPiRaca] = useState('');
+  const [piDataInicio, setPiDataInicio] = useState(todayISO());
+  const [piMode, setPiMode] = useState<'select'|'qty'>('select');
+  const [piAves, setPiAves] = useState<string[]>([]);
+  const [piQtd, setPiQtd] = useState('');
+  const [piSearch, setPiSearch] = useState('');
+  const [piPesoInicial, setPiPesoInicial] = useState('');
+  const [piObs, setPiObs] = useState('');
+
+  // Crescimento Lot states
+  const [showCrescimento, setShowCrescimento] = useState(false);
+  const [crBaia, setCrBaia] = useState('');
+  const [crRaca, setCrRaca] = useState('');
+  const [crDataInicio, setCrDataInicio] = useState(todayISO());
+  const [crMode, setCrMode] = useState<'select'|'qty'>('select');
+  const [crAves, setCrAves] = useState<string[]>([]);
+  const [crQtd, setCrQtd] = useState('');
+  const [crSearch, setCrSearch] = useState('');
+  const [crPesoInicial, setCrPesoInicial] = useState('');
+  const [crObs, setCrObs] = useState('');
+
   const activeFemales = birds.filter(b=>b.sexo==='Fêmea'&&b.status!=='Vendido'&&b.status!=='Faleceu');
   const activeBirds = birds.filter(b=>b.status!=='Vendido'&&b.status!=='Faleceu');
+  const activeChicks = birds.filter(b=>b.status==='Crescimento');
+
+  const filterEngorda = meatLots.filter(l => !l.id.startsWith('chick-') && !l.id.startsWith('growth-'));
+  const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
+  const filterCrescimento = meatLots.filter(l => l.id.startsWith('growth-'));
 
   const handleFemaleToggle = (id: string) => {
     const next = pFemeas.includes(id) ? pFemeas.filter(x=>x!==id) : [...pFemeas, id];
@@ -195,7 +235,67 @@ export function Lots() {
     });
     resetEngorda();
   };
+  // Pintinhos methods
+  const handlePintinhoToggle = (id: string) => {
+    setPiAves(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  };
+  const handlePintinhoSelectAll = (ids: string[]) => {
+    const allSel = ids.every(id=>piAves.includes(id));
+    setPiAves(allSel ? piAves.filter(id=>!ids.includes(id)) : Array.from(new Set([...piAves,...ids])));
+  };
+  const resetPintinhos = () => {
+    setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataInicio(todayISO());
+    setPiMode('select'); setPiAves([]); setPiQtd(''); setPiSearch(''); setPiPesoInicial(''); setPiObs('');
+  };
+  const handleSavePintinhos = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!piBaia.trim()) return;
+    const avesIds = piMode==='select' ? piAves : [];
+    const qtdAves = piMode==='qty' ? parseInt(piQtd)||0 : piAves.length;
+    addMeatLot({
+      id: 'chick-' + uid(),
+      baia: piBaia.trim(),
+      avesIds,
+      qtdAves,
+      dataInicio: piDataInicio,
+      pesoMedioInicial: piPesoInicial.trim()||'0',
+      status: 'Crescimento',
+      raca: piRaca.trim()||undefined,
+      observacao: piObs.trim()||undefined,
+    });
+    resetPintinhos();
+  };
 
+  // Crescimento methods
+  const handleCrescimentoToggle = (id: string) => {
+    setCrAves(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  };
+  const handleCrescimentoSelectAll = (ids: string[]) => {
+    const allSel = ids.every(id=>crAves.includes(id));
+    setCrAves(allSel ? crAves.filter(id=>!ids.includes(id)) : Array.from(new Set([...crAves,...ids])));
+  };
+  const resetCrescimento = () => {
+    setShowCrescimento(false); setCrBaia(''); setCrRaca(''); setCrDataInicio(todayISO());
+    setCrMode('select'); setCrAves([]); setCrQtd(''); setCrSearch(''); setCrPesoInicial(''); setCrObs('');
+  };
+  const handleSaveCrescimento = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crBaia.trim()) return;
+    const avesIds = crMode==='select' ? crAves : [];
+    const qtdAves = crMode==='qty' ? parseInt(crQtd)||0 : crAves.length;
+    addMeatLot({
+      id: 'growth-' + uid(),
+      baia: crBaia.trim(),
+      avesIds,
+      qtdAves,
+      dataInicio: crDataInicio,
+      pesoMedioInicial: crPesoInicial.trim()||'0',
+      status: 'Crescimento',
+      raca: crRaca.trim()||undefined,
+      observacao: crObs.trim()||undefined,
+    });
+    resetCrescimento();
+  };
   const meatStatusCls = (s:string) => {
     if(s==='Crescimento') return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
     if(s==='Terminação') return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
@@ -210,17 +310,30 @@ export function Lots() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-white">Controle de Lotes</h2>
-          <p className="text-sm text-theme-text-muted mt-1">Gerenciamento de lotes de postura e engorda do criatório.</p>
+          <p className="text-sm text-theme-text-muted mt-1">Gerenciamento de lotes de postura, engorda, pintinhos e crescimento do criatório.</p>
         </div>
-        {activeTab==='postura'
-          ? <button onClick={()=>setShowPostura(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Postura</button>
-          : <button onClick={()=>setShowEngorda(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Engorda</button>
-        }
+        {activeTab==='postura' && (
+          <button onClick={()=>setShowPostura(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Postura</button>
+        )}
+        {activeTab==='engorda' && (
+          <button onClick={()=>setShowEngorda(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Engorda</button>
+        )}
+        {activeTab==='pintinhos' && (
+          <button onClick={()=>setShowPintinhos(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Pintinhos</button>
+        )}
+        {activeTab==='crescimento' && (
+          <button onClick={()=>setShowCrescimento(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Crescimento</button>
+        )}
       </div>
 
       {/* ── Tabs (Glassmorphic Pill Bar) ── */}
-      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
-        {[{id:'postura',icon:Egg,label:'Lotes de Postura'},{id:'engorda',icon:Beef,label:'Lotes de Engorda'}].map(t=>(
+      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-lg self-start gap-1">
+        {[
+          {id:'postura',icon:Egg,label:'Postura'},
+          {id:'engorda',icon:Beef,label:'Engorda'},
+          {id:'pintinhos',icon:Baby,label:'Pintinhos'},
+          {id:'crescimento',icon:Timer,label:'Crescimento'}
+        ].map(t=>(
           <button key={t.id} onClick={()=>setActiveTab(t.id as any)}
             className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap flex items-center justify-center gap-1.5 ${
               activeTab === t.id 
@@ -335,8 +448,8 @@ export function Lots() {
         <div className="flex-1 flex flex-col space-y-6">
           <div className="grid grid-cols-2 gap-3">
             {[
-              {label:'Lotes Ativos', value:meatLots.filter(l=>l.status!=='Abatido').length},
-              {label:'Aves em Engorda', value:meatLots.reduce((a,l)=>a+(l.status!=='Abatido'?(l.avesIds.length||l.qtdAves||0):0),0)},
+              {label:'Lotes Ativos', value:filterEngorda.filter(l=>l.status!=='Abatido').length},
+              {label:'Aves em Engorda', value:filterEngorda.reduce((a,l)=>a+(l.status!=='Abatido'?(l.avesIds.length||l.qtdAves||0):0),0)},
             ].map(s=>(
               <div key={s.label} className="premium-card p-4">
                 <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
@@ -346,7 +459,7 @@ export function Lots() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {meatLots.map(lote=>{
+            {filterEngorda.map(lote=>{
               const dias = calcDays(lote.dataInicio);
               const qtdA = lote.avesIds.length||lote.qtdAves||0;
               return (
@@ -411,11 +524,181 @@ export function Lots() {
                 </div>
               );
             })}
-            {meatLots.length===0&&(
+            {filterEngorda.length===0&&(
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
                 <Beef size={40} className="mx-auto mb-3 opacity-50"/>
                 <p className="font-bold text-white mb-1">Nenhum lote de engorda cadastrado</p>
                 <p className="text-sm">Cadastre um lote para gerenciar crescimento e abate.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab==='pintinhos'&&(
+        <div className="flex-1 flex flex-col space-y-6">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {label:'Lotes Ativos', value:filterPintinhos.filter(l=>l.status!=='Abatido').length},
+              {label:'Total de Pintinhos', value:filterPintinhos.filter(l=>l.status!=='Abatido').reduce((a,l)=>a+(l.avesIds.length||l.qtdAves||0),0)},
+            ].map(s=>(
+              <div key={s.label} className="premium-card p-4">
+                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
+                <h3 className="text-2xl font-black text-white">{s.value}</h3>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {filterPintinhos.map(lote=>{
+              const dias = calcDays(lote.dataInicio);
+              const qtdA = lote.avesIds.length||lote.qtdAves||0;
+              return (
+                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400"/></div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca?` · ${lote.raca}`:''}</span>
+                      <h3 className="font-black text-lg text-white">Lote de Pintinhos</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
+                      <button onClick={()=>{if(window.confirm('Deseja realmente apagar este lote de pintinhos permanentemente?')) removeMeatLot(lote.id);}}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      {icon:Timer, label:'Idade', value:`${dias}d`},
+                      {icon:Scale, label:'Peso Inicial', value:lote.pesoMedioInicial},
+                      {icon:Activity, label:'Aves', value:qtdA},
+                    ].map(m=>(
+                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11}/>{m.label}</p>
+                        <p className="text-base font-black text-white truncate">{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Pintinhos Vinculados ({lote.avesIds.length})</p>
+                      <p className="text-[10px] text-theme-text-muted">Inicio: {fmtDate(lote.dataInicio)}</p>
+                    </div>
+                    {lote.avesIds.length>0?(
+                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                        {lote.avesIds.map(id=>{const b=birds.find(x=>x.id===id);return b?(<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome?` (${b.nome})`:''}</span>):null;})}
+                      </div>
+                    ):(
+                      <p className="text-[10px] text-theme-text-muted italic">{qtdA>0?`${qtdA} pintinhos registrados (sem vinculo individual)`:'Nenhum pintinho vinculado.'}</p>
+                    )}
+                    {lote.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
+                  </div>
+                  <div className="border-t border-theme-border/50 pt-3">
+                    <p className={labelCls + " mb-2"}>Alterar Status</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['Crescimento','Terminação','Abatido'] as const).map(st=>(
+                        <button key={st} onClick={()=>editMeatLot(lote.id,{status:st})}
+                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${lote.status===st?'bg-theme-primary text-black border-theme-primary':'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'}`}>
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {filterPintinhos.length===0&&(
+              <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
+                <Baby size={40} className="mx-auto mb-3 opacity-50 text-yellow-400"/>
+                <p className="font-bold text-white mb-1">Nenhum lote de pintinhos cadastrado</p>
+                <p className="text-sm">Cadastre um lote para gerenciar seus pintinhos recem-nascidos.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab==='crescimento'&&(
+        <div className="flex-1 flex flex-col space-y-6">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {label:'Lotes Ativos', value:filterCrescimento.filter(l=>l.status!=='Abatido').length},
+              {label:'Aves em Crescimento', value:filterCrescimento.filter(l=>l.status!=='Abatido').reduce((a,l)=>a+(l.avesIds.length||l.qtdAves||0),0)},
+            ].map(s=>(
+              <div key={s.label} className="premium-card p-4">
+                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
+                <h3 className="text-2xl font-black text-white">{s.value}</h3>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {filterCrescimento.map(lote=>{
+              const dias = calcDays(lote.dataInicio);
+              const qtdA = lote.avesIds.length||lote.qtdAves||0;
+              return (
+                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Timer size={100} className="text-green-400"/></div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca?` · ${lote.raca}`:''}</span>
+                      <h3 className="font-black text-lg text-white">Lote de Crescimento</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
+                      <button onClick={()=>{if(window.confirm('Deseja realmente apagar este lote de crescimento permanentemente?')) removeMeatLot(lote.id);}}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      {icon:Timer, label:'Idade', value:`${dias}d`},
+                      {icon:Scale, label:'Peso Inicial', value:lote.pesoMedioInicial},
+                      {icon:Activity, label:'Aves', value:qtdA},
+                    ].map(m=>(
+                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11}/>{m.label}</p>
+                        <p className="text-base font-black text-white truncate">{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.avesIds.length})</p>
+                      <p className="text-[10px] text-theme-text-muted">Inicio: {fmtDate(lote.dataInicio)}</p>
+                    </div>
+                    {lote.avesIds.length>0?(
+                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                        {lote.avesIds.map(id=>{const b=birds.find(x=>x.id===id);return b?(<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome?` (${b.nome})`:''}</span>):null;})}
+                      </div>
+                    ):(
+                      <p className="text-[10px] text-theme-text-muted italic">{qtdA>0?`${qtdA} aves registradas (sem vinculo individual)`:'Nenhuma ave vinculada.'}</p>
+                    )}
+                    {lote.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
+                  </div>
+                  <div className="border-t border-theme-border/50 pt-3">
+                    <p className={labelCls + " mb-2"}>Alterar Status</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['Crescimento','Terminação','Abatido'] as const).map(st=>(
+                        <button key={st} onClick={()=>editMeatLot(lote.id,{status:st})}
+                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${lote.status===st?'bg-theme-primary text-black border-theme-primary':'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'}`}>
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {filterCrescimento.length===0&&(
+              <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
+                <Timer size={40} className="mx-auto mb-3 opacity-50 text-green-400"/>
+                <p className="font-bold text-white mb-1">Nenhum lote de crescimento cadastrado</p>
+                <p className="text-sm">Cadastre um lote para gerenciar a recria e crescimento das aves.</p>
               </div>
             )}
           </div>
@@ -570,6 +853,130 @@ export function Lots() {
               <div className="p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
                 <button type="button" onClick={resetEngorda} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
                 <button type="submit" disabled={!eBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showPintinhos&&createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 animate-fade-in" onClick={resetPintinhos}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-scale-up" onClick={e=>e.stopPropagation()}>
+            <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
+            <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <h3 className="font-black text-lg text-white flex items-center gap-2"><Baby className="text-theme-primary" size={20}/>Novo Lote de Pintinhos</h3>
+              <button onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors"><X size={20}/></button>
+            </div>
+            <form onSubmit={handleSavePintinhos} className="flex flex-col overflow-hidden flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Baia / Identificacao *</SectionLabel>
+                    <input required type="text" value={piBaia} onChange={e=>setPiBaia(e.target.value)} placeholder="Ex: Baia 05" className={inputCls}/>
+                  </div>
+                  <div className="space-y-1">
+                    <SectionLabel>Raca (opcional)</SectionLabel>
+                    <div className="relative">
+                      <select value={piRaca} onChange={e=>setPiRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                        <option value="">-- Selecionar --</option>
+                        {breeds.map(br=><option key={br.id} value={br.nome}>{br.nome}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none"/>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Data de Inicio</SectionLabel>
+                  <input type="date" required value={piDataInicio} onChange={e=>setPiDataInicio(e.target.value)} className={inputCls}/>
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Peso Medio Inicial</SectionLabel>
+                  <input type="text" placeholder="Ex: 45g" value={piPesoInicial} onChange={e=>setPiPesoInicial(e.target.value)} className={inputCls}/>
+                </div>
+                <div className="space-y-2">
+                  <SectionLabel>Aves no Lote</SectionLabel>
+                  <ModeToggle mode={piMode} onChange={m=>{setPiMode(m);setPiAves([]);setPiQtd('');}} label1="Selecionar pintinhos" label2="Informar quantidade"/>
+                  {piMode==='select'
+                    ? <BirdPicker birds={activeChicks} selected={piAves} onToggle={handlePintinhoToggle} onSelectAll={handlePintinhoSelectAll} search={piSearch} onSearch={setPiSearch} emptyMsg="Nenhum pintinho com status 'Crescimento' disponivel."/>
+                    : (
+                      <div className="space-y-1">
+                        <SectionLabel>Quantidade de Pintinhos</SectionLabel>
+                        <input type="number" min="1" inputMode="numeric" placeholder="Ex: 25" value={piQtd} onChange={e=>setPiQtd(e.target.value)} className={inputCls + " text-2xl font-black text-center py-4"}/>
+                      </div>
+                    )
+                  }
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <textarea rows={2} placeholder="Ex: Pintinhos nascidos da chocadora..." value={piObs} onChange={e=>setPiObs(e.target.value)} className={inputCls + " resize-none"}/>
+                </div>
+              </div>
+              <div className="p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
+                <button type="button" onClick={resetPintinhos} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
+                <button type="submit" disabled={!piBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showCrescimento&&createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 animate-fade-in" onClick={resetCrescimento}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-scale-up" onClick={e=>e.stopPropagation()}>
+            <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
+            <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <h3 className="font-black text-lg text-white flex items-center gap-2"><Timer className="text-theme-primary" size={20}/>Novo Lote de Crescimento</h3>
+              <button onClick={resetCrescimento} className="text-theme-text-muted hover:text-white transition-colors"><X size={20}/></button>
+            </div>
+            <form onSubmit={handleSaveCrescimento} className="flex flex-col overflow-hidden flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Baia / Identificacao *</SectionLabel>
+                    <input required type="text" value={crBaia} onChange={e=>setCrBaia(e.target.value)} placeholder="Ex: Baia 06" className={inputCls}/>
+                  </div>
+                  <div className="space-y-1">
+                    <SectionLabel>Raca (opcional)</SectionLabel>
+                    <div className="relative">
+                      <select value={crRaca} onChange={e=>setCrRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                        <option value="">-- Selecionar --</option>
+                        {breeds.map(br=><option key={br.id} value={br.nome}>{br.nome}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none"/>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Data de Inicio</SectionLabel>
+                  <input type="date" required value={crDataInicio} onChange={e=>setCrDataInicio(e.target.value)} className={inputCls}/>
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Peso Medio Inicial</SectionLabel>
+                  <input type="text" placeholder="Ex: 500g" value={crPesoInicial} onChange={e=>setCrPesoInicial(e.target.value)} className={inputCls}/>
+                </div>
+                <div className="space-y-2">
+                  <SectionLabel>Aves no Lote</SectionLabel>
+                  <ModeToggle mode={crMode} onChange={m=>{setCrMode(m);setCrAves([]);setCrQtd('');}} label1="Selecionar aves" label2="Informar quantidade"/>
+                  {crMode==='select'
+                    ? <BirdPicker birds={activeChicks} selected={crAves} onToggle={handleCrescimentoToggle} onSelectAll={handleCrescimentoSelectAll} search={crSearch} onSearch={setCrSearch} emptyMsg="Nenhuma ave com status 'Crescimento' disponivel."/>
+                    : (
+                      <div className="space-y-1">
+                        <SectionLabel>Quantidade de Aves</SectionLabel>
+                        <input type="number" min="1" inputMode="numeric" placeholder="Ex: 30" value={crQtd} onChange={e=>setCrQtd(e.target.value)} className={inputCls + " text-2xl font-black text-center py-4"}/>
+                      </div>
+                    )
+                  }
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <textarea rows={2} placeholder="Ex: Lote de recria caipira..." value={crObs} onChange={e=>setCrObs(e.target.value)} className={inputCls + " resize-none"}/>
+                </div>
+              </div>
+              <div className="p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
+                <button type="button" onClick={resetCrescimento} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
+                <button type="submit" disabled={!crBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
               </div>
             </form>
           </div>

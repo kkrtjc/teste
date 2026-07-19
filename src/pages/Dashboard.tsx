@@ -144,7 +144,7 @@ export function Dashboard() {
 
         {/* Ovos em Eclosão Card */}
         <div 
-          onClick={() => navigate('/genetics')}
+          onClick={() => navigate('/lots', { state: { tab: 'pintinhos' } })}
           className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
         >
           <p className="text-2xl font-black text-yellow-400">{totalEclosao}</p>

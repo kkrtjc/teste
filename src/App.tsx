@@ -9,7 +9,6 @@ import { Login } from './pages/Login';
 
 // Lazy loading das páginas internas para otimização de bundle inicial no celular
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
-const Genetics = lazy(() => import('./pages/Genetics').then(m => ({ default: m.Genetics })));
 const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
@@ -73,7 +72,6 @@ function AppContent() {
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="birds" element={<Birds />} />
-              <Route path="genetics" element={<Genetics />} />
               <Route path="lots" element={<Lots />} />
               <Route path="eggs" element={<Eggs />} />
               <Route path="settings" element={<Settings />} />
