@@ -126,6 +126,7 @@ type AppContextType = {
   breeds: Breed[];
   addBreed: (breed: Breed) => void;
   editBreed: (id: string, updatedBreed: Partial<Breed>) => void;
+  removeBreed: (id: string) => void;
   birds: Bird[];
   addBird: (bird: Bird) => void;
   editBird: (id: string, updatedBird: Partial<Bird>) => void;
@@ -141,9 +142,11 @@ type AppContextType = {
   eggLots: EggLot[];
   addEggLot: (lot: EggLot) => void;
   editEggLot: (id: string, updatedLot: Partial<EggLot>) => void;
+  removeEggLot: (id: string) => void;
   meatLots: MeatLot[];
   addMeatLot: (lot: MeatLot) => void;
   editMeatLot: (id: string, updatedLot: Partial<MeatLot>) => void;
+  removeMeatLot: (id: string) => void;
   
   farmSettings: FarmSettings;
   updateFarmSettings: (settings: Partial<FarmSettings>) => void;
@@ -475,8 +478,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Evita raças duplicadas pelo nome (mantendo apenas o primeiro registro)
+      let uniqueSbBreeds: any[] = [];
+      const seenNames = new Set<string>();
+      for (const b of sbBreeds) {
+        const nameLower = (b.nome || '').trim().toLowerCase();
+        if (!seenNames.has(nameLower)) {
+          seenNames.add(nameLower);
+          uniqueSbBreeds.push(b);
+        } else {
+          // Se for duplicada, deletamos do Supabase para limpar o banco
+          if (isSupabaseConfigured && user) {
+            supabase!
+              .from('breeds')
+              .delete()
+              .eq('id', b.id)
+              .then(({ error }) => { if (error) console.error('Erro ao deletar raca duplicada no Supabase:', error); });
+          }
+        }
+      }
+
       // Grava no estado e sincroniza no cache localforage com preservação de propriedades locais
-      let mappedBreeds: Breed[] = sbBreeds.map((b: any) => {
+      let mappedBreeds: Breed[] = uniqueSbBreeds.map((b: any) => {
         const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
         const nameLower = (b.nome || '').toLowerCase();
         const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === nameLower);
@@ -697,6 +720,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (data) {
             if (item.suffix === 'breeds') {
               let currentBreeds = data as Breed[];
+              
+              // Limpeza de duplicados locais
+              let uniqueLocalBreeds: Breed[] = [];
+              const seenLocalNames = new Set<string>();
+              for (const b of currentBreeds) {
+                const nameLower = (b.nome || '').trim().toLowerCase();
+                if (!seenLocalNames.has(nameLower)) {
+                  seenLocalNames.add(nameLower);
+                  uniqueLocalBreeds.push(b);
+                }
+              }
+              currentBreeds = uniqueLocalBreeds;
+
               const missingLocal = DEFAULT_BREEDS.filter(
                 db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
               );
@@ -852,6 +888,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .update(dbUpdate)
           .eq('id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase editBreed:', error); });
+      }
+      return next;
+    });
+  };
+
+  const removeBreed = (id: string) => {
+    setBreeds(prev => {
+      const next = prev.filter(b => b.id !== id);
+      localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('breeds')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeBreed:', error); });
       }
       return next;
     });
@@ -1243,6 +1296,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const removeEggLot = (id: string) => {
+    setEggLots(prev => {
+      const next = prev.filter(l => l.id !== id);
+      localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('egg_lots')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeEggLot:', error); });
+      }
+      return next;
+    });
+  };
+
+  const removeMeatLot = (id: string) => {
+    setMeatLots(prev => {
+      const next = prev.filter(l => l.id !== id);
+      localforage.setItem(getStorageKey('meatlots'), next).catch(err => console.error(err));
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('meat_lots')
+          .delete()
+          .eq('id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase removeMeatLot:', error); });
+      }
+      return next;
+    });
+  };
+
   const updateFarmSettings = (settings: Partial<FarmSettings>) => {
     setFarmSettings(prev => {
       const next = { ...prev, ...settings };
@@ -1442,12 +1527,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const contextValue = useMemo(() => ({
     isReady,
-    breeds, addBreed, editBreed,
+    breeds, addBreed, editBreed, removeBreed,
     birds, addBird, editBird, removeBird,
     couples, addCouple, editCouple, removeCouple,
     coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
-    eggLots, addEggLot, editEggLot,
-    meatLots, addMeatLot, editMeatLot,
+    eggLots, addEggLot, editEggLot, removeEggLot,
+    meatLots, addMeatLot, editMeatLot, removeMeatLot,
     farmSettings, updateFarmSettings,
     importBackup,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,

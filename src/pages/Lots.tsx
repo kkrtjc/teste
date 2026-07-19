@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
-  DollarSign, Info, ChevronDown, Users
+  DollarSign, Info, ChevronDown, Users, Trash2
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -89,7 +89,10 @@ function BirdPicker({ birds, selected, onToggle, onSelectAll, search, onSearch, 
 }
 
 export function Lots() {
-  const { birds, breeds, eggLots, addEggLot, editEggLot, meatLots, addMeatLot, editMeatLot } = useAppContext();
+  const { 
+    birds, breeds, eggLots, addEggLot, editEggLot, removeEggLot,
+    meatLots, addMeatLot, editMeatLot, removeMeatLot 
+  } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'>('postura');
 
   const [showPostura, setShowPostura] = useState(false);
@@ -251,7 +254,13 @@ export function Lots() {
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lot.baia}{lot.raca?` · ${lot.raca}`:''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Postura</h3>
                     </div>
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${lot.status==='Ativo'?'bg-green-500/20 text-green-400 border border-green-500/20':'bg-theme-base text-theme-text-muted border border-theme-border'}`}>{lot.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${lot.status==='Ativo'?'bg-green-500/20 text-green-400 border border-green-500/20':'bg-theme-base text-theme-text-muted border border-theme-border'}`}>{lot.status}</span>
+                      <button onClick={()=>{if(window.confirm('Deseja realmente apagar este lote de postura permanentemente?')) removeEggLot(lot.id);}}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {[
@@ -341,7 +350,13 @@ export function Lots() {
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca?` · ${lote.raca}`:''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Engorda</h3>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
+                      <button onClick={()=>{if(window.confirm('Deseja realmente apagar este lote de engorda permanentemente?')) removeMeatLot(lote.id);}}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {[

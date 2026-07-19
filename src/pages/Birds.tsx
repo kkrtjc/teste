@@ -1,12 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit2, Camera, Search, X, ChevronRight } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Plus, Edit2, Camera, Search, X, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 
 export function Birds() {
+  const location = useLocation();
   const { 
-    breeds, addBreed, editBreed, 
+    breeds, addBreed, editBreed, removeBreed,
     birds, openAddBirdModal, openBirdProfile, 
     activeBreed, setActiveBreed 
   } = useAppContext();
@@ -16,6 +18,8 @@ export function Birds() {
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   const [breedSearch, setBreedSearch] = useState('');
   const [birdSearch, setBirdSearch] = useState('');
+  const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Crescimento'>('Todos');
   
   // Form states for Breed
   const [newBreedName, setNewBreedName] = useState('');
@@ -28,12 +32,33 @@ export function Birds() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync tab focus when activeBreed changes (e.g. from Dashboard click)
+  // Sync tab focus and stats filters when activeBreed/state changes
   useEffect(() => {
     if (activeBreed) {
       setActiveTab('aves');
     }
   }, [activeBreed]);
+
+  useEffect(() => {
+    if (location.state) {
+      const stateObj = location.state as any;
+      if (stateObj.tab) {
+        setActiveTab(stateObj.tab);
+      }
+      if (stateObj.filter) {
+        if (stateObj.filter === 'Macho' || stateObj.filter === 'Fêmea') {
+          setSexFilter(stateObj.filter);
+          setStatusFilter('Todos');
+        } else if (stateObj.filter === 'Crescimento') {
+          setStatusFilter('Crescimento');
+          setSexFilter('Todos');
+        } else if (stateObj.filter === 'Total') {
+          setSexFilter('Todos');
+          setStatusFilter('Todos');
+        }
+      }
+    }
+  }, [location.state]);
 
   // Lock body scroll when breed modal is open
   useEffect(() => {
@@ -120,15 +145,38 @@ export function Birds() {
     b.nome.toLowerCase().includes(breedSearch.toLowerCase())
   );
 
-  const currentBirds = (activeBreed
-    ? birds.filter(b => b.raca === activeBreed)
-    : birds).filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu');
+  const currentBirds = useMemo(() => {
+    let list = birds;
+    
+    // Filtrar por raça ativa
+    if (activeBreed) {
+      list = list.filter(b => b.raca === activeBreed);
+    }
+    
+    // Filtrar por sexo
+    if (sexFilter !== 'Todos') {
+      list = list.filter(b => b.sexo === sexFilter);
+    }
+    
+    // Filtrar por status
+    if (statusFilter === 'Crescimento') {
+      list = list.filter(b => b.status === 'Crescimento');
+    } else {
+      // Por padrão, esconde Vendidos, Falecidos e Crescimento se não for filtro específico
+      list = list.filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu');
+    }
+    
+    return list;
+  }, [birds, activeBreed, sexFilter, statusFilter]);
 
-  const filteredBirds = currentBirds.filter(b =>
-    b.anilha.toLowerCase().includes(birdSearch.toLowerCase()) ||
-    (b.nome || '').toLowerCase().includes(birdSearch.toLowerCase()) ||
-    (b.baia || '').toLowerCase().includes(birdSearch.toLowerCase())
-  );
+  const filteredBirds = useMemo(() => {
+    const query = birdSearch.trim().toLowerCase();
+    return currentBirds.filter(b =>
+      b.anilha.toLowerCase().includes(query) ||
+      (b.nome || '').toLowerCase().includes(query) ||
+      (b.baia || '').toLowerCase().includes(query)
+    );
+  }, [currentBirds, birdSearch]);
 
   return (
     <div className="space-y-3.5 animate-fade-in h-full flex flex-col">
@@ -140,8 +188,8 @@ export function Birds() {
             <>
               <h2 className="text-base sm:text-lg font-black text-white leading-none">Plantel de Aves</h2>
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
-                {activeBreed 
-                  ? `Filtrado: ${activeBreed} (${filteredBirds.length} aves)`
+                {activeBreed || sexFilter !== 'Todos' || statusFilter !== 'Todos'
+                  ? `Filtrado (${filteredBirds.length} ave${filteredBirds.length !== 1 ? 's' : ''})`
                   : `Total: ${birds.filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves`
                 }
               </p>
@@ -240,6 +288,37 @@ export function Birds() {
               />
             </div>
           </div>
+
+          {/* Active Filters Bar */}
+          {(sexFilter !== 'Todos' || statusFilter !== 'Todos' || activeBreed) && (
+            <div className="flex flex-wrap gap-1.5 items-center px-1 animate-fade-in shrink-0">
+              <span className="text-[9px] font-bold text-theme-text-muted uppercase mr-1">Filtros ativos:</span>
+              {activeBreed && (
+                <span className="text-[9px] font-black bg-theme-primary/10 border border-theme-primary/25 text-theme-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                  Raça: {activeBreed}
+                  <button onClick={() => setActiveBreed('')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
+              {sexFilter !== 'Todos' && (
+                <span className="text-[9px] font-black bg-blue-500/10 border border-blue-500/25 text-blue-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  Sexo: {sexFilter}s
+                  <button onClick={() => setSexFilter('Todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
+              {statusFilter !== 'Todos' && (
+                <span className="text-[9px] font-black bg-green-500/10 border border-green-500/25 text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  Status: {statusFilter}
+                  <button onClick={() => setStatusFilter('Todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
+              <button 
+                onClick={() => { setSexFilter('Todos'); setStatusFilter('Todos'); setActiveBreed(''); }} 
+                className="text-[9px] font-bold text-red-400 hover:underline ml-1"
+              >
+                Limpar Todos
+              </button>
+            </div>
+          )}
 
           {/* Birds Grid */}
           <div className="flex-1 overflow-y-auto pr-1">
@@ -411,13 +490,27 @@ export function Birds() {
                         </div>
                         
                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-theme-border/30">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openBreedModal(breed.id); }} 
-                            className="p-1 text-theme-text-muted hover:text-white hover:bg-white/5 rounded transition-colors"
-                            title="Editar Raça"
-                          >
-                            <Edit2 size={13} />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); openBreedModal(breed.id); }} 
+                              className="p-1 text-theme-text-muted hover:text-white hover:bg-white/5 rounded transition-colors"
+                              title="Editar Raça"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (window.confirm(`Deseja realmente apagar a raça ${breed.nome} permanentemente?`)) {
+                                  removeBreed(breed.id);
+                                }
+                              }} 
+                              className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                              title="Apagar Raça"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                           <span className="text-[10px] text-theme-primary font-black uppercase tracking-wider">
                             Ver Plantel
                           </span>
