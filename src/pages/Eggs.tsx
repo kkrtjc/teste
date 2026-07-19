@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useAppContext } from '../lib/AppContext';
 import type { EggDailyRecord, EggLot } from '../lib/AppContext';
 import {
@@ -68,7 +68,12 @@ function KpiCard({label,value,sub,color='amber',icon:Icon}:{label:string;value:s
 // Register Day Sheet
 type RegForm={data:string;coletados:string;vendidos:string;perdidos:string;precoVenda:string;custoProd:string;observacao:string};
 function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSave:(rec:EggDailyRecord)=>void}) {
-  const [form,setForm]=useState<RegForm>({data:todayISO(),coletados:'',vendidos:'0',perdidos:'0',precoVenda:'6',custoProd:'0.30',observacao:''});
+  const [form,setForm]=useState<RegForm>({
+    data:todayISO(),coletados:'',vendidos:'0',perdidos:'0',
+    precoVenda:String(lot.precoVendaPadrao ?? 6),
+    custoProd:String(lot.custoProdPadrao ?? 0.30),
+    observacao:''
+  });
   const [error,setError]=useState('');
   const set=(k:keyof RegForm)=>(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>setForm(prev=>({...prev,[k]:e.target.value}));
   const handleSave=()=>{

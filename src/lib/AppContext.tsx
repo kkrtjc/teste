@@ -90,9 +90,14 @@ export type EggLot = {
   id: string;
   baia: string;
   femeasIds: string[];
+  qtdFemeas?: number;          // quantidade manual (quando não se vincula aves individuais)
   expectativaDiaria: number;
   dataInicio: string;
   status: 'Ativo' | 'Encerrado';
+  raca?: string;
+  precoVendaPadrao?: number;   // R$ por dúzia — padrão para aba Ovos
+  custoProdPadrao?: number;    // R$ por ovo — padrão para aba Ovos
+  observacao?: string;
   registros?: EggDailyRecord[];
 };
 
@@ -100,9 +105,13 @@ export type MeatLot = {
   id: string;
   baia: string;
   avesIds: string[];
+  qtdAves?: number;            // quantidade manual (quando não se vincula aves individuais)
   dataInicio: string;
   pesoMedioInicial: string;
+  pesoMeta?: string;           // peso alvo de abate
   status: 'Crescimento' | 'Terminação' | 'Abatido';
+  raca?: string;
+  observacao?: string;
 };
 
 export type FarmSettings = {
@@ -465,22 +474,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Grava no estado e sincroniza no cache localforage com preservação de propriedades locais
       let mappedBreeds: Breed[] = sbBreeds.map((b: any) => {
         const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
+        const nameLower = (b.nome || '').toLowerCase();
+        const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === nameLower);
         return {
           id: b.id,
           nome: b.nome || '',
-          foco: b.foco || '',
-          descricao: b.descricao || '',
-          imagem: b.imagem,
+          foco: b.foco || seedMatch?.foco || '',
+          descricao: b.descricao || seedMatch?.descricao || '',
+          imagem: b.imagem || seedMatch?.imagem,
           totalAves: b.total_aves || b.totalAves || 0,
-          tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || 0),
-          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || '')
+          tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || seedMatch?.tempoCrescimento || 0),
+          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || '')
         };
       });
 
-      if (mappedBreeds.length === 0) {
-        mappedBreeds = DEFAULT_BREEDS;
+      const missingBreeds = DEFAULT_BREEDS.filter(
+        db => !mappedBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
+      );
+
+      if (missingBreeds.length > 0) {
+        mappedBreeds = [...mappedBreeds, ...missingBreeds];
         if (isSupabaseConfigured && user) {
-          const breedsToInsert = DEFAULT_BREEDS.map(b => ({
+          const breedsToInsert = missingBreeds.map(b => ({
             id: b.id,
             user_id: user.id,
             nome: b.nome,
@@ -672,7 +687,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
 
           if (data) {
-            (item.setter as any)(data);
+            if (item.suffix === 'breeds') {
+              let currentBreeds = data as Breed[];
+              const missingLocal = DEFAULT_BREEDS.filter(
+                db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
+              );
+              currentBreeds = currentBreeds.map(b => {
+                const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === b.nome.toLowerCase());
+                if (seedMatch) {
+                  return {
+                    ...b,
+                    foco: b.foco || seedMatch.foco,
+                    descricao: b.descricao || seedMatch.descricao,
+                    imagem: b.imagem || seedMatch.imagem,
+                    tempoCrescimento: b.tempoCrescimento || seedMatch.tempoCrescimento,
+                    pesoMedio: b.pesoMedio || seedMatch.pesoMedio
+                  };
+                }
+                return b;
+              });
+              if (missingLocal.length > 0) {
+                currentBreeds = [...currentBreeds, ...missingLocal];
+                await localforage.setItem(userKey, currentBreeds);
+              }
+              (item.setter as any)(currentBreeds);
+            } else {
+              (item.setter as any)(data);
+            }
           } else if (item.suffix === 'breeds') {
             (item.setter as any)(DEFAULT_BREEDS);
             await localforage.setItem(userKey, DEFAULT_BREEDS);

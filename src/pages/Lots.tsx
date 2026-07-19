@@ -1,441 +1,386 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check, CalendarDays } from 'lucide-react';
+import {
+  Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
+  DollarSign, Info, ChevronDown, Users
+} from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
-export function Lots() {
-  const { birds, eggLots, addEggLot, editEggLot, meatLots, addMeatLot, editMeatLot } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'postura' | 'engorda'>('postura');
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function calcDays(start: string) {
+  const s = new Date(start); const n = new Date();
+  s.setHours(0,0,0,0); n.setHours(0,0,0,0);
+  return Math.max(0, Math.floor((n.getTime()-s.getTime())/86400000));
+}
+function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('pt-BR'); }
 
-  // Modal states
-  const [showPosturaModal, setShowPosturaModal] = useState(false);
-  const [showEngordaModal, setShowEngordaModal] = useState(false);
+const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors placeholder-theme-text-muted";
+const labelCls = "text-[10px] font-bold text-theme-text-muted uppercase tracking-wider";
 
-  // Form states - Postura
-  const [posturaBaia, setPosturaBaia] = useState('');
-  const [posturaFemeasSelecionadas, setPosturaFemeasSelecionadas] = useState<string[]>([]);
-  const [posturaExpectativa, setPosturaExpectativa] = useState(0);
-  const [posturaDataInicio, setPosturaDataInicio] = useState(new Date().toISOString().split('T')[0]);
-  const [posturaSearch, setPosturaSearch] = useState('');
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className={labelCls + " mb-1"}>{children}</p>;
+}
 
-  // Form states - Engorda
-  const [engordaBaia, setEngordaBaia] = useState('');
-  const [engordaAvesSelecionadas, setEngordaAvesSelecionadas] = useState<string[]>([]);
-  const [engordaPesoInicial, setEngordaPesoInicial] = useState('');
-  const [engordaDataInicio, setEngordaDataInicio] = useState(new Date().toISOString().split('T')[0]);
-  const [engordaSearch, setEngordaSearch] = useState('');
-
-  // Auxiliary age calculation
-  const calculateAgeInDays = (startDate: string) => {
-    const start = new Date(startDate);
-    const now = new Date();
-    start.setHours(0, 0, 0, 0);
-    now.setHours(0, 0, 0, 0);
-    const diffTime = now.getTime() - start.getTime();
-    return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-  };
-
-  // Filter active birds
-  const activeFemales = birds.filter(
-    b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu'
-  );
-
-  const activeBirds = birds.filter(
-    b => b.status !== 'Vendido' && b.status !== 'Faleceu'
-  );
-
-  // Form handlers
-  const handleSavePosturaLot = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!posturaBaia.trim()) return;
-
-    addEggLot({
-      id: Date.now().toString(),
-      baia: posturaBaia.trim(),
-      femeasIds: posturaFemeasSelecionadas,
-      expectativaDiaria: posturaExpectativa,
-      dataInicio: posturaDataInicio,
-      status: 'Ativo'
-    });
-
-    // Reset states
-    setShowPosturaModal(false);
-    setPosturaBaia('');
-    setPosturaFemeasSelecionadas([]);
-    setPosturaExpectativa(0);
-    setPosturaDataInicio(new Date().toISOString().split('T')[0]);
-    setPosturaSearch('');
-  };
-
-  const handleSaveEngordaLot = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!engordaBaia.trim()) return;
-
-    addMeatLot({
-      id: Date.now().toString(),
-      baia: engordaBaia.trim(),
-      avesIds: engordaAvesSelecionadas,
-      dataInicio: engordaDataInicio,
-      pesoMedioInicial: engordaPesoInicial.trim() || '0',
-      status: 'Crescimento'
-    });
-
-    // Reset states
-    setShowEngordaModal(false);
-    setEngordaBaia('');
-    setEngordaAvesSelecionadas([]);
-    setEngordaPesoInicial('');
-    setEngordaDataInicio(new Date().toISOString().split('T')[0]);
-    setEngordaSearch('');
-  };
-
-  // Auto expectation calculator
-  const handleFemaleSelect = (id: string) => {
-    const isSelected = posturaFemeasSelecionadas.includes(id);
-    const nextSelected = isSelected
-      ? posturaFemeasSelecionadas.filter(x => x !== id)
-      : [...posturaFemeasSelecionadas, id];
-
-    setPosturaFemeasSelecionadas(nextSelected);
-    // Prefill expectation with 85% lay rate
-    setPosturaExpectativa(Math.round(nextSelected.length * 0.85));
-  };
-
-  const handleAllFemalesSelect = (filteredIds: string[]) => {
-    const allSelected = filteredIds.every(id => posturaFemeasSelecionadas.includes(id));
-    const nextSelected = allSelected
-      ? posturaFemeasSelecionadas.filter(id => !filteredIds.includes(id))
-      : Array.from(new Set([...posturaFemeasSelecionadas, ...filteredIds]));
-
-    setPosturaFemeasSelecionadas(nextSelected);
-    setPosturaExpectativa(Math.round(nextSelected.length * 0.85));
-  };
-
-  const handleBirdSelect = (id: string) => {
-    const isSelected = engordaAvesSelecionadas.includes(id);
-    const nextSelected = isSelected
-      ? engordaAvesSelecionadas.filter(x => x !== id)
-      : [...engordaAvesSelecionadas, id];
-
-    setEngordaAvesSelecionadas(nextSelected);
-  };
-
-  const handleAllBirdsSelect = (filteredIds: string[]) => {
-    const allSelected = filteredIds.every(id => engordaAvesSelecionadas.includes(id));
-    const nextSelected = allSelected
-      ? engordaAvesSelecionadas.filter(id => !filteredIds.includes(id))
-      : Array.from(new Set([...engordaAvesSelecionadas, ...filteredIds]));
-
-    setEngordaAvesSelecionadas(nextSelected);
-  };
-
-  // Close Postura Lot
-  const handleClosePosturaLot = (lotId: string) => {
-    if (window.confirm('Deseja realmente encerrar este lote de postura? Esta ação não pode ser desfeita.')) {
-      editEggLot(lotId, { status: 'Encerrado' });
-    }
-  };
-
-  // Status Classes for Meat Lots
-  const getMeatStatusClass = (status: string) => {
-    switch (status) {
-      case 'Crescimento':
-        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-      case 'Terminação':
-        return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
-      case 'Abatido':
-        return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-      default:
-        return 'bg-theme-surface border border-theme-border text-theme-text-muted';
-    }
-  };
-
+function ModeToggle({ mode, onChange, label1, label2 }: {
+  mode: 'select'|'qty'; onChange:(m:'select'|'qty')=>void; label1:string; label2:string;
+}) {
   return (
-    <div className="space-y-6 animate-fade-in min-h-full flex flex-col pb-24">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-white">Controle de Lotes</h2>
-          <p className="text-sm text-theme-text-muted mt-1">Gerenciamento de lotes de postura e lotes de engorda do criatório.</p>
-        </div>
-        
-        {activeTab === 'postura' ? (
-          <button 
-            onClick={() => setShowPosturaModal(true)} 
-            className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
-          >
-            <Plus size={18} /> Cadastrar Lote Postura
-          </button>
-        ) : (
-          <button 
-            onClick={() => setShowEngordaModal(true)} 
-            className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
-          >
-            <Plus size={18} /> Cadastrar Lote Engorda
+    <div className="flex bg-theme-base border border-theme-border rounded-xl p-1 gap-1">
+      {(['select','qty'] as const).map((m,i)=>(
+        <button key={m} type="button" onClick={()=>onChange(m)}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${mode===m?'bg-theme-primary text-black':'text-theme-text-muted hover:text-white'}`}>
+          {i===0?label1:label2}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BirdPicker({ birds, selected, onToggle, onSelectAll, search, onSearch, emptyMsg }: {
+  birds:{id:string;anilha:string;nome:string;raca:string;sexo:string;status:string}[];
+  selected:string[]; onToggle:(id:string)=>void; onSelectAll:(ids:string[])=>void;
+  search:string; onSearch:(v:string)=>void; emptyMsg:string;
+}) {
+  const filtered = birds.filter(b =>
+    b.anilha.toLowerCase().includes(search.toLowerCase()) ||
+    b.raca.toLowerCase().includes(search.toLowerCase()) ||
+    b.nome.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className={labelCls}>{selected.length} selecionada(s)</span>
+        {filtered.length>0&&(
+          <button type="button" onClick={()=>onSelectAll(filtered.map(b=>b.id))}
+            className="text-[10px] text-theme-primary font-bold hover:underline">
+            {filtered.every(b=>selected.includes(b.id))?'Desmarcar todas':'Selecionar filtradas'}
           </button>
         )}
       </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13}/>
+        <input type="text" placeholder="Buscar por anilha, raca ou nome..."
+          value={search} onChange={e=>onSearch(e.target.value)}
+          className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:border-theme-primary outline-none"/>
+      </div>
+      <div className="border border-theme-border rounded-xl max-h-44 overflow-y-auto divide-y divide-theme-border/40 bg-theme-base/30">
+        {filtered.map(b=>{
+          const sel = selected.includes(b.id);
+          return (
+            <div key={b.id} onClick={()=>onToggle(b.id)}
+              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition-colors">
+              <div>
+                <p className="text-xs font-bold text-white">Anilha: {b.anilha}{b.nome?` - ${b.nome}`:''}</p>
+                <p className="text-[10px] text-theme-text-muted">{b.raca} | {b.sexo} | {b.status}</p>
+              </div>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${sel?'bg-theme-primary border-theme-primary text-black':'border-theme-border bg-theme-surface'}`}>
+                {sel&&<Check size={11} strokeWidth={3}/>}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length===0&&(
+          <p className="p-4 text-center text-xs text-theme-text-muted italic">{emptyMsg}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-theme-border">
-        <button 
-          onClick={() => setActiveTab('postura')}
-          className={`pb-3 text-sm font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'postura' 
-              ? 'text-theme-primary border-b-2 border-theme-primary' 
-              : 'text-theme-text-muted hover:text-white'
-          }`}
-        >
-          <Egg size={16} /> Lotes de Postura
-        </button>
-        <button 
-          onClick={() => setActiveTab('engorda')}
-          className={`pb-3 text-sm font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'engorda' 
-              ? 'text-theme-primary border-b-2 border-theme-primary' 
-              : 'text-theme-text-muted hover:text-white'
-          }`}
-        >
-          <Beef size={16} /> Lotes de Engorda
-        </button>
+export function Lots() {
+  const { birds, breeds, eggLots, addEggLot, editEggLot, meatLots, addMeatLot, editMeatLot } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'postura'|'engorda'>('postura');
+
+  const [showPostura, setShowPostura] = useState(false);
+  const [pBaia, setPBaia] = useState('');
+  const [pRaca, setPRaca] = useState('');
+  const [pDataInicio, setPDataInicio] = useState(todayISO());
+  const [pMode, setPMode] = useState<'select'|'qty'>('select');
+  const [pFemeas, setPFemeas] = useState<string[]>([]);
+  const [pQtd, setPQtd] = useState('');
+  const [pSearch, setPSearch] = useState('');
+  const [pExpectativa, setPExpectativa] = useState('');
+  const [pPreco, setPPreco] = useState('6.00');
+  const [pCusto, setPCusto] = useState('0.30');
+  const [pObs, setPObs] = useState('');
+
+  const [showEngorda, setShowEngorda] = useState(false);
+  const [eBaia, setEBaia] = useState('');
+  const [eRaca, setERaca] = useState('');
+  const [eDataInicio, setEDataInicio] = useState(todayISO());
+  const [eMode, setEMode] = useState<'select'|'qty'>('select');
+  const [eAves, setEAves] = useState<string[]>([]);
+  const [eQtd, setEQtd] = useState('');
+  const [eSearch, setESearch] = useState('');
+  const [ePesoInicial, setEPesoInicial] = useState('');
+  const [ePesoMeta, setEPesoMeta] = useState('');
+  const [eObs, setEObs] = useState('');
+
+  const activeFemales = birds.filter(b=>b.sexo==='Fêmea'&&b.status!=='Vendido'&&b.status!=='Faleceu');
+  const activeBirds = birds.filter(b=>b.status!=='Vendido'&&b.status!=='Faleceu');
+
+  const handleFemaleToggle = (id: string) => {
+    const next = pFemeas.includes(id) ? pFemeas.filter(x=>x!==id) : [...pFemeas, id];
+    setPFemeas(next);
+    setPExpectativa(String(Math.round(next.length*0.85)));
+  };
+  const handleFemaleSelectAll = (ids: string[]) => {
+    const allSel = ids.every(id=>pFemeas.includes(id));
+    const next = allSel ? pFemeas.filter(id=>!ids.includes(id)) : Array.from(new Set([...pFemeas,...ids]));
+    setPFemeas(next);
+    setPExpectativa(String(Math.round(next.length*0.85)));
+  };
+
+  const resetPostura = () => {
+    setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
+    setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
+    setPExpectativa(''); setPPreco('6.00'); setPCusto('0.30'); setPObs('');
+  };
+
+  const handleSavePostura = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pBaia.trim()) return;
+    const femeasIds = pMode==='select' ? pFemeas : [];
+    const qtdFemeas = pMode==='qty' ? parseInt(pQtd)||0 : pFemeas.length;
+    addEggLot({
+      id: uid(),
+      baia: pBaia.trim(),
+      femeasIds,
+      qtdFemeas,
+      expectativaDiaria: parseInt(pExpectativa)||0,
+      dataInicio: pDataInicio,
+      status: 'Ativo',
+      raca: pRaca.trim()||undefined,
+      precoVendaPadrao: parseFloat(pPreco)||6,
+      custoProdPadrao: parseFloat(pCusto)||0.30,
+      observacao: pObs.trim()||undefined,
+    });
+    resetPostura();
+  };
+
+  const handleBirdToggle = (id: string) => {
+    setEAves(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  };
+  const handleBirdSelectAll = (ids: string[]) => {
+    const allSel = ids.every(id=>eAves.includes(id));
+    setEAves(allSel ? eAves.filter(id=>!ids.includes(id)) : Array.from(new Set([...eAves,...ids])));
+  };
+
+  const resetEngorda = () => {
+    setShowEngorda(false); setEBaia(''); setERaca(''); setEDataInicio(todayISO());
+    setEMode('select'); setEAves([]); setEQtd(''); setESearch('');
+    setEPesoInicial(''); setEPesoMeta(''); setEObs('');
+  };
+
+  const handleSaveEngorda = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eBaia.trim()) return;
+    const avesIds = eMode==='select' ? eAves : [];
+    const qtdAves = eMode==='qty' ? parseInt(eQtd)||0 : eAves.length;
+    addMeatLot({
+      id: uid(),
+      baia: eBaia.trim(),
+      avesIds,
+      qtdAves,
+      dataInicio: eDataInicio,
+      pesoMedioInicial: ePesoInicial.trim()||'0',
+      pesoMeta: ePesoMeta.trim()||undefined,
+      status: 'Crescimento',
+      raca: eRaca.trim()||undefined,
+      observacao: eObs.trim()||undefined,
+    });
+    resetEngorda();
+  };
+
+  const meatStatusCls = (s:string) => {
+    if(s==='Crescimento') return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+    if(s==='Terminação') return 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
+    return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+  };
+
+  const totalFemeaAtivas = eggLots.reduce((a,l)=>a+(l.status==='Ativo'?(l.femeasIds.length||l.qtdFemeas||0):0),0);
+  const totalExpDiaria   = eggLots.reduce((a,l)=>a+(l.status==='Ativo'?l.expectativaDiaria:0),0);
+
+  return (
+    <div className="space-y-6 animate-fade-in min-h-full flex flex-col pb-24">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-white">Controle de Lotes</h2>
+          <p className="text-sm text-theme-text-muted mt-1">Gerenciamento de lotes de postura e engorda do criatório.</p>
+        </div>
+        {activeTab==='postura'
+          ? <button onClick={()=>setShowPostura(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Postura</button>
+          : <button onClick={()=>setShowEngorda(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"><Plus size={18}/>Cadastrar Lote Engorda</button>
+        }
       </div>
 
-      {/* Tab Content: Postura */}
-      {activeTab === 'postura' && (
+      <div className="flex items-center gap-6 border-b border-theme-border">
+        {[{id:'postura',icon:Egg,label:'Lotes de Postura'},{id:'engorda',icon:Beef,label:'Lotes de Engorda'}].map(t=>(
+          <button key={t.id} onClick={()=>setActiveTab(t.id as any)}
+            className={`pb-3 text-sm font-bold transition-all flex items-center gap-2 ${activeTab===t.id?'text-theme-primary border-b-2 border-theme-primary':'text-theme-text-muted hover:text-white'}`}>
+            <t.icon size={16}/>{t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab==='postura'&&(
         <div className="flex-1 flex flex-col space-y-6">
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="premium-card p-5">
-              <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Total de Lotes Ativos</p>
-              <h3 className="text-3xl font-black text-white">{eggLots.filter(l => l.status === 'Ativo').length}</h3>
-            </div>
-            <div className="premium-card p-5">
-              <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Expectativa Total Diária</p>
-              <h3 className="text-3xl font-black text-white">
-                {eggLots.reduce((acc, l) => acc + (l.status === 'Ativo' ? Number(l.expectativaDiaria) : 0), 0)}{' '}
-                <span className="text-sm font-medium text-theme-text-muted">ovos/dia</span>
-              </h3>
-            </div>
-            <div className="premium-card p-5 border-theme-border bg-theme-base/50">
-              <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Fêmeas em Postura</p>
-              <h3 className="text-3xl font-black text-white">
-                {eggLots.reduce((acc, l) => acc + (l.status === 'Ativo' ? l.femeasIds.length : 0), 0)}
-              </h3>
-            </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              {label:'Lotes Ativos', value:eggLots.filter(l=>l.status==='Ativo').length, unit:''},
+              {label:'Expectativa Diária', value:totalExpDiaria, unit:'ovos/dia'},
+              {label:'Fêmeas em Postura', value:totalFemeaAtivas, unit:''},
+            ].map(s=>(
+              <div key={s.label} className="premium-card p-4">
+                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
+                <h3 className="text-2xl font-black text-white">{s.value}{s.unit&&<span className="text-xs font-medium text-theme-text-muted ml-1">{s.unit}</span>}</h3>
+              </div>
+            ))}
           </div>
 
-          {/* List */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {eggLots.map(lot => {
-              const ageDays = calculateAgeInDays(lot.dataInicio);
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {eggLots.map(lot=>{
+              const dias = calcDays(lot.dataInicio);
+              const qtdF = lot.femeasIds.length || lot.qtdFemeas || 0;
               return (
-                <div 
-                  key={lot.id} 
-                  className="premium-card p-6 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                    <Egg size={120} />
+                <div key={lot.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform"><Egg size={100}/></div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lot.baia}{lot.raca?` · ${lot.raca}`:''}</span>
+                      <h3 className="font-black text-lg text-white">Lote de Postura</h3>
+                    </div>
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${lot.status==='Ativo'?'bg-green-500/20 text-green-400 border border-green-500/20':'bg-theme-base text-theme-text-muted border border-theme-border'}`}>{lot.status}</span>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <span className="text-xs font-bold text-theme-primary uppercase mb-1 block">Baia {lot.baia}</span>
-                        <h3 className="font-black text-xl text-white">Lote de Postura</h3>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      {icon:Timer, label:'Idade', value:`${dias}d`},
+                      {icon:Egg, label:'Meta/dia', value:`${lot.expectativaDiaria} ovos`},
+                      {icon:Users, label:'Fêmeas', value:qtdF},
+                    ].map(m=>(
+                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11}/>{m.label}</p>
+                        <p className="text-base font-black text-white">{m.value}</p>
                       </div>
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                        lot.status === 'Ativo' 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/20' 
-                          : 'bg-theme-base text-theme-text-muted border border-theme-border'
-                      }`}>
-                        {lot.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Timer size={12} /> Idade
-                        </p>
-                        <p className="text-lg font-black text-white">
-                          {ageDays} <span className="text-xs text-theme-text-muted font-bold">dias</span>
-                        </p>
-                      </div>
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Egg size={12} /> Meta
-                        </p>
-                        <p className="text-lg font-black text-white">
-                          {lot.expectativaDiaria} <span className="text-xs text-theme-text-muted font-bold">ovos/d</span>
-                        </p>
-                      </div>
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Activity size={12} /> Fêmeas
-                        </p>
-                        <p className="text-lg font-black text-white">{lot.femeasIds.length}</p>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-theme-border/50">
-                      <div className="flex justify-between items-center mb-3">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lot.femeasIds.length})</p>
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider">
-                          Início: <span className="text-theme-text-muted">{new Date(lot.dataInicio).toLocaleDateString('pt-BR')}</span>
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 max-h-[80px] overflow-y-auto pr-1">
-                        {lot.femeasIds.map(id => {
-                          const bird = birds.find(b => b.id === id);
-                          if (!bird) return null;
-                          return (
-                            <span 
-                              key={id} 
-                              className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border font-medium"
-                            >
-                              {bird.anilha} {bird.nome ? `(${bird.nome})` : ''}
-                            </span>
-                          );
-                        })}
-                        {lot.femeasIds.length === 0 && (
-                          <span className="text-xs text-theme-text-muted italic">Nenhuma ave vinculada.</span>
-                        )}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-
-                  {lot.status === 'Ativo' && (
-                    <button 
-                      onClick={() => handleClosePosturaLot(lot.id)}
-                      className="mt-6 w-full py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold text-xs rounded-xl transition-all"
-                    >
+                  {(lot.precoVendaPadrao||lot.custoProdPadrao)&&(
+                    <div className="flex gap-3 mb-4">
+                      {lot.precoVendaPadrao&&(
+                        <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-xl p-2.5">
+                          <p className="text-[10px] text-green-400 font-bold">Preco/Duzia</p>
+                          <p className="text-sm font-black text-white">R$ {lot.precoVendaPadrao.toFixed(2)}</p>
+                        </div>
+                      )}
+                      {lot.custoProdPadrao&&(
+                        <div className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-xl p-2.5">
+                          <p className="text-[10px] text-blue-400 font-bold">Custo/Ovo</p>
+                          <p className="text-sm font-black text-white">R$ {lot.custoProdPadrao.toFixed(2)}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-theme-border/50 mt-auto">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lot.femeasIds.length})</p>
+                      <p className="text-[10px] text-theme-text-muted">Inicio: {fmtDate(lot.dataInicio)}</p>
+                    </div>
+                    {lot.femeasIds.length>0?(
+                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                        {lot.femeasIds.map(id=>{const b=birds.find(x=>x.id===id);return b?(<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome?` (${b.nome})`:''}</span>):null;})}
+                      </div>
+                    ):(
+                      <p className="text-[10px] text-theme-text-muted italic">{qtdF>0?`${qtdF} femeas registradas (sem vinculo individual)`:'Nenhuma ave vinculada.'}</p>
+                    )}
+                    {lot.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lot.observacao}</p>}
+                  </div>
+                  {lot.status==='Ativo'&&(
+                    <button onClick={()=>{if(window.confirm('Deseja encerrar este lote?'))editEggLot(lot.id,{status:'Encerrado'});}}
+                      className="mt-4 w-full py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 font-bold text-xs rounded-xl transition-all">
                       Encerrar Lote
                     </button>
                   )}
                 </div>
               );
             })}
-            {eggLots.length === 0 && (
+            {eggLots.length===0&&(
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
-                <Egg size={40} className="mx-auto mb-3 opacity-50" />
+                <Egg size={40} className="mx-auto mb-3 opacity-50"/>
                 <p className="font-bold text-white mb-1">Nenhum lote de postura cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar sua expectativa de produção de ovos.</p>
+                <p className="text-sm">Cadastre um lote para gerenciar sua producao de ovos.</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Tab Content: Engorda */}
-      {activeTab === 'engorda' && (
+      {activeTab==='engorda'&&(
         <div className="flex-1 flex flex-col space-y-6">
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="premium-card p-5">
-              <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Total de Lotes Ativos</p>
-              <h3 className="text-3xl font-black text-white">
-                {meatLots.filter(l => l.status === 'Crescimento' || l.status === 'Terminação').length}
-              </h3>
-            </div>
-            <div className="premium-card p-5">
-              <p className="text-theme-text-muted text-xs font-bold uppercase tracking-wider mb-1">Aves em Engorda/Corte</p>
-              <h3 className="text-3xl font-black text-white">
-                {meatLots.reduce((acc, l) => acc + (l.status !== 'Abatido' ? l.avesIds.length : 0), 0)}
-              </h3>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {label:'Lotes Ativos', value:meatLots.filter(l=>l.status!=='Abatido').length},
+              {label:'Aves em Engorda', value:meatLots.reduce((a,l)=>a+(l.status!=='Abatido'?(l.avesIds.length||l.qtdAves||0):0),0)},
+            ].map(s=>(
+              <div key={s.label} className="premium-card p-4">
+                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
+                <h3 className="text-2xl font-black text-white">{s.value}</h3>
+              </div>
+            ))}
           </div>
 
-          {/* List */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {meatLots.map(lote => {
-              const ageDays = calculateAgeInDays(lote.dataInicio);
-              const statusClass = getMeatStatusClass(lote.status);
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {meatLots.map(lote=>{
+              const dias = calcDays(lote.dataInicio);
+              const qtdA = lote.avesIds.length||lote.qtdAves||0;
               return (
-                <div 
-                  key={lote.id} 
-                  className="premium-card p-6 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
-                    <Beef size={120} />
+                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={100}/></div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca?` · ${lote.raca}`:''}</span>
+                      <h3 className="font-black text-lg text-white">Lote de Engorda</h3>
+                    </div>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <span className="text-xs font-bold text-theme-primary uppercase mb-1 block">Baia {lote.baia}</span>
-                        <h3 className="font-black text-xl text-white">Lote de Engorda</h3>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      {icon:Timer, label:'Idade', value:`${dias}d`},
+                      {icon:Scale, label:'Peso Inicial', value:lote.pesoMedioInicial},
+                      {icon:Activity, label:'Aves', value:qtdA},
+                    ].map(m=>(
+                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11}/>{m.label}</p>
+                        <p className="text-base font-black text-white truncate">{m.value}</p>
                       </div>
-                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${statusClass}`}>
-                        {lote.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Timer size={12} /> Idade
-                        </p>
-                        <p className="text-lg font-black text-white">
-                          {ageDays} <span className="text-xs text-theme-text-muted font-bold">dias</span>
-                        </p>
-                      </div>
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Scale size={12} /> Peso Inicial
-                        </p>
-                        <p className="text-lg font-black text-white truncate" title={lote.pesoMedioInicial}>
-                          {lote.pesoMedioInicial}
-                        </p>
-                      </div>
-                      <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50 flex flex-col justify-center">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                          <Activity size={12} /> Aves
-                        </p>
-                        <p className="text-lg font-black text-white">{lote.avesIds.length}</p>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-theme-border/50 mb-6">
-                      <div className="flex justify-between items-center mb-3">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.avesIds.length})</p>
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider">
-                          Início: <span className="text-theme-text-muted">{new Date(lote.dataInicio).toLocaleDateString('pt-BR')}</span>
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 max-h-[80px] overflow-y-auto pr-1">
-                        {lote.avesIds.map(id => {
-                          const bird = birds.find(b => b.id === id);
-                          if (!bird) return null;
-                          return (
-                            <span 
-                              key={id} 
-                              className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border font-medium"
-                            >
-                              {bird.anilha} {bird.nome ? `(${bird.nome})` : ''}
-                            </span>
-                          );
-                        })}
-                        {lote.avesIds.length === 0 && (
-                          <span className="text-xs text-theme-text-muted italic">Nenhuma ave vinculada.</span>
-                        )}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Actions (Change Status directly on the card) */}
-                  <div className="border-t border-theme-border/50 pt-4 mt-auto">
-                    <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-2">Alterar Status do Lote</p>
+                  {lote.pesoMeta&&(
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-2.5 mb-4">
+                      <p className="text-[10px] text-orange-400 font-bold">Meta de Abate</p>
+                      <p className="text-sm font-black text-white">{lote.pesoMeta}</p>
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.avesIds.length})</p>
+                      <p className="text-[10px] text-theme-text-muted">Inicio: {fmtDate(lote.dataInicio)}</p>
+                    </div>
+                    {lote.avesIds.length>0?(
+                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
+                        {lote.avesIds.map(id=>{const b=birds.find(x=>x.id===id);return b?(<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome?` (${b.nome})`:''}</span>):null;})}
+                      </div>
+                    ):(
+                      <p className="text-[10px] text-theme-text-muted italic">{qtdA>0?`${qtdA} aves registradas (sem vinculo individual)`:'Nenhuma ave vinculada.'}</p>
+                    )}
+                    {lote.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
+                  </div>
+                  <div className="border-t border-theme-border/50 pt-3">
+                    <p className={labelCls + " mb-2"}>Alterar Status</p>
                     <div className="grid grid-cols-3 gap-2">
-                      {(['Crescimento', 'Terminação', 'Abatido'] as const).map(st => (
-                        <button
-                          key={st}
-                          onClick={() => editMeatLot(lote.id, { status: st })}
-                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${
-                            lote.status === st
-                              ? 'bg-theme-primary text-black border-theme-primary shadow-[0_0_8px_rgba(245,158,11,0.2)]'
-                              : 'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'
-                          }`}
-                        >
+                      {(['Crescimento','Terminação','Abatido'] as const).map(st=>(
+                        <button key={st} onClick={()=>editMeatLot(lote.id,{status:st})}
+                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${lote.status===st?'bg-theme-primary text-black border-theme-primary':'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'}`}>
                           {st}
                         </button>
                       ))}
@@ -444,186 +389,97 @@ export function Lots() {
                 </div>
               );
             })}
-            {meatLots.length === 0 && (
+            {meatLots.length===0&&(
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
-                <Beef size={40} className="mx-auto mb-3 opacity-50" />
+                <Beef size={40} className="mx-auto mb-3 opacity-50"/>
                 <p className="font-bold text-white mb-1">Nenhum lote de engorda cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar a alimentação, crescimento e abate.</p>
+                <p className="text-sm">Cadastre um lote para gerenciar crescimento e abate.</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Modal: Cadastrar Lote Postura */}
-      {showPosturaModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
-            <div className="p-5 border-b border-theme-border flex items-center justify-between">
-              <h3 className="font-black text-lg text-white flex items-center gap-2">
-                <Egg className="text-theme-primary" size={20} /> Cadastrar Lote de Postura
-              </h3>
-              <button 
-                onClick={() => {
-                  setShowPosturaModal(false);
-                  setPosturaBaia('');
-                  setPosturaFemeasSelecionadas([]);
-                  setPosturaExpectativa(0);
-                  setPosturaSearch('');
-                }}
-                className="text-theme-text-muted hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
+      {showPostura&&createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 animate-fade-in" onClick={resetPostura}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-scale-up" onClick={e=>e.stopPropagation()}>
+            <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
+            <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <h3 className="font-black text-lg text-white flex items-center gap-2"><Egg className="text-theme-primary" size={20}/>Novo Lote de Postura</h3>
+              <button onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors"><X size={20}/></button>
             </div>
-
-            <form onSubmit={handleSavePosturaLot} className="flex flex-col overflow-hidden">
+            <form onSubmit={handleSavePostura} className="flex flex-col overflow-hidden flex-1">
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Número / Nome da Baia</label>
-                    <input 
-                      type="text"
-                      required
-                      value={posturaBaia}
-                      onChange={e => setPosturaBaia(e.target.value)}
-                      placeholder="Ex: Baia 04"
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    />
+                    <SectionLabel>Baia / Identificacao *</SectionLabel>
+                    <input required type="text" value={pBaia} onChange={e=>setPBaia(e.target.value)} placeholder="Ex: Baia 04" className={inputCls}/>
                   </div>
-
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Expectativa de Ovos Diária</label>
-                    <input 
-                      type="number"
-                      required
-                      min={0}
-                      value={posturaExpectativa}
-                      onChange={e => setPosturaExpectativa(Number(e.target.value))}
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    />
+                    <SectionLabel>Raca (opcional)</SectionLabel>
+                    <div className="relative">
+                      <select value={pRaca} onChange={e=>setPRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                        <option value="">-- Selecionar --</option>
+                        {breeds.map(br=><option key={br.id} value={br.nome}>{br.nome}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none"/>
+                    </div>
                   </div>
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-1">
-                    <CalendarDays size={14} /> Data de Início
-                  </label>
-                  <input 
-                    type="date"
-                    required
-                    value={posturaDataInicio}
-                    onChange={e => setPosturaDataInicio(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                  />
+                  <SectionLabel>Data de Inicio</SectionLabel>
+                  <input type="date" required value={pDataInicio} onChange={e=>setPDataInicio(e.target.value)} className={inputCls}/>
                 </div>
-
-                <div className="space-y-2 pt-2 flex flex-col overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">
-                      Vincular Fêmeas ({posturaFemeasSelecionadas.length} selecionadas)
-                    </label>
-                    {activeFemales.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const filtered = activeFemales
-                            .filter(f => 
-                              f.anilha.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                              f.raca.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                              (f.nome && f.nome.toLowerCase().includes(posturaSearch.toLowerCase()))
-                            )
-                            .map(f => f.id);
-                          handleAllFemalesSelect(filtered);
-                        }}
-                        className="text-[10px] text-theme-primary font-bold hover:underline"
-                      >
-                        Selecionar Filtradas
-                      </button>
-                    )}
-                  </div>
-
+                <div className="space-y-2">
+                  <SectionLabel>Femeas no Lote</SectionLabel>
+                  <ModeToggle mode={pMode} onChange={m=>{setPMode(m);setPFemeas([]);setPQtd('');}} label1="Selecionar aves" label2="Informar quantidade"/>
+                  {pMode==='select'
+                    ? <BirdPicker birds={activeFemales} selected={pFemeas} onToggle={handleFemaleToggle} onSelectAll={handleFemaleSelectAll} search={pSearch} onSearch={setPSearch} emptyMsg="Nenhuma femea disponivel. Cadastre aves primeiro."/>
+                    : (
+                      <div className="space-y-1">
+                        <SectionLabel>Quantidade de Femeas</SectionLabel>
+                        <input type="number" min="1" inputMode="numeric" placeholder="Ex: 30" value={pQtd}
+                          onChange={e=>{setPQtd(e.target.value);setPExpectativa(String(Math.round((parseInt(e.target.value)||0)*0.85)));}}
+                          className={inputCls + " text-2xl font-black text-center py-4"}/>
+                      </div>
+                    )
+                  }
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Expectativa de Ovos por Dia</SectionLabel>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                    <input 
-                      type="text"
-                      placeholder="Pesquisar por anilha, raça ou nome..."
-                      value={posturaSearch}
-                      onChange={e => setPosturaSearch(e.target.value)}
-                      className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:border-theme-primary outline-none"
-                    />
+                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onChange={e=>setPExpectativa(e.target.value)} placeholder="Auto-calculado (85% da qtd)" className={inputCls}/>
                   </div>
-
-                  <div className="border border-theme-border rounded-xl max-h-[160px] overflow-y-auto divide-y divide-theme-border/50 bg-theme-base/30">
-                    {activeFemales
-                      .filter(f => 
-                        f.anilha.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                        f.raca.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                        (f.nome && f.nome.toLowerCase().includes(posturaSearch.toLowerCase()))
-                      )
-                      .map(female => {
-                        const isSelected = posturaFemeasSelecionadas.includes(female.id);
-                        return (
-                          <div 
-                            key={female.id} 
-                            onClick={() => handleFemaleSelect(female.id)}
-                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors"
-                          >
-                            <div>
-                              <p className="text-xs font-bold text-white">Anilha: {female.anilha}</p>
-                              <p className="text-[10px] text-theme-text-muted">
-                                {female.raca} {female.nome ? `| ${female.nome}` : ''}
-                              </p>
-                            </div>
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                              isSelected 
-                                ? 'bg-theme-primary border-theme-primary text-black' 
-                                : 'border-theme-border bg-theme-surface'
-                            }`}>
-                              {isSelected && <Check size={12} strokeWidth={3} />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {activeFemales.length === 0 && (
-                      <div className="p-4 text-center text-xs text-theme-text-muted italic">
-                        Nenhuma fêmea disponível.
+                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Calculado automaticamente em 85% das femeas. Voce pode ajustar manualmente.</p>
+                </div>
+                <div className="space-y-2">
+                  <SectionLabel>Precos Padrao para aba Ovos</SectionLabel>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className={labelCls}>Preco/Duzia (R$)</label>
+                      <div className="relative">
+                        <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400"/>
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={pPreco} onChange={e=>setPPreco(e.target.value)} className={inputCls + " pl-8"}/>
                       </div>
-                    )}
-                    {activeFemales.length > 0 && activeFemales.filter(f => 
-                      f.anilha.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                      f.raca.toLowerCase().includes(posturaSearch.toLowerCase()) ||
-                      (f.nome && f.nome.toLowerCase().includes(posturaSearch.toLowerCase()))
-                    ).length === 0 && (
-                      <div className="p-4 text-center text-xs text-theme-text-muted italic">
-                        Nenhuma fêmea correspondente à pesquisa.
+                    </div>
+                    <div className="space-y-1">
+                      <label className={labelCls}>Custo/Ovo (R$)</label>
+                      <div className="relative">
+                        <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400"/>
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={pCusto} onChange={e=>setPCusto(e.target.value)} className={inputCls + " pl-8"}/>
                       </div>
-                    )}
+                    </div>
                   </div>
+                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Esses valores serao preenchidos automaticamente ao registrar producao na aba Ovos.</p>
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <textarea rows={2} placeholder="Ex: Lote de matrizes pedigree..." value={pObs} onChange={e=>setPObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
-
-              <div className="p-5 border-t border-theme-border flex gap-3 bg-theme-surface/50">
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setShowPosturaModal(false);
-                    setPosturaBaia('');
-                    setPosturaFemeasSelecionadas([]);
-                    setPosturaExpectativa(0);
-                    setPosturaSearch('');
-                  }}
-                  className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  disabled={!posturaBaia.trim()}
-                  className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
-                >
-                  Confirmar Lote
-                </button>
+              <div className="p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
+                <button type="button" onClick={resetPostura} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
+                <button type="submit" disabled={!pBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
               </div>
             </form>
           </div>
@@ -631,183 +487,67 @@ export function Lots() {
         document.body
       )}
 
-      {/* Modal: Cadastrar Lote Engorda */}
-      {showEngordaModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
-            <div className="p-5 border-b border-theme-border flex items-center justify-between">
-              <h3 className="font-black text-lg text-white flex items-center gap-2">
-                <Beef className="text-theme-primary" size={20} /> Cadastrar Lote de Engorda
-              </h3>
-              <button 
-                onClick={() => {
-                  setShowEngordaModal(false);
-                  setEngordaBaia('');
-                  setEngordaAvesSelecionadas([]);
-                  setEngordaPesoInicial('');
-                  setEngordaSearch('');
-                }}
-                className="text-theme-text-muted hover:text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
+      {showEngorda&&createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 animate-fade-in" onClick={resetEngorda}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-scale-up" onClick={e=>e.stopPropagation()}>
+            <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
+            <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <h3 className="font-black text-lg text-white flex items-center gap-2"><Beef className="text-theme-primary" size={20}/>Novo Lote de Engorda</h3>
+              <button onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors"><X size={20}/></button>
             </div>
-
-            <form onSubmit={handleSaveEngordaLot} className="flex flex-col overflow-hidden">
+            <form onSubmit={handleSaveEngorda} className="flex flex-col overflow-hidden flex-1">
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Número / Nome da Baia</label>
-                    <input 
-                      type="text"
-                      required
-                      value={engordaBaia}
-                      onChange={e => setEngordaBaia(e.target.value)}
-                      placeholder="Ex: Baia 08"
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    />
+                    <SectionLabel>Baia / Identificacao *</SectionLabel>
+                    <input required type="text" value={eBaia} onChange={e=>setEBaia(e.target.value)} placeholder="Ex: Baia 08" className={inputCls}/>
                   </div>
-
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Peso Médio Inicial</label>
-                    <input 
-                      type="text"
-                      required
-                      value={engordaPesoInicial}
-                      onChange={e => setEngordaPesoInicial(e.target.value)}
-                      placeholder="Ex: 350g ou 1.2kg"
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    />
+                    <SectionLabel>Raca (opcional)</SectionLabel>
+                    <div className="relative">
+                      <select value={eRaca} onChange={e=>setERaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                        <option value="">-- Selecionar --</option>
+                        {breeds.map(br=><option key={br.id} value={br.nome}>{br.nome}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none"/>
+                    </div>
                   </div>
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-1">
-                    <CalendarDays size={14} /> Data de Início
-                  </label>
-                  <input 
-                    type="date"
-                    required
-                    value={engordaDataInicio}
-                    onChange={e => setEngordaDataInicio(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                  />
+                  <SectionLabel>Data de Inicio</SectionLabel>
+                  <input type="date" required value={eDataInicio} onChange={e=>setEDataInicio(e.target.value)} className={inputCls}/>
                 </div>
-
-                <div className="space-y-2 pt-2 flex flex-col overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">
-                      Vincular Aves em Engorda ({engordaAvesSelecionadas.length} selecionadas)
-                    </label>
-                    {activeBirds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const filtered = activeBirds
-                            .filter(f => 
-                              f.anilha.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                              f.raca.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                              (f.nome && f.nome.toLowerCase().includes(engordaSearch.toLowerCase()))
-                            )
-                            .map(f => f.id);
-                          handleAllBirdsSelect(filtered);
-                        }}
-                        className="text-[10px] text-theme-primary font-bold hover:underline"
-                      >
-                        Selecionar Filtradas
-                      </button>
-                    )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Peso Medio Inicial</SectionLabel>
+                    <input type="text" required placeholder="Ex: 350g" value={ePesoInicial} onChange={e=>setEPesoInicial(e.target.value)} className={inputCls}/>
                   </div>
-
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
-                    <input 
-                      type="text"
-                      placeholder="Pesquisar por anilha, raça, nome..."
-                      value={engordaSearch}
-                      onChange={e => setEngordaSearch(e.target.value)}
-                      className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:border-theme-primary outline-none"
-                    />
+                  <div className="space-y-1">
+                    <SectionLabel>Meta de Abate</SectionLabel>
+                    <input type="text" placeholder="Ex: 2.5kg" value={ePesoMeta} onChange={e=>setEPesoMeta(e.target.value)} className={inputCls}/>
                   </div>
-
-                  <div className="border border-theme-border rounded-xl max-h-[160px] overflow-y-auto divide-y divide-theme-border/50 bg-theme-base/30">
-                    {activeBirds
-                      .filter(f => 
-                        f.anilha.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                        f.raca.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                        (f.nome && f.nome.toLowerCase().includes(engordaSearch.toLowerCase()))
-                      )
-                      .map(bird => {
-                        const isSelected = engordaAvesSelecionadas.includes(bird.id);
-                        const isGrowout = bird.status === 'Crescimento';
-                        return (
-                          <div 
-                            key={bird.id} 
-                            onClick={() => handleBirdSelect(bird.id)}
-                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors"
-                          >
-                            <div>
-                              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                                Anilha: {bird.anilha}
-                                {isGrowout && (
-                                  <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase">
-                                    Crescimento
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-[10px] text-theme-text-muted">
-                                {bird.raca} | {bird.sexo} {bird.nome ? `| ${bird.nome}` : ''}
-                              </p>
-                            </div>
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
-                              isSelected 
-                                ? 'bg-theme-primary border-theme-primary text-black' 
-                                : 'border-theme-border bg-theme-surface'
-                            }`}>
-                              {isSelected && <Check size={12} strokeWidth={3} />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {activeBirds.length === 0 && (
-                      <div className="p-4 text-center text-xs text-theme-text-muted italic">
-                        Nenhuma ave ativa disponível.
+                </div>
+                <div className="space-y-2">
+                  <SectionLabel>Aves no Lote</SectionLabel>
+                  <ModeToggle mode={eMode} onChange={m=>{setEMode(m);setEAves([]);setEQtd('');}} label1="Selecionar aves" label2="Informar quantidade"/>
+                  {eMode==='select'
+                    ? <BirdPicker birds={activeBirds} selected={eAves} onToggle={handleBirdToggle} onSelectAll={handleBirdSelectAll} search={eSearch} onSearch={setESearch} emptyMsg="Nenhuma ave ativa disponivel."/>
+                    : (
+                      <div className="space-y-1">
+                        <SectionLabel>Quantidade de Aves</SectionLabel>
+                        <input type="number" min="1" inputMode="numeric" placeholder="Ex: 50" value={eQtd} onChange={e=>setEQtd(e.target.value)} className={inputCls + " text-2xl font-black text-center py-4"}/>
                       </div>
-                    )}
-                    {activeBirds.length > 0 && activeBirds.filter(f => 
-                      f.anilha.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                      f.raca.toLowerCase().includes(engordaSearch.toLowerCase()) ||
-                      (f.nome && f.nome.toLowerCase().includes(engordaSearch.toLowerCase()))
-                    ).length === 0 && (
-                      <div className="p-4 text-center text-xs text-theme-text-muted italic">
-                        Nenhuma ave correspondente à pesquisa.
-                      </div>
-                    )}
-                  </div>
+                    )
+                  }
+                </div>
+                <div className="space-y-1">
+                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <textarea rows={2} placeholder="Ex: Lote frango caipira..." value={eObs} onChange={e=>setEObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
-
-              <div className="p-5 border-t border-theme-border flex gap-3 bg-theme-surface/50">
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setShowEngordaModal(false);
-                    setEngordaBaia('');
-                    setEngordaAvesSelecionadas([]);
-                    setEngordaPesoInicial('');
-                    setEngordaSearch('');
-                  }}
-                  className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  disabled={!engordaBaia.trim()}
-                  className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
-                >
-                  Confirmar Lote
-                </button>
+              <div className="p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
+                <button type="button" onClick={resetEngorda} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
+                <button type="submit" disabled={!eBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
               </div>
             </form>
           </div>
