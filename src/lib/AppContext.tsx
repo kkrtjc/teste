@@ -150,6 +150,79 @@ type AppContextType = {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+export const DEFAULT_BREEDS: Breed[] = [
+  {
+    id: 'seed-mura',
+    nome: 'Mura',
+    foco: 'Ornamental',
+    descricao: 'Raça ornamental e de combate, muito valorizada por sua postura imponente, força e temperamento.',
+    imagem: '/breeds/mura.jpg',
+    totalAves: 0,
+    tempoCrescimento: 180,
+    pesoMedio: '3.5 kg'
+  },
+  {
+    id: 'seed-brahma',
+    nome: 'Brahma',
+    foco: 'Misto (Carne e Ovos)',
+    descricao: 'Raça de grande porte, dócil, excelente para carne e postura de ovos grandes no inverno.',
+    imagem: '/breeds/brahma.jpg',
+    totalAves: 0,
+    tempoCrescimento: 210,
+    pesoMedio: '4.5 kg'
+  },
+  {
+    id: 'seed-sedosa',
+    nome: 'Sedosa',
+    foco: 'Ornamental',
+    descricao: 'Famosa por sua plumagem incrivelmente macia e felpuda que parece cabelo ou lã. Excelentes mães.',
+    imagem: '/breeds/sedosa.jpg',
+    totalAves: 0,
+    tempoCrescimento: 150,
+    pesoMedio: '1.2 kg'
+  },
+  {
+    id: 'seed-caipira',
+    nome: 'Caipira',
+    foco: 'Misto (Carne e Ovos)',
+    descricao: 'Galinha rústica de quintal, perfeitamente adaptada a sistemas livres, com carne saborosa e ovos caipiras.',
+    imagem: '/breeds/caipira.jpg',
+    totalAves: 0,
+    tempoCrescimento: 120,
+    pesoMedio: '2.8 kg'
+  },
+  {
+    id: 'seed-gsb',
+    nome: 'GSB',
+    foco: 'Misto (Carne e Ovos)',
+    descricao: 'Galo Sertanejo Balão (GSB). Gigante de corpo arredondado, cauda curta e peito muito largo.',
+    imagem: '/breeds/gsb.jpg',
+    totalAves: 0,
+    tempoCrescimento: 240,
+    pesoMedio: '5.5 kg'
+  },
+  {
+    id: 'seed-indio-gigante',
+    nome: 'Indio gigante',
+    foco: 'Misto (Carne e Ovos)',
+    descricao: 'Galo de altura excepcional, pernas longas e corpo ereto. Orgulho do melhoramento genético nacional.',
+    imagem: '/breeds/indio_gigante.jpg',
+    totalAves: 0,
+    tempoCrescimento: 210,
+    pesoMedio: '5.0 kg'
+  },
+  {
+    id: 'seed-polaco',
+    nome: 'Polaco',
+    foco: 'Misto (Carne e Ovos)',
+    descricao: 'Galinha de pescoço pelado (Transilvânia / Polaca), muito rústica, dócil e produtiva.',
+    imagem: '/breeds/polaco.jpg',
+    totalAves: 0,
+    tempoCrescimento: 150,
+    pesoMedio: '3.0 kg'
+  }
+];
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [isReady, setIsReady] = useState(false);
@@ -378,7 +451,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Grava no estado e sincroniza no cache localforage com preservação de propriedades locais
-      const mappedBreeds = sbBreeds.map((b: any) => {
+      let mappedBreeds: Breed[] = sbBreeds.map((b: any) => {
         const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
         return {
           id: b.id,
@@ -391,6 +464,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || '')
         };
       });
+
+      if (mappedBreeds.length === 0) {
+        mappedBreeds = DEFAULT_BREEDS;
+        if (isSupabaseConfigured && user) {
+          const breedsToInsert = DEFAULT_BREEDS.map(b => ({
+            id: b.id,
+            user_id: user.id,
+            nome: b.nome,
+            foco: b.foco,
+            descricao: b.descricao,
+            imagem: b.imagem,
+            tempo_crescimento: b.tempoCrescimento,
+            peso_medio: b.pesoMedio
+          }));
+          supabase!.from('breeds').insert(breedsToInsert).then(({ error }) => {
+            if (error) console.error('Erro ao semear raças iniciais:', error);
+          });
+        }
+      }
+
       setBreeds(mappedBreeds);
       await localforage.setItem(getStorageKey('breeds'), mappedBreeds);
 
@@ -568,6 +661,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           if (data) {
             (item.setter as any)(data);
+          } else if (item.suffix === 'breeds') {
+            (item.setter as any)(DEFAULT_BREEDS);
+            await localforage.setItem(userKey, DEFAULT_BREEDS);
           }
         } catch (error) {
           console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
