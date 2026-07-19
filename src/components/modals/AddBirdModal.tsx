@@ -1,27 +1,32 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, AlertTriangle, ShieldAlert, CheckCircle, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 
-// ─── Native select that doesn't bounce on mobile scroll ─────────────────────
-function NativeSelect({ label, value, onChange, options }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { label: string; value: string }[];
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">{label}</label>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors appearance-none"
-      >
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </div>
-  );
+// ─── Age calculation helper ──────────────────────────────────────────────────
+function calculateExactAge(birthDateStr: string): string {
+  if (!birthDateStr) return 'Não informada';
+  const birthDate = new Date(birthDateStr);
+  const today = new Date();
+  
+  birthDate.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+  
+  let diffTime = today.getTime() - birthDate.getTime();
+  let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'Data futura';
+  if (diffDays < 30) return `${diffDays} dia${diffDays !== 1 ? 's' : ''}`;
+  
+  const diffMonths = Math.floor(diffDays / 30.43);
+  if (diffMonths < 12) {
+    const remainingDays = Math.floor(diffDays % 30.43);
+    return `${diffMonths} mês${diffMonths !== 1 ? 'es' : ''} ${remainingDays > 0 ? `e ${remainingDays} d` : ''}`;
+  }
+  
+  const diffYears = Math.floor(diffMonths / 12);
+  const remainingMonths = diffMonths % 12;
+  return `${diffYears} ano${diffYears !== 1 ? 's' : ''} ${remainingMonths > 0 ? `e ${remainingMonths} m` : ''}`;
 }
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
@@ -58,25 +63,23 @@ export function AddBirdModal() {
   const [raca, setRaca] = useState('');
   const [baia, setBaia] = useState('');
   const [status, setStatus] = useState('Reprodutor');
-  const [vacinas, setVacinas] = useState('');
   const [dataNasc, setDataNasc] = useState('');
   const [peso, setPeso] = useState('');
   const [previewImages, setPreviewImages] = useState<string[]>([]);
 
   // ── Origin ──
-  const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null); // null = not answered yet
+  const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null);
   const [paiId, setPaiId] = useState('');
   const [maeId, setMaeId] = useState('');
   const [paiExterno, setPaiExterno] = useState('');
   const [maeExterno, setMaeExterno] = useState('');
   const [descricaoOrigem, setDescricaoOrigem] = useState('');
   const [casalId, setCasalId] = useState('');
+  const [selectedVacs, setSelectedVacs] = useState<string[]>([]);
 
   // ── Steps ──
-  const TOTAL_STEPS = 3;
+  const TOTAL_STEPS = 4;
   const [step, setStep] = useState(0);
-  const [showOptional, setShowOptional] = useState(false);
-  const [showPhotos, setShowPhotos] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,7 +92,7 @@ export function AddBirdModal() {
       const b = birds.find(x => x.id === birdToEditId);
       if (b) {
         setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
-        setBaia(b.baia); setStatus(b.status); setVacinas(b.vacinas || '');
+        setBaia(b.baia); setStatus(b.status);
         setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
         setPreviewImages(b.imagens || (b.imagem ? [b.imagem] : []));
         const orig = b.origem || 'Criatório';
@@ -100,15 +103,19 @@ export function AddBirdModal() {
         setMaeId(b.isMaeExterno ? '' : b.maeId || '');
         setMaeExterno(b.isMaeExterno ? b.maeId || '' : '');
         setDescricaoOrigem('');
+
+        // Parse vaccines checkboxes
+        const parsedVacs = (b.vacinas || '').split(',').map(v => v.trim().toLowerCase());
+        setSelectedVacs(['bouba', 'marek', 'newcastle', 'coriza'].filter(v => parsedVacs.includes(v)));
       }
     } else {
       setAnilha(''); setNome(''); setSexo('Macho');
       setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
-      setBaia(''); setStatus('Adulto'); setVacinas('');
+      setBaia(''); setStatus('Reprodutor');
       setDataNasc(''); setPeso(''); setPreviewImages([]);
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
-      setShowOptional(false); setShowPhotos(false);
+      setSelectedVacs([]);
     }
   }, [isAddBirdModalOpen, birdToEditId]);
 
@@ -158,10 +165,14 @@ export function AddBirdModal() {
 
     const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
 
+    // Map checkboxes array back to comma-separated capitalized string
+    const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
+    const finalVacinas = vacList.join(', ');
+
     const data = {
       anilha, nome, sexo, raca,
       baia: baia || 'ND',
-      status, vacinas, origem,
+      status, vacinas: finalVacinas, origem,
       casalId: casalId || undefined,
       isPaiExterno,
       paiId: isPaiExterno ? paiExterno : paiId,
@@ -202,417 +213,340 @@ export function AddBirdModal() {
 
   // ─── Options ─────────────────────────────────────────────────────────────
   const statusOptions = [
-    { label: 'Adulto', value: 'Adulto' },
     { label: 'Reprodutor', value: 'Reprodutor' },
-    { label: 'Matriz', value: 'Matriz' },
+    { label: 'Adulto', value: 'Adulto' },
     { label: 'Crescimento', value: 'Crescimento' },
-    { label: 'Vendido', value: 'Vendido' },
-    { label: 'Faleceu', value: 'Faleceu' },
+    { label: 'Matriz', value: 'Matriz' },
+    { label: 'Engorda', value: 'Engorda' },
   ];
+
+  if (birdToEditId) {
+    const b = birds.find(x => x.id === birdToEditId);
+    if (b && (b.status === 'Vendido' || b.status === 'Faleceu')) {
+      statusOptions.push({ label: b.status, value: b.status });
+    }
+  }
+
   const machoOptions = [
     { label: 'Desconhecido', value: '' },
-    ...birds.filter(b => b.sexo === 'Macho' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
+    ...birds.filter(b => b.sexo === 'Macho' && b.status === 'Reprodutor' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
   ];
   const femeaOptions = [
     { label: 'Desconhecida', value: '' },
-    ...birds.filter(b => b.sexo === 'Fêmea' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
-  ];
-  const casalOptions = [
-    { label: '— Nenhum casal cadastrado —', value: '' },
-    ...couples.map(c => {
-      const m = birds.find(b => b.id === c.machoId);
-      const f = birds.find(b => b.id === c.femeaId);
-      return { label: `🐓 ${m?.anilha || '?'} × 🐔 ${f?.anilha || '?'}`, value: c.id };
-    })
+    ...birds.filter(b => b.sexo === 'Fêmea' && b.status === 'Matriz' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
   ];
 
   const canNext = step === 0
     ? !!anilha && !!raca
     : step === 1
+    ? true
+    : step === 2
     ? nascidaAqui !== null
     : true;
 
   // ─── Step content ─────────────────────────────────────────────────────────
   const renderStep = () => {
-    // ── STEP 0: Basic info — Progressive Disclosure ─────────────────────────
+    // ── STEP 0: Nome, Raça, Anilha, Sexo, Foto ─────────────────────────────
     if (step === 0) return (
-      <div className="space-y-6">
-
-        {/* ── 1. Anilha — campo primário grande ── */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
-            Anilha / ID *
-          </label>
+      <div className="space-y-4">
+        {/* Nome */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome da Ave (opcional)</label>
           <input
-            type="text"
-            value={anilha}
-            onChange={e => setAnilha(e.target.value)}
-            autoFocus
-            className="w-full bg-theme-base border-2 border-theme-border rounded-2xl p-4 text-lg font-black text-white focus:border-theme-primary outline-none transition-colors placeholder:text-theme-text-muted/40"
+            type="text" value={nome} onChange={e => setNome(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            placeholder="Ex: Titan, Guerreiro..."
+          />
+        </div>
+
+        {/* Raça */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Raça / Genética *</label>
+          <select
+            value={raca}
+            onChange={e => setRaca(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors appearance-none"
+          >
+            {breeds.map(b => (
+              <option key={b.id} value={b.nome}>{b.nome}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Anilha */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
+          <input
+            type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
             placeholder="Ex: BR-2024-001"
           />
         </div>
 
-        {/* ── 2. Sexo — toggle visual ── */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
-            Sexo *
-          </label>
+        {/* Sexo */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Sexo *</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setSexo('Macho')}
-              className={`py-4 px-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+              className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
                 sexo === 'Macho'
-                  ? 'border-blue-500 bg-blue-500/10 text-white'
-                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-blue-500/40 hover:text-white'
+                  ? 'border-blue-500 bg-blue-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
               }`}
             >
-              <span className="text-3xl leading-none">🐓</span>
-              <span className="font-black text-sm">Macho</span>
+              <span>🐓</span> Macho
             </button>
             <button
               type="button"
               onClick={() => setSexo('Fêmea')}
-              className={`py-4 px-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+              className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
                 sexo === 'Fêmea'
-                  ? 'border-pink-500 bg-pink-500/10 text-white'
-                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-pink-500/40 hover:text-white'
+                  ? 'border-pink-500 bg-pink-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
               }`}
             >
-              <span className="text-3xl leading-none">🐔</span>
-              <span className="font-black text-sm">Fêmea</span>
+              <span>🐔</span> Fêmea
             </button>
           </div>
         </div>
 
-        {/* ── 3. Raça — cards pill (≤6 raças) ou select (>6) ── */}
+        {/* Foto */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-            <span className="w-1 h-4 bg-theme-primary rounded-full shrink-0" />
-            Raça / Genética *
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
+            Fotos da Ave (Mín. 1, Máx. 10)
           </label>
-          {breeds.length === 0 ? (
-            <div className="p-4 rounded-2xl border-2 border-dashed border-theme-border text-center text-sm text-theme-text-muted">
-              Nenhuma raça cadastrada. Cadastre uma raça primeiro.
-            </div>
-          ) : breeds.length <= 6 ? (
-            <div className="flex flex-wrap gap-2">
-              {breeds.map(b => (
+          <div className="grid grid-cols-5 gap-2">
+            {previewImages.map((img, idx) => (
+              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
+                <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                {idx === 0 && (
+                  <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">Capa</span>
+                )}
                 <button
-                  key={b.id}
                   type="button"
-                  onClick={() => setRaca(b.nome)}
-                  className={`px-4 py-2.5 rounded-full border-2 text-sm font-black transition-all ${
-                    raca === b.nome
-                      ? 'border-theme-primary bg-theme-primary text-black'
-                      : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50 hover:text-white'
-                  }`}
+                  onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow flex items-center justify-center"
                 >
-                  {b.nome}
+                  <X size={10} />
                 </button>
-              ))}
-            </div>
-          ) : (
-            <select
-              value={raca}
-              onChange={e => setRaca(e.target.value)}
-              className="w-full bg-theme-base border-2 border-theme-border rounded-2xl p-4 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-            >
-              {breeds.map(b => <option key={b.id} value={b.nome}>{b.nome}</option>)}
-            </select>
-          )}
-        </div>
-
-        {/* ── 4. Mais Detalhes — colapsável ── */}
-        <div className="rounded-2xl border border-theme-border overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowOptional(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
-          >
-            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
-              Mais Detalhes {(nome || baia || dataNasc || peso) ? <span className="text-theme-primary ml-1">·</span> : null}
-            </span>
-            <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showOptional ? 'rotate-90' : ''}`} />
-          </button>
-          {showOptional && (
-            <div className="p-4 space-y-4 border-t border-theme-border bg-theme-surface/50 animate-fade-in">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome / Apelido</label>
-                  <input
-                    type="text" value={nome} onChange={e => setNome(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    placeholder="Ex: Titan"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Baia</label>
-                  <input
-                    type="text" value={baia} onChange={e => setBaia(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    placeholder="Ex: B-04"
-                  />
-                </div>
+                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">{idx + 1}</span>
               </div>
-              <NativeSelect label="Status" value={status} onChange={setStatus} options={statusOptions} />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nascimento</label>
-                  <input
-                    type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark] transition-colors"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Peso</label>
-                  <input
-                    type="text" value={peso} onChange={e => setPeso(e.target.value)}
-                    className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-                    placeholder="Ex: 3.2 kg"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── 5. Fotos — colapsável ── */}
-        <div className="rounded-2xl border border-theme-border overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowPhotos(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
-          >
-            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-2">
-              <Camera size={12} />
-              Fotos da Ave {previewImages.length > 0 ? `(${previewImages.length}/10)` : ''}
-            </span>
-            <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showPhotos ? 'rotate-90' : ''}`} />
-          </button>
-          {showPhotos && (
-            <div className="p-4 border-t border-theme-border bg-theme-surface/50 animate-fade-in">
-              <div className="grid grid-cols-5 gap-2">
-                {previewImages.map((img, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
-                    <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                    {idx === 0 && (
-                      <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">Capa</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow flex items-center justify-center"
-                    >
-                      <X size={10} />
-                    </button>
-                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{idx + 1}</span>
-                  </div>
-                ))}
-                {previewImages.length < 10 && (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
-                  >
-                    <Camera size={20} className="mb-0.5" />
-                    <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
-                  </div>
-                )}
-              </div>
-              <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-
-    // ── STEP 1: Origin ─────────────────────────────────────────────────────
-    if (step === 1) return (
-      <div className="space-y-5">
-        <div className="text-center space-y-1 pb-2">
-          <p className="font-bold text-white text-lg">Esta ave nasceu aqui no criatório?</p>
-          <p className="text-xs text-theme-text-muted">A resposta define o histórico genealógico e se precisa de quarentena</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setNascidaAqui(true)}
-            className={`p-5 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-              nascidaAqui === true
-                ? 'border-theme-primary bg-theme-primary/10 text-white'
-                : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/40'
-            }`}
-          >
-            <span className="text-4xl">🥚</span>
-            <span className="font-black text-sm">Sim, nasceu aqui</span>
-            <span className="text-[10px] text-center opacity-70">Pintinho de ovo chocado ou lote próprio</span>
-          </button>
-
-          <button
-            onClick={() => setNascidaAqui(false)}
-            className={`p-5 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-              nascidaAqui === false
-                ? 'border-orange-500 bg-orange-500/10 text-white'
-                : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-orange-400/40'
-            }`}
-          >
-            <span className="text-4xl">🚛</span>
-            <span className="font-black text-sm">Não, veio de fora</span>
-            <span className="text-[10px] text-center opacity-70">Comprada ou transferida de outro plantel</span>
-          </button>
-        </div>
-
-        {/* Nascida aqui: mostrar lotes de pintos + pai/mãe */}
-        {nascidaAqui === true && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Casal de Origem (se cadastrado)</label>
-              <select
-                value={casalId} onChange={e => setCasalId(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            ))}
+            {previewImages.length < 10 && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
               >
-                {casalOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <p className="text-[10px] text-theme-text-muted">Ao selecionar o casal, o pai e a mãe são preenchidos automaticamente</p>
-            </div>
-
-            <div className="p-3 bg-theme-primary/5 border border-theme-primary/20 rounded-xl">
-              <p className="text-xs font-bold text-theme-primary uppercase mb-3">Ou informe o pai e a mãe manualmente</p>
-              <div className="grid grid-cols-1 gap-3">
-                <NativeSelect
-                  label="Pai (Macho)"
-                  value={paiId}
-                  onChange={v => { setPaiId(v); setPaiExterno(''); }}
-                  options={machoOptions}
-                />
-                {!paiId && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Pai Externo (nome livre)</label>
-                    <input
-                      type="text" value={paiExterno} onChange={e => setPaiExterno(e.target.value)}
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                      placeholder="Ex: Galo campeão importado"
-                    />
-                  </div>
-                )}
-                <NativeSelect
-                  label="Mãe (Fêmea)"
-                  value={maeId}
-                  onChange={v => { setMaeId(v); setMaeExterno(''); }}
-                  options={femeaOptions}
-                />
-                {!maeId && (
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-theme-text-muted uppercase">Mãe Externa (nome livre)</label>
-                    <input
-                      type="text" value={maeExterno} onChange={e => setMaeExterno(e.target.value)}
-                      className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                      placeholder="Ex: Matriz importada"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {(paiId || paiExterno) && (maeId || maeExterno) && !casalId && (
-              <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs">
-                <CheckCircle size={16} className="shrink-0" />
-                <span>O casal Pai × Mãe será vinculado automaticamente na árvore genealógica mesmo sem cadastro prévio.</span>
+                <Camera size={20} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
               </div>
             )}
           </div>
-        )}
-
-        {/* Veio de fora: quarentena + info de origem */}
-        {nascidaAqui === false && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
-              <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={20} />
-              <div>
-                <p className="font-bold text-orange-300 text-sm mb-1">⚠️ Atenção: Quarentena Obrigatória</p>
-                <p className="text-orange-200 text-xs leading-relaxed">
-                  Aves vindas de fora devem ficar isoladas do plantel principal por <strong>30 a 40 dias</strong> antes de qualquer contato.
-                  Isso evita a introdução de doenças como Marek, Newcastle e outras.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase">Nome do Pai (se souber)</label>
-              <input type="text" value={paiExterno} onChange={e => setPaiExterno(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                placeholder="Ex: Galo campeão / desconhecido"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase">Nome da Mãe (se souber)</label>
-              <input type="text" value={maeExterno} onChange={e => setMaeExterno(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                placeholder="Ex: Matriz importada / desconhecida"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase">Descrição / Procedência</label>
-              <textarea
-                value={descricaoOrigem} onChange={e => setDescricaoOrigem(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none resize-none h-24"
-                placeholder="Ex: Adquirida da Granja São João, Minas Gerais. Linhagem Shamo japonesa."
-              />
-            </div>
-          </div>
-        )}
+          <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+        </div>
       </div>
     );
 
-    // ── STEP 2: Health ─────────────────────────────────────────────────────
-    if (step === 2) return (
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Vacinas e Imunizações</label>
+    // ── STEP 1: Peso, Baia, Categoria ──────────────────────────────────────
+    if (step === 1) return (
+      <div className="space-y-4">
+        {/* Peso */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Peso</label>
           <input
-            type="text" value={vacinas} onChange={e => setVacinas(e.target.value)}
+            type="text" value={peso} onChange={e => setPeso(e.target.value)}
             className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-            placeholder="Ex: Marek, Bouba Aviária, Newcastle..."
+            placeholder="Ex: 3.2 kg"
           />
-          <p className="text-[10px] text-theme-text-muted">Separe as vacinas por vírgula</p>
         </div>
 
-        {!vacinas && (
-          <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-            <ShieldAlert size={20} className="text-red-400 shrink-0" />
-            <div>
-              <p className="text-red-300 font-bold text-sm mb-0.5">Atenção: Saúde do Plantel</p>
-              <p className="text-red-200 text-xs">Aves sem vacinas registradas representam risco biológico. Certifique-se de manter o calendário sanitário em dia.</p>
+        {/* Baia */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Baia</label>
+          <input
+            type="text" value={baia} onChange={e => setBaia(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            placeholder="Ex: B-04"
+          />
+        </div>
+
+        {/* Categoria */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Categoria</label>
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+          >
+            {statusOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+
+    // ── STEP 2: Pedigree (Nascido Aqui / Vindo de Fora) + Idade ─────────────
+    if (step === 2) return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Pedigree (Origem)</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setNascidaAqui(true)}
+              className={`p-4 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-center ${
+                nascidaAqui === true
+                  ? 'border-theme-primary bg-theme-primary/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
+            >
+              <span className="text-2xl">🥚</span>
+              <span className="text-xs">Nascido Aqui</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNascidaAqui(false)}
+              className={`p-4 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-center ${
+                nascidaAqui === false
+                  ? 'border-orange-500 bg-orange-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
+            >
+              <span className="text-2xl">🚛</span>
+              <span className="text-xs">Vindo de Fora</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Nascido Aqui: dropdowns for father (reprodutor) and mother (matriz) */}
+        {nascidaAqui === true && (
+          <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Pai (Reprodutores Cadastrados)</label>
+              <select
+                value={paiId}
+                onChange={e => { setPaiId(e.target.value); setPaiExterno(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+              >
+                {machoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Mãe (Matrizes Cadastradas)</label>
+              <select
+                value={maeId}
+                onChange={e => { setMaeId(e.target.value); setMaeExterno(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+              >
+                {femeaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </div>
           </div>
         )}
 
-        {vacinas && (
-          <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-xl">
-            <CheckCircle size={16} className="text-green-400 shrink-0" />
-            <p className="text-green-300 text-xs">Vacinas registradas. Parabéns pelo cuidado com a saúde do seu plantel!</p>
+        {/* Vindo de Fora: text inputs */}
+        {nascidaAqui === false && (
+          <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Pai (Texto Livre)</label>
+              <input
+                type="text"
+                value={paiExterno}
+                onChange={e => { setPaiExterno(e.target.value); setPaiId(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                placeholder="Ex: Galo campeão importado"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Mãe (Texto Livre)</label>
+              <input
+                type="text"
+                value={maeExterno}
+                onChange={e => { setMaeExterno(e.target.value); setMaeId(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                placeholder="Ex: Matriz de fora"
+              />
+            </div>
           </div>
         )}
 
-        {/* Summary before saving */}
-        <div className="mt-2 p-4 bg-theme-base rounded-xl border border-theme-border space-y-2">
-          <p className="text-xs font-bold text-theme-text-muted uppercase mb-3">Resumo do Cadastro</p>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Anilha</span><span className="text-white font-bold">{anilha || '—'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Nome</span><span className="text-white font-bold">{nome || '—'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Raça</span><span className="text-white font-bold">{raca || '—'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Sexo</span><span className="text-white font-bold">{sexo}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Baia</span><span className="text-white font-bold">{baia || 'ND'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-theme-text-muted">Origem</span>
-            <span className={`font-bold ${nascidaAqui === false ? 'text-orange-400' : 'text-green-400'}`}>
-              {nascidaAqui === false ? 'Veio de fora (Quarentena)' : nascidaAqui === true ? 'Nascida aqui' : '—'}
-            </span>
+        {/* Idade picker in same step */}
+        {nascidaAqui !== null && (
+          <div className="space-y-1 pt-2">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Idade (Data de Nascimento)</label>
+            <input
+              type="date"
+              value={dataNasc}
+              onChange={e => setDataNasc(e.target.value)}
+              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]"
+            />
+            {dataNasc && (
+              <p className="text-xs text-theme-primary font-bold mt-1">
+                Idade calculada: {calculateExactAge(dataNasc)}
+              </p>
+            )}
           </div>
-        </div>
+        )}
       </div>
     );
+
+    // ── STEP 3: Vacinas (Bouba, Marek, Newcastle, Coriza) ──────────────────
+    if (step === 3) {
+      const vaccineOptions = [
+        { id: 'bouba', label: 'Bouba Aviária' },
+        { id: 'marek', label: 'Marek' },
+        { id: 'newcastle', label: 'Newcastle' },
+        { id: 'coriza', label: 'Coriza Infecciosa' }
+      ];
+
+      const toggleVaccine = (id: string) => {
+        setSelectedVacs(prev =>
+          prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+        );
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="font-bold text-white text-base">Vacinas e Imunizações</p>
+            <p className="text-xs text-theme-text-muted">Selecione todas as vacinas aplicadas nesta ave:</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5">
+            {vaccineOptions.map(v => {
+              const checked = selectedVacs.includes(v.id);
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => toggleVaccine(v.id)}
+                  className={`w-full p-4 rounded-xl border flex items-center justify-between text-left transition-all ${
+                    checked
+                      ? 'border-emerald-500 bg-emerald-500/10 text-white font-bold'
+                      : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{checked ? '🛡️' : '💉'}</span>
+                    <span>{v.label}</span>
+                  </div>
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                    checked ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-theme-border'
+                  }`}>
+                    {checked && <span className="text-[10px] font-black">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -630,11 +564,13 @@ export function AddBirdModal() {
             </button>
           </div>
           <div className="flex items-center gap-2 text-xs text-theme-text-muted mb-1">
-            <span className={step >= 0 ? 'text-theme-primary font-bold' : ''}>Dados</span>
+            <span className={step >= 0 ? 'text-theme-primary font-bold' : ''}>Identificação</span>
             <ChevronRight size={12} />
-            <span className={step >= 1 ? 'text-theme-primary font-bold' : ''}>Origem</span>
+            <span className={step >= 1 ? 'text-theme-primary font-bold' : ''}>Características</span>
             <ChevronRight size={12} />
-            <span className={step >= 2 ? 'text-theme-primary font-bold' : ''}>Saúde</span>
+            <span className={step >= 2 ? 'text-theme-primary font-bold' : ''}>Pedigree</span>
+            <ChevronRight size={12} />
+            <span className={step >= 3 ? 'text-theme-primary font-bold' : ''}>Vacinas</span>
           </div>
           <StepDots total={TOTAL_STEPS} current={step} />
         </div>
