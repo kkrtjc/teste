@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Dna, Layers, Settings, 
-  Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
+  Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle, Egg
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
@@ -199,7 +199,6 @@ export function Layout() {
     { icon: Dna, label: 'Genética & Cruza', path: '/genetics' },
     { icon: Layers, label: 'Lotes', path: '/lots' },
     { icon: Egg, label: 'Ovos', path: '/eggs' },
-    { icon: Skull, label: 'Baixas & Descartes', path: '/losses' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
@@ -302,7 +301,7 @@ export function Layout() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
           <Outlet />
         </div>
       </main>
