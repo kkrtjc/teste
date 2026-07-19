@@ -173,7 +173,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const DEFAULT_BREEDS: Breed[] = [
   {
-    id: 'seed-mura',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567001',
     nome: 'Mura',
     foco: 'Ornamental',
     descricao: 'Raça ornamental e de combate, muito valorizada por sua postura imponente, força e temperamento.',
@@ -183,7 +183,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '3.5 kg'
   },
   {
-    id: 'seed-brahma',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567002',
     nome: 'Brahma',
     foco: 'Misto (Carne e Ovos)',
     descricao: 'Raça de grande porte, dócil, excelente para carne e postura de ovos grandes no inverno.',
@@ -193,7 +193,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '4.5 kg'
   },
   {
-    id: 'seed-sedosa',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567003',
     nome: 'Sedosa',
     foco: 'Ornamental',
     descricao: 'Famosa por sua plumagem incrivelmente macia e felpuda que parece cabelo ou lã. Excelentes mães.',
@@ -203,7 +203,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '1.2 kg'
   },
   {
-    id: 'seed-caipira',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567004',
     nome: 'Caipira',
     foco: 'Misto (Carne e Ovos)',
     descricao: 'Galinha rústica de quintal, perfeitamente adaptada a sistemas livres, com carne saborosa e ovos caipiras.',
@@ -213,7 +213,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '2.8 kg'
   },
   {
-    id: 'seed-gsb',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567005',
     nome: 'GSB',
     foco: 'Misto (Carne e Ovos)',
     descricao: 'Galo Sertanejo Balão (GSB). Gigante de corpo arredondado, cauda curta e peito muito largo.',
@@ -223,7 +223,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '5.5 kg'
   },
   {
-    id: 'seed-indio-gigante',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567006',
     nome: 'Indio gigante',
     foco: 'Misto (Carne e Ovos)',
     descricao: 'Galo de altura excepcional, pernas longas e corpo ereto. Orgulho do melhoramento genético nacional.',
@@ -233,7 +233,7 @@ export const DEFAULT_BREEDS: Breed[] = [
     pesoMedio: '5.0 kg'
   },
   {
-    id: 'seed-polaco',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567007',
     nome: 'Polaco',
     foco: 'Misto (Carne e Ovos)',
     descricao: 'Galinha de pescoço pelado (Transilvânia / Polaca), muito rústica, dócil e produtiva.',
@@ -311,6 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     async function syncWithSupabaseBackground() {
       if (!isSupabaseConfigured || !user) return;
+      try {
 
       const [
         resBreeds,
@@ -356,118 +357,121 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (isSbEmpty && hasLocalData) {
         console.log('Migrando dados locais do IndexedDB para o Supabase...');
-        
-        if (localBreeds && localBreeds.length > 0) {
-          const breedsToInsert = localBreeds.map((b: any) => ({
-            id: b.id,
-            user_id: user.id,
-            nome: b.nome,
-            foco: b.foco,
-            descricao: b.descricao,
-            imagem: b.imagem,
-            tempo_crescimento: b.tempoCrescimento || 0,
-            peso_medio: b.pesoMedio || ''
-          }));
-          await supabase!.from('breeds').insert(breedsToInsert);
-          sbBreeds = breedsToInsert;
-        }
-        if (localBirds && localBirds.length > 0) {
-          const birdsToInsert = localBirds.map((b: any) => ({
-            id: b.id,
-            user_id: user.id,
-            anilha: b.anilha,
-            nome: b.nome,
-            sexo: b.sexo,
-            raca: b.raca,
-            baia: b.baia,
-            status: b.status,
-            imagem: b.imagem,
-            vacinas: b.vacinas,
-            origem: b.origem,
-            casal_id: b.casalId,
-            pai_id: b.paiId,
-            mae_id: b.maeId,
-            is_pai_externo: b.isPaiExterno,
-            is_mae_externo: b.isMaeExterno,
-            data_nascimento: b.dataNascimento,
-            peso: b.peso,
-            imagens: b.imagens || [],
-            observacoes: b.observacoes || ''
-          }));
-          await supabase!.from('birds').insert(birdsToInsert);
-          sbBirds = birdsToInsert;
-        }
-        if (localCouples && localCouples.length > 0) {
-          const couplesToInsert = localCouples.map((c: any) => ({
-            id: c.id,
-            user_id: user.id,
-            macho_id: c.machoId,
-            femea_id: c.femeaId,
-            objetivo: c.objetivo,
-            data_inicio: c.dataInicio,
-            status: c.status
-          }));
-          await supabase!.from('couples').insert(couplesToInsert);
-          sbCouples = couplesToInsert;
-        }
-        if (localEggLots && localEggLots.length > 0) {
-          const eggLotsToInsert = localEggLots.map((l: any) => ({
-            id: l.id,
-            user_id: user.id,
-            baia: l.baia,
-            femeas_ids: l.femeasIds,
-            expectativa_diaria: l.expectativaDiaria,
-            data_inicio: l.dataInicio,
-            status: l.status
-          }));
-          await supabase!.from('egg_lots').insert(eggLotsToInsert);
-          sbEggLots = eggLotsToInsert;
-        }
-        if (localMeatLots && localMeatLots.length > 0) {
-          const meatLotsToInsert = localMeatLots.map((l: any) => ({
-            id: l.id,
-            user_id: user.id,
-            baia: l.baia,
-            aves_ids: l.avesIds,
-            data_inicio: l.dataInicio,
-            peso_medio_inicial: l.pesoMedioInicial,
-            status: l.status
-          }));
-          await supabase!.from('meat_lots').insert(meatLotsToInsert);
-          sbMeatLots = meatLotsToInsert;
-        }
-        if (localCoupleEggs && localCoupleEggs.length > 0) {
-          const coupleEggsToInsert = localCoupleEggs.map((e: any) => ({
-            id: e.id,
-            user_id: user.id,
-            couple_id: e.coupleId,
-            femea_id: e.femeaId,
-            status: e.status,
-            data_introducao: e.dataIntroducao
-          }));
-          await supabase!.from('couple_eggs').insert(coupleEggsToInsert);
-        }
-        if (localIncubationLots && localIncubationLots.length > 0) {
-          const incubationLotsToInsert = localIncubationLots.map((l: any) => ({
-            id: l.id,
-            user_id: user.id,
-            couple_id: l.coupleId,
-            numero_lote: l.numeroLote,
-            quantidade_ovos: l.quantidadeOvos,
-            data_inicio: l.dataInicio,
-            baia: l.baia,
-            ovoscopia1_realizada: l.ovoscopia1Realizada || false,
-            ovoscopia2_realizada: l.ovoscopia2Realizada || false,
-            ovos_descartados1: l.ovosDescartados1 || 0,
-            ovos_descartados2: l.ovosDescartados2 || 0,
-            eclodido: l.eclodido || false
-          }));
-          await supabase!.from('incubation_lots').insert(incubationLotsToInsert);
-        }
-        if (localSettings) {
-          const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
-          await supabase!.from('profiles').upsert(settingsToInsert);
-          sbSettings = settingsToInsert;
+        try {
+          if (localBreeds && localBreeds.length > 0) {
+            const breedsToInsert = localBreeds.map((b: any) => ({
+              id: b.id,
+              user_id: user.id,
+              nome: b.nome,
+              foco: b.foco,
+              descricao: b.descricao,
+              imagem: b.imagem,
+              tempo_crescimento: b.tempoCrescimento || 0,
+              peso_medio: b.pesoMedio || ''
+            }));
+            await supabase!.from('breeds').insert(breedsToInsert);
+            sbBreeds = breedsToInsert;
+          }
+          if (localBirds && localBirds.length > 0) {
+            const birdsToInsert = localBirds.map((b: any) => ({
+              id: b.id,
+              user_id: user.id,
+              anilha: b.anilha,
+              nome: b.nome,
+              sexo: b.sexo,
+              raca: b.raca,
+              baia: b.baia,
+              status: b.status,
+              imagem: b.imagem,
+              vacinas: b.vacinas,
+              origem: b.origem,
+              casal_id: b.casalId,
+              pai_id: b.paiId,
+              mae_id: b.maeId,
+              is_pai_externo: b.isPaiExterno,
+              is_mae_externo: b.isMaeExterno,
+              data_nascimento: b.dataNascimento,
+              peso: b.peso,
+              imagens: b.imagens || [],
+              observacoes: b.observacoes || ''
+            }));
+            await supabase!.from('birds').insert(birdsToInsert);
+            sbBirds = birdsToInsert;
+          }
+          if (localCouples && localCouples.length > 0) {
+            const couplesToInsert = localCouples.map((c: any) => ({
+              id: c.id,
+              user_id: user.id,
+              macho_id: c.machoId,
+              femea_id: c.femeaId,
+              objetivo: c.objetivo,
+              data_inicio: c.dataInicio,
+              status: c.status
+            }));
+            await supabase!.from('couples').insert(couplesToInsert);
+            sbCouples = couplesToInsert;
+          }
+          if (localEggLots && localEggLots.length > 0) {
+            const eggLotsToInsert = localEggLots.map((l: any) => ({
+              id: l.id,
+              user_id: user.id,
+              baia: l.baia,
+              femeas_ids: l.femeasIds,
+              expectativa_diaria: l.expectativaDiaria,
+              data_inicio: l.dataInicio,
+              status: l.status
+            }));
+            await supabase!.from('egg_lots').insert(eggLotsToInsert);
+            sbEggLots = eggLotsToInsert;
+          }
+          if (localMeatLots && localMeatLots.length > 0) {
+            const meatLotsToInsert = localMeatLots.map((l: any) => ({
+              id: l.id,
+              user_id: user.id,
+              baia: l.baia,
+              aves_ids: l.avesIds,
+              data_inicio: l.dataInicio,
+              peso_medio_inicial: l.pesoMedioInicial,
+              status: l.status
+            }));
+            await supabase!.from('meat_lots').insert(meatLotsToInsert);
+            sbMeatLots = meatLotsToInsert;
+          }
+          if (localCoupleEggs && localCoupleEggs.length > 0) {
+            const coupleEggsToInsert = localCoupleEggs.map((e: any) => ({
+              id: e.id,
+              user_id: user.id,
+              couple_id: e.coupleId,
+              femea_id: e.femeaId,
+              status: e.status,
+              data_introducao: e.dataIntroducao
+            }));
+            await supabase!.from('couple_eggs').insert(coupleEggsToInsert);
+          }
+          if (localIncubationLots && localIncubationLots.length > 0) {
+            const incubationLotsToInsert = localIncubationLots.map((l: any) => ({
+              id: l.id,
+              user_id: user.id,
+              couple_id: l.coupleId,
+              numero_lote: l.numeroLote,
+              quantidade_ovos: l.quantidadeOvos,
+              data_inicio: l.dataInicio,
+              baia: l.baia,
+              ovoscopia1_realizada: l.ovoscopia1Realizada || false,
+              ovoscopia2_realizada: l.ovoscopia2Realizada || false,
+              ovos_descartados1: l.ovosDescartados1 || 0,
+              ovos_descartados2: l.ovosDescartados2 || 0,
+              eclodido: l.eclodido || false
+            }));
+            await supabase!.from('incubation_lots').insert(incubationLotsToInsert);
+          }
+          if (localSettings) {
+            const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
+            await supabase!.from('profiles').upsert(settingsToInsert);
+            sbSettings = settingsToInsert;
+          }
+        } catch (migrationError) {
+          console.error('Erro durante a migracao automatica de IndexedDB para o Supabase, ignorando e prosseguindo:', migrationError);
         }
       }
 
@@ -495,7 +499,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (missingBreeds.length > 0) {
         mappedBreeds = [...mappedBreeds, ...missingBreeds];
         if (isSupabaseConfigured && user) {
-          const breedsToInsert = missingBreeds.map(b => ({
+          const breedsToUpsert = missingBreeds.map(b => ({
             id: b.id,
             user_id: user.id,
             nome: b.nome,
@@ -505,7 +509,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             tempo_crescimento: b.tempoCrescimento,
             peso_medio: b.pesoMedio
           }));
-          supabase!.from('breeds').insert(breedsToInsert).then(({ error }) => {
+          supabase!.from('breeds').upsert(breedsToUpsert, { onConflict: 'id' }).then(({ error }) => {
             if (error) console.error('Erro ao semear raças iniciais:', error);
           });
         }
@@ -640,6 +644,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setFarmSettings(defaultSettings);
         await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
         await localforage.setItem(getStorageKey('settings'), defaultSettings);
+      }
+      } catch (syncError) {
+        console.error("Erro critico na sincronizacao em background, fazendo fallback offline:", syncError);
+        await loadFromLocalForage();
       }
     }
 
