@@ -14,6 +14,7 @@ const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })))
 const Losses = lazy(() => import('./pages/Losses').then(m => ({ default: m.Losses })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 
 function AppContent() {
   const { isReady, farmSettings, isTutorialOpen } = useAppContext();
@@ -75,6 +76,7 @@ function AppContent() {
               <Route path="birds" element={<Birds />} />
               <Route path="genetics" element={<Genetics />} />
               <Route path="lots" element={<Lots />} />
+              <Route path="eggs" element={<Eggs />} />
               <Route path="losses" element={<Losses />} />
               <Route path="settings" element={<Settings />} />
             </Route>

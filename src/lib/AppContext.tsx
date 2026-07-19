@@ -75,6 +75,17 @@ export type CoupleEgg = {
   dataIntroducao: string;    // data de introdução ao cruzador
 };
 
+export type EggDailyRecord = {
+  id: string;
+  data: string;           // YYYY-MM-DD
+  coletados: number;
+  vendidos: number;
+  perdidos: number;
+  precoVenda: number;     // R$ por dúzia
+  custoProd: number;      // R$ por ovo
+  observacao?: string;
+};
+
 export type EggLot = {
   id: string;
   baia: string;
@@ -82,6 +93,7 @@ export type EggLot = {
   expectativaDiaria: number;
   dataInicio: string;
   status: 'Ativo' | 'Encerrado';
+  registros?: EggDailyRecord[];
 };
 
 export type MeatLot = {
@@ -1119,16 +1131,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        // registros is stored only locally (offline-first) — not synced to Supabase column
         const dbUpdate: any = { ...updatedLot };
+        delete dbUpdate.registros;
         if (updatedLot.femeasIds !== undefined) { dbUpdate.femeas_ids = updatedLot.femeasIds; delete dbUpdate.femeasIds; }
         if (updatedLot.expectativaDiaria !== undefined) { dbUpdate.expectativa_diaria = updatedLot.expectativaDiaria; delete dbUpdate.expectativaDiaria; }
         if (updatedLot.dataInicio !== undefined) { dbUpdate.data_inicio = updatedLot.dataInicio; delete dbUpdate.dataInicio; }
 
-        supabase!
-          .from('egg_lots')
-          .update(dbUpdate)
-          .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editEggLot:', error); });
+        if (Object.keys(dbUpdate).length > 0) {
+          supabase!
+            .from('egg_lots')
+            .update(dbUpdate)
+            .eq('id', id)
+            .then(({ error }) => { if (error) console.error('Erro Supabase editEggLot:', error); });
+        }
       }
       return next;
     });

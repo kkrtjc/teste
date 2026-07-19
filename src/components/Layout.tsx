@@ -4,7 +4,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Dna, Layers, Settings, 
   Skull, Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle
+  Bell, MessageSquare, HelpCircle, Egg
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -198,6 +198,7 @@ export function Layout() {
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
     { icon: Dna, label: 'Genética & Cruza', path: '/genetics' },
     { icon: Layers, label: 'Lotes', path: '/lots' },
+    { icon: Egg, label: 'Ovos', path: '/eggs' },
     { icon: Skull, label: 'Baixas & Descartes', path: '/losses' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
@@ -208,7 +209,7 @@ export function Layout() {
     navItems[1], // Aves & Raças
     navItems[2], // Genética & Cruza
     navItems[3], // Lotes
-    navItems[4], // Baixas & Descartes
+    navItems[4], // Ovos
   ];
 
   return (
