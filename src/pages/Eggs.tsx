@@ -89,8 +89,8 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
   };
   const inputCls="w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden animate-scale-up" onClick={e=>e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-md rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up" onClick={e=>e.stopPropagation()}>
         <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
         <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>

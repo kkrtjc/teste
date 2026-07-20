@@ -4,6 +4,7 @@ import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { OnboardingModal } from './components/modals/OnboardingModal';
+import { PaywallScreen } from './components/PaywallScreen';
 import { Activity } from 'lucide-react';
 
 // Lazy loading das páginas internas para otimização de bundle inicial no celular
@@ -16,7 +17,7 @@ const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })))
 
 function AppContent() {
   const { isReady, farmSettings, isTutorialOpen } = useAppContext();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isExpired } = useAuth();
 
   // 1. Carrega a sessão de autenticação primeiro
   if (authLoading) {
@@ -52,6 +53,11 @@ function AppContent() {
         <p className="text-theme-text-muted mt-2">Sincronizando banco de dados...</p>
       </div>
     );
+  }
+
+  // 3.5. Se o período de testes ou assinatura expirou, exibe a tela de bloqueio de pagamento
+  if (isExpired) {
+    return <PaywallScreen />;
   }
 
   // 4. Primeiro login: perfil não configurado E tutorial concluído → exibe onboarding

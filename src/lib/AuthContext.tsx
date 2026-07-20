@@ -12,6 +12,7 @@ type AuthContextType = {
   session: Session | { access_token: string } | null;
   loading: boolean;
   isLocalMode: boolean;
+  isExpired: boolean;
   signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 };
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
+  const [isExpired, setIsExpired] = useState(false);
   const [loading, setLoading] = useState(() => {
     if (!isSupabaseConfigured) return true; // Será rápido (lê do localforage no useEffect)
     
@@ -193,13 +195,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (allowedError) {
         return { error: { message: 'Erro ao verificar permissão do e-mail. Tente novamente.' } };
       }
+      
       if (!allowedData) {
-        return { error: { message: 'Este e-mail não está cadastrado. Realize a assinatura na página inicial.' } };
+        // Autocadastro de trial de 7 dias grátis para e-mail
+        const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const generatedCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+        const clientPayload = {
+          cpf: generatedCpf,
+          nome: cleanId.split('@')[0],
+          whatsapp: '',
+          expires_at: trialExpiresAt,
+          email: cleanId
+        };
+
+        const { error: insertError } = await supabase!
+          .from('allowed_cpfs')
+          .insert([clientPayload]);
+          
+        if (insertError) {
+          return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
+        }
+        targetCpf = clientPayload.cpf;
+      } else {
+        targetCpf = allowedData.cpf;
+        resolvedEmail = allowedData.email || cleanId;
       }
-      if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
-        return { error: { message: 'Seu acesso expirou. Por favor, regularize sua assinatura.' } };
-      }
-      targetCpf = allowedData.cpf;
     } else {
       const { data: allowedData, error: allowedError } = await supabase!
         .from('allowed_cpfs')
@@ -210,14 +230,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (allowedError) {
         return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
       }
+
       if (!allowedData) {
-        return { error: { message: 'Este CPF não está cadastrado. Realize a assinatura na página inicial.' } };
+        // Autocadastro de trial de 7 dias grátis para CPF
+        const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const clientPayload = {
+          cpf: cleanId,
+          nome: 'Novo Criador',
+          whatsapp: '',
+          expires_at: trialExpiresAt,
+          email: `${cleanId}@mura.com`
+        };
+
+        const { error: insertError } = await supabase!
+          .from('allowed_cpfs')
+          .insert([clientPayload]);
+          
+        if (insertError) {
+          return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
+        }
+        resolvedEmail = clientPayload.email;
+        targetCpf = clientPayload.cpf;
+      } else {
+        resolvedEmail = allowedData.email || `${cleanId}@mura.com`;
+        targetCpf = allowedData.cpf;
       }
-      if (allowedData.expires_at && new Date(allowedData.expires_at) < new Date()) {
-        return { error: { message: 'Seu acesso expirou. Por favor, regularize sua assinatura.' } };
-      }
-      resolvedEmail = allowedData.email || `${cleanId}@mura.com`;
-      targetCpf = allowedData.cpf;
     }
 
     const password = passwordInput || `mura-${targetCpf || cleanId}-secure`;
@@ -293,11 +330,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
           const localData = localAllowedList.find(item => item.cpf === cleanCpf);
           if (!localData) {
-            alert('Acesso revogado: Seu CPF não está mais cadastrado no sistema.');
+            alert('Acesso revogado: Seu usuário não está cadastrado no sistema.');
             signOut();
           } else if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
-            alert('Acesso expirado: Seu prazo de renovação venceu. Entre em contato com o administrador.');
-            signOut();
+            setIsExpired(true);
+          } else {
+            setIsExpired(false);
           }
           return;
         }
@@ -314,13 +352,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Se o CPF não estiver mais na lista de autorizados, ou se estiver vencido, desloga na hora
+        // Se o CPF não estiver mais na lista de autorizados, desloga na hora. Se estiver apenas expirado temporariamente, define isExpired para true.
         if (!data) {
-          alert('Acesso revogado: Seu CPF não está mais cadastrado como cliente autorizado.');
+          alert('Acesso revogado: Seu usuário não está cadastrado como cliente autorizado.');
           signOut();
         } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
-          alert('Acesso expirado: Seu prazo de renovação venceu. Entre em contato com o administrador.');
-          signOut();
+          setIsExpired(true);
+        } else {
+          setIsExpired(false);
         }
       } catch (err) {
         console.error('Erro de conexão ao validar CPF:', err);
@@ -345,6 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       isLocalMode: !isSupabaseConfigured,
+      isExpired,
       signIn,
       signOut
     }}>

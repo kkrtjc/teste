@@ -4,7 +4,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle, Egg
+  Bell, MessageSquare, HelpCircle, Egg, Download, Share2
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -41,6 +41,56 @@ export function Layout() {
   const [modalLoading, setModalLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+
+  // Estados para gerenciamento de atalho de PWA (Instalação rápida)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    // Detecta se já está rodando no modo aplicativo atalho (standalone)
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Só exibe se não estiver instalado e o usuário não tiver fechado recentemente
+      const isClosed = localStorage.getItem('@mura-manager:install-banner-closed') === 'true';
+      if (!isStandaloneMode && !isClosed) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // Detecta dispositivo iOS
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(ios);
+
+    const isClosed = localStorage.getItem('@mura-manager:install-banner-closed') === 'true';
+    if (ios && !isStandaloneMode && !isClosed) {
+      setShowInstallBanner(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Escolha do prompt de instalação: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
+
+  const handleCloseInstallBanner = () => {
+    setShowInstallBanner(false);
+    // Guarda escolha por 7 dias para não incomodar o usuário
+    localStorage.setItem('@mura-manager:install-banner-closed', 'true');
+  };
 
   const fetchAllowedCpfs = async () => {
     setModalLoading(true);
@@ -295,6 +345,44 @@ export function Layout() {
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
+          {showInstallBanner && (
+            <div className="mb-4 bg-theme-surface border border-theme-primary/30 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 animate-fade-in relative overflow-hidden backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-theme-primary/10 text-theme-primary flex items-center justify-center shrink-0">
+                  <Download size={20} className="animate-bounce" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-black text-sm text-white">Instalar Mura Manager</p>
+                  {isIOS ? (
+                    <p className="text-xs text-theme-text-muted mt-0.5 leading-relaxed">
+                      Toque em <Share2 className="inline-block text-theme-primary mx-1" size={14} /> e selecione <strong className="text-white">Adicionar à Tela de Início</strong> no seu Safari.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-theme-text-muted mt-0.5">
+                      Instale o atalho na tela inicial para usar offline e em tela cheia.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {!isIOS && deferredPrompt && (
+                  <button 
+                    onClick={handleInstallClick}
+                    className="bg-theme-primary hover:bg-amber-400 text-black font-extrabold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    Instalar
+                  </button>
+                )}
+                <button 
+                  onClick={handleCloseInstallBanner}
+                  className="p-2 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                  title="Fechar"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          )}
           <Outlet />
         </div>
       </main>

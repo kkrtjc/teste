@@ -398,7 +398,7 @@ export function Login() {
           <div className="mb-12 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Planos e Preços</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha seu plano</h2>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>Sem taxas ocultas. Cancele quando quiser.</p>
+            <p className="text-sm font-bold text-theme-primary mt-1">Experimente Grátis por 7 dias — Sem compromisso e sem precisar cadastrar cartão!</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -406,12 +406,16 @@ export function Login() {
             <div className="rounded-2xl p-7 flex flex-col gap-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Mensal</p>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 49,90</span>
                   <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
-                  <span className="text-5xl font-black text-white tracking-tighter leading-none">59</span>
+                  <span className="text-5xl font-black text-white tracking-tighter leading-none">19</span>
                   <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,90</span>
                   <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/mês</span>
                 </div>
+                <p className="text-[10px] mt-1 flex items-center gap-1 font-bold text-theme-primary">
+                  <Sparkles size={9} /> Economia de 60% no lançamento
+                </p>
               </div>
               <ul className="space-y-2.5">
                 {['Aves e lotes ilimitados','Árvore genealógica','Sincronização em nuvem','Backup automático','Suporte prioritário'].map((item, i) => (
@@ -428,29 +432,30 @@ export function Login() {
                 className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform"
                 style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
               >
-                Começar Agora
+                Criar Conta Grátis
               </button>
             </div>
 
             {/* ANUAL */}
             <div className="rounded-2xl p-7 flex flex-col gap-6 relative overflow-hidden" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 50px rgba(245,158,11,0.06)' }}>
               <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black" style={{ background: '#f59e0b' }}>
-                Recomendado
+                Melhor Valor
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(245,158,11,0.7)' }}>Anual</p>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 399,90</span>
                   <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
-                  <span className="text-5xl font-black text-white tracking-tighter leading-none">639</span>
+                  <span className="text-5xl font-black text-theme-primary tracking-tighter leading-none">199</span>
                   <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,90</span>
                   <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/ano</span>
                 </div>
-                <p className="text-[10px] mt-1 flex items-center gap-1 font-bold" style={{ color: 'rgba(245,158,11,0.6)' }}>
-                  <Sparkles size={9} /> Economize R$ 78,90
+                <p className="text-[10px] mt-1 flex items-center gap-1 font-bold text-emerald-400">
+                  <Sparkles size={9} /> Super desconto promocional de lançamento
                 </p>
               </div>
               <ul className="space-y-2.5">
-                {['Tudo do plano mensal','1 mês grátis incluso','Acesso antecipado a novos recursos','Notificações inteligentes','Relatório anual de desempenho'].map((item, i) => (
+                {['Tudo do plano mensal','Acesso imediato de 7 dias grátis','Acesso antecipado a novos recursos','Notificações inteligentes','Relatório anual de desempenho'].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
                     <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)' }}>
                       <Check size={9} style={{ color: '#f59e0b' }} />
@@ -464,7 +469,7 @@ export function Login() {
                 className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform"
                 style={{ background: '#f59e0b', boxShadow: '0 0 24px rgba(245,158,11,0.25)' }}
               >
-                Assinar Plano Anual
+                Ativar 7 Dias Grátis
               </button>
             </div>
           </div>
@@ -554,9 +559,9 @@ export function Login() {
                   <Sparkles size={16} style={{ color: '#f59e0b' }} />
                 </div>
                 <div>
-                  <h3 className="font-black text-sm text-white">Assinar Mura Manager</h3>
+                  <h3 className="font-black text-sm text-white font-serif">Experimente Mura Manager</h3>
                   <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    Plano <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{selectedPlan === 'anual' ? 'Anual' : 'Mensal'}</span> · R$ {selectedPlan === 'anual' ? '639,90/ano' : '59,90/mês'}
+                    Plano <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{selectedPlan === 'anual' ? 'Anual' : 'Mensal'}</span> · 7 Dias Grátis · R$ {selectedPlan === 'anual' ? '199,90/ano' : '19,90/mês'}
                   </p>
                 </div>
               </div>
@@ -700,8 +705,8 @@ export function Login() {
                     <Check size={26}/>
                   </div>
                   <div>
-                    <h4 className="text-base font-black text-white mb-1.5">Assinatura Ativada!</h4>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Parabéns, {nome.split(' ')[0]}! Sua conta está pronta.</p>
+                    <h4 className="text-base font-black text-white mb-1.5 font-serif">Teste Grátis Ativado!</h4>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Parabéns, {nome.split(' ')[0]}! Seus 7 dias gratuitos começaram.</p>
                   </div>
                   <div className="w-full max-w-xs rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     {[['Identificador', cpf], ['Senha', '••••••']].map(([k,v]) => (
@@ -711,8 +716,8 @@ export function Login() {
                       </div>
                     ))}
                     <div className="flex justify-between text-xs border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>Validade</span>
-                      <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{new Date(Date.now() + (selectedPlan === 'anual' ? 365 : 30) * 86400000).toLocaleDateString('pt-BR')}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>Período de Teste</span>
+                      <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>7 Dias Grátis (Até {new Date(Date.now() + 7 * 86400000).toLocaleDateString('pt-BR')})</span>
                     </div>
                   </div>
                   <button onClick={handleAutoLogin} disabled={loginLoading}
