@@ -4,7 +4,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import localforage from 'localforage';
 
-export const ADMIN_CPF = '14477751630';
+export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
 
 type AuthContextType = {
   user: User | { id: string; email: string } | null;

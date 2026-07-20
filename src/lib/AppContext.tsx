@@ -912,6 +912,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const removeBreed = (id: string) => {
+    const breedToDelete = breeds.find(b => b.id === id);
     setBreeds(prev => {
       const next = prev.filter(b => b.id !== id);
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
@@ -926,6 +927,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
+
+    if (breedToDelete) {
+      setBirds(prev => {
+        const next = prev.map(b => b.raca === breedToDelete.nome ? { ...b, raca: '' } : b);
+        localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
+        
+        if (isSupabaseConfigured && user) {
+          supabase!
+            .from('birds')
+            .update({ raca: '' })
+            .eq('raca', breedToDelete.nome)
+            .then(({ error }) => { if (error) console.error('Erro Supabase cascade removeBreed:', error); });
+        }
+        return next;
+      });
+    }
   };
 
   const addBird = (bird: Bird) => {
@@ -1022,6 +1039,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
+
+    // Limpa referências de pedigree (pai e mãe) nas aves filhas
+    setBirds(prev => {
+      const next = prev.map(b => {
+        let changed = false;
+        const updated = { ...b };
+        if (b.paiId === id) { updated.paiId = ''; changed = true; }
+        if (b.maeId === id) { updated.maeId = ''; changed = true; }
+        return changed ? updated : b;
+      });
+      localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
+      
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('birds')
+          .update({ pai_id: '' })
+          .eq('pai_id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase cascade father removeBird:', error); });
+          
+        supabase!
+          .from('birds')
+          .update({ mae_id: '' })
+          .eq('mae_id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase cascade mother removeBird:', error); });
+      }
+      return next;
+    });
+
+    // Deleta casais associados à ave removida (machos e fêmeas) em cascata
+    const couplesToRemove = couples.filter(c => c.machoId === id || c.femeaId === id || c.femeaIds?.includes(id));
+    couplesToRemove.forEach(c => {
+      removeCouple(c.id);
+    });
   };
 
   const addCouple = (couple: Couple) => {
@@ -1075,13 +1125,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCouples(prev => {
       const next = prev.filter(c => c.id !== id);
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
-
+ 
       if (isSupabaseConfigured && user) {
         supabase!
           .from('couples')
           .delete()
           .eq('id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase removeCouple:', error); });
+      }
+      return next;
+    });
+
+    // Remove todos os ovos introduzidos desse casal
+    setCoupleEggs(prev => {
+      const next = prev.filter(e => e.coupleId !== id);
+      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('couple_eggs')
+          .delete()
+          .eq('couple_id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase cascade couple_eggs:', error); });
+      }
+      return next;
+    });
+
+    // Remove todos os lotes de incubação desse casal
+    setIncubationLots(prev => {
+      const next = prev.filter(l => l.coupleId !== id);
+      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('incubation_lots')
+          .delete()
+          .eq('couple_id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase cascade incubation_lots:', error); });
+      }
+      return next;
+    });
+
+    // Remove a associação de casalId em qualquer ave do plantel
+    setBirds(prev => {
+      const next = prev.map(b => b.casalId === id ? { ...b, casalId: undefined } : b);
+      localforage.setItem(getStorageKey('birds'), next).catch(console.error);
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('birds')
+          .update({ casal_id: null })
+          .eq('casal_id', id)
+          .then(({ error }) => { if (error) console.error('Erro Supabase cascade birds casal_id:', error); });
       }
       return next;
     });

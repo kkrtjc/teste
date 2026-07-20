@@ -46,6 +46,18 @@ export function Layout() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     // Detecta se já está rodando no modo aplicativo atalho (standalone)
@@ -300,7 +312,18 @@ export function Layout() {
         
         {/* Header */}
         <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0 mt-[env(safe-area-inset-top)]">
-          <h1 className="font-bold text-lg truncate text-white hidden md:block">{farmSettings.name || 'Mura Manager'}</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="font-bold text-lg truncate text-white hidden md:block">{farmSettings.name || 'Mura Manager'}</h1>
+            {/* Connection Status Badge */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
+              isOnline 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              <span>{isOnline ? 'Sincronizado' : 'Modo Offline'}</span>
+            </div>
+          </div>
           
           {/* Help / Tutorial Trigger */}
           <button
