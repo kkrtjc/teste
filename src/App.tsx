@@ -5,9 +5,9 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { Activity } from 'lucide-react';
-import { Login } from './pages/Login';
 
 // Lazy loading das páginas internas para otimização de bundle inicial no celular
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));

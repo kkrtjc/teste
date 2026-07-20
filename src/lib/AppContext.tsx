@@ -657,11 +657,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         quantidadeOvos: l.quantidade_ovos !== undefined ? l.quantidade_ovos : (l.quantidadeOvos || 0),
         dataInicio: l.data_inicio || l.dataInicio || '',
         baia: l.baia || '',
-        ovoscopia1Realizada: l.ovoscopia1_realizada !== undefined ? l.ovoscopia1_realizada : l.ovoscopia1Realizada,
-        ovoscopia2Realizada: l.ovoscopia2_realizada !== undefined ? l.ovoscopia2_realizada : l.ovoscopia2Realizada,
-        ovosDescartados1: l.ovos_descartados1 !== undefined ? l.ovos_descartados1 : l.ovosDescartados1,
-        ovosDescartados2: l.ovos_descartados2 !== undefined ? l.ovos_descartados2 : l.ovosDescartados2,
-        eclodido: l.eclodido !== undefined ? l.eclodido : l.eclodido
+        ovoscopia1Realizada: l.ovoscopia1_realizada !== undefined ? l.ovoscopia1_realizada : false,
+        ovoscopia2Realizada: l.ovoscopia2_realizada !== undefined ? l.ovoscopia2_realizada : false,
+        ovosDescartados1: l.ovos_descartados1 !== undefined ? l.ovos_descartados1 : 0,
+        ovosDescartados2: l.ovos_descartados2 !== undefined ? l.ovos_descartados2 : 0,
+        eclodido: l.eclodido !== undefined ? l.eclodido : false
       }));
       setIncubationLots(mappedIncubationLots);
       await localforage.setItem(getStorageKey('incubation-lots'), mappedIncubationLots);

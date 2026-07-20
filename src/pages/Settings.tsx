@@ -8,6 +8,7 @@ export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
+    coupleEggs, incubationLots,
     importBackup, openTutorial
   } = useAppContext();
   const { signOut, isLocalMode, cpf } = useAuth();
@@ -49,6 +50,8 @@ export function Settings() {
       breeds,
       birds,
       couples,
+      coupleEggs,
+      incubationLots,
       egglots: eggLots,
       meatlots: meatLots,
       settings: farmSettings
@@ -69,6 +72,14 @@ export function Settings() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const confirmImport = window.confirm(
+      "ATENÇÃO: A importação de um backup substituirá TODOS os dados atuais do seu criatório local e na nuvem. Deseja prosseguir?"
+    );
+    if (!confirmImport) {
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -86,11 +97,14 @@ export function Settings() {
         console.error(err);
         setImportStatus('error');
         setTimeout(() => setImportStatus('idle'), 4000);
+      } finally {
+        e.target.value = '';
       }
     };
     reader.onerror = () => {
       setImportStatus('error');
       setTimeout(() => setImportStatus('idle'), 4000);
+      e.target.value = '';
     };
     reader.readAsText(file);
   };

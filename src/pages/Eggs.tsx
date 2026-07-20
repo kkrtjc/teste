@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../lib/AppContext';
 import type { EggDailyRecord, EggLot } from '../lib/AppContext';
 import {
@@ -260,6 +261,7 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
 
 // Main
 export function Eggs() {
+  const navigate = useNavigate();
   const {eggLots,editEggLot,birds}=useAppContext();
   const [registerTarget,setRegisterTarget]=useState<EggLot|null>(null);
   const [period,setPeriod]=useState<7|30|999>(30);
@@ -313,11 +315,22 @@ export function Eggs() {
       </div>
 
       {eggLots.length===0&&(
-        <div className="rounded-2xl border border-dashed border-theme-border bg-theme-surface/40 p-10 text-center space-y-3">
+        <div className="rounded-2xl border border-dashed border-theme-border bg-theme-surface/40 p-10 text-center space-y-4">
           <Egg size={40} className="text-amber-400/40 mx-auto"/>
-          <p className="text-white font-black text-lg">Nenhum lote de ovos</p>
-          <p className="text-theme-text-muted text-sm max-w-xs mx-auto">Crie um lote de postura na aba <strong className="text-white">Lotes</strong> e ele aparecera aqui automaticamente.</p>
-          <div className="flex items-center justify-center gap-1.5 text-xs text-theme-text-muted"><Info size={12}/><span>Lotes &gt; Lote de Postura &gt; Criar novo</span></div>
+          <div className="space-y-1">
+            <p className="text-white font-black text-lg">Nenhum lote de ovos</p>
+            <p className="text-theme-text-muted text-sm max-w-xs mx-auto">Crie um lote de postura na aba <strong className="text-white">Lotes</strong> e ele aparecerá aqui automaticamente.</p>
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            <button 
+              onClick={() => navigate('/lots', { state: { tab: 'postura' } })}
+              className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400"
+            >
+              <Layers size={14}/>
+              <span>Criar Lote de Postura</span>
+            </button>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-theme-text-muted"><Info size={12}/><span>Lotes &gt; Lote de Postura &gt; Criar novo</span></div>
+          </div>
         </div>
       )}
 

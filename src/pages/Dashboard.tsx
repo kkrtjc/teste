@@ -1,6 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, ChevronRight, Bird, Users, Baby } from 'lucide-react';
+import { 
+  Search, X, ChevronRight, Bird, Users, Baby, 
+  Egg, Sparkles, Heart, Award 
+} from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
 /* ── helpers ── */
@@ -49,11 +52,40 @@ export function Dashboard() {
   }
   const bayResults = Array.from(baySet);
 
-  const totalAves   = birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length;
-  const totalMachos = birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
-  const totalFemeas = birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
-  const totalCrescimento = birds.filter(b => b.status === 'Crescimento').length;
-  const totalEclosao     = (coupleEggs || []).filter(e => e.status === 'Em Choco').length;
+  const stats = useMemo(() => {
+    let total = 0;
+    let machos = 0;
+    let femeas = 0;
+    let crescimento = 0;
+    
+    birds.forEach(b => {
+      if (b.status !== 'Vendido' && b.status !== 'Faleceu') {
+        total++;
+        if (b.sexo === 'Macho') machos++;
+        if (b.sexo === 'Fêmea') femeas++;
+      }
+      if (b.status === 'Crescimento') {
+        crescimento++;
+      }
+    });
+
+    const eclosao = (coupleEggs || []).filter(e => e.status === 'Em Choco').length;
+
+    return {
+      totalAves: total,
+      totalMachos: machos,
+      totalFemeas: femeas,
+      totalCrescimento: crescimento,
+      totalEclosao: eclosao
+    };
+  }, [birds, coupleEggs]);
+
+  const recentBirds = useMemo(() => {
+    return birds
+      .filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu')
+      .slice(-4)
+      .reverse();
+  }, [birds]);
 
   /* ── info de uma baia ── */
   const getBayInfo = (baia: string) => {
@@ -70,11 +102,18 @@ export function Dashboard() {
 
     // status dominante
     const statusList = avesNaBaia.map(b => b.status).filter(Boolean);
-    const dominantStatus = statusList.length > 0
-      ? statusList.sort((a, b) =>
-          statusList.filter(s => s === b).length - statusList.filter(s => s === a).length
-        )[0]
-      : '';
+    let dominantStatus = '';
+    if (statusList.length > 0) {
+      const counts: Record<string, number> = {};
+      let maxCount = 0;
+      statusList.forEach(s => {
+        counts[s] = (counts[s] || 0) + 1;
+        if (counts[s] > maxCount) {
+          maxCount = counts[s];
+          dominantStatus = s;
+        }
+      });
+    }
 
     return { avesNaBaia, machos, femeas, pintinhos, casal, macho, femea, dominantStatus };
   };
@@ -100,55 +139,85 @@ export function Dashboard() {
         {/* Total Aves Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Total' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-theme-primary">{totalAves}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Total de Aves</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{stats.totalAves}</span>
+            <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
+              <Bird size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Aves</p>
         </div>
 
         {/* Raças Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'racas' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-amber-400">{breeds.length}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Raças Cadastradas</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{breeds.length}</span>
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+              <Award size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Raças Cadastradas</p>
         </div>
 
         {/* Machos Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Macho' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-blue-400">{totalMachos}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Machos</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{stats.totalMachos}</span>
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
+              <Sparkles size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Machos</p>
         </div>
 
         {/* Fêmeas Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Fêmea' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-pink-400">{totalFemeas}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Fêmeas</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{stats.totalFemeas}</span>
+            <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
+              <Heart size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Fêmeas</p>
         </div>
 
         {/* Aves em Crescimento Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Crescimento' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-green-400">{totalCrescimento}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Aves em Crescimento</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{stats.totalCrescimento}</span>
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+              <Baby size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Crescimento</p>
         </div>
 
         {/* Ovos em Eclosão Card */}
         <div 
           onClick={() => navigate('/lots', { state: { tab: 'pintinhos' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/30 border border-theme-border/50 rounded-2xl py-3 text-center cursor-pointer transition-all active:scale-95 shadow-md"
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <p className="text-2xl font-black text-yellow-400">{totalEclosao}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted mt-0.5">Ovos em Eclosão</p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{stats.totalEclosao}</span>
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+              <Egg size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Ovos em Eclosão</p>
         </div>
       </div>
 
@@ -307,7 +376,7 @@ export function Dashboard() {
             <button onClick={() => navigate('/birds')} className="text-xs font-bold text-theme-primary hover:underline">Ver todas</button>
           </div>
           <div className="flex flex-col space-y-2.5">
-            {birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').slice(-4).reverse().map(bird => (
+            {recentBirds.map(bird => (
               <div
                 key={bird.id}
                 onClick={() => openBirdProfile(bird.id)}

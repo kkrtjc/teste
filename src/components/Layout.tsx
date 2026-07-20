@@ -22,6 +22,10 @@ export type AllowedCpf = {
   created_at?: string;
 };
 
+export const formatCPF = (cpf: string) => {
+  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+};
+
 export function Layout() {
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen } = useAppContext();
   const navigate = useNavigate();
@@ -63,16 +67,10 @@ export function Layout() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin && (isAdminModalOpen || allowedCpfs.length === 0)) {
       fetchAllowedCpfs();
     }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    if (isAdminModalOpen) {
-      fetchAllowedCpfs();
-    }
-  }, [isAdminModalOpen]);
+  }, [isAdmin, isAdminModalOpen]);
 
   const handleAddCpf = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +136,7 @@ export function Layout() {
   };
 
   const handleRemoveCpf = async (cpfToRemove: string) => {
-    const formattedCpf = cpfToRemove.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    const formattedCpf = formatCPF(cpfToRemove);
     if (!window.confirm(`Tem certeza que deseja revogar o acesso do CPF ${formattedCpf}?`)) {
       return;
     }
@@ -252,10 +250,7 @@ export function Layout() {
         
         {/* Header */}
         <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0 mt-[env(safe-area-inset-top)]">
-          <div className="md:hidden flex items-center gap-2 mr-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-theme-primary to-orange-600 flex items-center justify-center font-black text-black text-xs">M</div>
-          </div>
-          <h1 className="font-bold text-lg truncate text-white">{farmSettings.name || 'Mura Manager'}</h1>
+          <h1 className="font-bold text-lg truncate text-white hidden md:block">{farmSettings.name || 'Mura Manager'}</h1>
           
           {/* Help / Tutorial Trigger */}
           <button
@@ -388,7 +383,7 @@ export function Layout() {
                               <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
                               {c.nome || 'Cliente Sem Nome'} 
                               <span className="text-[10px] opacity-75 font-mono">
-                                ({c.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")})
+                                ({formatCPF(c.cpf)})
                               </span>
                             </p>
                             <p className="text-[10px] opacity-80 pl-3">
@@ -536,7 +531,7 @@ export function Layout() {
                                 {client.nome || 'Sem Nome'}
                               </span>
                               <span className="font-mono text-[10px] text-theme-text-muted">
-                                {client.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}
+                                {formatCPF(client.cpf)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-theme-text-muted flex-wrap">

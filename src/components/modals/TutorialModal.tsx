@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, ChevronLeft, ChevronRight, LayoutDashboard, Bird, 
-  Dna, Settings, HelpCircle, Check, Activity, Skull
+  Settings, HelpCircle, Check, Layers, Egg
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 
@@ -30,7 +30,7 @@ export function TutorialModal() {
       route: "/",
       selector: null,
       mobileSelector: null,
-      content: "Este guia rápido apresentará as principais ferramentas da plataforma. Aprenda a gerenciar seu plantel, monitorar cruzamentos, registrar vacinas e manter seus dados de produção totalmente seguros."
+      content: "Este guia rápido apresentará as principais ferramentas da plataforma. Aprenda a gerenciar seu plantel de aves, monitorar lotes de postura e engorda, registrar produções diárias de ovos e manter seus dados sincronizados e seguros."
     },
     {
       title: "Painel de Controle (Dashboard)",
@@ -51,31 +51,22 @@ export function TutorialModal() {
       content: "Cadastre e catalogue suas aves e raças. Cada ficha individual suporta informações detalhadas como número de anilha, sexo, peso, baia atual e galeria com até 10 fotos para acompanhamento evolutivo."
     },
     {
-      title: "Reprodução & Pedigree",
-      icon: Dna,
+      title: "Lotes de Criação",
+      icon: Layers,
       gradient: "from-purple-400 to-pink-500",
-      route: "/genetics",
-      selector: "#nav-link-genetics",
-      mobileSelector: "#mobile-nav-link-genetics",
-      content: "Monte cruzadores indicando o reprodutor e as matrizes. Registre as coletas de ovos, monitore o status de incubação e consulte a aba de Pedigree Visual para navegar pelas linhas de parentesco de cada animal."
+      route: "/lots",
+      selector: "#nav-link-lots",
+      mobileSelector: "#mobile-nav-link-lots",
+      content: "Gerencie de forma segmentada seus lotes de Postura, Engorda, Pintinhos e aves em Crescimento. Acompanhe a evolução de peso, controle a quantidade de aves e filtre-as por baia."
     },
     {
-      title: "Controle Sanitário & Vacinas",
-      icon: Activity,
-      gradient: "from-teal-400 to-cyan-500",
-      route: "/health",
-      selector: "#nav-link-health",
-      mobileSelector: "#mobile-nav-link-health",
-      content: "Mantenha o calendário sanitário do seu criatório em dia. Registre vacinas aplicadas e vermífugos administrados, vinculando-os diretamente às aves tratadas para manter o controle biológico."
-    },
-    {
-      title: "Baixas & Descartes",
-      icon: Skull,
-      gradient: "from-red-400 to-rose-500",
-      route: "/losses",
-      selector: "#nav-link-losses",
-      mobileSelector: "#mobile-nav-link-losses",
-      content: "Registre óbitos e descartes de aves do plantel, indicando a data e a causa (enfermidades, acidentes ou causas naturais). Esta ferramenta mantém as métricas ativas e o histórico de produção atualizado."
+      title: "Produção de Ovos",
+      icon: Egg,
+      gradient: "from-yellow-400 to-amber-500",
+      route: "/eggs",
+      selector: "#nav-link-eggs",
+      mobileSelector: "#mobile-nav-link-eggs",
+      content: "Monitore a produtividade dos lotes de postura. Registre coletas diárias de ovos, lance a quantidade de ovos vendidos ou perdidos, acompanhe o preço médio de venda e analise o faturamento e lucros através de painéis estatísticos intuitivos."
     },
     {
       title: "Configurações & Backup",

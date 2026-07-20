@@ -32,6 +32,17 @@ export function Birds() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Calcula a contagem de aves por raça em complexidade O(N) linear
+  const birdCountByBreed = useMemo(() => {
+    const counts: Record<string, number> = {};
+    birds.forEach(b => {
+      if (b.raca && b.status !== 'Vendido' && b.status !== 'Faleceu') {
+        counts[b.raca] = (counts[b.raca] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [birds]);
+
   // Sync tab focus and stats filters when activeBreed/state changes
   useEffect(() => {
     if (activeBreed) {
@@ -429,7 +440,7 @@ export function Birds() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {filteredBreeds.map(breed => {
-                  const count = birds.filter(b => b.raca === breed.nome).length;
+                  const count = birdCountByBreed[breed.nome] || 0;
                   return (
                     <div 
                       key={breed.id}
