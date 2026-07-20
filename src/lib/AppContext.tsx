@@ -596,27 +596,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCouples(mappedCouples);
       await localforage.setItem(getStorageKey('couples'), mappedCouples);
 
-      // Mapeia lotes de ovos de snake_case para camelCase
-      const mappedEggLots = sbEggLots.map((l: any) => ({
-        id: l.id,
-        baia: l.baia || '',
-        femeasIds: l.femeas_ids || l.femeasIds || [],
-        expectativaDiaria: l.expectativa_diaria !== undefined ? l.expectativa_diaria : (l.expectativaDiaria || 0),
-        dataInicio: l.data_inicio || l.dataInicio || '',
-        status: l.status || 'Ativo'
-      }));
+      // Mapeia lotes de ovos de snake_case para camelCase preservando propriedades locais (como registros)
+      const mappedEggLots = sbEggLots.map((l: any) => {
+        const local = (localEggLots || []).find((x: any) => x.id === l.id);
+        return {
+          id: l.id,
+          baia: l.baia || '',
+          femeasIds: l.femeas_ids || l.femeasIds || [],
+          expectativaDiaria: l.expectativa_diaria !== undefined ? l.expectativa_diaria : (l.expectativaDiaria || 0),
+          dataInicio: l.data_inicio || l.dataInicio || '',
+          status: l.status || 'Ativo',
+          // Preserva propriedades offline-first locais
+          raca: l.raca || local?.raca || '',
+          qtdFemeas: l.qtd_femeas || l.qtdFemeas || local?.qtdFemeas || 0,
+          precoVendaPadrao: l.preco_venda_padrao || l.precoVendaPadrao || local?.precoVendaPadrao || 6.0,
+          custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
+          observacao: l.observacao || local?.observacao || '',
+          registros: l.registros || local?.registros || []
+        };
+      });
       setEggLots(mappedEggLots);
       await localforage.setItem(getStorageKey('egglots'), mappedEggLots);
 
-      // Mapeia lotes de corte de snake_case para camelCase
-      const mappedMeatLots = sbMeatLots.map((l: any) => ({
-        id: l.id,
-        baia: l.baia || '',
-        avesIds: l.aves_ids || l.avesIds || [],
-        dataInicio: l.data_inicio || l.dataInicio || '',
-        pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
-        status: l.status || 'Crescimento'
-      }));
+      // Mapeia lotes de corte de snake_case para camelCase preservando propriedades locais (como raca, observacoes, pesoMeta)
+      const mappedMeatLots = sbMeatLots.map((l: any) => {
+        const local = (localMeatLots || []).find((x: any) => x.id === l.id);
+        return {
+          id: l.id,
+          baia: l.baia || '',
+          avesIds: l.aves_ids || l.avesIds || [],
+          dataInicio: l.data_inicio || l.dataInicio || '',
+          pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
+          status: l.status || 'Crescimento',
+          // Preserva propriedades offline-first locais
+          raca: l.raca || local?.raca || '',
+          observacao: l.observacao || local?.observacao || '',
+          pesoMeta: l.peso_meta || l.pesoMeta || local?.pesoMeta || '',
+          qtdAves: l.qtd_aves || l.qtdAves || local?.qtdAves || 0
+        };
+      });
       setMeatLots(mappedMeatLots);
       await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
