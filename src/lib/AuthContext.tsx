@@ -6,6 +6,12 @@ import localforage from 'localforage';
 
 export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
 
+export type TrialInfo = {
+  isTrial: boolean;
+  remainingDays: number;
+  expiresAt: string | null;
+};
+
 type AuthContextType = {
   user: User | { id: string; email: string } | null;
   cpf: string;
@@ -13,7 +19,13 @@ type AuthContextType = {
   loading: boolean;
   isLocalMode: boolean;
   isExpired: boolean;
+  trialInfo: TrialInfo;
+  lastWebhookConfirmation: number | null;
   signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
+  signInWithApple: () => Promise<{ error: any }>;
+  activateSubscription: (plan: 'monthly' | 'yearly') => Promise<{ error: any }>;
+  triggerWebhookPayment: (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 };
 
@@ -23,6 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [isExpired, setIsExpired] = useState(false);
+  const [lastWebhookConfirmation, setLastWebhookConfirmation] = useState<number | null>(null);
+  const [trialInfo, setTrialInfo] = useState<TrialInfo>({
+    isTrial: false,
+    remainingDays: 0,
+    expiresAt: null
+  });
   const [loading, setLoading] = useState(() => {
     if (!isSupabaseConfigured) return true; // Será rápido (lê do localforage no useEffect)
     
@@ -90,6 +108,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured) {
+      const mockEmail = `usuario.google.${Math.floor(Math.random() * 1000)}@gmail.com`;
+      const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+      const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+      const clientPayload = {
+        cpf: tempCpf,
+        nome: 'Usuário Google',
+        email: mockEmail,
+        expires_at: trialExpiresAt
+      };
+      const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+      list.push(clientPayload);
+      await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
+      const mockSession = {
+        session: { access_token: `google-mock-${Date.now()}` },
+        user: { id: `google-${tempCpf}`, email: mockEmail, user_metadata: { full_name: 'Usuário Google' } }
+      };
+      await localforage.setItem('@mura-manager:local-session', mockSession);
+      setUser(mockSession.user);
+      setSession(mockSession.session);
+      return { error: null };
+    }
+
+    const { error } = await supabase!.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    return { error };
+  };
+
+  const signInWithApple = async () => {
+    if (!isSupabaseConfigured) {
+      const mockEmail = `usuario.apple.${Math.floor(Math.random() * 1000)}@apple.com`;
+      const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+      const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+      const clientPayload = {
+        cpf: tempCpf,
+        nome: 'Usuário Apple',
+        email: mockEmail,
+        expires_at: trialExpiresAt
+      };
+      const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+      list.push(clientPayload);
+      await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
+      const mockSession = {
+        session: { access_token: `apple-mock-${Date.now()}` },
+        user: { id: `apple-${tempCpf}`, email: mockEmail, user_metadata: { full_name: 'Usuário Apple' } }
+      };
+      await localforage.setItem('@mura-manager:local-session', mockSession);
+      setUser(mockSession.user);
+      setSession(mockSession.session);
+      return { error: null };
+    }
+
+    const { error } = await supabase!.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin }
+    });
+    return { error };
+  };
+
   const signIn = async (identifier: string, passwordInput?: string) => {
     const isEmail = identifier.includes('@');
     const cleanId = isEmail ? identifier.trim() : identifier.replace(/\D/g, '');
@@ -110,17 +190,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const password = passwordInput || `mura2026`;
 
         try {
-          // Tenta login real
           const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
 
           if (!error && data.session) {
-            // Sucesso com Supabase real
             setSession(data.session);
             setUser(data.user);
             return { error: null };
           }
 
-          // Se falhou login real, tenta criar conta (caso tenha sido deletado do Auth para resetar senha)
           const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email, password });
           if (!signUpError && signUpData?.session) {
             setSession(signUpData.session);
@@ -132,8 +209,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Fallback: sessão local para admin (funciona offline ou com Supabase indisponível)
-      // Permite login com a senha 'mura2026' ou bypass caso esteja offline
       if (!passwordInput || passwordInput === 'mura2026') {
         const adminSession = {
           session: { access_token: `admin-local-${Date.now()}` },
@@ -146,6 +221,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         return { error: { message: 'Senha incorreta para a conta de administrador.' } };
       }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // SEGURANÇA: EXIGÊNCIA ESTRITA DE SENHA PARA USUÁRIOS
+    // ══════════════════════════════════════════════════════
+    if (!passwordInput || !passwordInput.trim()) {
+      return { error: { message: 'A senha de acesso é obrigatória para realizar o login.' } };
     }
 
     // ══════════════════════════════════════════════════════
@@ -164,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
         return { error: { message: 'Seu acesso expirou. Entre em contato com o administrador para renovar.' } };
       }
-      if (passwordInput && localData.senha && localData.senha !== passwordInput) {
+      if (localData.senha && localData.senha !== passwordInput) {
         return { error: { message: 'Senha incorreta.' } };
       }
 
@@ -182,7 +264,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // MODO ONLINE — usuário não-admin
     // ══════════════════════════════════════════════════════
     let resolvedEmail = '';
-    let targetCpf = '';
 
     if (isEmail) {
       resolvedEmail = cleanId;
@@ -197,7 +278,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (!allowedData) {
-        // Autocadastro de trial de 7 dias grátis para e-mail
         const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         const generatedCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
         const clientPayload = {
@@ -215,9 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (insertError) {
           return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
         }
-        targetCpf = clientPayload.cpf;
       } else {
-        targetCpf = allowedData.cpf;
         resolvedEmail = allowedData.email || cleanId;
       }
     } else {
@@ -232,7 +310,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!allowedData) {
-        // Autocadastro de trial de 7 dias grátis para CPF
         const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         const clientPayload = {
           cpf: cleanId,
@@ -250,17 +327,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
         }
         resolvedEmail = clientPayload.email;
-        targetCpf = clientPayload.cpf;
       } else {
         resolvedEmail = allowedData.email || `${cleanId}@mura.com`;
-        targetCpf = allowedData.cpf;
       }
     }
 
-    const password = passwordInput || `mura-${targetCpf || cleanId}-secure`;
-
     try {
-      const { data, error } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password });
+      const { data, error } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password: passwordInput });
 
       if (!error && data.session) {
         setSession(data.session);
@@ -268,29 +341,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: null };
       }
 
-      // Se for login por CPF tradicional sem senha e falhou no primeiro login, tenta criar conta
-      if (error && !passwordInput) {
-        const { data: signUpData, error: signUpError } = await supabase!.auth.signUp({ email: resolvedEmail, password });
-        if (signUpError) {
-          return { error: signUpError };
-        }
-        if (signUpData?.session) {
-          setSession(signUpData.session);
-          setUser(signUpData.user);
-          return { error: null };
-        }
-
-        // Tentativa final após signup
-        const { data: retry, error: retryErr } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password });
-        if (retryErr) {
-          return { error: { message: 'Conta criada, mas confirme o e-mail antes de entrar.' } };
-        }
-        setSession(retry.session);
-        setUser(retry.user);
-        return { error: null };
-      }
-
-      return { error: error || { message: 'Dados de acesso incorretos.' } };
+      return { error: error || { message: 'E-mail, CPF ou senha incorretos.' } };
     } catch (err: any) {
       return { error: err };
     }
@@ -312,30 +363,167 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.email.split('@')[0];
   };
 
-  // Verifica se o CPF logado continua na lista de CPFs autorizados.
-  // Caso tenha sido removido pelo administrador ou expirado, realiza o logout imediatamente.
+  const activateSubscription = async (plan: 'monthly' | 'yearly') => {
+    if (!user) return { error: { message: 'Usuário não autenticado.' } };
+
+    const days = plan === 'yearly' ? 365 : 30;
+    const newExpiresAt = new Date(Date.now() + days * 86400000).toISOString();
+    const userEmail = user.email;
+    const cleanCpf = getCpf();
+
+    try {
+      if (!isSupabaseConfigured) {
+        const localAllowedList = (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
+        const index = localAllowedList.findIndex(
+          (item) => (userEmail && item.email === userEmail) || (cleanCpf && item.cpf === cleanCpf)
+        );
+
+        if (index >= 0) {
+          localAllowedList[index].expires_at = newExpiresAt;
+        } else {
+          localAllowedList.push({
+            cpf: cleanCpf || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+            email: userEmail,
+            expires_at: newExpiresAt
+          });
+        }
+        await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
+      } else {
+        const { error: updateErr } = await supabase!
+          .from('allowed_cpfs')
+          .update({ expires_at: newExpiresAt })
+          .or(`email.eq.${userEmail},cpf.eq.${cleanCpf}`);
+
+        if (updateErr) {
+          await supabase!.from('allowed_cpfs').insert([
+            {
+              cpf: cleanCpf || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+              email: userEmail,
+              expires_at: newExpiresAt
+            }
+          ]);
+        }
+      }
+
+      setIsExpired(false);
+      setTrialInfo({
+        isTrial: false,
+        remainingDays: days,
+        expiresAt: newExpiresAt
+      });
+
+      return { error: null };
+    } catch (err: any) {
+      console.error('Erro ao ativar assinatura automaticamente:', err);
+      return { error: err };
+    }
+  };
+
+  const triggerWebhookPayment = async (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => {
+    const emailToUse = targetEmailOrCpf || user?.email;
+    const cleanCpfToUse = targetEmailOrCpf?.replace(/\D/g, '') || getCpf();
+    if (!emailToUse && !cleanCpfToUse) return { error: { message: 'Identificador do usuário não encontrado.' } };
+
+    const days = plan === 'yearly' ? 365 : 30;
+    const newExpiresAt = new Date(Date.now() + days * 86400000).toISOString();
+
+    try {
+      if (!isSupabaseConfigured) {
+        const localAllowedList = (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
+        const index = localAllowedList.findIndex(
+          (item) => (emailToUse && item.email === emailToUse) || (cleanCpfToUse && item.cpf === cleanCpfToUse)
+        );
+
+        if (index >= 0) {
+          localAllowedList[index].expires_at = newExpiresAt;
+        } else {
+          localAllowedList.push({
+            cpf: cleanCpfToUse || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+            email: emailToUse,
+            expires_at: newExpiresAt
+          });
+        }
+        await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
+      } else {
+        const query = emailToUse ? `email.eq.${emailToUse}` : `cpf.eq.${cleanCpfToUse}`;
+        const { error: updateErr } = await supabase!
+          .from('allowed_cpfs')
+          .update({ expires_at: newExpiresAt })
+          .or(query);
+
+        if (updateErr) {
+          await supabase!.from('allowed_cpfs').insert([
+            {
+              cpf: cleanCpfToUse || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+              email: emailToUse,
+              expires_at: newExpiresAt
+            }
+          ]);
+        }
+      }
+
+      setIsExpired(false);
+      setLastWebhookConfirmation(Date.now());
+      setTrialInfo({
+        isTrial: false,
+        remainingDays: days,
+        expiresAt: newExpiresAt
+      });
+
+      return { error: null };
+    } catch (err: any) {
+      console.error('Erro ao processar Webhook de pagamento:', err);
+      return { error: err };
+    }
+  };
+
+  // Escuta contínua em tempo real (polling a cada 3s) para capturar aprovações de Webhook do gateway!
   useEffect(() => {
     if (!user) return;
 
     const cleanCpf = getCpf();
-    if (!cleanCpf) return;
+    const userEmail = user.email;
+    if (!cleanCpf && !userEmail) return;
 
-    // CPF de administrador é permanente e não precisa ser validado
     if (cleanCpf === ADMIN_CPF) return;
 
     async function checkCurrentCpfAccess() {
       try {
         if (!isSupabaseConfigured) {
-          // Validação local em segundo plano
           const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-          const localData = localAllowedList.find(item => item.cpf === cleanCpf);
+          let localData = localAllowedList.find(item => item.cpf === cleanCpf || item.email === userEmail);
+          
+          if (!localData && userEmail) {
+            const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+            const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+            localData = {
+              cpf: tempCpf,
+              nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário',
+              email: userEmail,
+              expires_at: trialExpiresAt
+            };
+            localAllowedList.push(localData);
+            await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
+          }
+
           if (!localData) {
             alert('Acesso revogado: Seu usuário não está cadastrado no sistema.');
             signOut();
-          } else if (localData.expires_at && new Date(localData.expires_at) < new Date()) {
-            setIsExpired(true);
           } else {
-            setIsExpired(false);
+            const expDate = localData.expires_at;
+            if (expDate) {
+              const diffTime = new Date(expDate).getTime() - Date.now();
+              const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              const expired = diffTime <= 0;
+              setIsExpired(expired);
+              setTrialInfo({
+                isTrial: daysLeft <= 7 && !expired,
+                remainingDays: daysLeft,
+                expiresAt: expDate
+              });
+            } else {
+              setIsExpired(false);
+            }
           }
           return;
         }
@@ -343,34 +531,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Validação online no Supabase
         const { data, error } = await supabase!
           .from('allowed_cpfs')
-          .select('cpf, expires_at')
-          .eq('cpf', cleanCpf)
+          .select('cpf, expires_at, email')
+          .or(`email.eq.${userEmail},cpf.eq.${cleanCpf}`)
           .maybeSingle();
 
         if (error) {
-          console.error('Erro ao validar acesso do CPF ativo:', error);
+          console.error('Erro ao validar acesso do usuário ativo:', error);
           return;
         }
 
-        // Se o CPF não estiver mais na lista de autorizados, desloga na hora. Se estiver apenas expirado temporariamente, define isExpired para true.
+        if (!data && userEmail) {
+          const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+          const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+          const newClient = {
+            cpf: tempCpf,
+            nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
+            email: userEmail,
+            expires_at: trialExpiresAt
+          };
+          await supabase!.from('allowed_cpfs').insert([newClient]);
+          setIsExpired(false);
+          setTrialInfo({
+            isTrial: true,
+            remainingDays: 7,
+            expiresAt: trialExpiresAt
+          });
+          return;
+        }
+
         if (!data) {
           alert('Acesso revogado: Seu usuário não está cadastrado como cliente autorizado.');
           signOut();
-        } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
-          setIsExpired(true);
         } else {
-          setIsExpired(false);
+          const expDate = data.expires_at;
+          if (expDate) {
+            const diffTime = new Date(expDate).getTime() - Date.now();
+            const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            const expired = diffTime <= 0;
+            setIsExpired(expired);
+            setTrialInfo({
+              isTrial: daysLeft <= 7 && !expired,
+              remainingDays: daysLeft,
+              expiresAt: expDate
+            });
+          } else {
+            setIsExpired(false);
+          }
         }
       } catch (err) {
-        console.error('Erro de conexão ao validar CPF:', err);
+        console.error('Erro de conexão ao validar usuário:', err);
       }
     }
 
-    // Executa no carregamento do app/sessão
     checkCurrentCpfAccess();
-
-    // Executa periodicamente a cada 5 minutos
-    const interval = setInterval(checkCurrentCpfAccess, 300000);
+    // Sondagem a cada 3s para escuta ativa de aprovação de Webhook
+    const interval = setInterval(checkCurrentCpfAccess, 3000);
 
     return () => {
       clearInterval(interval);
@@ -385,7 +600,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isLocalMode: !isSupabaseConfigured,
       isExpired,
+      trialInfo,
+      lastWebhookConfirmation,
       signIn,
+      signInWithGoogle,
+      signInWithApple,
+      activateSubscription,
+      triggerWebhookPayment,
       signOut
     }}>
       {children}

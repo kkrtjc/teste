@@ -3,17 +3,19 @@ import { useAuth } from '../lib/AuthContext';
 import { useAppContext } from '../lib/AppContext';
 import { 
   ShieldAlert, LogOut, Egg, Bird, 
-  Layers, Database, Sparkles, MessageSquare, Copy, CheckCircle2 
+  Layers, Database, Sparkles, MessageSquare, Copy, CheckCircle2, Loader2 
 } from 'lucide-react';
 
 export function PaywallScreen() {
-  const { signOut, cpf } = useAuth();
+  const { signOut, cpf, triggerWebhookPayment } = useAuth();
   const { farmSettings } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copied, setCopied] = useState(false);
 
   // Chave Pix aleatória fictícia ou de arrecadação do criador para demonstração
   const pixKey = "mura.manager.pay@gmail.com"; 
+
+  const [paymentCpf, setPaymentCpf] = useState('');
 
   const handleCopyPix = () => {
     navigator.clipboard.writeText(pixKey);
@@ -23,8 +25,9 @@ export function PaywallScreen() {
 
   const getWhatsappLink = () => {
     const planText = selectedPlan === 'monthly' ? 'Mensal (R$ 19,90/mês)' : 'Anual Promocional (R$ 199,90/ano)';
+    const userIdent = paymentCpf ? `CPF: ${paymentCpf}` : `Usuário: ${cpf}`;
     const text = encodeURIComponent(
-      `Olá! Realizei o pagamento do plano ${planText} para o Mura Manager (Usuário CPF/E-mail: ${cpf}). Segue em anexo o comprovante para liberação.`
+      `Olá! Realizei o pagamento do plano ${planText} para o Mura Manager (${userIdent}). Segue em anexo o comprovante para liberação.`
     );
     return `https://wa.me/55${farmSettings.phone.replace(/\D/g, '') || '5599999999999'}?text=${text}`;
   };
@@ -157,17 +160,58 @@ export function PaywallScreen() {
             </button>
           </div>
 
-          <div className="pt-2">
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] font-bold text-theme-text-muted uppercase">Seu CPF (para liberação da conta)</label>
+            <input 
+              type="text" 
+              placeholder="000.000.000-00"
+              value={paymentCpf}
+              onChange={(e) => {
+                const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                if (clean.length <= 3) setPaymentCpf(clean);
+                else if (clean.length <= 6) setPaymentCpf(`${clean.slice(0,3)}.${clean.slice(3)}`);
+                else if (clean.length <= 9) setPaymentCpf(`${clean.slice(0,3)}.${clean.slice(3,6)}.${clean.slice(6)}`);
+                else setPaymentCpf(`${clean.slice(0,3)}.${clean.slice(3,6)}.${clean.slice(6,9)}-${clean.slice(9)}`);
+              }}
+              className="w-full bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-xs text-white focus:border-theme-primary outline-none text-center font-mono font-bold"
+            />
+          </div>
+
+          <div className="pt-2 space-y-3">
+            {/* Status da Escuta em Tempo Real do Webhook */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
+                <Loader2 size={14} className="animate-spin" />
+                <span>Aguardando confirmação do pagamento via Webhook...</span>
+              </div>
+              <p className="text-[10px] text-theme-text-muted">
+                Assim que o banco/gateway confirmar seu Pix ou Cartão, o sistema libera seu acesso em tempo real.
+              </p>
+            </div>
+
+            {/* Botão de Simulação de Webhook para Ambiente de Testes */}
+            <button 
+              onClick={async () => {
+                const { error } = await triggerWebhookPayment(selectedPlan, paymentCpf || cpf);
+                if (error) {
+                  alert('Erro ao enviar notificação de Webhook.');
+                }
+              }}
+              className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-lg shadow-amber-500/20"
+            >
+              <Sparkles size={16} />
+              <span>Simular Liberação por Webhook (Teste)</span>
+            </button>
+
             <a 
               href={getWhatsappLink()}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full btn-primary py-3 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs"
+              className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-theme-text-muted hover:text-white bg-theme-surface border border-theme-border text-[11px]"
             >
-              <MessageSquare size={16} />
-              <span>Enviar Comprovante de Pagamento</span>
+              <MessageSquare size={14} />
+              <span>Enviar Comprovante pelo WhatsApp</span>
             </a>
-            <p className="text-[9px] text-theme-text-muted mt-2">O acesso será liberado imediatamente após o envio do comprovante.</p>
           </div>
         </div>
 

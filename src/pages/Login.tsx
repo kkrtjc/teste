@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
-  TrendingUp, History, Smartphone, ArrowDown, CreditCard, QrCode,
-  Clipboard, Lock, User, Mail, FileText, X, ChevronRight, AlertTriangle, Star
+  TrendingUp, History, Smartphone, Lock, User, Mail, X, Star
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -28,30 +27,22 @@ const features = [
 ];
 
 export function Login() {
-  const { signIn, isLocalMode } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, isLocalMode } = useAuth();
   const detailsRef = useRef<HTMLDivElement>(null);
 
   const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [selectedPlan, setSelectedPlan] = useState<'mensal' | 'anual' | null>(null);
-  const [checkoutStep, setCheckoutStep] = useState<'form' | 'payment' | 'success'>('form');
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
-  const [copiedPix, setCopiedPix] = useState(false);
-
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [senha, setSenha] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCVV, setCardCVV] = useState('');
+  const [regNome, setRegNome] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regSenha, setRegSenha] = useState('');
+  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
 
   const formatCPF = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
@@ -77,54 +68,52 @@ export function Login() {
     }
   };
 
-  const handleCheckoutSubmit = async (e: React.FormEvent) => {
+  const handleFreeRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanCpf = cpf.replace(/\D/g, '');
-    if (!nome.trim()) { setCheckoutError('Informe seu nome.'); return; }
-    if (!email.includes('@')) { setCheckoutError('E-mail inválido.'); return; }
-    if (cleanCpf.length !== 11) { setCheckoutError('CPF inválido.'); return; }
-    if (senha.length < 6) { setCheckoutError('Senha deve ter mínimo 6 caracteres.'); return; }
-    setCheckoutError('');
-    setCheckoutStep('payment');
-  };
+    const cleanEmail = regEmail.trim().toLowerCase();
+    if (!regNome.trim()) { setRegError('Informe seu nome completo.'); return; }
+    if (!cleanEmail || !cleanEmail.includes('@')) { setRegError('Informe um e-mail válido.'); return; }
+    if (regSenha.length < 6) { setRegError('A senha deve ter no mínimo 6 caracteres.'); return; }
 
-  const handleConfirmPayment = async () => {
-    setCheckoutLoading(true);
-    setCheckoutError('');
-    const cleanCpf = cpf.replace(/\D/g, '');
-    const days = selectedPlan === 'anual' ? 365 : 30;
-    const expiresAt = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+    setRegError('');
+    setRegLoading(true);
+
+    const days = 7;
+    const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+    const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+
     try {
+      const clientPayload = {
+        cpf: tempCpf,
+        email: cleanEmail,
+        nome: regNome.trim(),
+        senha: regSenha,
+        expires_at: expiresAt
+      };
+
       if (isSupabaseConfigured) {
-        const { error: insertErr } = await supabase!.from('allowed_cpfs').insert({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
+        const { error: insertErr } = await supabase!.from('allowed_cpfs').insert([clientPayload]);
         if (insertErr) {
           const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-          list.push({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
+          list.push(clientPayload);
           await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
         }
-        await supabase!.auth.signUp({ email: email.trim().toLowerCase(), password: senha });
+        await supabase!.auth.signUp({ email: cleanEmail, password: regSenha });
       } else {
         const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-        list.push({ cpf: cleanCpf, email: email.trim().toLowerCase(), senha, expires_at: expiresAt });
+        list.push(clientPayload);
         await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
       }
-      setCheckoutStep('success');
+
+      const { error: loginErr } = await signIn(cleanEmail, regSenha);
+      if (loginErr) {
+        setRegError(loginErr.message || 'Erro ao entrar na conta criada.');
+      }
     } catch (err: any) {
-      setCheckoutError(err.message || 'Erro ao processar.');
+      setRegError(err.message || 'Erro ao criar conta de testes.');
     } finally {
-      setCheckoutLoading(false);
+      setRegLoading(false);
     }
-  };
-
-  const handleAutoLogin = async () => {
-    setLoginLoading(true);
-    try { await signIn(email, senha); } catch { setShowLoginForm(true); setSelectedPlan(null); } finally { setLoginLoading(false); }
-  };
-
-  const copyPixCode = () => {
-    navigator.clipboard.writeText('00020126580014BR.GOV.BCB.PIX013600000000000000000000000000005204000053039865802BR5912MURA_MANAGER6009SAO_PAULO62070503***6304E21A');
-    setCopiedPix(true);
-    setTimeout(() => setCopiedPix(false), 2500);
   };
 
   /* ── INPUT STYLES ────────────────── */
@@ -309,15 +298,15 @@ export function Login() {
         {/* CTAs */}
         <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
           <button
-            onClick={() => { setShowLoginForm(true); setLoginError(''); }}
+            onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: '#f59e0b', boxShadow: '0 0 28px rgba(245,158,11,0.35)' }}
           >
-            <LogIn size={13} /> Acesse sua Conta
+            <Sparkles size={13} /> Criar Conta Grátis (7 Dias)
           </button>
 
           <button
-            onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => { setShowLoginForm(true); setShowRegisterForm(false); setLoginError(''); }}
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-colors flex items-center gap-2"
             style={{
               color: '#f59e0b',
@@ -327,7 +316,7 @@ export function Login() {
               WebkitBackdropFilter: 'blur(6px)',
             }}
           >
-            Ver Recursos <ArrowDown size={12} />
+            <LogIn size={13} /> Acesse sua Conta
           </button>
         </div>
 
@@ -428,11 +417,11 @@ export function Login() {
                 ))}
               </ul>
               <button
-                onClick={() => { setSelectedPlan('mensal'); setCheckoutStep('form'); setCheckoutError(''); }}
+                onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
                 className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform"
                 style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
               >
-                Criar Conta Grátis
+                Criar Conta Grátis (7 Dias)
               </button>
             </div>
 
@@ -465,7 +454,7 @@ export function Login() {
                 ))}
               </ul>
               <button
-                onClick={() => { setSelectedPlan('anual'); setCheckoutStep('form'); setCheckoutError(''); }}
+                onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
                 className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform"
                 style={{ background: '#f59e0b', boxShadow: '0 0 24px rgba(245,158,11,0.25)' }}
               >
@@ -514,6 +503,47 @@ export function Login() {
                   {loginError}
                 </div>
               )}
+
+              {/* Botões de Login Social */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithGoogle();
+                    if (error) setLoginError(error.message || 'Erro ao entrar com o Google.');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-white text-gray-900 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100 active:scale-95 transition-all shadow-md"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <span>Entrar com o Google</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithApple();
+                    if (error) setLoginError(error.message || 'Erro ao entrar com a Apple.');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-neutral-900 border border-neutral-700 active:scale-95 transition-all shadow-md"
+                >
+                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 170 170">
+                    <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.82.13-9.69-1.92-14.6-6.14-3.32-2.81-7.25-7.51-11.78-14.11-6.1-8.91-10.9-18.88-14.4-29.91-3.5-11.03-5.25-21.75-5.25-32.17 0-14.54 3.78-26.6 11.33-36.19 7.56-9.59 17.06-14.45 28.52-14.58 5.46 0 11.12 1.4 16.98 4.19 5.86 2.79 10.02 4.19 12.49 4.19 2.1 0 6.29-1.39 12.57-4.17 6.28-2.78 11.77-4.1 16.48-3.96 8.76.3 16.32 3.23 22.68 8.79 6.36 5.56 10.74 12.82 13.14 21.78-11.69 7.07-17.41 16.71-17.15 28.92.26 9.8 4.09 18.06 11.49 24.78 4.79 4.3 10.23 7.37 16.32 9.21-2.58 7.42-6.1 15.26-10.56 23.51zM119.22 31.08c0-7.04 2.54-13.68 7.62-19.92 5.08-6.24 11.45-10.19 19.11-11.86.6 6.78-1.5 13.56-6.3 20.34-4.8 6.78-11.16 10.87-19.08 12.27-.26-.27-.67-.47-1.35-.83z" />
+                  </svg>
+                  <span>Entrar com a Apple</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-[1px]" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>ou e-mail / CPF</span>
+                <div className="flex-1 h-[1px]" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail ou CPF</label>
                 <div className="relative">
@@ -535,6 +565,17 @@ export function Login() {
                 style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
                 {loginLoading ? <Activity size={15} className="animate-spin" /> : <><LogIn size={14} /> Entrar na Plataforma</>}
               </button>
+              
+              <div className="pt-3 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowLoginForm(false); setShowRegisterForm(true); setRegError(''); }}
+                  className="text-xs text-theme-text-muted hover:text-white transition-colors"
+                >
+                  Ainda não tem conta? <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Cadastre-se grátis por 7 dias</span>
+                </button>
+              </div>
+
               {isLocalMode && (
                 <div className="p-2 rounded-lg text-[9px] text-center" style={{ background: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.1)', color: 'rgba(253,186,116,0.35)' }}>
                   Modo Offline · Admin: 14477751630
@@ -546,188 +587,111 @@ export function Login() {
       )}
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL CHECKOUT                                        */}
+      {/* MODAL CADASTRO GRÁTIS DE 7 DIAS                       */}
       {/* ══════════════════════════════════════════════════════ */}
-      {selectedPlan && (
+      {showRegisterForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
           style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-          <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            {/* Header */}
-            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center shrink-0" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
+            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
                   <Sparkles size={16} style={{ color: '#f59e0b' }} />
                 </div>
                 <div>
-                  <h3 className="font-black text-sm text-white font-serif">Experimente Mura Manager</h3>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    Plano <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{selectedPlan === 'anual' ? 'Anual' : 'Mensal'}</span> · 7 Dias Grátis · R$ {selectedPlan === 'anual' ? '199,90/ano' : '19,90/mês'}
-                  </p>
+                  <h3 className="font-black text-sm text-white font-serif">Criar Conta Grátis</h3>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>7 dias grátis sem cartão nem CPF</p>
                 </div>
               </div>
-              {checkoutStep !== 'success' && (
-                <button onClick={() => setSelectedPlan(null)} className="p-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                  <X size={18} />
-                </button>
-              )}
+              <button onClick={() => setShowRegisterForm(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}>
+                <X size={18} />
+              </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto px-7 py-6 space-y-5">
-              {checkoutError && (
+            <form onSubmit={handleFreeRegisterSubmit} className="px-7 py-6 space-y-4">
+              {regError && (
                 <div className="p-3 rounded-xl text-xs font-bold text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                  {checkoutError}
+                  {regError}
                 </div>
               )}
 
-              {/* FORM */}
-              {checkoutStep === 'form' && (
-                <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Nome Completo</label>
-                    <div className="relative"><User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                      <input type="text" required placeholder="João da Silva" value={nome} onChange={e => setNome(e.target.value)} className={inputCls} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail</label>
-                      <div className="relative"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                        <input type="email" required placeholder="email@exemplo.com" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>CPF</label>
-                      <div className="relative"><FileText className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                        <input type="text" required placeholder="000.000.000-00" value={cpf} onChange={e => setCpf(formatCPF(e.target.value))} className={inputCls} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha da Plataforma</label>
-                    <div className="relative"><Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                      <input type="password" required placeholder="Mínimo 6 caracteres" value={senha} onChange={e => setSenha(e.target.value)} className={inputCls} />
-                    </div>
-                  </div>
-                  <button type="submit" className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform flex items-center justify-center gap-2"
-                    style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.2)' }}>
-                    Prosseguir para o Pagamento <ChevronRight size={13} />
-                  </button>
-                </form>
-              )}
+              {/* Botões de Cadastro Social */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithGoogle();
+                    if (error) setRegError(error.message || 'Erro ao cadastrar com o Google.');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-white text-gray-900 font-bold text-xs flex items-center justify-center gap-2 hover:bg-gray-100 active:scale-95 transition-all shadow-md"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <span>Cadastrar com o Google</span>
+                </button>
 
-              {/* PAYMENT */}
-              {checkoutStep === 'payment' && (
-                <div className="space-y-5 animate-fade-in">
-                  <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                    {(['pix','card'] as const).map(m => (
-                      <button key={m} onClick={() => setPaymentMethod(m)}
-                        className="flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors"
-                        style={paymentMethod === m ? { background: '#f59e0b', color: 'black' } : { color: 'rgba(255,255,255,0.35)' }}>
-                        {m === 'pix' ? <><QrCode size={13}/> Pix</> : <><CreditCard size={13}/> Cartão</>}
-                      </button>
-                    ))}
-                  </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { error } = await signInWithApple();
+                    if (error) setRegError(error.message || 'Erro ao cadastrar com a Apple.');
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-neutral-900 border border-neutral-700 active:scale-95 transition-all shadow-md"
+                >
+                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 170 170">
+                    <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.82.13-9.69-1.92-14.6-6.14-3.32-2.81-7.25-7.51-11.78-14.11-6.1-8.91-10.9-18.88-14.4-29.91-3.5-11.03-5.25-21.75-5.25-32.17 0-14.54 3.78-26.6 11.33-36.19 7.56-9.59 17.06-14.45 28.52-14.58 5.46 0 11.12 1.4 16.98 4.19 5.86 2.79 10.02 4.19 12.49 4.19 2.1 0 6.29-1.39 12.57-4.17 6.28-2.78 11.77-4.1 16.48-3.96 8.76.3 16.32 3.23 22.68 8.79 6.36 5.56 10.74 12.82 13.14 21.78-11.69 7.07-17.41 16.71-17.15 28.92.26 9.8 4.09 18.06 11.49 24.78 4.79 4.3 10.23 7.37 16.32 9.21-2.58 7.42-6.1 15.26-10.56 23.51zM119.22 31.08c0-7.04 2.54-13.68 7.62-19.92 5.08-6.24 11.45-10.19 19.11-11.86.6 6.78-1.5 13.56-6.3 20.34-4.8 6.78-11.16 10.87-19.08 12.27-.26-.27-.67-.47-1.35-.83z" />
+                  </svg>
+                  <span>Cadastrar com a Apple</span>
+                </button>
+              </div>
 
-                  {paymentMethod === 'pix' ? (
-                    <div className="flex flex-col items-center gap-4 animate-fade-in">
-                      <div className="p-3 bg-white rounded-2xl shadow-lg">
-                        <div className="w-32 h-32 relative flex items-center justify-center bg-gray-50">
-                          <QrCode size={104} className="text-gray-900" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[8px] font-black tracking-wider px-1.5 py-0.5 rounded text-black" style={{ background: '#f59e0b' }}>MURA</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', color: 'rgba(245,158,11,0.65)' }}>
-                        <AlertTriangle size={11}/> Aviso 3 dias antes do vencimento por Pix
-                      </div>
-                      <button onClick={copyPixCode}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-colors"
-                        style={copiedPix ? { background: '#10b981', color: 'white' } : { border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>
-                        <Clipboard size={13}/> {copiedPix ? 'Código Copiado!' : 'Copiar Código Pix'}
-                      </button>
-                      <div className="w-full border-t pt-4 flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                        <button onClick={() => setCheckoutStep('form')} className="text-xs font-bold transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}>← Voltar</button>
-                        <button onClick={handleConfirmPayment} disabled={checkoutLoading}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center gap-2"
-                          style={{ background: '#f59e0b' }}>
-                          {checkoutLoading ? <Activity size={13} className="animate-spin"/> : <><Check size={13}/> Confirmar</>}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <form onSubmit={e => { e.preventDefault(); handleConfirmPayment(); }} className="space-y-4 animate-fade-in">
-                      {[
-                        { label: 'Número do Cartão', placeholder: '0000 0000 0000 0000', value: cardNumber, onChange: (e: any) => setCardNumber(e.target.value.replace(/\D/g,'').slice(0,16).replace(/(\d{4})/g,'$1 ').trim()) },
-                        { label: 'Nome no Cartão', placeholder: 'NOME NO CARTÃO', value: cardName, onChange: (e: any) => setCardName(e.target.value.toUpperCase()) },
-                      ].map(f => (
-                        <div key={f.label} className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>{f.label}</label>
-                          <input type="text" required placeholder={f.placeholder} value={f.value} onChange={f.onChange}
-                            className="w-full rounded-xl py-3.5 px-4 text-sm text-white placeholder-white/20 focus:outline-none transition-colors"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                        </div>
-                      ))}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Validade</label>
-                          <input type="text" required placeholder="MM/AA" value={cardExpiry}
-                            onChange={e => { let v = e.target.value.replace(/\D/g,'').slice(0,4); if (v.length > 2) v = `${v.slice(0,2)}/${v.slice(2)}`; setCardExpiry(v); }}
-                            className="w-full rounded-xl py-3.5 px-4 text-sm text-white placeholder-white/20 focus:outline-none transition-colors"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>CVV</label>
-                          <input type="text" required placeholder="000" value={cardCVV}
-                            onChange={e => setCardCVV(e.target.value.replace(/\D/g,'').slice(0,3))}
-                            className="w-full rounded-xl py-3.5 px-4 text-sm text-white placeholder-white/20 focus:outline-none transition-colors"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                        </div>
-                      </div>
-                      <p className="text-center text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.2)' }}>🔒 Cobrança automática todo {selectedPlan === 'anual' ? 'ano' : 'mês'}.</p>
-                      <div className="border-t pt-4 flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                        <button type="button" onClick={() => setCheckoutStep('form')} className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>← Voltar</button>
-                        <button type="submit" disabled={checkoutLoading}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center gap-2"
-                          style={{ background: '#f59e0b' }}>
-                          {checkoutLoading ? <Activity size={13} className="animate-spin"/> : <><Check size={13}/> Ativar Assinatura</>}
-                        </button>
-                      </div>
-                    </form>
-                  )}
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-[1px]" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>ou preencha os dados</span>
+                <div className="flex-1 h-[1px]" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Nome Completo</label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <input type="text" required placeholder="Seu nome ou nome do criatório" value={regNome} onChange={e => setRegNome(e.target.value)} className={inputCls} />
                 </div>
-              )}
-
-              {/* SUCCESS */}
-              {checkoutStep === 'success' && (
-                <div className="flex flex-col items-center text-center gap-5 py-6 animate-scale-up">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '2px solid rgba(16,185,129,0.4)', color: '#10b981' }}>
-                    <Check size={26}/>
-                  </div>
-                  <div>
-                    <h4 className="text-base font-black text-white mb-1.5 font-serif">Teste Grátis Ativado!</h4>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Parabéns, {nome.split(' ')[0]}! Seus 7 dias gratuitos começaram.</p>
-                  </div>
-                  <div className="w-full max-w-xs rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {[['Identificador', cpf], ['Senha', '••••••']].map(([k,v]) => (
-                      <div key={k} className="flex justify-between text-xs">
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>{k}</span>
-                        <span className="text-white font-mono">{v}</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between text-xs border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>Período de Teste</span>
-                      <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>7 Dias Grátis (Até {new Date(Date.now() + 7 * 86400000).toLocaleDateString('pt-BR')})</span>
-                    </div>
-                  </div>
-                  <button onClick={handleAutoLogin} disabled={loginLoading}
-                    className="px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center gap-2"
-                    style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.25)' }}>
-                    {loginLoading ? <Activity size={15} className="animate-spin"/> : <><LogIn size={14}/> Entrar na Plataforma</>}
-                  </button>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <input type="email" required placeholder="seuemail@exemplo.com" value={regEmail} onChange={e => setRegEmail(e.target.value)} className={inputCls} />
                 </div>
-              )}
-            </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha de Acesso</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <input type="password" required placeholder="Mínimo 6 caracteres" value={regSenha} onChange={e => setRegSenha(e.target.value)} className={inputCls} />
+                </div>
+              </div>
+              <button type="submit" disabled={regLoading}
+                className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-2"
+                style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
+                {regLoading ? <Activity size={15} className="animate-spin" /> : <><Sparkles size={14} /> Criar Minha Conta Grátis e Entrar</>}
+              </button>
+              <div className="pt-3 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowRegisterForm(false); setShowLoginForm(true); setLoginError(''); }}
+                  className="text-xs text-theme-text-muted hover:text-white transition-colors"
+                >
+                  Já possui uma conta? <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Acessar Conta</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

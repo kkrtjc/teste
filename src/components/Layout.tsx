@@ -4,7 +4,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle, Egg, Download, Share2
+  Bell, MessageSquare, HelpCircle, Egg, Download, Share2, Sparkles, Copy, CheckCircle2
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -20,6 +20,8 @@ export type AllowedCpf = {
   whatsapp?: string;
   expires_at?: string;
   created_at?: string;
+  senha?: string;
+  email?: string;
 };
 
 export const formatCPF = (cpf: string) => {
@@ -29,15 +31,21 @@ export const formatCPF = (cpf: string) => {
 export function Layout() {
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen } = useAppContext();
   const navigate = useNavigate();
-  const { cpf, isLocalMode } = useAuth();
+  const { cpf, isLocalMode, trialInfo, triggerWebhookPayment } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradePlan, setUpgradePlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [copiedPixUpgrade, setCopiedPixUpgrade] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
   const [allowedCpfs, setAllowedCpfs] = useState<AllowedCpf[]>([]);
   const [newCpf, setNewCpf] = useState('');
   const [newName, setNewName] = useState('');
   const [newWhatsapp, setNewWhatsapp] = useState('');
   const [newExpiresAt, setNewExpiresAt] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [modalError, setModalError] = useState('');
@@ -161,7 +169,9 @@ export function Layout() {
         cpf: cleanCpf,
         nome: newName.trim() || undefined,
         whatsapp: newWhatsapp.replace(/\D/g, '') || undefined,
-        expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : undefined
+        expires_at: newExpiresAt ? new Date(newExpiresAt).toISOString() : undefined,
+        senha: newPassword.trim() || undefined,
+        email: `${cleanCpf}@mura.com`
       };
 
       if (isLocalMode) {
@@ -172,6 +182,7 @@ export function Layout() {
         setNewName('');
         setNewWhatsapp('');
         setNewExpiresAt('');
+        setNewPassword('');
       } else {
         const { error } = await supabase!
           .from('allowed_cpfs')
@@ -183,11 +194,16 @@ export function Layout() {
           }
           throw error;
         }
+
+        const clientPass = newPassword.trim() || `mura-${cleanCpf}-secure`;
+        await supabase!.auth.signUp({ email: clientPayload.email, password: clientPass }).catch(() => {});
+
         setAllowedCpfs([clientPayload, ...allowedCpfs]);
         setNewCpf('');
         setNewName('');
         setNewWhatsapp('');
         setNewExpiresAt('');
+        setNewPassword('');
       }
     } catch (err: any) {
       console.error(err);
@@ -368,6 +384,33 @@ export function Layout() {
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
+          {/* BANNER FLUIDO DE TESTE GRATUITO NO TOPO DO APP */}
+          {trialInfo.isTrial && (
+            <div className="mb-4 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/30 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in relative overflow-hidden backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 animate-pulse">
+                  <Sparkles size={20} />
+                </div>
+                <div className="min-w-0 text-center sm:text-left">
+                  <p className="font-black text-sm text-white flex items-center justify-center sm:justify-start gap-1.5">
+                    <span>Seu teste gratuito vence em <strong className="text-amber-400 font-extrabold">{trialInfo.remainingDays} {trialInfo.remainingDays === 1 ? 'dia' : 'dias'}</strong></span>
+                  </p>
+                  <p className="text-xs text-theme-text-muted mt-0.5 leading-relaxed">
+                    Aproveite a oferta promocional de lançamento (Mensal R$ 19,90 ou Anual com super desconto) e garanta seu acesso continuado!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 shrink-0"
+              >
+                <Sparkles size={14} />
+                <span>Garantir Oferta</span>
+              </button>
+            </div>
+          )}
+
           {showInstallBanner && (
             <div className="mb-4 bg-theme-surface border border-theme-primary/30 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 animate-fade-in relative overflow-hidden backdrop-blur-md">
               <div className="flex items-center gap-3">
@@ -568,7 +611,7 @@ export function Layout() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-theme-text-muted uppercase">WhatsApp / Celular</label>
                       <input
@@ -587,13 +630,24 @@ export function Layout() {
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Data de Vencimento</label>
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Data Vencimento</label>
                       <input
                         type="date"
                         required
                         value={newExpiresAt}
                         onChange={(e) => setNewExpiresAt(e.target.value)}
                         className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold text-center text-theme-text-muted"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Senha (Opcional)</label>
+                      <input
+                        type="text"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-theme-primary outline-none transition-colors font-bold"
+                        placeholder="Ex: 123456"
                       />
                     </div>
                   </div>
@@ -682,6 +736,104 @@ export function Layout() {
                 Fechar
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL DE UPGRADE / LIBERAÇÃO AUTOMÁTICA DENTRO DO APP */}
+      {isUpgradeModalOpen && createPortal(
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-theme-surface border border-theme-border rounded-3xl p-6 max-w-md w-full shadow-2xl relative space-y-5 animate-scale-up overflow-hidden">
+            <div className="flex items-center justify-between border-b border-theme-border pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Garantir Acesso Continuado</h3>
+                  <p className="text-[10px] text-theme-text-muted">Ativação 100% automática e instantânea</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsUpgradeModalOpen(false)}
+                className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Plan Selector */}
+            <div className="grid grid-cols-2 gap-3">
+              <div 
+                onClick={() => setUpgradePlan('monthly')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                  upgradePlan === 'monthly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                }`}
+              >
+                <p className="font-bold text-xs text-white">Plano Mensal</p>
+                <p className="text-lg font-black text-amber-400 mt-1">R$ 19,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
+              </div>
+
+              <div 
+                onClick={() => setUpgradePlan('yearly')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
+                  upgradePlan === 'yearly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                }`}
+              >
+                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">Promo</span>
+                <p className="font-bold text-xs text-white">Plano Anual</p>
+                <p className="text-lg font-black text-emerald-400 mt-1">R$ 199,90<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
+              </div>
+            </div>
+
+            {/* Pix key copy */}
+            <div className="bg-theme-base/60 border border-theme-border p-3.5 rounded-2xl space-y-2 text-center">
+              <p className="text-[11px] font-bold text-white">Chave Pix para Pagamento</p>
+              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-1.5 text-xs">
+                <span className="font-mono text-white text-[11px] truncate">mura.manager.pay@gmail.com</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('mura.manager.pay@gmail.com');
+                    setCopiedPixUpgrade(true);
+                    setTimeout(() => setCopiedPixUpgrade(false), 2500);
+                  }}
+                  className="p-1 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white"
+                >
+                  {copiedPixUpgrade ? <CheckCircle2 size={12}/> : <Copy size={12}/>}
+                  <span>{copiedPixUpgrade ? 'Copiado' : 'Copiar'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Webhook Status Listener */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
+                <Loader2 size={14} className="animate-spin" />
+                <span>Aguardando confirmação via Webhook...</span>
+              </div>
+              <p className="text-[10px] text-theme-text-muted">
+                Escutando a aprovação do gateway em tempo real.
+              </p>
+            </div>
+
+            {/* Simulated Webhook Button */}
+            <button
+              onClick={async () => {
+                setUpgradeLoading(true);
+                const { error } = await triggerWebhookPayment(upgradePlan);
+                setUpgradeLoading(false);
+                if (!error) {
+                  setIsUpgradeModalOpen(false);
+                } else {
+                  alert('Erro ao acionar simulador de Webhook.');
+                }
+              }}
+              disabled={upgradeLoading}
+              className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+            >
+              {upgradeLoading ? <Loader2 size={16} className="animate-spin text-black" /> : <><Sparkles size={16} /> Simular Liberação por Webhook (Teste)</>}
+            </button>
           </div>
         </div>,
         document.body
