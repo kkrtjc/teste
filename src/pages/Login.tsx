@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
   TrendingUp, History, Smartphone, Lock, User, Mail, X, Star
@@ -9,6 +9,15 @@ import localforage from 'localforage';
 import muraLogo from '../assets/mura_logo.jpg';
 import heroBg from '../assets/hero_bg.jpg';
 import roosterImg from '../assets/rooster_sticker.png';
+import previewDashboard from '../assets/preview_dashboard.png';
+import previewGenetics from '../assets/preview_genetics.png';
+import previewLots from '../assets/preview_lots.png';
+
+const carouselImages = [
+  { src: previewGenetics, title: 'Cadastro de Raças e Linhagens', desc: 'Controle completo do seu plantel com fotos das aves, idade, peso médio e acompanhamento detalhado por raça.' },
+  { src: previewDashboard, title: 'Gestão Completa de Ovos', desc: 'Acompanhe a coleta diária, taxa de aproveitamento dos ovos, receita gerada e controle de lucro e despesas.' },
+  { src: previewLots, title: 'Gestão de Lotes de Postura e Engorda', desc: 'Monitore lotes ativos, expectativa diária de produção, fêmeas em postura e metas de desempenho.' }
+];
 
 const stats = [
   { value: '12k+', label: 'Aves Gerenciadas' },
@@ -29,6 +38,15 @@ const features = [
 export function Login() {
   const { signIn, signInWithGoogle, isLocalMode } = useAuth();
   const detailsRef = useRef<HTMLDivElement>(null);
+
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % carouselImages.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -283,16 +301,15 @@ export function Login() {
         </h1>
 
         <p
-          className="mt-5 text-sm max-w-md leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
+          className="mt-5 text-sm max-w-lg leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
           style={{
             animationFillMode: 'forwards',
             position: 'relative', zIndex: 1,
             color: 'rgba(255,255,255,0.75)',
-            /* sombra de leitura no parágrafo */
             textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.8)',
           }}
         >
-          Gestão de Ovos: tenha o controle de quantos ovos seu plantel está produzindo todos os dias e saiba exatamente o quanto seu plantel está produzindo.
+          Cadastre mais de 20 mil aves e tenha o controle completo sobre o seu plantel, nível de parentesco e gestão inteligente de lotes de postura e engorda.
         </p>
 
         {/* CTAs */}
@@ -302,7 +319,7 @@ export function Login() {
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: '#f59e0b', boxShadow: '0 0 28px rgba(245,158,11,0.35)' }}
           >
-            <Sparkles size={13} /> Criar Conta Grátis (7 Dias)
+            <Sparkles size={13} /> Criar Conta
           </button>
 
           <button
@@ -344,6 +361,64 @@ export function Login() {
               </span>
             </div>
           ))}
+        </div>
+
+        {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
+        <div className="mt-12 w-full max-w-3xl mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
+          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-video">
+            {carouselImages.map((img, idx) => (
+              <div
+                key={idx}
+                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  idx === activeSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                }`}
+              >
+                <img src={img.src} alt={img.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              </div>
+            ))}
+
+            {/* Setas de Navegação */}
+            <button
+              type="button"
+              onClick={() => setActiveSlide(prev => (prev - 1 + carouselImages.length) % carouselImages.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-80 group-hover:opacity-100 shadow-lg"
+            >
+              ❮
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSlide(prev => (prev + 1) % carouselImages.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-80 group-hover:opacity-100 shadow-lg"
+            >
+              ❯
+            </button>
+          </div>
+
+          {/* Legenda do Slide */}
+          <div className="mt-4 text-center px-4">
+            <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest">
+              {carouselImages[activeSlide].title}
+            </h4>
+            <p className="text-[11px] text-white/60 mt-1 max-w-md mx-auto">
+              {carouselImages[activeSlide].desc}
+            </p>
+          </div>
+
+          {/* Indicadores (Dots) */}
+          <div className="mt-3 flex justify-center gap-2">
+            {carouselImages.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveSlide(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  idx === activeSlide ? 'bg-amber-500 w-7' : 'bg-white/20 w-1.5'
+                }`}
+                aria-label={`Slide ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Scroll indicator */}
@@ -421,7 +496,7 @@ export function Login() {
                 className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform"
                 style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
               >
-                Criar Conta Grátis (7 Dias)
+                Criar Conta
               </button>
             </div>
 
@@ -585,8 +660,7 @@ export function Login() {
                   <Sparkles size={16} style={{ color: '#f59e0b' }} />
                 </div>
                 <div>
-                  <h3 className="font-black text-sm text-white font-serif">Criar Conta Grátis</h3>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>7 dias grátis sem cartão nem CPF</p>
+                  <h3 className="font-black text-sm text-white font-serif">Tenha todo acesso por 7 dias gratuitos.</h3>
                 </div>
               </div>
               <button onClick={() => setShowRegisterForm(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
