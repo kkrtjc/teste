@@ -365,7 +365,7 @@ export function Login() {
 
         {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
         <div className="mt-12 w-full max-w-sm mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
-          <div className="relative rounded-[36px] overflow-hidden border-[6px] border-white/15 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-[9/16] max-w-[280px] mx-auto">
+          <div className="relative rounded-[36px] overflow-hidden border-[6px] border-white/15 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-[9/16] max-w-[340px] mx-auto">
             {carouselImages.map((img, idx) => (
               <div
                 key={idx}
