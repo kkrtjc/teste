@@ -27,7 +27,7 @@ const features = [
 ];
 
 export function Login() {
-  const { signIn, signInWithGoogle, signInWithApple, isLocalMode } = useAuth();
+  const { signIn, signInWithGoogle, isLocalMode } = useAuth();
   const detailsRef = useRef<HTMLDivElement>(null);
 
   const [showLoginForm, setShowLoginForm] = useState(false);
@@ -504,7 +504,7 @@ export function Login() {
                 </div>
               )}
 
-              {/* Botões de Login Social */}
+              {/* Botão de Login Social */}
               <div className="space-y-2">
                 <button
                   type="button"
@@ -521,20 +521,6 @@ export function Login() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
                   <span>Entrar com o Google</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const { error } = await signInWithApple();
-                    if (error) setLoginError(error.message || 'Erro ao entrar com a Apple.');
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-neutral-900 border border-neutral-700 active:scale-95 transition-all shadow-md"
-                >
-                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 170 170">
-                    <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.82.13-9.69-1.92-14.6-6.14-3.32-2.81-7.25-7.51-11.78-14.11-6.1-8.91-10.9-18.88-14.4-29.91-3.5-11.03-5.25-21.75-5.25-32.17 0-14.54 3.78-26.6 11.33-36.19 7.56-9.59 17.06-14.45 28.52-14.58 5.46 0 11.12 1.4 16.98 4.19 5.86 2.79 10.02 4.19 12.49 4.19 2.1 0 6.29-1.39 12.57-4.17 6.28-2.78 11.77-4.1 16.48-3.96 8.76.3 16.32 3.23 22.68 8.79 6.36 5.56 10.74 12.82 13.14 21.78-11.69 7.07-17.41 16.71-17.15 28.92.26 9.8 4.09 18.06 11.49 24.78 4.79 4.3 10.23 7.37 16.32 9.21-2.58 7.42-6.1 15.26-10.56 23.51zM119.22 31.08c0-7.04 2.54-13.68 7.62-19.92 5.08-6.24 11.45-10.19 19.11-11.86.6 6.78-1.5 13.56-6.3 20.34-4.8 6.78-11.16 10.87-19.08 12.27-.26-.27-.67-.47-1.35-.83z" />
-                  </svg>
-                  <span>Entrar com a Apple</span>
                 </button>
               </div>
 
@@ -633,20 +619,6 @@ export function Login() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
                   <span>Cadastrar com o Google</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const { error } = await signInWithApple();
-                    if (error) setRegError(error.message || 'Erro ao cadastrar com a Apple.');
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-neutral-900 border border-neutral-700 active:scale-95 transition-all shadow-md"
-                >
-                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 170 170">
-                    <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.82.13-9.69-1.92-14.6-6.14-3.32-2.81-7.25-7.51-11.78-14.11-6.1-8.91-10.9-18.88-14.4-29.91-3.5-11.03-5.25-21.75-5.25-32.17 0-14.54 3.78-26.6 11.33-36.19 7.56-9.59 17.06-14.45 28.52-14.58 5.46 0 11.12 1.4 16.98 4.19 5.86 2.79 10.02 4.19 12.49 4.19 2.1 0 6.29-1.39 12.57-4.17 6.28-2.78 11.77-4.1 16.48-3.96 8.76.3 16.32 3.23 22.68 8.79 6.36 5.56 10.74 12.82 13.14 21.78-11.69 7.07-17.41 16.71-17.15 28.92.26 9.8 4.09 18.06 11.49 24.78 4.79 4.3 10.23 7.37 16.32 9.21-2.58 7.42-6.1 15.26-10.56 23.51zM119.22 31.08c0-7.04 2.54-13.68 7.62-19.92 5.08-6.24 11.45-10.19 19.11-11.86.6 6.78-1.5 13.56-6.3 20.34-4.8 6.78-11.16 10.87-19.08 12.27-.26-.27-.67-.47-1.35-.83z" />
-                  </svg>
-                  <span>Cadastrar com a Apple</span>
                 </button>
               </div>
 
