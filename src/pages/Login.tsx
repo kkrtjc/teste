@@ -364,8 +364,8 @@ export function Login() {
         </div>
 
         {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
-        <div className="mt-12 w-full max-w-3xl mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
-          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-video">
+        <div className="mt-12 w-full max-w-sm mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
+          <div className="relative rounded-[36px] overflow-hidden border-[6px] border-white/15 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-[9/16] max-w-[280px] mx-auto">
             {carouselImages.map((img, idx) => (
               <div
                 key={idx}
@@ -374,7 +374,7 @@ export function Login() {
                 }`}
               >
                 <img src={img.src} alt={img.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
               </div>
             ))}
 
@@ -382,14 +382,14 @@ export function Login() {
             <button
               type="button"
               onClick={() => setActiveSlide(prev => (prev - 1 + carouselImages.length) % carouselImages.length)}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-80 group-hover:opacity-100 shadow-lg"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-60 group-hover:opacity-100 shadow-lg text-xs"
             >
               ❮
             </button>
             <button
               type="button"
               onClick={() => setActiveSlide(prev => (prev + 1) % carouselImages.length)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-80 group-hover:opacity-100 shadow-lg"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-60 group-hover:opacity-100 shadow-lg text-xs"
             >
               ❯
             </button>
