@@ -364,8 +364,8 @@ export function Login() {
         </div>
 
         {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
-        <div className="mt-12 w-full max-w-sm mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
-          <div className="relative rounded-[36px] overflow-hidden border-[6px] border-white/15 bg-black/60 backdrop-blur-xl shadow-2xl shadow-amber-500/10 group aspect-[9/16] max-w-[340px] mx-auto">
+        <div className="mt-12 w-full max-w-md mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
+          <div className="relative rounded-[32px] overflow-hidden border-[4px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto">
             {carouselImages.map((img, idx) => (
               <div
                 key={idx}
@@ -373,8 +373,7 @@ export function Login() {
                   idx === activeSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
               >
-                <img src={img.src} alt={img.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                <img src={img.src} alt={img.title} className="w-full h-full object-contain bg-[#0a0a0b]" />
               </div>
             ))}
 
