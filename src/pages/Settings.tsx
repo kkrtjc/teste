@@ -35,7 +35,7 @@ export function Settings() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const compressedBase64 = await compressImage(file, 600, 600, 0.7);
+        const compressedBase64 = await compressImage(file, 1200, 1200, 0.82);
         setPreviewImage(compressedBase64);
       } catch (err) {
         console.error("Erro ao comprimir imagem de perfil", err);

@@ -118,7 +118,7 @@ export function AddBirdModal() {
 
       for (const file of filesToUpload) {
         try {
-          const comp = await compressImage(file, 500, 500, 0.65);
+          const comp = await compressImage(file, 1200, 1200, 0.82);
           compressed.push(comp);
         } catch (err) {
           console.error('Erro ao comprimir imagem:', err);
