@@ -163,6 +163,45 @@ export function Lots() {
   const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
   const filterCrescimento = meatLots.filter(l => l.id.startsWith('growth-'));
 
+  const [confirmTransfer, setConfirmTransfer] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+    target: 'engorda' | 'crescimento';
+  }>({
+    isOpen: false,
+    lote: null,
+    target: 'engorda',
+  });
+
+  const openTransferModal = (lote: any, target: 'engorda' | 'crescimento') => {
+    setConfirmTransfer({ isOpen: true, lote, target });
+  };
+
+  const executeTransfer = () => {
+    if (!confirmTransfer.lote) return;
+    const { lote, target } = confirmTransfer;
+
+    removeMeatLot(lote.id);
+
+    const newId = target === 'engorda' ? 'meat-' + uid() : 'growth-' + uid();
+
+    addMeatLot({
+      id: newId,
+      baia: lote.baia,
+      avesIds: lote.avesIds || [],
+      qtdAves: lote.qtdAves || 0,
+      dataInicio: lote.dataInicio,
+      pesoMedioInicial: lote.pesoMedioInicial || '0',
+      pesoMeta: lote.pesoMeta,
+      status: 'Crescimento',
+      raca: lote.raca,
+      observacao: lote.observacao,
+    });
+
+    setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' });
+    setActiveTab(target);
+  };
+
   const handleFemaleToggle = (id: string) => {
     const next = pFemeas.includes(id) ? pFemeas.filter(x=>x!==id) : [...pFemeas, id];
     setPFemeas(next);
@@ -596,14 +635,22 @@ export function Lots() {
                     {lote.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
                   <div className="border-t border-theme-border/50 pt-3">
-                    <p className={labelCls + " mb-2"}>Alterar Status</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['Crescimento','Terminação','Abatido'] as const).map(st=>(
-                        <button key={st} onClick={()=>editMeatLot(lote.id,{status:st})}
-                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${lote.status===st?'bg-theme-primary text-black border-theme-primary':'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'}`}>
-                          {st}
-                        </button>
-                      ))}
+                    <p className={labelCls + " mb-2"}>Transferir Lote para</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openTransferModal(lote, 'engorda')}
+                        className="py-2 px-3 text-xs font-bold rounded-xl border border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 hover:border-orange-500/60 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                      >
+                        <Beef size={14} /> Engorda
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openTransferModal(lote, 'crescimento')}
+                        className="py-2 px-3 text-xs font-bold rounded-xl border border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/60 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                      >
+                        <Timer size={14} /> Crescimento
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -979,6 +1026,52 @@ export function Lots() {
                 <button type="submit" disabled={!crBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95">Criar Lote</button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── MODAL DE CONFIRMAÇÃO DE TRANSFERÊNCIA DE LOTE ── */}
+      {confirmTransfer.isOpen && confirmTransfer.lote && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in" onClick={() => setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' })}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5 animate-scale-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-lg">
+                ❓
+              </div>
+              <div>
+                <h3 className="font-black text-base text-white">Confirmar Transferência de Lote</h3>
+                <p className="text-xs text-theme-text-muted">Confirmação de ação</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-theme-text-muted leading-relaxed">
+              Você realmente deseja transferir o lote da <strong className="text-white">Baia {confirmTransfer.lote.baia}</strong> para a aba de <strong className="text-theme-primary uppercase">{confirmTransfer.target}</strong>?
+            </p>
+
+            <div className="bg-theme-base p-3.5 rounded-xl border border-theme-border/50 text-xs space-y-1">
+              <p className="text-white font-bold mb-1">Resumo do Lote:</p>
+              <p className="text-theme-text-muted">• Baia: <span className="text-white font-bold">{confirmTransfer.lote.baia}</span></p>
+              {confirmTransfer.lote.raca && <p className="text-theme-text-muted">• Raça: <span className="text-white">{confirmTransfer.lote.raca}</span></p>}
+              <p className="text-theme-text-muted">• Aves: <span className="text-white">{confirmTransfer.lote.avesIds?.length || confirmTransfer.lote.qtdAves || 0} pintinhos</span></p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' })}
+                className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={executeTransfer}
+                className="flex-1 py-3 bg-theme-primary text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
+              >
+                Sim, Transferir
+              </button>
+            </div>
           </div>
         </div>,
         document.body
