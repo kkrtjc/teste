@@ -12,11 +12,15 @@ import roosterImg from '../assets/rooster_sticker.png';
 import previewDashboard from '../assets/preview_dashboard.png';
 import previewGenetics from '../assets/preview_genetics.png';
 import previewLots from '../assets/preview_lots.png';
+import previewBirdProfile from '../assets/preview_bird_profile.png';
+import previewChicksLot from '../assets/preview_chicks_lot.png';
 
 const carouselImages = [
-  { src: previewGenetics, title: 'Cadastro de Raças e Linhagens', desc: 'Controle completo do seu plantel com fotos das aves, idade, peso médio e acompanhamento detalhado por raça.' },
-  { src: previewDashboard, title: 'Gestão Completa de Ovos', desc: 'Acompanhe a coleta diária, taxa de aproveitamento dos ovos, receita gerada e controle de lucro e despesas.' },
-  { src: previewLots, title: 'Gestão de Lotes de Postura e Engorda', desc: 'Monitore lotes ativos, expectativa diária de produção, fêmeas em postura e metas de desempenho.' }
+  { src: previewGenetics, title: 'Cadastro de Raças e Linhagens', desc: 'Controle completo do seu plantel categorizado por raça, com idade, peso médio e contagem de aves.' },
+  { src: previewBirdProfile, title: 'Ficha e Perfil Detalhado da Ave', desc: 'Galeria de fotos da ave, anilha, gênero, raça, localização na baia, status e registro de vacinas aplicadas.' },
+  { src: previewDashboard, title: 'Gestão Completa de Ovos', desc: 'Acompanhe a coleta diária, taxa de aproveitamento, receitas geradas e balanço financeiro de lucro e custo.' },
+  { src: previewLots, title: 'Gestão de Lotes de Postura e Engorda', desc: 'Monitore lotes ativos, expectativa diária de produção, fêmeas em postura e acompanhamento de baia.' },
+  { src: previewChicksLot, title: 'Controle de Lotes de Pintinhos e Crescimento', desc: 'Contagem automática da idade em dias, lote por baia, quantidade total de pintinhos e alteração de status.' }
 ];
 
 const stats = [
