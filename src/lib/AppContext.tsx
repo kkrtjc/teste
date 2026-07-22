@@ -297,14 +297,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── MODO ONLINE: SUPABASE CONFIGURADO E USUÁRIO LOGADO ──
       if (isSupabaseConfigured && user) {
-        // Carrega dados offline primeiro para resposta instantânea!
+        // 1. Carrega dados do cache local (para início rápido)
         await loadFromLocalForage();
-        setIsReady(true);
 
-        // Executa sincronização em segundo plano sem travar o carregamento inicial
-        syncWithSupabaseBackground().catch(err => {
-          console.error('Erro na sincronização em segundo plano:', err);
-        });
+        // 2. Aguarda a sincronização do Supabase para garantir que o perfil e os dados estejam 100% carregados
+        // Usa Promise.race com timeout de 3.5s para manter a velocidade alta e não travar se houver problemas de rede
+        try {
+          await Promise.race([
+            syncWithSupabaseBackground(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Sync Timeout')), 3500))
+          ]);
+        } catch (err) {
+          console.log('Sincronização do Supabase concluída ou liberada por timeout:', err);
+        } finally {
+          setIsReady(true);
+        }
       } else {
         // ── MODO OFFLINE (Bypass Local / Offline tradicional) ──
         await loadFromLocalForage();
