@@ -41,22 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     remainingDays: 0,
     expiresAt: null
   });
-  const [loading, setLoading] = useState(() => {
-    if (!isSupabaseConfigured) return true; // Será rápido (lê do localforage no useEffect)
-    
-    // Se estiver online com Supabase, verifica se há token salvo de antemão
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-          return true; // Existe token, aguarda verificação/refresh
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao ler localStorage:', e);
-    }
-    return false; // Nenhum token encontrado, não precisa carregar/esperar
-  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -79,23 +64,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Modo Online com Supabase
-    // Adiciona um timeout de segurança (ex: 1.5 segundos) para garantir que a tela de login
-    // apareça mesmo se o Supabase estiver fora do ar ou com latência altíssima na rede.
+    // Timeout de resiliência caso ocorra problema de rede
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
-    }, 1500);
+    }, 2000);
 
-    // 1. Pega a sessão atual de forma assíncrona
+    // 1. Pega a sessão salva de forma assíncrona
     supabase!.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      clearTimeout(safetyTimeout);
     }).catch(err => {
       console.error('Erro ao buscar sessão do Supabase:', err);
       setLoading(false);
+      clearTimeout(safetyTimeout);
     });
 
-    // 2. Escuta mudanças no estado de login/logout
+    // 2. Escuta mudanças de estado (login, token refresh, logout)
     const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -528,12 +514,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Validação online no Supabase
-        const { data, error } = await supabase!
-          .from('allowed_cpfs')
-          .select('cpf, expires_at, email')
-          .or(`email.eq.${userEmail},cpf.eq.${cleanCpf}`)
-          .maybeSingle();
+        // Validação online no Supabase com busca segura sem falha de sintaxe PostgREST
+        const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
+        let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
+
+        if (normEmail && cleanCpf) {
+          query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
+        } else if (normEmail) {
+          query = query.ilike('email', normEmail);
+        } else if (cleanCpf) {
+          query = query.eq('cpf', cleanCpf);
+        }
+
+        const { data, error } = await query.maybeSingle();
 
         if (error) {
           console.error('Erro ao validar acesso do usuário ativo:', error);
@@ -546,7 +539,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const newClient = {
             cpf: tempCpf,
             nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
-            email: userEmail,
+            email: normEmail,
             expires_at: trialExpiresAt
           };
           await supabase!.from('allowed_cpfs').insert([newClient]);
@@ -565,9 +558,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           const expDate = data.expires_at;
           if (expDate) {
-            const diffTime = new Date(expDate).getTime() - Date.now();
-            const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-            const expired = diffTime <= 0;
+            const expTime = new Date(expDate).getTime();
+            const nowTime = Date.now();
+            const diffMs = expTime - nowTime;
+            const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            const expired = diffMs <= 0;
+
             setIsExpired(expired);
             setTrialInfo({
               isTrial: daysLeft <= 7 && !expired,

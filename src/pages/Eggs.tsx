@@ -79,12 +79,31 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
   const [error,setError]=useState('');
   const set=(k:keyof RegForm)=>(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>)=>setForm(prev=>({...prev,[k]:e.target.value}));
   const handleSave=()=>{
-    const col=parseFloat(form.coletados);
-    const vend=parseFloat(form.vendidos);
-    const perd=parseFloat(form.perdidos);
-    if(!col||col<=0){setError('Informe a quantidade de ovos coletados.');return;}
-    if((vend+perd)>col){setError('Vendidos + Perdidos nao pode superar os coletados.');return;}
-    onSave({id:uid(),data:form.data,coletados:col,vendidos:vend||0,perdidos:perd||0,precoVenda:parseFloat(form.precoVenda)||0,custoProd:parseFloat(form.custoProd)||0,observacao:form.observacao.trim()||undefined});
+    const col=parseFloat(form.coletados) || 0;
+    const vend=parseFloat(form.vendidos) || 0;
+    const perd=parseFloat(form.perdidos) || 0;
+    const preco=parseFloat(form.precoVenda) || 0;
+    const custo=parseFloat(form.custoProd) || 0;
+
+    if(!col || col <= 0 || isNaN(col)){
+      setError('Informe a quantidade válida de ovos coletados.');
+      return;
+    }
+    if((vend + perd) > col){
+      setError('Vendidos + Perdidos não pode superar o total de ovos coletados.');
+      return;
+    }
+
+    onSave({
+      id: uid(),
+      data: form.data,
+      coletados: col,
+      vendidos: vend,
+      perdidos: perd,
+      precoVenda: preco,
+      custoProd: custo,
+      observacao: form.observacao.trim() || undefined
+    });
     onClose();
   };
   const inputCls="w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";

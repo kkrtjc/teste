@@ -173,8 +173,8 @@ export function Birds() {
     if (statusFilter === 'Crescimento') {
       list = list.filter(b => b.status === 'Crescimento');
     } else {
-      // Por padrão, esconde Vendidos, Falecidos e Crescimento se não for filtro específico
-      list = list.filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu');
+      // Exibe todas as aves ativas do plantel (esconde apenas Vendidos e Falecidos)
+      list = list.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu');
     }
     
     return list;

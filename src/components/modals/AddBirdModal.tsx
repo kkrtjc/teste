@@ -203,12 +203,23 @@ export function AddBirdModal() {
   }
 
   const machoOptions = [
-    { label: 'Desconhecido', value: '' },
-    ...birds.filter(b => b.sexo === 'Macho' && b.status === 'Reprodutor' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
+    { label: 'Desconhecido / Não informado', value: '' },
+    ...birds
+      .filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.id !== birdToEditId)
+      .map(b => ({
+        label: `Anilha ${b.anilha}${b.nome ? ' – ' + b.nome : ''} (${b.raca || 'Sem raça'} · ${b.status})`,
+        value: b.id
+      }))
   ];
+
   const femeaOptions = [
-    { label: 'Desconhecida', value: '' },
-    ...birds.filter(b => b.sexo === 'Fêmea' && b.status === 'Matriz' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha}${b.nome ? ' – ' + b.nome : ''}`, value: b.id }))
+    { label: 'Desconhecida / Não informada', value: '' },
+    ...birds
+      .filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.id !== birdToEditId)
+      .map(b => ({
+        label: `Anilha ${b.anilha}${b.nome ? ' – ' + b.nome : ''} (${b.raca || 'Sem raça'} · ${b.status})`,
+        value: b.id
+      }))
   ];
 
   const canNext = step === 0

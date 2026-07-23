@@ -297,23 +297,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── MODO ONLINE: SUPABASE CONFIGURADO E USUÁRIO LOGADO ──
       if (isSupabaseConfigured && user) {
-        // 1. Carrega dados do cache local (para início rápido)
+        // 1. Carrega dados do cache local (para início instantâneo em 0ms)
         await loadFromLocalForage();
+        setIsReady(true);
 
-        // 2. Aguarda a sincronização do Supabase para garantir que o perfil e os dados estejam 100% carregados
-        // Usa Promise.race com timeout de 3.5s para manter a velocidade alta e não travar se houver problemas de rede
-        try {
-          await Promise.race([
-            syncWithSupabaseBackground(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Sync Timeout')), 3500))
-          ]);
-        } catch (err) {
-          console.log('Sincronização do Supabase concluída ou liberada por timeout:', err);
-        } finally {
-          setIsReady(true);
-        }
+        // 2. Sincroniza em segundo plano sem prender a tela do usuário
+        syncWithSupabaseBackground().catch(err => {
+          console.error('Erro na sincronização em segundo plano:', err);
+        });
       } else {
-        // ── MODO OFFLINE (Bypass Local / Offline tradicional) ──
+        // ── MODO OFFLINE ──
         await loadFromLocalForage();
         setIsReady(true);
       }
@@ -806,13 +799,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isReady) {
+      const lsGlobal = localStorage.getItem('@mura-manager:has-seen-tutorial') === 'true';
+      const lsUser = user ? localStorage.getItem(`@mura-manager:${user.id}:has-seen-tutorial`) === 'true' : false;
+
+      if (lsGlobal || lsUser) {
+        setIsTutorialOpen(false);
+        return;
+      }
+
       localforage.getItem(getStorageKey('has-seen-tutorial')).then(val => {
         if (!val) {
           setIsTutorialOpen(true);
+        } else {
+          setIsTutorialOpen(false);
         }
-      });
+      }).catch(() => setIsTutorialOpen(false));
     }
-  }, [isReady]);
+  }, [isReady, user]);
 
   // Autopromoção de 'Crescimento' para 'Adulto' e migração de status obsoletos ('Ativo')
   useEffect(() => {
@@ -1640,6 +1643,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const closeTutorial = () => {
     setIsTutorialOpen(false);
     localforage.setItem(getStorageKey('has-seen-tutorial'), true).catch(console.error);
+    localStorage.setItem('@mura-manager:has-seen-tutorial', 'true');
+    if (user) {
+      localStorage.setItem(`@mura-manager:${user.id}:has-seen-tutorial`, 'true');
+    }
   };
 
   const contextValue = useMemo(() => ({
