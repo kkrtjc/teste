@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
+import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 
 export function BirdProfileModal() {
   const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird } = useAppContext();
@@ -271,155 +272,224 @@ export function BirdProfileModal() {
               </div>
             )}
 
-            {/* Ascendência / Pedigree */}
-            <div className="border border-theme-border rounded-xl overflow-hidden bg-theme-surface/50">
-              <div className="bg-theme-base p-4 border-b border-theme-border flex justify-between items-center">
-                <h4 className="font-bold text-white flex items-center gap-2 text-sm">
-                  <GitBranch size={16} className="text-theme-primary" /> Ascendência &amp; Pedigree
-                </h4>
-                <button 
-                  onClick={() => openAddBirdModal('', bird.id)}
-                  className="text-xs text-theme-primary hover:text-orange-400 font-bold uppercase transition-colors"
-                >
-                  Editar Genealogia
-                </button>
-              </div>
-              <div className="p-4 space-y-4">
-                {/* Parents Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Father (Pai) */}
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Pai (Reprodutor)</p>
-                    {bird.paiId ? (
-                      bird.isPaiExterno ? (
-                        <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0 shadow-inner">
-                            🐓
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-white text-sm truncate">{bird.paiId}</p>
-                            <p className="text-[10px] text-orange-400 font-bold uppercase">Externo / Fora do Criatório</p>
-                          </div>
-                        </div>
-                      ) : (() => {
-                        const fatherBird = birds.find(b => b.id === bird.paiId);
-                        return fatherBird ? (
-                          <div 
-                            onClick={() => openBirdProfile(fatherBird.id)}
-                            className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300"
-                          >
-                            <div className="w-10 h-10 rounded-full border-2 border-blue-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-md">
-                              {fatherBird.imagem ? (
-                                <img src={fatherBird.imagem} className="w-full h-full object-cover" alt="" />
-                              ) : (
-                                <span className="text-lg">🐓</span>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-white text-sm truncate">{fatherBird.anilha}</p>
-                              <p className="text-xs text-theme-text-muted truncate">{fatherBird.nome || 'Sem nome'}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center gap-2 text-theme-text-muted text-xs italic">
-                            ID: {bird.paiId} (Não encontrado no plantel)
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center justify-center text-theme-text-muted text-xs italic min-h-[66px]">
-                        Pai não cadastrado
-                      </div>
-                    )}
+            {/* ── ASCENDÊNCIA, PEDIGREE & CONSANGUINIDADE AVANÇADA ── */}
+            {(() => {
+              const inbreedingF = calculateInbreedingCoefficient(bird.id, birds);
+              const relatedList = findRelatedBirds(bird, birds);
+
+              // Agrupa os parentes por categoria
+              const groups: Record<string, typeof relatedList> = {
+                'Pais': relatedList.filter(r => r.relationshipGroup === 'Pais'),
+                'Irmãos': relatedList.filter(r => r.relationshipGroup === 'Irmãos'),
+                'Avós': relatedList.filter(r => r.relationshipGroup === 'Avós'),
+                'Tios': relatedList.filter(r => r.relationshipGroup === 'Tios'),
+                'Filhos': relatedList.filter(r => r.relationshipGroup === 'Filhos'),
+                'Sobrinhos': relatedList.filter(r => r.relationshipGroup === 'Sobrinhos'),
+                'Netos': relatedList.filter(r => r.relationshipGroup === 'Netos'),
+              };
+
+              // Cor visual do nível de consanguinidade
+              const getInbreedingBadge = (f: number) => {
+                if (f === 0) return { label: '0.0% (Sem Endogamia Direta)', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+                if (f <= 6.25) return { label: `${f.toFixed(1)}% (Consanguinidade Leve)`, color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' };
+                if (f <= 12.5) return { label: `${f.toFixed(1)}% (Consanguinidade Moderada)`, color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
+                return { label: `${f.toFixed(1)}% (Consanguinidade Elevada)`, color: 'bg-rose-500/10 text-rose-400 border-rose-500/30' };
+              };
+
+              const fBadge = getInbreedingBadge(inbreedingF);
+
+              return (
+                <div className="border border-theme-border rounded-2xl overflow-hidden bg-theme-surface/50 shadow-lg">
+                  {/* Banner de Header da Genealogia */}
+                  <div className="bg-theme-base p-4 border-b border-theme-border flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                      <h4 className="font-black text-white flex items-center gap-2 text-base">
+                        <GitBranch size={18} className="text-theme-primary" /> Genealogia &amp; Pedigree Completo
+                      </h4>
+                      <p className="text-xs text-theme-text-muted mt-0.5">
+                        Mapeamento automático de parentes e coeficientes genéticos
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => openAddBirdModal('', bird.id)}
+                      className="text-xs text-theme-primary hover:text-orange-400 font-bold uppercase transition-colors px-3 py-1.5 rounded-xl border border-theme-primary/30 bg-theme-primary/10 hover:bg-theme-primary/20"
+                    >
+                      Editar Pais
+                    </button>
                   </div>
 
-                  {/* Mother (Mãe) */}
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-pink-400 uppercase tracking-wider">Mãe (Matriz)</p>
-                    {bird.maeId ? (
-                      bird.isMaeExterno ? (
-                        <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0 shadow-inner">
-                            🐔
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-white text-sm truncate">{bird.maeId}</p>
-                            <p className="text-[10px] text-orange-400 font-bold uppercase">Externa / Fora do Criatório</p>
-                          </div>
-                        </div>
-                      ) : (() => {
-                        const motherBird = birds.find(b => b.id === bird.maeId);
-                        return motherBird ? (
-                          <div 
-                            onClick={() => openBirdProfile(motherBird.id)}
-                            className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300"
-                          >
-                            <div className="w-10 h-10 rounded-full border-2 border-pink-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-md">
-                              {motherBird.imagem ? (
-                                <img src={motherBird.imagem} className="w-full h-full object-cover" alt="" />
-                              ) : (
-                                <span className="text-lg">🐔</span>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-white text-sm truncate">{motherBird.anilha}</p>
-                              <p className="text-xs text-theme-text-muted truncate">{motherBird.nome || 'Sem nome'}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center gap-2 text-theme-text-muted text-xs italic">
-                            ID: {bird.maeId} (Não encontrada no plantel)
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl flex items-center justify-center text-theme-text-muted text-xs italic min-h-[66px]">
-                        Mãe não cadastrada
+                  <div className="p-4 space-y-5">
+                    {/* Badge do Coeficiente de Consanguinidade (Wright's F) */}
+                    <div className="p-4 rounded-xl bg-theme-base/60 border border-theme-border space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                          🧬 Coeficiente de Consanguinidade (Wright):
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-black border ${fBadge.color}`}>
+                          {fBadge.label}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <p className="text-[11px] text-theme-text-muted leading-relaxed">
+                        {inbreedingF === 0
+                          ? 'Esta ave não possui ancestrais em comum diretos mapeados na linhagem.'
+                          : `Mede o nível de endogamia (acasalamento entre parentes). ${inbreedingF >= 25 ? '⚠️ Nível alto: recomendado cruzar com linhagem distante.' : ''}`}
+                      </p>
+                    </div>
 
-                {/* Children Section */}
-                <div className="border-t border-theme-border/40 pt-4 space-y-2">
-                  {(() => {
-                    const children = birds.filter(b => b.paiId === bird.id || b.maeId === bird.id);
-                    return (
-                      <>
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider">
-                          Filhotes Mapeados ({children.length})
-                        </p>
-                        {children.length > 0 ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {children.map(child => (
+                    {/* SEÇÕES DE PARENTES MAPEADOS */}
+
+                    {/* 1. PAIS */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <span className="text-base">👪</span> Pais Diretos (50% de DNA)
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Pai */}
+                        <div>
+                          <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Pai (Reprodutor)</p>
+                          {bird.paiId ? (
+                            bird.isPaiExterno ? (
+                              <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0">🐓</div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-white text-sm truncate">{bird.paiId}</p>
+                                  <p className="text-[10px] text-orange-400 font-bold uppercase">Externo / Fora do Criatório</p>
+                                </div>
+                              </div>
+                            ) : (() => {
+                              const fatherBird = birds.find(b => b.id === bird.paiId);
+                              return fatherBird ? (
+                                <div 
+                                  onClick={() => openBirdProfile(fatherBird.id)}
+                                  className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300 shadow-sm"
+                                >
+                                  <div className="w-10 h-10 rounded-full border-2 border-blue-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0">
+                                    {fatherBird.imagem ? <img src={fatherBird.imagem} className="w-full h-full object-cover" alt="" /> : <span className="text-lg">🐓</span>}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="font-bold text-white text-sm truncate">{fatherBird.anilha}</p>
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400">Pai · 50%</span>
+                                    </div>
+                                    <p className="text-xs text-theme-text-muted truncate">{fatherBird.nome || 'Sem nome'}</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl text-theme-text-muted text-xs italic">
+                                  ID: {bird.paiId} (Não encontrado)
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl text-theme-text-muted text-xs italic">
+                              Pai não cadastrado
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Mãe */}
+                        <div>
+                          <p className="text-[10px] font-bold text-pink-400 uppercase tracking-wider mb-1">Mãe (Matriz)</p>
+                          {bird.maeId ? (
+                            bird.isMaeExterno ? (
+                              <div className="p-3 bg-theme-base/40 border border-theme-border rounded-xl flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full border border-theme-border flex items-center justify-center text-lg bg-theme-surface shrink-0">🐔</div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-white text-sm truncate">{bird.maeId}</p>
+                                  <p className="text-[10px] text-orange-400 font-bold uppercase">Externa / Fora do Criatório</p>
+                                </div>
+                              </div>
+                            ) : (() => {
+                              const motherBird = birds.find(b => b.id === bird.maeId);
+                              return motherBird ? (
+                                <div 
+                                  onClick={() => openBirdProfile(motherBird.id)}
+                                  className="p-3 bg-theme-base/60 hover:bg-theme-primary/10 border border-theme-border hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300 shadow-sm"
+                                >
+                                  <div className="w-10 h-10 rounded-full border-2 border-pink-500 bg-theme-surface flex items-center justify-center overflow-hidden shrink-0">
+                                    {motherBird.imagem ? <img src={motherBird.imagem} className="w-full h-full object-cover" alt="" /> : <span className="text-lg">🐔</span>}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="font-bold text-white text-sm truncate">{motherBird.anilha}</p>
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-pink-500/20 text-pink-400">Mãe · 50%</span>
+                                    </div>
+                                    <p className="text-xs text-theme-text-muted truncate">{motherBird.nome || 'Sem nome'}</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl text-theme-text-muted text-xs italic">
+                                  ID: {bird.maeId} (Não encontrada)
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="p-3 bg-theme-base/20 border border-theme-border border-dashed rounded-xl text-theme-text-muted text-xs italic">
+                              Mãe não cadastrada
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RENDERIZADOR DE OUTRAS CATEGORIAS (Irmãos, Avós, Tios, Sobrinhos, Netos, Filhos) */}
+                    {[
+                      { key: 'Irmãos', title: '🐣 Irmãos & Meios-Irmãos', color: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
+                      { key: 'Avós', title: '👴 Avós & Avôs', color: 'border-amber-500/30 text-amber-400 bg-amber-500/10' },
+                      { key: 'Tios', title: '🐓 Tios & Tias', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' },
+                      { key: 'Filhos', title: '🐥 Filhos & Descendentes', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' },
+                      { key: 'Sobrinhos', title: '🐤 Sobrinhos & Sobrinhas', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
+                      { key: 'Netos', title: '🥚 Netos & Netas', color: 'border-teal-500/30 text-teal-400 bg-teal-500/10' },
+                    ].map(cat => {
+                      const list = groups[cat.key] || [];
+                      if (list.length === 0) return null;
+
+                      return (
+                        <div key={cat.key} className="space-y-2 border-t border-theme-border/40 pt-4">
+                          <p className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between">
+                            <span>{cat.title} ({list.length})</span>
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {list.map(rel => (
                               <div
-                                key={child.id}
-                                onClick={() => openBirdProfile(child.id)}
-                                className="p-2.5 bg-theme-base/40 hover:bg-theme-primary/10 border border-theme-border/50 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-2.5 transition-all duration-300"
+                                key={rel.bird.id}
+                                onClick={() => openBirdProfile(rel.bird.id)}
+                                className="p-3 bg-theme-base/50 hover:bg-theme-primary/10 border border-theme-border/60 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300 shadow-sm"
                               >
-                                <div className="w-8 h-8 rounded-full bg-theme-surface border border-theme-border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                  {child.imagem ? (
-                                    <img src={child.imagem} className="w-full h-full object-cover" alt="" />
+                                <div className="w-10 h-10 rounded-full bg-theme-surface border border-theme-border flex items-center justify-center overflow-hidden shrink-0">
+                                  {(rel.bird.imagem || rel.bird.imagens?.[0]) ? (
+                                    <img src={rel.bird.imagem || rel.bird.imagens?.[0]} className="w-full h-full object-cover" alt="" />
                                   ) : (
-                                    child.sexo === 'Macho' ? '🐓' : '🐔'
+                                    <span className="text-lg">{rel.bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-bold text-white text-xs truncate">{child.anilha}</p>
-                                  <p className="text-[9px] text-theme-text-muted truncate">{child.nome || 'Sem nome'}</p>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="font-bold text-white text-xs truncate">{rel.bird.anilha}</p>
+                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded border ${cat.color}`}>
+                                      {rel.relationship} · {rel.geneticsSharePercent}%
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-theme-text-muted truncate mt-0.5">
+                                    {rel.bird.nome ? `${rel.bird.nome} · ` : ''}{rel.bird.raca || 'Sem raça'} ({rel.bird.status})
+                                  </p>
                                 </div>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <p className="text-xs text-theme-text-muted italic py-1">Nenhum filhote registrado descendente desta ave.</p>
-                        )}
-                      </>
-                    );
-                  })()}
+                        </div>
+                      );
+                    })}
+
+                    {relatedList.length === 0 && !bird.paiId && !bird.maeId && (
+                      <div className="p-6 text-center text-theme-text-muted text-xs italic bg-theme-base/30 rounded-xl border border-theme-border/40 border-dashed">
+                        Nenhum parente ou genealogia cadastrado para esta ave. Use o botão &quot;Editar Pais&quot; para definir a origem genética.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </div>
       </div>
