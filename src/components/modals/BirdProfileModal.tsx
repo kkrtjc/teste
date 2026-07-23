@@ -59,7 +59,7 @@ export function BirdProfileModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] rounded-2xl">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] gpu-accelerated animate-scale-up">
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
           <div className="flex items-center gap-4">
@@ -81,7 +81,7 @@ export function BirdProfileModal() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto smooth-scroll">
           {/* Cover / Header section with Carousel */}
           <div className="relative h-64 bg-theme-base select-none">
             {images.length > 0 ? (

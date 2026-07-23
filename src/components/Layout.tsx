@@ -385,10 +385,10 @@ export function Layout() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6">
+        <div className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6 gpu-accelerated">
           {/* BANNER FLUIDO DE TESTE GRATUITO NO TOPO DO APP */}
           {trialInfo.isTrial && (
-            <div className="mb-4 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/30 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in relative overflow-hidden backdrop-blur-md">
+            <div className="mb-4 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/30 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in relative overflow-hidden bg-theme-surface/90">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 animate-pulse">
                   <Sparkles size={20} />

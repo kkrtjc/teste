@@ -765,7 +765,7 @@ export function AddBirdModal() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
       {/* Container relativo para os overlays internos */}
-      <div className="relative bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh]">
+      <div className="relative bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh] gpu-accelerated animate-scale-up">
 
         {/* ── Mini-overlay: detalhe de ave duplicada ── */}
         {detailBird && (
@@ -800,7 +800,7 @@ export function AddBirdModal() {
         </div>
 
         {/* Body – fully scrollable */}
-        <div className="flex-1 overflow-y-auto p-5 overscroll-contain">
+        <div className="flex-1 overflow-y-auto smooth-scroll p-5 overscroll-contain">
           {renderStep()}
         </div>
 

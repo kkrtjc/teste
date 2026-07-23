@@ -338,7 +338,7 @@ export function Birds() {
           )}
 
           {/* Birds Grid */}
-          <div className="flex-1 overflow-y-auto pr-1">
+          <div className="flex-1 overflow-y-auto smooth-scroll pr-1">
             {filteredBirds.length === 0 ? (
               <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
                 {birdSearch || activeBreed
@@ -360,6 +360,7 @@ export function Birds() {
                           src={bird.imagem}
                           alt={bird.anilha}
                           loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (

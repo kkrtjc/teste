@@ -115,7 +115,7 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
   const inputCls="w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up" onClick={e=>e.stopPropagation()}>
+      <div className="bg-theme-surface w-full sm:max-w-md rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" onClick={e=>e.stopPropagation()}>
         <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0"/>
         <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
@@ -124,7 +124,7 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
           </div>
           <button onClick={onClose} className="p-2 text-theme-text-muted hover:text-white rounded-xl transition-colors"><X size={18}/></button>
         </div>
-        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+        <div className="overflow-y-auto smooth-scroll flex-1 p-5 space-y-4">
           {error&&<div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400 font-bold"><AlertCircle size={14}/>{error}</div>}
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Data</label>
