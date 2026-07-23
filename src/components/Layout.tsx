@@ -74,9 +74,10 @@ export function Layout() {
     const handleBeforeInstall = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Só exibe se não estiver instalado e o usuário não tiver fechado recentemente
-      const isClosed = localStorage.getItem('@mura-manager:install-banner-closed') === 'true';
-      if (!isStandaloneMode && !isClosed) {
+      // Exibe se não instalado e usuário não fechou nas últimas 7 dias
+      const closedAt = localStorage.getItem('@mura-manager:install-banner-closed');
+      const isRecentlyClosed = closedAt && (Date.now() - Number(closedAt)) < 7 * 24 * 60 * 60 * 1000;
+      if (!isStandaloneMode && !isRecentlyClosed) {
         setShowInstallBanner(true);
       }
     };
@@ -87,8 +88,9 @@ export function Layout() {
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(ios);
 
-    const isClosed = localStorage.getItem('@mura-manager:install-banner-closed') === 'true';
-    if (ios && !isStandaloneMode && !isClosed) {
+    const closedAt = localStorage.getItem('@mura-manager:install-banner-closed');
+    const isRecentlyClosed = closedAt && (Date.now() - Number(closedAt)) < 7 * 24 * 60 * 60 * 1000;
+    if (ios && !isStandaloneMode && !isRecentlyClosed) {
       setShowInstallBanner(true);
     }
 
@@ -108,8 +110,8 @@ export function Layout() {
 
   const handleCloseInstallBanner = () => {
     setShowInstallBanner(false);
-    // Guarda escolha por 7 dias para não incomodar o usuário
-    localStorage.setItem('@mura-manager:install-banner-closed', 'true');
+    // Guarda o timestamp atual; o banner reaparecerá após 7 dias
+    localStorage.setItem('@mura-manager:install-banner-closed', String(Date.now()));
   };
 
   const fetchAllowedCpfs = async () => {

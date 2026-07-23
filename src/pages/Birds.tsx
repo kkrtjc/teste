@@ -9,7 +9,7 @@ export function Birds() {
   const location = useLocation();
   const { 
     breeds, addBreed, editBreed, removeBreed,
-    birds, openAddBirdModal, openBirdProfile, 
+    birds, editBird, openAddBirdModal, openBirdProfile, 
     activeBreed, setActiveBreed 
   } = useAppContext();
 
@@ -124,6 +124,7 @@ export function Birds() {
     if (!newBreedName.trim()) return;
 
     if (breedToEditId) {
+      const oldBreed = breeds.find(b => b.id === breedToEditId);
       editBreed(breedToEditId, {
         nome: newBreedName,
         descricao: newBreedDesc,
@@ -132,7 +133,12 @@ export function Birds() {
         tempoCrescimento: newBreedTempoCrescimento,
         pesoMedio: newBreedPesoMedio
       });
-      const oldBreed = breeds.find(b => b.id === breedToEditId);
+      // Atualiza o nome da raça em todas as aves vinculadas ao nome antigo
+      if (oldBreed && oldBreed.nome !== newBreedName) {
+        birds
+          .filter(b => b.raca === oldBreed.nome)
+          .forEach(b => editBird(b.id, { raca: newBreedName }));
+      }
       if (oldBreed && activeBreed === oldBreed.nome) {
         setActiveBreed(newBreedName);
       }
@@ -183,7 +189,7 @@ export function Birds() {
   const filteredBirds = useMemo(() => {
     const query = birdSearch.trim().toLowerCase();
     return currentBirds.filter(b =>
-      b.anilha.toLowerCase().includes(query) ||
+      (b.anilha || '').toLowerCase().includes(query) ||
       (b.nome || '').toLowerCase().includes(query) ||
       (b.baia || '').toLowerCase().includes(query)
     );
@@ -201,7 +207,7 @@ export function Birds() {
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {activeBreed || sexFilter !== 'Todos' || statusFilter !== 'Todos'
                   ? `Filtrado (${filteredBirds.length} ave${filteredBirds.length !== 1 ? 's' : ''})`
-                  : `Total: ${birds.filter(b => b.status !== 'Crescimento' && b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves`
+                  : `Total: ${birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves`
                 }
               </p>
             </>
@@ -323,7 +329,7 @@ export function Birds() {
                 </span>
               )}
               <button 
-                onClick={() => { setSexFilter('Todos'); setStatusFilter('Todos'); setActiveBreed(''); }} 
+                onClick={() => { setSexFilter('Todos'); setStatusFilter('Todos'); setActiveBreed(''); setBirdSearch(''); }} 
                 className="text-[9px] font-bold text-red-400 hover:underline ml-1"
               >
                 Limpar Todos
@@ -511,8 +517,12 @@ export function Birds() {
                             </button>
                             <button 
                               onClick={(e) => { 
-                                e.stopPropagation(); 
-                                if (window.confirm(`Deseja realmente apagar a raça ${breed.nome} permanentemente?`)) {
+                                e.stopPropagation();
+                                const avesVinculadas = birds.filter(b => b.raca === breed.nome && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
+                                const aviso = avesVinculadas > 0
+                                  ? `Existem ${avesVinculadas} ave(s) vinculada(s) a esta raça. Elas ficarão sem raça definida.\n\nDeseja realmente apagar a raça "${breed.nome}" permanentemente?`
+                                  : `Deseja realmente apagar a raça "${breed.nome}" permanentemente?`;
+                                if (window.confirm(aviso)) {
                                   removeBreed(breed.id);
                                 }
                               }} 

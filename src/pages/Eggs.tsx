@@ -140,7 +140,7 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preco / Duzia (R$)</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço / Dúzia (R$)</label>
               <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={form.precoVenda} onChange={set('precoVenda')} className={inputCls}/>
             </div>
             <div className="space-y-1">
@@ -149,8 +149,8 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Observacao (opcional)</label>
-            <textarea rows={2} placeholder="Ex: Producao baixou por causa do calor..." value={form.observacao} onChange={e=>setForm(p=>({...p,observacao:e.target.value}))} className={`${inputCls} resize-none`}/>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Observação (opcional)</label>
+            <textarea rows={2} placeholder="Ex: Produção baixou por causa do calor..." value={form.observacao} onChange={e=>setForm(p=>({...p,observacao:e.target.value}))} className={`${inputCls} resize-none`}/>
           </div>
         </div>
         <div className="p-5 border-t border-theme-border shrink-0">
@@ -173,7 +173,8 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
   const totalPerdidos=records.reduce((s,r)=>s+r.perdidos,0);
   const totalEstoque=total-totalVendidos-totalPerdidos;
   const receita=records.reduce((s,r)=>s+(r.vendidos/12)*r.precoVenda,0);
-  const custo=records.reduce((s,r)=>s+r.coletados*r.custoProd,0);
+  // Custo proporcional apenas aos ovos vendidos (evita lucro negativo falso por estoque retido)
+  const custo=records.reduce((s,r)=>s+r.vendidos*r.custoProd,0);
   const lucro=receita-custo;
   const dias=daysBetween(lot.dataInicio,todayISO());
   const mediaReal=records.length>0?(total/records.length):0;
@@ -192,7 +193,7 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
             <span className="font-black text-white text-sm">Baia {lot.baia}</span>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAtivo?'bg-green-500/20 text-green-400':'bg-gray-500/20 text-gray-400'}`}>{lot.status}</span>
           </div>
-          <p className="text-xs text-theme-text-muted mt-0.5 truncate">{lot.femeasIds.length} femea(s) &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}</p>
+          <p className="text-xs text-theme-text-muted mt-0.5 truncate">{lot.femeasIds.length} fêmea(s) &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}</p>
           {femeaNomes&&<p className="text-[10px] text-theme-text-muted/70 truncate mt-0.5">{femeaNomes}</p>}
         </div>
       </div>
@@ -205,7 +206,7 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
         ))}
       </div>
       <div className="px-4 py-2 border-t border-theme-border flex items-center gap-3">
-        <span className="text-[10px] text-theme-text-muted font-bold whitespace-nowrap">Eficiencia</span>
+        <span className="text-[10px] text-theme-text-muted font-bold whitespace-nowrap">Eficiência</span>
         <div className="flex-1 h-1.5 rounded-full bg-theme-base overflow-hidden">
           <div className={`h-full rounded-full transition-all ${efBar>=80?'bg-green-400':efBar>=50?'bg-amber-400':'bg-red-400'}`} style={{width:`${efBar}%`}}/>
         </div>
@@ -218,13 +219,13 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
           </button>
         )}
         <button onClick={()=>setExpanded(v=>!v)} className="px-3 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
-          <BarChart2 size={14}/>Analise{expanded?<ChevronUp size={12}/>:<ChevronDown size={12}/>}
+          <BarChart2 size={14}/>Análise{expanded?<ChevronUp size={12}/>:<ChevronDown size={12}/>}
         </button>
       </div>
       {expanded&&(
         <div className="border-t border-theme-border bg-theme-base/40 px-4 py-4 space-y-4">
           <div>
-            <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2 flex items-center gap-1.5"><BarChart2 size={11}/> Producao (ultimos 14 dias)</p>
+            <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2 flex items-center gap-1.5"><BarChart2 size={11}/> Produção (últimos 14 dias)</p>
             <div className="flex items-center gap-4 mb-1">
               {[{color:'bg-amber-400/40',label:'Coletados'},{color:'bg-green-400/70',label:'Vendidos'},{color:'bg-red-400/70',label:'Perdidos'}].map(l=>(
                 <div key={l.label} className="flex items-center gap-1">
@@ -242,13 +243,13 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
               <p className="text-[10px] text-theme-text-muted">{totalVendidos} ovos vendidos</p>
             </div>
             <div className={`rounded-xl p-3 border ${lucro>=0?'bg-blue-500/10 border-blue-500/20':'bg-red-500/10 border-red-500/20'}`}>
-              <p className={`text-[10px] font-bold uppercase mb-1 ${lucro>=0?'text-blue-400':'text-red-400'}`}>Lucro Liquido</p>
+              <p className={`text-[10px] font-bold uppercase mb-1 ${lucro>=0?'text-blue-400':'text-red-400'}`}>Lucro Líquido</p>
               <p className={`text-lg font-black ${lucro>=0?'text-white':'text-red-400'}`}>{fmtBRL(lucro)}</p>
               <p className="text-[10px] text-theme-text-muted">Custo: {fmtBRL(custo)}</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {[{label:'Dias ativos',value:`${dias}d`},{label:'Registros',value:records.length},{label:'Media/dia',value:mediaReal.toFixed(1)}].map(m=>(
+            {[{label:'Dias ativos',value:`${dias}d`},{label:'Registros',value:records.length},{label:'Média/dia',value:mediaReal.toFixed(1)}].map(m=>( 
               <div key={m.label} className="rounded-xl bg-theme-surface border border-theme-border p-2 text-center">
                 <p className="text-sm font-black text-white">{m.value}</p>
                 <p className="text-[9px] text-theme-text-muted uppercase">{m.label}</p>
@@ -257,7 +258,7 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
           </div>
           {records.length>0&&(
             <div>
-              <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2">Historico de Registros</p>
+              <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2">Histórico de Registros</p>
               <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {[...records].sort((a,b)=>b.data.localeCompare(a.data)).map(r=>(
                   <div key={r.id} className="flex items-center gap-2 text-xs bg-theme-surface border border-theme-border rounded-xl px-3 py-2">
@@ -266,7 +267,7 @@ function LotCard({lot,birds,onRegister}:{lot:EggLot;birds:ReturnType<typeof useA
                     <span className="text-amber-400 font-bold">{r.coletados} ovos</span>
                     {r.vendidos>0&&<span className="text-green-400">+{r.vendidos}v</span>}
                     {r.perdidos>0&&<span className="text-red-400">-{r.perdidos}p</span>}
-                    <span className="text-theme-text-muted ml-auto">{fmtBRL((r.vendidos/12)*r.precoVenda - r.coletados*r.custoProd)}</span>
+                    <span className="text-theme-text-muted ml-auto">{fmtBRL((r.vendidos/12)*r.precoVenda - r.vendidos*r.custoProd)}</span>
                   </div>
                 ))}
               </div>
@@ -292,7 +293,7 @@ export function Eggs() {
       for(const r of (lot.registros??[])){
         if(r.data<cutoff)continue;
         col+=r.coletados;vend+=r.vendidos;perd+=r.perdidos;
-        rec+=(r.vendidos/12)*r.precoVenda;cst+=r.coletados*r.custoProd;
+        rec+=(r.vendidos/12)*r.precoVenda;cst+=r.vendidos*r.custoProd;
       }
     }
     return{kpiColetados:col,kpiVendidos:vend,kpiPerdidos:perd,kpiReceita:rec,kpiCusto:cst,kpiLucro:rec-cst};
@@ -314,7 +315,7 @@ export function Eggs() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-white flex items-center gap-2"><Egg size={22} className="text-amber-400"/>Gestao de Ovos</h2>
+          <h2 className="text-2xl font-black text-white flex items-center gap-2"><Egg size={22} className="text-amber-400"/>Gestão de Ovos</h2>
           <p className="text-xs text-theme-text-muted mt-0.5">{activeLots.length} lote(s) ativo(s) &bull; {eggLots.reduce((s,l)=>s+(l.registros?.length??0),0)} registros</p>
         </div>
         <div className="flex bg-theme-surface border border-theme-border rounded-xl p-1 gap-1">

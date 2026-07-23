@@ -114,16 +114,14 @@ export function AddBirdModal() {
       }
 
       const filesToUpload = Array.from(files).slice(0, remainingSlots);
-      const compressed: string[] = [];
 
-      for (const file of filesToUpload) {
-        try {
-          const comp = await compressImage(file, 1200, 1200, 0.82);
-          compressed.push(comp);
-        } catch (err) {
-          console.error('Erro ao comprimir imagem:', err);
-        }
-      }
+      // Comprime todas as imagens em paralelo para não travar a UI em celulares antigos
+      const results = await Promise.allSettled(
+        filesToUpload.map(file => compressImage(file, 1200, 1200, 0.82))
+      );
+      const compressed: string[] = results
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+        .map(r => r.value);
 
       setPreviewImages(prev => [...prev, ...compressed]);
     }

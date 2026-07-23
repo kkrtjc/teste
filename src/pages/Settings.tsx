@@ -35,7 +35,7 @@ export function Settings() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const compressedBase64 = await compressImage(file, 1200, 1200, 0.82);
+        const compressedBase64 = await compressImage(file, 400, 400, 0.82);
         setPreviewImage(compressedBase64);
       } catch (err) {
         console.error("Erro ao comprimir imagem de perfil", err);
@@ -61,7 +61,8 @@ export function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mura-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const nomeCriatorio = farmSettings.name ? farmSettings.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'mura-manager';
+    a.download = `${nomeCriatorio}-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

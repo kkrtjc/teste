@@ -463,7 +463,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Escuta contínua em tempo real (polling a cada 3s) para capturar aprovações de Webhook do gateway!
+  // Verificação periódica de acesso (a cada 10 minutos) para capturar aprovações de Webhook do gateway
   useEffect(() => {
     if (!user) return;
 
@@ -493,7 +493,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (!localData) {
-            alert('Acesso revogado: Seu usuário não está cadastrado no sistema.');
+            // Acesso revogado — sinaliza expiração sem interromper a UI com alert
+            setIsExpired(true);
             signOut();
           } else {
             const expDate = localData.expires_at;
@@ -553,7 +554,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (!data) {
-          alert('Acesso revogado: Seu usuário não está cadastrado como cliente autorizado.');
+          // Acesso revogado — sinaliza expiração sem interromper a UI com alert
+          setIsExpired(true);
           signOut();
         } else {
           const expDate = data.expires_at;
@@ -580,8 +582,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     checkCurrentCpfAccess();
-    // Sondagem a cada 3s para escuta ativa de aprovação de Webhook
-    const interval = setInterval(checkCurrentCpfAccess, 3000);
+    // Verificação a cada 10 minutos — equilibra responsividade com economia de bateria e cota de API
+    const interval = setInterval(checkCurrentCpfAccess, 10 * 60 * 1000);
 
     return () => {
       clearInterval(interval);

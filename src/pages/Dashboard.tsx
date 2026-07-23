@@ -92,7 +92,7 @@ export function Dashboard() {
     const avesNaBaia   = birds.filter(b => b.baia === baia);
     const machos       = avesNaBaia.filter(b => b.sexo === 'Macho');
     const femeas       = avesNaBaia.filter(b => b.sexo === 'Fêmea');
-    const pintinhos    = avesNaBaia.filter(b => b.origem === 'Cruzamento');
+    const pintinhos    = avesNaBaia.filter(b => b.status === 'Crescimento');
 
     // casal vinculado (se tem pintinhos)
     const casalId = pintinhos[0]?.casalId;

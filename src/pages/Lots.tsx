@@ -459,7 +459,7 @@ export function Lots() {
                         {lot.femeasIds.map(id=>{const b=birds.find(x=>x.id===id);return b?(<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome?` (${b.nome})`:''}</span>):null;})}
                       </div>
                     ):(
-                      <p className="text-[10px] text-theme-text-muted italic">{qtdF>0?`${qtdF} femeas registradas (sem vinculo individual)`:'Nenhuma ave vinculada.'}</p>
+                      <p className="text-[10px] text-theme-text-muted italic">{qtdF>0?`${qtdF} fêmeas registradas (sem vínculo individual)`:'Nenhuma ave vinculada.'}</p>
                     )}
                     {lot.observacao&&<p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lot.observacao}</p>}
                   </div>
@@ -783,13 +783,13 @@ export function Lots() {
                   <input type="date" required value={pDataInicio} onChange={e=>setPDataInicio(e.target.value)} className={inputCls}/>
                 </div>
                 <div className="space-y-2">
-                  <SectionLabel>Femeas no Lote</SectionLabel>
+                  <SectionLabel>Fêmeas no Lote</SectionLabel>
                   <ModeToggle mode={pMode} onChange={m=>{setPMode(m);setPFemeas([]);setPQtd('');}} label1="Selecionar aves" label2="Informar quantidade"/>
                   {pMode==='select'
-                    ? <BirdPicker birds={activeFemales} selected={pFemeas} onToggle={handleFemaleToggle} onSelectAll={handleFemaleSelectAll} search={pSearch} onSearch={setPSearch} emptyMsg="Nenhuma femea disponivel. Cadastre aves primeiro."/>
+                    ? <BirdPicker birds={activeFemales} selected={pFemeas} onToggle={handleFemaleToggle} onSelectAll={handleFemaleSelectAll} search={pSearch} onSearch={setPSearch} emptyMsg="Nenhuma fêmea disponível. Cadastre aves primeiro."/>
                     : (
                       <div className="space-y-1">
-                        <SectionLabel>Quantidade de Femeas</SectionLabel>
+                        <SectionLabel>Quantidade de Fêmeas</SectionLabel>
                         <input type="number" min="1" inputMode="numeric" placeholder="Ex: 30" value={pQtd}
                           onChange={e=>{setPQtd(e.target.value);setPExpectativa(String(Math.round((parseInt(e.target.value)||0)*0.85)));}}
                           className={inputCls + " text-2xl font-black text-center py-4"}/>
@@ -802,13 +802,13 @@ export function Lots() {
                   <div className="relative">
                     <input type="number" min="0" inputMode="numeric" value={pExpectativa} onChange={e=>setPExpectativa(e.target.value)} placeholder="Auto-calculado (85% da qtd)" className={inputCls}/>
                   </div>
-                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Calculado automaticamente em 85% das femeas. Voce pode ajustar manualmente.</p>
+                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Calculado automaticamente em 85% das fêmeas. Você pode ajustar manualmente.</p>
                 </div>
                 <div className="space-y-2">
-                  <SectionLabel>Precos Padrao para aba Ovos</SectionLabel>
+                  <SectionLabel>Preços Padrão para aba Ovos</SectionLabel>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className={labelCls}>Preco/Duzia (R$)</label>
+                      <label className={labelCls}>Preço/Dúzia (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400"/>
                         <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={pPreco} onChange={e=>setPPreco(e.target.value)} className={inputCls + " pl-8"}/>
@@ -822,10 +822,10 @@ export function Lots() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Esses valores serao preenchidos automaticamente ao registrar producao na aba Ovos.</p>
+                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Esses valores serão preenchidos automaticamente ao registrar produção na aba Ovos.</p>
                 </div>
                 <div className="space-y-1">
-                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Lote de matrizes pedigree..." value={pObs} onChange={e=>setPObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
@@ -893,7 +893,7 @@ export function Lots() {
                   }
                 </div>
                 <div className="space-y-1">
-                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Lote frango caipira..." value={eObs} onChange={e=>setEObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
@@ -955,7 +955,7 @@ export function Lots() {
                   }
                 </div>
                 <div className="space-y-1">
-                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Pintinhos nascidos da chocadora..." value={piObs} onChange={e=>setPiObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
@@ -1017,7 +1017,7 @@ export function Lots() {
                   }
                 </div>
                 <div className="space-y-1">
-                  <SectionLabel>Observacao (opcional)</SectionLabel>
+                  <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Lote de recria caipira..." value={crObs} onChange={e=>setCrObs(e.target.value)} className={inputCls + " resize-none"}/>
                 </div>
               </div>
@@ -1079,3 +1079,4 @@ export function Lots() {
     </div>
   );
 }
+
