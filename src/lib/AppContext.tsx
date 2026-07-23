@@ -542,7 +542,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await localforage.setItem(getStorageKey('breeds'), mappedBreeds);
 
       // Mapeamento e mesclagem de imagens das aves
-      const mappedBirds = sbBirds.map((b: any) => {
+      const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
+      const mappedBirds: Bird[] = sbBirds.map((b: any) => {
         const localBird = (localBirds || []).find((x: any) => x.id === b.id);
         let birdImagens = b.imagens || localBird?.imagens || [];
         
@@ -575,6 +576,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
           observacoes: b.observacoes || localBird?.observacoes || ''
         };
       });
+
+      // ── PROTEÇÃO CONTRA PERDA DE AVES LOCAIS ──
+      // Se houver aves criadas no dispositivo que ainda não estão no Supabase (ex: criadas offline ou em oscilação de rede)
+      const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => lb && lb.id && !sbBirdIds.has(lb.id));
+      if (unsyncedLocalBirds.length > 0) {
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBirds.length} ave(s) salvas no dispositivo que ainda não subiram para a nuvem.`);
+        mappedBirds.push(...unsyncedLocalBirds);
+
+        if (isSupabaseConfigured && user) {
+          const birdsToPush = unsyncedLocalBirds.map((b: any) => ({
+            id: b.id,
+            user_id: user.id,
+            anilha: b.anilha,
+            nome: b.nome,
+            sexo: b.sexo,
+            raca: b.raca,
+            baia: b.baia,
+            status: b.status,
+            imagem: b.imagens?.[0] || b.imagem,
+            vacinas: b.vacinas,
+            origem: b.origem,
+            casal_id: b.casalId,
+            pai_id: b.paiId,
+            mae_id: b.maeId,
+            is_pai_externo: b.isPaiExterno,
+            is_mae_externo: b.isMaeExterno,
+            data_nascimento: b.dataNascimento,
+            peso: b.peso,
+            imagens: b.imagens || [],
+            observacoes: b.observacoes || ''
+          }));
+          
+          supabase!.from('birds').upsert(birdsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ao subir aves pendentes para o Supabase:', error);
+          });
+        }
+      }
 
       setBirds(mappedBirds);
       await localforage.setItem(getStorageKey('birds'), mappedBirds);
@@ -615,6 +653,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
           registros: l.registros || local?.registros || []
         };
       });
+      // Preserva também lotes de ovos criados localmente que ainda não estavam no Supabase
+      const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
+      const unsyncedEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
+      if (unsyncedEggLots.length > 0) {
+        mappedEggLots.push(...unsyncedEggLots);
+        if (isSupabaseConfigured && user) {
+          const eggLotsToPush = unsyncedEggLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            baia: l.baia,
+            femeas_ids: l.femeasIds || [],
+            expectativa_diaria: l.expectativaDiaria || 0,
+            data_inicio: l.dataInicio || '',
+            status: l.status || 'Ativo',
+            raca: l.raca || '',
+            qtd_femeas: l.qtdFemeas || 0,
+            preco_venda_padrao: l.precoVendaPadrao || 6.0,
+            custo_prod_padrao: l.custoProdPadrao || 0.30,
+            observacao: l.observacao || ''
+          }));
+          supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ao subir lotes de ovos pendentes para o Supabase:', error);
+          });
+        }
+      }
+
       setEggLots(mappedEggLots);
       await localforage.setItem(getStorageKey('egglots'), mappedEggLots);
 
@@ -635,6 +699,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
           qtdAves: l.qtd_aves || l.qtdAves || local?.qtdAves || 0
         };
       });
+
+      // Preserva também lotes de corte criados localmente que ainda não estavam no Supabase
+      const sbMeatLotIds = new Set<string>(sbMeatLots.map((l: any) => l.id));
+      const unsyncedMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
+      if (unsyncedMeatLots.length > 0) {
+        mappedMeatLots.push(...unsyncedMeatLots);
+        if (isSupabaseConfigured && user) {
+          const meatLotsToPush = unsyncedMeatLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            baia: l.baia,
+            aves_ids: l.avesIds || [],
+            data_inicio: l.dataInicio || '',
+            peso_medio_inicial: l.pesoMedioInicial || '',
+            status: l.status || 'Crescimento',
+            raca: l.raca || '',
+            observacao: l.observacao || '',
+            peso_meta: l.pesoMeta || '',
+            qtd_aves: l.qtdAves || 0
+          }));
+          supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ao subir lotes de corte pendentes para o Supabase:', error);
+          });
+        }
+      }
+
       setMeatLots(mappedMeatLots);
       await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
