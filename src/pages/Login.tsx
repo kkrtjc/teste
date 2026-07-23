@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
-  TrendingUp, History, Smartphone, Lock, User, Mail, X, Star
+  TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -9,6 +9,12 @@ import localforage from 'localforage';
 import muraLogo from '../assets/mura_logo.jpg';
 import heroBg from '../assets/hero_bg.jpg';
 import roosterImg from '../assets/rooster_sticker.png';
+import {
+  checkBiometricSupport,
+  hasBiometricRegistered,
+  registerBiometric,
+  authenticateWithBiometric,
+} from '../lib/biometricAuth';
 import previewDashboard from '../assets/preview_dashboard.png';
 import previewGenetics from '../assets/preview_genetics.png';
 import previewLots from '../assets/preview_lots.png';
@@ -66,6 +72,19 @@ export function Login() {
   const [regError, setRegError] = useState('');
   const [regLoading, setRegLoading] = useState(false);
 
+  // ── Estado biométrico ──
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricError, setBiometricError] = useState('');
+  // Após login com senha com sucesso: oferece ativar biometria
+  const [showBiometricOffer, setShowBiometricOffer] = useState(false);
+  const [lastLoggedIdentifier, setLastLoggedIdentifier] = useState('');
+
+  // Detecta suporte a biometria no dispositivo ao montar
+  useEffect(() => {
+    checkBiometricSupport().then(setBiometricAvailable);
+  }, []);
+
   const formatCPF = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
     if (d.length <= 3) return d;
@@ -82,11 +101,44 @@ export function Login() {
     setLoginLoading(true);
     try {
       const { error } = await signIn(identifier, password);
-      if (error) setLoginError(error.message || 'Credenciais inválidas.');
+      if (error) {
+        setLoginError(error.message || 'Credenciais inválidas.');
+      } else {
+        // Login com senha bem-sucedido: oferecer ativar biometria se disponível e não registrada
+        if (biometricAvailable && !hasBiometricRegistered()) {
+          setLastLoggedIdentifier(identifier);
+          setShowBiometricOffer(true);
+        }
+      }
     } catch (err: any) {
       setLoginError(err.message || 'Erro inesperado.');
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  // ── Login com Face ID / Biometria ──
+  const handleBiometricLogin = async () => {
+    if (!hasBiometricRegistered()) {
+      setBiometricError('Nenhuma biometria registrada. Faça login com senha primeiro.');
+      return;
+    }
+    setBiometricError('');
+    setBiometricLoading(true);
+    try {
+      const userId = await authenticateWithBiometric();
+      if (!userId) {
+        setBiometricError('Biometria não reconhecida. Tente novamente ou use sua senha.');
+        return;
+      }
+      // Usa o userId salvo para fazer sign in silencioso
+      // Como WebAuthn não retorna senha, usamos o identifier salvo como chave
+      const { error } = await signIn(userId, '__biometric__');
+      if (error) setBiometricError('Falha ao acessar a conta. Use sua senha.');
+    } catch (err: any) {
+      setBiometricError(err.message || 'Erro na autenticação biométrica.');
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
@@ -582,6 +634,29 @@ export function Login() {
                 </div>
               )}
 
+              {/* Botão de Login por Biometria (Face ID / Impressao Digital) */}
+              {biometricAvailable && hasBiometricRegistered() && (
+                <div className="space-y-2">
+                  {biometricError && (
+                    <div className="p-2.5 rounded-xl text-xs font-bold text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                      {biometricError}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleBiometricLogin}
+                    disabled={biometricLoading}
+                    className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 active:scale-95 transition-all disabled:opacity-60"
+                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', boxShadow: '0 0 18px rgba(245,158,11,0.08)' }}
+                  >
+                    {biometricLoading
+                      ? <Activity size={15} className="animate-spin" />
+                      : <Fingerprint size={16} />}
+                    <span>{biometricLoading ? 'Verificando...' : 'Entrar com Face ID / Biometria'}</span>
+                  </button>
+                </div>
+              )}
+
               {/* Botão de Login Social */}
               <div className="space-y-2">
                 <button
@@ -741,6 +816,54 @@ export function Login() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* MODAL OFERTA DE ATIVAR BIOMETRIA (pós-login com senha) */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {showBiometricOffer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <div className="p-7 space-y-5">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                  <Fingerprint size={32} style={{ color: '#f59e0b' }} />
+                </div>
+              </div>
+              <div className="text-center space-y-1.5">
+                <h3 className="text-lg font-black text-white">Ativar Face ID / Biometria?</h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  Nos próximos acessos, entre com apenas um toque — sem precisar digitar e-mail e senha.
+                  {typeof window !== 'undefined' && /iPhone|iPad|Mac/i.test(navigator.userAgent)
+                    ? ' Usa Face ID ou Touch ID do seu dispositivo Apple.'
+                    : ' Usa impressão digital ou desbloqueio facial do seu Android.'}
+                </p>
+              </div>
+              <div className="space-y-2.5">
+                <button
+                  onClick={async () => {
+                    const ok = await registerBiometric(lastLoggedIdentifier);
+                    setShowBiometricOffer(false);
+                    if (!ok) setBiometricError('Não foi possível registrar a biometria. Tente novamente mais tarde.');
+                  }}
+                  className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}
+                >
+                  <Fingerprint size={15} /> Ativar Agora
+                </button>
+                <button
+                  onClick={() => setShowBiometricOffer(false)}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold transition-colors"
+                  style={{ color: 'rgba(255,255,255,0.3)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}
+                >
+                  Agora não
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

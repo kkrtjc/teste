@@ -637,6 +637,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Mapeia lotes de ovos de snake_case para camelCase preservando propriedades locais (como registros)
       const mappedEggLots = sbEggLots.map((l: any) => {
         const local = (localEggLots || []).find((x: any) => x.id === l.id);
+        // registros vem do Supabase como jsonb (já é array) ou do local
+        const registros = Array.isArray(l.registros) ? l.registros
+          : (typeof l.registros === 'string' ? JSON.parse(l.registros || '[]') : (local?.registros || []));
         return {
           id: l.id,
           baia: l.baia || '',
@@ -650,7 +653,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           precoVendaPadrao: l.preco_venda_padrao || l.precoVendaPadrao || local?.precoVendaPadrao || 6.0,
           custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
           observacao: l.observacao || local?.observacao || '',
-          registros: l.registros || local?.registros || []
+          // Mescla registros: prefere Supabase, fallback para local (preserva dados offline)
+          registros: registros.length > 0 ? registros : (local?.registros || [])
         };
       });
       // Preserva também lotes de ovos criados localmente que ainda não estavam no Supabase
@@ -671,7 +675,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             qtd_femeas: l.qtdFemeas || 0,
             preco_venda_padrao: l.precoVendaPadrao || 6.0,
             custo_prod_padrao: l.custoProdPadrao || 0.30,
-            observacao: l.observacao || ''
+            observacao: l.observacao || '',
+            // Inclui histórico de registros para não perder dados offline
+            registros: l.registros || []
           }));
           supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
             if (error) console.error('Erro ao subir lotes de ovos pendentes para o Supabase:', error);
@@ -1429,7 +1435,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             femeas_ids: lot.femeasIds,
             expectativa_diaria: lot.expectativaDiaria,
             data_inicio: lot.dataInicio,
-            status: lot.status
+            status: lot.status,
+            raca: lot.raca || '',
+            qtd_femeas: lot.qtdFemeas || 0,
+            preco_venda_padrao: lot.precoVendaPadrao || 6.0,
+            custo_prod_padrao: lot.custoProdPadrao || 0.30,
+            observacao: lot.observacao || '',
+            registros: lot.registros || []
           })
           .then(({ error }) => { if (error) console.error('Erro Supabase addEggLot:', error); });
       }
@@ -1449,6 +1461,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedLot.dataInicio !== undefined) { dbUpdate.data_inicio = updatedLot.dataInicio; delete dbUpdate.dataInicio; }
         if (updatedLot.precoVendaPadrao !== undefined) { dbUpdate.preco_venda_padrao = updatedLot.precoVendaPadrao; delete dbUpdate.precoVendaPadrao; }
         if (updatedLot.custoProdPadrao !== undefined) { dbUpdate.custo_prod_padrao = updatedLot.custoProdPadrao; delete dbUpdate.custoProdPadrao; }
+        // Sincroniza o histórico de registros diários de ovos com o Supabase
+        if (updatedLot.registros !== undefined) { dbUpdate.registros = updatedLot.registros; }
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!

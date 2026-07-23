@@ -7,6 +7,7 @@ import { OnboardingModal } from './components/modals/OnboardingModal';
 import { PaywallScreen } from './components/PaywallScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { ADMIN_CPF } from './lib/AuthContext';
+import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 import { Activity } from 'lucide-react';
 
 // Lazy loading das páginas internas para otimização de bundle inicial no celular
@@ -86,7 +87,14 @@ function AppContent() {
         <TrialPopupModal
           remainingDays={trialInfo.remainingDays}
           totalTrialDays={7}
-          onClose={() => setShowTrialPopup(false)}
+          onClose={async () => {
+            setShowTrialPopup(false);
+            // Após o usuário fechar o popup, agenda notificação push para o dia seguinte
+            const granted = await requestPushPermission();
+            if (granted) {
+              await scheduleDailyTrialReminder(trialInfo.remainingDays);
+            }
+          }}
           onUpgrade={() => {
             setShowTrialPopup(false);
             setShowUpgradeFromPopup(true);
