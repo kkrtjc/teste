@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Save, Phone, Mail, Home, LogOut, HelpCircle } from 'lucide-react';
+import { 
+  Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
+  Download, Upload, CheckCircle2, AlertCircle, 
+  ShieldCheck, Database
+} from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
@@ -11,25 +15,26 @@ export function Settings() {
     coupleEggs, incubationLots,
     importBackup, openTutorial
   } = useAppContext();
-  const { signOut, isLocalMode, cpf } = useAuth();
+  const { signOut, isLocalMode, cpf, user } = useAuth();
   
   const [name, setName] = useState(farmSettings.name);
-  const [email, setEmail] = useState(farmSettings.email);
+  const [email, setEmail] = useState(farmSettings.email || user?.email || '');
   const [phone, setPhone] = useState(farmSettings.phone);
   const [previewImage, setPreviewImage] = useState<string>(farmSettings.photo);
   const [isSaved, setIsSaved] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [importMessage, setImportMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync state if farmSettings changes externally
+  // Sincroniza estado quando farmSettings mudar
   useEffect(() => {
     setName(farmSettings.name);
-    setEmail(farmSettings.email);
+    setEmail(farmSettings.email || user?.email || '');
     setPhone(farmSettings.phone);
     setPreviewImage(farmSettings.photo);
-  }, [farmSettings]);
+  }, [farmSettings, user]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,8 +50,16 @@ export function Settings() {
 
   const handleExportBackup = () => {
     const data = {
-      version: '1.0.0',
+      version: '1.2.0',
       exportedAt: new Date().toISOString(),
+      userEmail: user?.email || email,
+      stats: {
+        totalBirds: birds.length,
+        totalBreeds: breeds.length,
+        totalCouples: couples.length,
+        totalEggLots: eggLots.length,
+        totalMeatLots: meatLots.length,
+      },
       breeds,
       birds,
       couples,
@@ -54,14 +67,21 @@ export function Settings() {
       incubationLots,
       egglots: eggLots,
       meatlots: meatLots,
-      settings: farmSettings
+      settings: {
+        ...farmSettings,
+        name,
+        email,
+        phone,
+        photo: previewImage
+      }
     };
+
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const nomeCriatorio = farmSettings.name ? farmSettings.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'mura-manager';
+    const nomeCriatorio = name ? name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'mura-manager';
     a.download = `${nomeCriatorio}-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
@@ -74,7 +94,7 @@ export function Settings() {
     if (!file) return;
 
     const confirmImport = window.confirm(
-      "ATENÇÃO: A importação de um backup substituirá TODOS os dados atuais do seu criatório local e na nuvem. Deseja prosseguir?"
+      "ATENÇÃO: A importação substituirá todos os dados locais e sincronizará com sua conta na nuvem.\n\nDeseja restaurar as informações deste arquivo de backup?"
     );
     if (!confirmImport) {
       e.target.value = '';
@@ -88,23 +108,26 @@ export function Settings() {
         const parsed = JSON.parse(text);
         
         if (!parsed.breeds && !parsed.birds) {
-          throw new Error('Formato de backup inválido');
+          throw new Error('Formato de arquivo de backup inválido.');
         }
 
         await importBackup(parsed);
         setImportStatus('success');
-        setTimeout(() => setImportStatus('idle'), 4000);
-      } catch (err) {
-        console.error(err);
+        setImportMessage(`Backup restaurado! (${parsed.birds?.length || 0} aves e ${parsed.breeds?.length || 0} raças importadas).`);
+        setTimeout(() => setImportStatus('idle'), 6000);
+      } catch (err: any) {
+        console.error('Erro na importação de backup:', err);
         setImportStatus('error');
-        setTimeout(() => setImportStatus('idle'), 4000);
+        setImportMessage(err.message || 'Erro ao ler arquivo de backup.');
+        setTimeout(() => setImportStatus('idle'), 6000);
       } finally {
         e.target.value = '';
       }
     };
     reader.onerror = () => {
       setImportStatus('error');
-      setTimeout(() => setImportStatus('idle'), 4000);
+      setImportMessage('Não foi possível ler o arquivo selecionado.');
+      setTimeout(() => setImportStatus('idle'), 6000);
       e.target.value = '';
     };
     reader.readAsText(file);
@@ -122,16 +145,76 @@ export function Settings() {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handleConfirmSignOut = () => {
+    if (window.confirm("Deseja realmente sair da sua conta? Seus dados continuarão salvos com segurança na nuvem.")) {
+      signOut();
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in p-4 max-w-2xl mx-auto">
-      <div>
-        <h2 className="text-2xl font-black text-white">Configurações</h2>
-        <p className="text-sm text-theme-text-muted mt-1">Personalize o perfil do seu criatório.</p>
+    <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-3xl mx-auto">
+      
+      {/* ── HEADER DA PÁGINA ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-theme-surface border border-theme-border/60 p-5 rounded-2xl shadow-xl">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            {previewImage ? (
+              <img src={previewImage} alt="Criatório" className="w-16 h-16 rounded-2xl object-cover border-2 border-theme-primary shadow-md" />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-theme-base border-2 border-theme-border flex items-center justify-center text-2xl font-black text-theme-primary">
+                🐓
+              </div>
+            )}
+            <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-theme-surface ${isLocalMode ? 'bg-amber-400' : 'bg-emerald-400'}`} title={isLocalMode ? 'Modo Local' : 'Nuvem Conectada'} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-white leading-tight">
+              {name || 'Seu Criatório'}
+            </h2>
+            <p className="text-xs text-theme-text-muted mt-0.5">
+              {user?.email || email || 'Conta do Mura Manager'}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                isLocalMode 
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              }`}>
+                {isLocalMode ? '🟡 Armazenamento Local' : '🟢 Sincronizado na Nuvem Supabase'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="premium-card p-6 border border-theme-border/50 space-y-8">
-        
-        {/* Photo Upload */}
+      {/* ── RESUMO DOS DADOS SALVOS ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Aves Registradas', value: birds.length, icon: '🐓', color: 'text-blue-400' },
+          { label: 'Raças & Linhagens', value: breeds.length, icon: '🧬', color: 'text-purple-400' },
+          { label: 'Lotes de Ovos', value: eggLots.length, icon: '🥚', color: 'text-amber-400' },
+          { label: 'Lotes de Corte/Engorda', value: meatLots.length, icon: '🍗', color: 'text-orange-400' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-theme-surface border border-theme-border/60 p-3.5 rounded-xl shadow-md flex items-center gap-3">
+            <span className="text-2xl">{item.icon}</span>
+            <div>
+              <p className={`text-lg font-black ${item.color}`}>{item.value}</p>
+              <p className="text-[10px] text-theme-text-muted uppercase font-bold leading-tight">{item.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── CARD 1: DADOS DO CRIATÓRIO E PERFIL ── */}
+      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
+        <div className="border-b border-theme-border/40 pb-3">
+          <h3 className="text-base font-black text-white flex items-center gap-2">
+            <Home size={18} className="text-theme-primary" /> Perfil do Criatório
+          </h3>
+          <p className="text-xs text-theme-text-muted mt-0.5">Informações exibidas nos relatórios e fichas do sistema.</p>
+        </div>
+
+        {/* Foto */}
         <div className="flex flex-col items-center">
           <input 
             type="file" 
@@ -142,168 +225,183 @@ export function Settings() {
           />
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="relative w-32 h-32 rounded-full border-4 border-theme-border/50 flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary cursor-pointer bg-theme-base transition-all overflow-hidden group shadow-xl"
+            className="relative w-28 h-28 rounded-2xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary cursor-pointer bg-theme-base transition-all overflow-hidden group shadow-lg"
           >
             {previewImage ? (
               <>
-                <img src={previewImage} alt="Foto de Perfil" className="w-full h-full object-cover" />
+                <img src={previewImage} alt="Logo do Criatório" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                  <Camera size={24} className="mb-1" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Alterar</span>
+                  <Camera size={22} className="mb-1" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Alterar</span>
                 </div>
               </>
             ) : (
               <>
-                <Camera size={28} className="mb-2 opacity-50" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Adicionar</span>
+                <Camera size={26} className="mb-1 opacity-60" />
+                <span className="text-[9px] font-bold uppercase tracking-wider">Enviar Logo</span>
               </>
             )}
           </div>
-          <p className="text-xs text-theme-text-muted mt-4">Clique para alterar a foto do perfil</p>
+          <p className="text-[11px] text-theme-text-muted mt-2">Clique para enviar ou alterar a foto do seu criatório</p>
         </div>
 
         {/* Form Fields */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-              <Home size={14} /> Nome do Criatório
+              <Home size={13} /> Nome do Criatório
             </label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-              placeholder="Ex: Criatório Mura" 
+              placeholder="Ex: Criatório Mura &amp; Genética" 
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-              <Mail size={14} /> E-mail de Contato
-            </label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-              placeholder="Ex: contato@criatoriomura.com" 
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
+                <Mail size={13} /> E-mail de Contato
+              </label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
+                placeholder="Ex: contato@criatorio.com" 
+              />
+            </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-              <Phone size={14} /> Número de Telefone / WhatsApp
-            </label>
-            <input 
-              type="tel" 
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-              placeholder="Ex: (11) 99999-9999" 
-            />
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
+                <Phone size={13} /> Telefone / WhatsApp
+              </label>
+              <input 
+                type="tel" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
+                placeholder="Ex: (11) 99999-9999" 
+              />
+            </div>
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="pt-4 border-t border-theme-border/50">
-          <button 
-            onClick={handleSave}
-            className="w-full btn-primary flex justify-center items-center gap-2 py-3 rounded-xl font-black text-lg"
-          >
-            {isSaved ? 'Salvo com Sucesso!' : <><Save size={20} /> Salvar Configurações</>}
-          </button>
-        </div>
-
+        <button 
+          onClick={handleSave}
+          className="w-full btn-primary flex justify-center items-center gap-2 py-3 rounded-xl font-black text-sm shadow-lg active:scale-95 transition-all"
+        >
+          {isSaved ? (
+            <span className="flex items-center gap-2 text-black font-black"><CheckCircle2 size={18} /> Salvo com Sucesso!</span>
+          ) : (
+            <><Save size={18} /> Salvar Alterações do Perfil</>
+          )}
+        </button>
       </div>
 
-      {/* Central de Ajuda e Tutorial Card */}
-      <div className="premium-card p-6 border border-theme-border/50 space-y-4">
+      {/* ── CARD 2: ESCLARECIMENTO DE NUVEM & BACKUP ── */}
+      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div className="border-b border-theme-border/40 pb-3">
+          <h3 className="text-base font-black text-white flex items-center gap-2">
+            <ShieldCheck size={18} className="text-emerald-400" /> Sincronização Automática na Nuvem
+          </h3>
+          <p className="text-xs text-theme-text-muted mt-0.5">Segurança dos seus dados em tempo real.</p>
+        </div>
+
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+          <p className="text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            Seus dados estão protegidos e salvos na Nuvem (Supabase)!
+          </p>
+          <p className="text-[11px] leading-relaxed text-emerald-200/90">
+            Toda ave cadastrada, raça, lote ou registro de ovos é <strong>salvo automaticamente no seu perfil da nuvem</strong> a cada alteração. Mesmo que você troque de celular, formate o aparelho ou use outro navegador, basta fazer login com sua conta <strong>({user?.email || 'Google/E-mail'})</strong> para acessar todos os seus dados instantaneamente.
+          </p>
+        </div>
+
+        {/* Central de Backup Manual */}
+        <div className="pt-2 space-y-3">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <Database size={14} className="text-theme-primary" /> Backup Manual (Cópia de Segurança Offline)
+          </h4>
+          <p className="text-xs text-theme-text-muted leading-relaxed">
+            Você pode baixar um arquivo <code>.json</code> contendo uma cópia completa dos seus dados para guardar no seu computador, WhatsApp ou Google Drive por precaução.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={handleExportBackup}
+              className="flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
+            >
+              <Download size={16} className="text-theme-primary" /> Exportar Backup (Baixar JSON)
+            </button>
+
+            <div className="relative">
+              <input
+                type="file"
+                accept=".json"
+                ref={importFileInputRef}
+                onChange={handleImportBackup}
+                className="hidden"
+              />
+              <button
+                onClick={() => importFileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
+              >
+                <Upload size={16} className="text-blue-400" /> Restaurar Backup (Importar JSON)
+              </button>
+            </div>
+          </div>
+
+          {importStatus === 'success' && (
+            <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold text-center animate-fade-in flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} /> {importMessage}
+            </div>
+          )}
+
+          {importStatus === 'error' && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold text-center animate-fade-in flex items-center justify-center gap-2">
+              <AlertCircle size={16} /> {importMessage}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── CARD 3: AJUDA E TUTORIAL GUIADO ── */}
+      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
         <div>
-          <h3 className="text-lg font-black text-white flex items-center gap-2">
-            <HelpCircle size={20} className="text-theme-primary" /> Central de Ajuda &amp; Tutorial
+          <h3 className="text-base font-black text-white flex items-center gap-2">
+            <HelpCircle size={18} className="text-theme-primary" /> Central de Ajuda &amp; Treinamento
           </h3>
           <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
-            Se você tiver dúvidas sobre o funcionamento de qualquer aba ou recurso do sistema, assista ao nosso tutorial guiado explicativo passo a passo.
+            Dúvidas sobre como cadastrar matrizes, gerenciar ovos ou interpretar o pedigree? Reveja nosso tutorial guiado a qualquer momento.
           </p>
         </div>
 
         <button
           onClick={openTutorial}
-          className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-theme-primary to-orange-500 hover:from-amber-400 hover:to-orange-600 text-black rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
+          className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-theme-primary to-orange-500 hover:from-amber-400 hover:to-orange-600 text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
         >
-          📖 Iniciar Tutorial Guiado
+          📖 Iniciar Tutorial Guiado Interativo
         </button>
       </div>
 
-      {/* Backup and Sync Card */}
-      <div className="premium-card p-6 border border-theme-border/50 space-y-6 mt-6">
-        <div>
-          <h3 className="text-lg font-black text-white flex items-center gap-2">
-            📂 Backup &amp; Sincronização Local
-          </h3>
-          <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
-            Como o aplicativo funciona offline no seu aparelho, seus dados ficam guardados no navegador do seu celular ou computador. Se você limpar o histórico do navegador ou usar abas anônimas, os dados podem ser apagados pelo sistema do celular.
-          </p>
+      {/* ── CARD 4: SESSÃO & LOGOUT ── */}
+      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="text-xs text-theme-text-muted">
+          <span className="font-bold text-white block">Sessão Conectada:</span>
+          {user?.email || (cpf ? `CPF: ${cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}` : 'Usuário Ativo')}
         </div>
 
-        <div className="bg-theme-base/30 p-4 rounded-xl border border-theme-border flex flex-col gap-3">
-          <p className="text-xs text-amber-400 font-bold leading-relaxed">
-            💡 Dica: Recomendamos exportar um backup regularmente e salvar o arquivo no seu WhatsApp ou Google Drive para nunca perder suas aves e raças!
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          {/* Export button */}
-          <button
-            onClick={handleExportBackup}
-            className="flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-sm font-bold transition-all active:scale-95"
-          >
-            📥 Exportar Backup (Baixar Dados)
-          </button>
-
-          {/* Import button */}
-          <div className="relative">
-            <input
-              type="file"
-              accept=".json"
-              ref={importFileInputRef}
-              onChange={handleImportBackup}
-              className="hidden"
-            />
-            <button
-              onClick={() => importFileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-sm font-bold transition-all active:scale-95"
-            >
-              📤 Importar Backup (Restaurar)
-            </button>
-          </div>
-        </div>
-
-        {importStatus === 'success' && (
-          <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold text-center animate-pulse">
-            ✅ Dados restaurados com sucesso! Seu criatório foi atualizado.
-          </div>
-        )}
-
-        {importStatus === 'error' && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold text-center animate-pulse">
-            ❌ Falha ao importar. Verifique se o arquivo de backup é válido.
-          </div>
-        )}
-
-        <div className="border-t border-theme-border/30 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="text-xs text-theme-text-muted">
-            <span className="font-bold text-white block">Sessão Ativa (CPF):</span>
-            {cpf ? cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : ''} {isLocalMode ? '(Modo Local Offline)' : '(Sincronizado na Nuvem)'}
-          </div>
-          <button
-            onClick={signOut}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-sm font-bold transition-all active:scale-95 shrink-0"
-          >
-            <LogOut size={16} /> Sair da Conta (Logout)
-          </button>
-        </div>
+        <button
+          onClick={handleConfirmSignOut}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0"
+        >
+          <LogOut size={16} /> Sair da Conta (Logout)
+        </button>
       </div>
+
     </div>
   );
 }

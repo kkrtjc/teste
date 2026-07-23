@@ -1353,12 +1353,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
-        // registros is stored only locally (offline-first) — not synced to Supabase column
         const dbUpdate: any = { ...updatedLot };
-        delete dbUpdate.registros;
         if (updatedLot.femeasIds !== undefined) { dbUpdate.femeas_ids = updatedLot.femeasIds; delete dbUpdate.femeasIds; }
         if (updatedLot.expectativaDiaria !== undefined) { dbUpdate.expectativa_diaria = updatedLot.expectativaDiaria; delete dbUpdate.expectativaDiaria; }
         if (updatedLot.dataInicio !== undefined) { dbUpdate.data_inicio = updatedLot.dataInicio; delete dbUpdate.dataInicio; }
+        if (updatedLot.precoVendaPadrao !== undefined) { dbUpdate.preco_venda_padrao = updatedLot.precoVendaPadrao; delete dbUpdate.precoVendaPadrao; }
+        if (updatedLot.custoProdPadrao !== undefined) { dbUpdate.custo_prod_padrao = updatedLot.custoProdPadrao; delete dbUpdate.custoProdPadrao; }
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!
@@ -1540,10 +1540,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id: l.id,
           user_id: user.id,
           baia: l.baia,
-          femeas_ids: l.femeasIds,
-          expectativa_diaria: l.expectativaDiaria,
-          data_inicio: l.dataInicio,
-          status: l.status
+          femeas_ids: l.femeasIds || [],
+          expectativa_diaria: l.expectativaDiaria || 0,
+          data_inicio: l.dataInicio || '',
+          status: l.status || 'Ativo',
+          raca: l.raca || '',
+          qtd_femeas: l.qtdFemeas || 0,
+          preco_venda_padrao: l.precoVendaPadrao || 6.0,
+          custo_prod_padrao: l.custoProdPadrao || 0.30,
+          observacao: l.observacao || ''
         }));
         await supabase!.from('egg_lots').insert(toInsert);
       }
@@ -1557,10 +1562,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id: l.id,
           user_id: user.id,
           baia: l.baia,
-          aves_ids: l.avesIds,
-          data_inicio: l.dataInicio,
-          peso_medio_inicial: l.pesoMedioInicial,
-          status: l.status
+          aves_ids: l.avesIds || [],
+          data_inicio: l.dataInicio || '',
+          peso_medio_inicial: l.pesoMedioInicial || '',
+          status: l.status || 'Crescimento',
+          raca: l.raca || '',
+          observacao: l.observacao || '',
+          peso_meta: l.pesoMeta || '',
+          qtd_aves: l.qtdAves || 0
         }));
         await supabase!.from('meat_lots').insert(toInsert);
       }
