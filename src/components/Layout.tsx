@@ -830,6 +830,9 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         </div>,
         document.body
       )}
+
+      {/* Tutorial Guide Overlay */}
+      <TutorialModal />
     </div>
   );
 }

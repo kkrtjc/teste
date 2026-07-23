@@ -27,13 +27,25 @@ function AppContent() {
   const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
   const isAdmin = cpf === ADMIN_CPF;
 
-  // Decide se deve mostrar o popup assim que o usuário e os dados estiverem prontos
+  const isProfileConfigured = !!(farmSettings.name && farmSettings.email);
+  const showOnboarding = !isProfileConfigured && !isTutorialOpen;
+
+  // Decide se deve mostrar o popup de trial:
+  // IMPORTANTE: Só mostra DEPOIS que o tutorial e onboarding forem concluídos/fechados!
   useEffect(() => {
     if (!user || !isReady || isExpired || isAdmin) return;
+
+    // Se o tutorial manual ou o onboarding estão ativos, bloqueia a exibição simultânea do popup de trial
+    if (isTutorialOpen || showOnboarding) {
+      setShowTrialPopup(false);
+      return;
+    }
+
+    // Se tutorial/onboarding foram concluídos ou fechados, aí sim exibe o popup de trial (1x a cada 24h)
     if (shouldShowTrialPopup(trialInfo.isTrial, isAdmin)) {
       setShowTrialPopup(true);
     }
-  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
+  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial, isTutorialOpen, showOnboarding]);
 
   // 1. Carrega a sessão de autenticação primeiro
   if (authLoading) {
