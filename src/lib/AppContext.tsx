@@ -327,14 +327,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resCoupleEggs,
         resIncubationLots
       ] = await Promise.all([
-        supabase!.from('breeds').select('*').order('nome', { ascending: true }),
-        supabase!.from('birds').select('*').order('anilha', { ascending: true }),
-        supabase!.from('couples').select('*'),
-        supabase!.from('egg_lots').select('*'),
-        supabase!.from('meat_lots').select('*'),
+        supabase!.from('breeds').select('*').eq('user_id', user.id).order('nome', { ascending: true }),
+        supabase!.from('birds').select('*').eq('user_id', user.id).order('anilha', { ascending: true }),
+        supabase!.from('couples').select('*').eq('user_id', user.id),
+        supabase!.from('egg_lots').select('*').eq('user_id', user.id),
+        supabase!.from('meat_lots').select('*').eq('user_id', user.id),
         supabase!.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-        supabase!.from('couple_eggs').select('*'),
-        supabase!.from('incubation_lots').select('*')
+        supabase!.from('couple_eggs').select('*').eq('user_id', user.id),
+        supabase!.from('incubation_lots').select('*').eq('user_id', user.id)
       ]);
 
       let sbBreeds = resBreeds.data || [];
@@ -420,10 +420,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
               id: l.id,
               user_id: user.id,
               baia: l.baia,
-              femeas_ids: l.femeasIds,
-              expectativa_diaria: l.expectativaDiaria,
-              data_inicio: l.dataInicio,
-              status: l.status
+              femeas_ids: l.femeasIds || [],
+              expectativa_diaria: l.expectativaDiaria || 0,
+              data_inicio: l.dataInicio || '',
+              status: l.status || 'Ativo',
+              raca: l.raca || '',
+              qtd_femeas: l.qtdFemeas || 0,
+              preco_venda_padrao: l.precoVendaPadrao || 6.0,
+              custo_prod_padrao: l.custoProdPadrao || 0.30,
+              observacao: l.observacao || '',
+              registros: l.registros || []
             }));
             await supabase!.from('egg_lots').insert(eggLotsToInsert);
             sbEggLots = eggLotsToInsert;
@@ -638,9 +644,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Mapeia lotes de ovos de snake_case para camelCase preservando propriedades locais (como registros)
       const mappedEggLots = sbEggLots.map((l: any) => {
         const local = (localEggLots || []).find((x: any) => x.id === l.id);
-        // registros vem do Supabase como jsonb (já é array) ou do local
-        const registros = Array.isArray(l.registros) ? l.registros
-          : (typeof l.registros === 'string' ? JSON.parse(l.registros || '[]') : (local?.registros || []));
+        
+        // registros vem do Supabase como jsonb (array) ou string ou do localforage
+        let sbRegs: any[] = [];
+        if (Array.isArray(l.registros)) {
+          sbRegs = l.registros;
+        } else if (typeof l.registros === 'string' && l.registros.trim()) {
+          try { sbRegs = JSON.parse(l.registros); } catch { sbRegs = []; }
+        }
+
+        const localRegs: any[] = local?.registros || [];
+        
+        // Mescla registros mantendo o mais completo entre local e nuvem
+        let finalRegs = sbRegs;
+        if (localRegs.length > sbRegs.length) {
+          finalRegs = localRegs;
+          // Se o dispositivo local tem mais registros do que a nuvem, sincroniza forçado para o Supabase
+          if (isSupabaseConfigured && user) {
+            supabase!
+              .from('egg_lots')
+              .update({ registros: localRegs })
+              .eq('id', l.id)
+              .then(({ error }) => {
+                if (error) console.error('Erro ao sincronizar registros de ovos locais para o Supabase:', error);
+              });
+          }
+        }
+
         return {
           id: l.id,
           baia: l.baia || '',
@@ -648,16 +678,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           expectativaDiaria: l.expectativa_diaria !== undefined ? l.expectativa_diaria : (l.expectativaDiaria || 0),
           dataInicio: l.data_inicio || l.dataInicio || '',
           status: l.status || 'Ativo',
-          // Preserva propriedades offline-first locais
           raca: l.raca || local?.raca || '',
           qtdFemeas: l.qtd_femeas || l.qtdFemeas || local?.qtdFemeas || 0,
           precoVendaPadrao: l.preco_venda_padrao || l.precoVendaPadrao || local?.precoVendaPadrao || 6.0,
           custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
           observacao: l.observacao || local?.observacao || '',
-          // Mescla registros: prefere Supabase, fallback para local (preserva dados offline)
-          registros: registros.length > 0 ? registros : (local?.registros || [])
+          registros: finalRegs
         };
       });
+
       // Preserva também lotes de ovos criados localmente que ainda não estavam no Supabase
       const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
       const unsyncedEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
@@ -677,7 +706,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             preco_venda_padrao: l.precoVendaPadrao || 6.0,
             custo_prod_padrao: l.custoProdPadrao || 0.30,
             observacao: l.observacao || '',
-            // Inclui histórico de registros para não perder dados offline
             registros: l.registros || []
           }));
           supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
@@ -1456,21 +1484,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
-        const dbUpdate: any = { ...updatedLot };
-        if (updatedLot.femeasIds !== undefined) { dbUpdate.femeas_ids = updatedLot.femeasIds; delete dbUpdate.femeasIds; }
-        if (updatedLot.expectativaDiaria !== undefined) { dbUpdate.expectativa_diaria = updatedLot.expectativaDiaria; delete dbUpdate.expectativaDiaria; }
-        if (updatedLot.dataInicio !== undefined) { dbUpdate.data_inicio = updatedLot.dataInicio; delete dbUpdate.dataInicio; }
-        if (updatedLot.precoVendaPadrao !== undefined) { dbUpdate.preco_venda_padrao = updatedLot.precoVendaPadrao; delete dbUpdate.precoVendaPadrao; }
-        if (updatedLot.custoProdPadrao !== undefined) { dbUpdate.custo_prod_padrao = updatedLot.custoProdPadrao; delete dbUpdate.custoProdPadrao; }
-        // Sincroniza o histórico de registros diários de ovos com o Supabase
-        if (updatedLot.registros !== undefined) { dbUpdate.registros = updatedLot.registros; }
+        // Constrói estritamente os campos snake_case válidos para o Supabase
+        const dbUpdate: any = {};
+        if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;
+        if (updatedLot.status !== undefined) dbUpdate.status = updatedLot.status;
+        if (updatedLot.raca !== undefined) dbUpdate.raca = updatedLot.raca;
+        if (updatedLot.observacao !== undefined) dbUpdate.observacao = updatedLot.observacao;
+        if (updatedLot.femeasIds !== undefined) dbUpdate.femeas_ids = updatedLot.femeasIds;
+        if (updatedLot.expectativaDiaria !== undefined) dbUpdate.expectativa_diaria = updatedLot.expectativaDiaria;
+        if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
+        if (updatedLot.precoVendaPadrao !== undefined) dbUpdate.preco_venda_padrao = updatedLot.precoVendaPadrao;
+        if (updatedLot.custoProdPadrao !== undefined) dbUpdate.custo_prod_padrao = updatedLot.custoProdPadrao;
+        if (updatedLot.qtdFemeas !== undefined) dbUpdate.qtd_femeas = updatedLot.qtdFemeas;
+        if (updatedLot.registros !== undefined) dbUpdate.registros = updatedLot.registros;
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!
             .from('egg_lots')
             .update(dbUpdate)
             .eq('id', id)
-            .then(({ error }) => { if (error) console.error('Erro Supabase editEggLot:', error); });
+            .eq('user_id', user.id)
+            .then(({ error }) => {
+              if (error) console.error('Erro Supabase editEggLot:', error);
+            });
         }
       }
       return next;
