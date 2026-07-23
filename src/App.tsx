@@ -89,9 +89,6 @@ function AppContent() {
   }
 
   // 4. Primeiro login: perfil não configurado E tutorial concluído → exibe onboarding
-  const isProfileConfigured = !!(farmSettings.name && farmSettings.email);
-  const showOnboarding = !isProfileConfigured && !isTutorialOpen;
-
   return (
     <>
       {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
