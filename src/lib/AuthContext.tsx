@@ -499,17 +499,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             const expDate = localData.expires_at;
             if (expDate) {
-              const diffTime = new Date(expDate).getTime() - Date.now();
-              const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-              const expired = diffTime <= 0;
+              const diffMs = new Date(expDate).getTime() - Date.now();
+              // Usa floor para não antecipar o bloqueio (1h restante = 0 dias, mas não expirado)
+              const daysLeft = diffMs > 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) : 0;
+              const expired = diffMs <= 0;
               setIsExpired(expired);
               setTrialInfo({
-                isTrial: daysLeft <= 7 && !expired,
+                // isTrial = true durante os 7 dias, enquanto não expirou
+                isTrial: !expired && daysLeft <= 7,
                 remainingDays: daysLeft,
                 expiresAt: expDate
               });
             } else {
+              // Sem data de expiração = assinante permanente (admin inseriu sem limite)
               setIsExpired(false);
+              setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
             }
           }
           return;
@@ -563,17 +567,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const expTime = new Date(expDate).getTime();
             const nowTime = Date.now();
             const diffMs = expTime - nowTime;
-            const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            // Usa floor para não antecipar o bloqueio (1h restante = 0 dias, mas não expirado)
+            const daysLeft = diffMs > 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) : 0;
             const expired = diffMs <= 0;
 
             setIsExpired(expired);
             setTrialInfo({
-              isTrial: daysLeft <= 7 && !expired,
+              // isTrial = true durante os 7 dias, enquanto não expirou
+              isTrial: !expired && daysLeft <= 7,
               remainingDays: daysLeft,
               expiresAt: expDate
             });
           } else {
+            // Sem data de expiração = assinante permanente
             setIsExpired(false);
+            setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
           }
         }
       } catch (err) {

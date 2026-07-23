@@ -28,10 +28,15 @@ export const formatCPF = (cpf: string) => {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 };
 
-export function Layout() {
+interface LayoutProps {
+  showUpgradeModal?: boolean;
+  onUpgradeModalClose?: () => void;
+}
+
+export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen } = useAppContext();
   const navigate = useNavigate();
-  const { cpf, isLocalMode, trialInfo, triggerWebhookPayment } = useAuth();
+  const { cpf, isLocalMode, triggerWebhookPayment } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -39,6 +44,18 @@ export function Layout() {
   const [upgradePlan, setUpgradePlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copiedPixUpgrade, setCopiedPixUpgrade] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  // Abre o modal de upgrade quando acionado pelo TrialPopupModal (via App.tsx)
+  useEffect(() => {
+    if (showUpgradeModal) {
+      setIsUpgradeModalOpen(true);
+    }
+  }, [showUpgradeModal]);
+
+  const handleUpgradeModalClose = () => {
+    setIsUpgradeModalOpen(false);
+    onUpgradeModalClose?.();
+  };
 
   const [allowedCpfs, setAllowedCpfs] = useState<AllowedCpf[]>([]);
   const [newCpf, setNewCpf] = useState('');
@@ -386,33 +403,6 @@ export function Layout() {
         </header>
 
         <div className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6 gpu-accelerated">
-          {/* BANNER FLUIDO DE TESTE GRATUITO NO TOPO DO APP */}
-          {trialInfo.isTrial && (
-            <div className="mb-4 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border border-amber-500/30 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in relative overflow-hidden bg-theme-surface/90">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 animate-pulse">
-                  <Sparkles size={20} />
-                </div>
-                <div className="min-w-0 text-center sm:text-left">
-                  <p className="font-black text-sm text-white flex items-center justify-center sm:justify-start gap-1.5">
-                    <span>Seu teste gratuito vence em <strong className="text-amber-400 font-extrabold">{trialInfo.remainingDays} {trialInfo.remainingDays === 1 ? 'dia' : 'dias'}</strong></span>
-                  </p>
-                  <p className="text-xs text-theme-text-muted mt-0.5 leading-relaxed">
-                    Aproveite a oferta promocional de lançamento (Mensal R$ 19,90 ou Anual com super desconto) e garanta seu acesso continuado!
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 shrink-0"
-              >
-                <Sparkles size={14} />
-                <span>Garantir Oferta</span>
-              </button>
-            </div>
-          )}
-
           {showInstallBanner && (
             <div className="mb-4 bg-theme-surface border border-theme-primary/30 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 animate-fade-in relative overflow-hidden backdrop-blur-md">
               <div className="flex items-center gap-3">
@@ -758,7 +748,7 @@ export function Layout() {
                 </div>
               </div>
               <button 
-                onClick={() => setIsUpgradeModalOpen(false)}
+                onClick={handleUpgradeModalClose}
                 className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
               >
                 <X size={18} />
@@ -843,3 +833,4 @@ export function Layout() {
     </div>
   );
 }
+

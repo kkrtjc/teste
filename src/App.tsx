@@ -1,10 +1,12 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { OnboardingModal } from './components/modals/OnboardingModal';
 import { PaywallScreen } from './components/PaywallScreen';
+import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
+import { ADMIN_CPF } from './lib/AuthContext';
 import { Activity } from 'lucide-react';
 
 // Lazy loading das páginas internas para otimização de bundle inicial no celular
@@ -17,7 +19,20 @@ const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })))
 
 function AppContent() {
   const { isReady, farmSettings, isTutorialOpen } = useAppContext();
-  const { user, loading: authLoading, isExpired } = useAuth();
+  const { user, cpf, loading: authLoading, isExpired, trialInfo } = useAuth();
+
+  // ── Estado do popup de trial ──
+  const [showTrialPopup, setShowTrialPopup] = useState(false);
+  const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
+  const isAdmin = cpf === ADMIN_CPF;
+
+  // Decide se deve mostrar o popup assim que o usuário e os dados estiverem prontos
+  useEffect(() => {
+    if (!user || !isReady || isExpired || isAdmin) return;
+    if (shouldShowTrialPopup(trialInfo.isTrial, isAdmin)) {
+      setShowTrialPopup(true);
+    }
+  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
 
   // 1. Carrega a sessão de autenticação primeiro
   if (authLoading) {
@@ -55,7 +70,7 @@ function AppContent() {
     );
   }
 
-  // 3.5. Se o período de testes ou assinatura expirou, exibe a tela de bloqueio de pagamento
+  // 3.5. Se o período de testes ou assinatura expirou, exibe a tela de bloqueio total
   if (isExpired) {
     return <PaywallScreen />;
   }
@@ -66,7 +81,21 @@ function AppContent() {
 
   return (
     <>
+      {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
+      {showTrialPopup && (
+        <TrialPopupModal
+          remainingDays={trialInfo.remainingDays}
+          totalTrialDays={7}
+          onClose={() => setShowTrialPopup(false)}
+          onUpgrade={() => {
+            setShowTrialPopup(false);
+            setShowUpgradeFromPopup(true);
+          }}
+        />
+      )}
+
       {showOnboarding && <OnboardingModal />}
+
       <Router>
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center min-h-[300px] w-full text-center text-theme-text-muted">
@@ -75,7 +104,7 @@ function AppContent() {
           </div>
         }>
           <Routes>
-            <Route path="/" element={<Layout />}>
+            <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
               <Route index element={<Dashboard />} />
               <Route path="birds" element={<Birds />} />
               <Route path="lots" element={<Lots />} />
