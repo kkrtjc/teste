@@ -1,20 +1,22 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
-import type { EggDailyRecord, EggLot } from '../lib/AppContext';
+import type { EggDailyRecord, EggLot, IncubationLot } from '../lib/AppContext';
 import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, X, Check, BarChart2,
-  CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2
+  CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
+  AlertTriangle, ShoppingCart, Sparkles
 } from 'lucide-react';
+import { syncDailyEggReminder } from '../lib/pushNotifications';
 
 // helpers
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
-function formatDate(iso: string) { 
+function formatDate(iso: string) {
   if (!iso || !iso.includes('-')) return iso;
-  const [y,m,d] = iso.split('-'); 
-  return `${d}/${m}/${y}`; 
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 function daysBetween(a: string, b: string) {
   if (!a || !b) return 1;
@@ -51,6 +53,7 @@ function BarChart({ records }: { records: EggDailyRecord[] }) {
         const barH = Math.max(4, (r.coletados / max) * H);
         const vendH = Math.max(0, (r.vendidos / max) * H);
         const perdH = Math.max(0, (r.perdidos / max) * H);
+        const incH = Math.max(0, ((r.incubados || 0) / max) * H);
         const x = 10 + i * (BAR_W + 2);
         const isPeak = r.coletados === max && max > 0;
 
@@ -60,9 +63,11 @@ function BarChart({ records }: { records: EggDailyRecord[] }) {
             <rect x={x} y={H - barH} width={BAR_W} height={barH} rx="2" fill={isPeak ? "#F59E0B44" : "#F59E0B22"} />
             {/* Ovos Vendidos */}
             <rect x={x} y={H - vendH} width={BAR_W} height={vendH} rx="2" fill="#10B981" opacity="0.75" />
+            {/* Ovos Incubados (Choco) */}
+            <rect x={x + BAR_W * 0.3} y={H - incH} width={BAR_W * 0.4} height={incH} rx="2" fill="#8B5CF6" opacity="0.8" />
             {/* Ovos Perdidos */}
-            <rect x={x + BAR_W * 0.55} y={H - perdH} width={BAR_W * 0.45} height={perdH} rx="2" fill="#EF4444" opacity="0.8" />
-            
+            <rect x={x + BAR_W * 0.65} y={H - perdH} width={BAR_W * 0.35} height={perdH} rx="2" fill="#EF4444" opacity="0.8" />
+
             {/* Indicador de Pico de Postura */}
             {isPeak && (
               <circle cx={x + BAR_W / 2} cy={H - barH - 4} r="2" fill="#F59E0B" />
@@ -83,12 +88,13 @@ function BarChart({ records }: { records: EggDailyRecord[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // KPI Card
 // ─────────────────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: string; value: string; sub?: string; color?: 'amber' | 'green' | 'red' | 'blue'; icon: any }) {
+function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: string; value: string; sub?: string; color?: 'amber' | 'green' | 'red' | 'blue' | 'purple'; icon: any }) {
   const colors: Record<string, string> = {
     amber: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
     green: 'text-green-400 bg-green-400/10 border-green-400/20',
     red: 'text-red-400 bg-red-400/10 border-red-400/20',
     blue: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+    purple: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
   };
 
   return (
@@ -104,7 +110,7 @@ function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: st
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal: Criar Novo Lote de Postura (Direto da página de Ovos)
+// Modal: Criar Novo Lote de Postura
 // ─────────────────────────────────────────────────────────────────────────────
 function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (lot: EggLot) => void }) {
   const { birds, breeds } = useAppContext();
@@ -118,15 +124,12 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
   const [error, setError] = useState('');
 
-  // Fêmeas disponíveis
   const availableFemeas = useMemo(() => {
     return birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu');
   }, [birds]);
 
-  // Recalcula expectativa teórica recomendada ao alterar quantidade de fêmeas
   const handleFemeasChange = (num: number) => {
     if (num > 0) {
-      // 80% de taxa de postura padrão recomendada
       const recExp = Math.max(1, Math.round(num * 0.8));
       setExpectativaDiaria(String(recExp));
     }
@@ -209,19 +212,19 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Nº de Fêmeas na Baia <span className="text-amber-400">*</span></label>
-            <input 
-              type="number" 
-              min="1" 
-              inputMode="numeric" 
-              placeholder="Ex: 5" 
-              value={qtdFemeas} 
+            <input
+              type="number"
+              min="1"
+              inputMode="numeric"
+              placeholder="Ex: 5"
+              value={qtdFemeas}
               onChange={e => {
                 const val = e.target.value;
                 setQtdFemeas(val);
                 handleFemeasChange(parseInt(val) || 0);
-              }} 
+              }}
               onKeyDown={onlyNumericKeyDown}
-              className={inputCls} 
+              className={inputCls}
             />
           </div>
 
@@ -230,15 +233,15 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Expectativa Diária (Ovos/dia)</label>
               <span className="text-[9px] text-amber-400 font-bold">Recomendado: 80%</span>
             </div>
-            <input 
-              type="number" 
-              min="1" 
-              inputMode="numeric" 
-              placeholder="Ex: 4" 
-              value={expectativaDiaria} 
-              onChange={e => setExpectativaDiaria(e.target.value)} 
+            <input
+              type="number"
+              min="1"
+              inputMode="numeric"
+              placeholder="Ex: 4"
+              value={expectativaDiaria}
+              onChange={e => setExpectativaDiaria(e.target.value)}
               onKeyDown={onlyNumericKeyDown}
-              className={inputCls} 
+              className={inputCls}
             />
           </div>
 
@@ -260,8 +263,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
                 {availableFemeas.map(f => {
                   const isChecked = selectedFemeas.includes(f.id);
                   return (
-                    <div 
-                      key={f.id} 
+                    <div
+                      key={f.id}
                       onClick={() => {
                         setSelectedFemeas(prev => {
                           const next = isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
@@ -296,6 +299,215 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
           <button onClick={handleSave} className="w-full btn-primary py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400">
             <Check size={16} />
             <span>Salvar Lote de Postura</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal: Enviar Ovos do Estoque para Incubação / Choco
+// ─────────────────────────────────────────────────────────────────────────────
+function SendToIncubationModal({
+  lot,
+  availableStock,
+  onClose,
+  onConfirm
+}: {
+  lot: EggLot;
+  availableStock: number;
+  onClose: () => void;
+  onConfirm: (count: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(String(availableStock));
+  const [error, setError] = useState('');
+
+  const handleConfirm = () => {
+    const qty = parseInt(quantity) || 0;
+    if (qty <= 0) {
+      setError('Informe uma quantidade válida de ovos.');
+      return;
+    }
+    if (qty > availableStock) {
+      setError(`Quantidade não pode exceder o estoque disponível (${availableStock} ovos).`);
+      return;
+    }
+    onConfirm(qty);
+    onClose();
+  };
+
+  const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white focus:border-theme-primary outline-none text-center font-black text-2xl text-purple-400";
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-sm rounded-2xl border border-purple-500/30 shadow-2xl overflow-hidden animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-theme-border pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm text-white">Enviar p/ Incubação / Choco</h3>
+              <p className="text-[10px] text-theme-text-muted">Baia {lot.baia}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-theme-text-muted hover:text-white rounded-lg">
+            <X size={16} />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-bold text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-center space-y-1">
+          <p className="text-[10px] font-bold text-purple-300 uppercase">Estoque Disponível na Baia</p>
+          <p className="text-2xl font-black text-white">{availableStock} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Quantidade a Enviar</label>
+            <button
+              onClick={() => setQuantity(String(availableStock))}
+              className="text-[10px] text-purple-400 hover:text-purple-300 font-bold underline"
+            >
+              Enviar Todos ({availableStock})
+            </button>
+          </div>
+          <input
+            type="number"
+            min="1"
+            max={availableStock}
+            inputMode="numeric"
+            value={quantity}
+            onChange={e => setQuantity(e.target.value)}
+            onKeyDown={onlyNumericKeyDown}
+            className={inputCls}
+          />
+        </div>
+
+        <div className="pt-2">
+          <button
+            onClick={handleConfirm}
+            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+          >
+            <Sparkles size={16} />
+            <span>Criar Lote de Incubação</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal: Registrar Venda Direta do Estoque
+// ─────────────────────────────────────────────────────────────────────────────
+function SellFromStockModal({
+  lot,
+  availableStock,
+  onClose,
+  onConfirm
+}: {
+  lot: EggLot;
+  availableStock: number;
+  onClose: () => void;
+  onConfirm: (count: number, pricePerDozen: number) => void;
+}) {
+  const [quantity, setQuantity] = useState(String(availableStock));
+  const [pricePerDozen, setPricePerDozen] = useState(String(lot.precoVendaPadrao || 6.0));
+  const [error, setError] = useState('');
+
+  const qtyNum = parseInt(quantity) || 0;
+  const priceNum = parseFloat(pricePerDozen) || 0;
+  const totalRevenue = (qtyNum / 12) * priceNum;
+
+  const handleConfirm = () => {
+    if (qtyNum <= 0) {
+      setError('Informe uma quantidade válida de ovos.');
+      return;
+    }
+    if (qtyNum > availableStock) {
+      setError(`Quantidade não pode exceder o estoque disponível (${availableStock} ovos).`);
+      return;
+    }
+    onConfirm(qtyNum, priceNum);
+    onClose();
+  };
+
+  const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2 text-xs text-white focus:border-theme-primary outline-none";
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-sm rounded-2xl border border-green-500/30 shadow-2xl overflow-hidden animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-theme-border pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center">
+              <ShoppingCart size={18} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm text-white">Registrar Venda do Estoque</h3>
+              <p className="text-[10px] text-theme-text-muted">Baia {lot.baia}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-theme-text-muted hover:text-white rounded-lg">
+            <X size={16} />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-bold text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center space-y-1">
+          <p className="text-[10px] font-bold text-green-300 uppercase">Receita Estimada da Venda</p>
+          <p className="text-2xl font-black text-white">{fmtBRL(totalRevenue)}</p>
+          <p className="text-[10px] text-theme-text-muted">({qtyNum} ovos = {(qtyNum / 12).toFixed(1)} dúzias)</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Qtd de Ovos</label>
+            <input
+              type="number"
+              min="1"
+              max={availableStock}
+              inputMode="numeric"
+              value={quantity}
+              onChange={e => setQuantity(e.target.value)}
+              onKeyDown={onlyNumericKeyDown}
+              className={inputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço / Dúzia (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              inputMode="decimal"
+              value={pricePerDozen}
+              onChange={e => setPricePerDozen(e.target.value)}
+              onKeyDown={onlyNumericKeyDown}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <button
+            onClick={handleConfirm}
+            className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+          >
+            <DollarSign size={16} />
+            <span>Confirmar Venda</span>
           </button>
         </div>
       </div>
@@ -341,9 +553,8 @@ function RegisterDaySheet({
   const [error, setError] = useState('');
   const [existingRecordAlert, setExistingRecordAlert] = useState(false);
 
-  // Monitora alterações na data para detectar se já existe um registro naquele dia
   useEffect(() => {
-    if (editingRecord) return; // Se está editando deliberadamente, ignora
+    if (editingRecord) return;
     const existing = (lot.registros || []).find(r => r.data === form.data);
     if (existing) {
       setExistingRecordAlert(true);
@@ -385,6 +596,7 @@ function RegisterDaySheet({
       coletados: col,
       vendidos: vend,
       perdidos: perd,
+      incubados: editingRecord?.incubados || 0,
       precoVenda: preco,
       custoProd: custo,
       observacao: form.observacao.trim() || undefined
@@ -432,15 +644,15 @@ function RegisterDaySheet({
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Ovos Coletados <span className="text-amber-400">*</span></label>
-            <input 
-              type="number" 
-              min="0" 
-              inputMode="numeric" 
-              placeholder="Ex: 24" 
-              value={form.coletados} 
-              onChange={set('coletados')} 
-              onKeyDown={onlyNumericKeyDown} 
-              className={`${inputCls} text-3xl font-black text-center text-amber-400 py-3`} 
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              placeholder="Ex: 24"
+              value={form.coletados}
+              onChange={set('coletados')}
+              onKeyDown={onlyNumericKeyDown}
+              className={`${inputCls} text-3xl font-black text-center text-amber-400 py-3`}
             />
           </div>
 
@@ -485,20 +697,24 @@ function RegisterDaySheet({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LotCard — Card Principal do Lote com Histórico Interativo (Editar / Excluir)
+// LotCard — Card Principal do Lote com Detecção de Anomalias & Gestão de Estoque
 // ─────────────────────────────────────────────────────────────────────────────
 function LotCard({
   lot,
   birds,
   onRegister,
   onEditRecord,
-  onDeleteRecord
+  onDeleteRecord,
+  onSendToIncubation,
+  onSellFromStock
 }: {
   lot: EggLot;
   birds: ReturnType<typeof useAppContext>['birds'];
   onRegister: (lot: EggLot) => void;
   onEditRecord: (lot: EggLot, record: EggDailyRecord) => void;
   onDeleteRecord: (lot: EggLot, recordId: string) => void;
+  onSendToIncubation: (lot: EggLot, stock: number) => void;
+  onSellFromStock: (lot: EggLot, stock: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const records = lot.registros ?? [];
@@ -506,7 +722,9 @@ function LotCard({
   const total = records.reduce((s, r) => s + r.coletados, 0);
   const totalVendidos = records.reduce((s, r) => s + r.vendidos, 0);
   const totalPerdidos = records.reduce((s, r) => s + r.perdidos, 0);
-  const totalEstoque = total - totalVendidos - totalPerdidos;
+  const totalIncubados = records.reduce((s, r) => s + (r.incubados || 0), 0);
+  const totalEstoque = Math.max(0, total - totalVendidos - totalPerdidos - totalIncubados);
+
   const receita = records.reduce((s, r) => s + (r.vendidos / 12) * r.precoVenda, 0);
   const custo = records.reduce((s, r) => s + r.vendidos * r.custoProd, 0);
   const lucro = receita - custo;
@@ -516,6 +734,26 @@ function LotCard({
   const femeaNomes = lot.femeasIds.map(id => birds.find(b => b.id === id)).filter(Boolean).map(b => b!.nome || b!.anilha).join(', ');
   const isAtivo = lot.status === 'Ativo';
   const efBar = Math.min(100, eficiencia);
+
+  // ── DETECTOR DE ANOMALIA / QUEDA DE POSTURA ──
+  // Compara a média recente (últimos 3 lançamentos) com a média histórica da baia (últimos 14)
+  const anomalyInfo = useMemo(() => {
+    if (records.length < 3) return null;
+    const sorted = [...records].sort((a, b) => b.data.localeCompare(a.data));
+    const recent3 = sorted.slice(0, 3);
+    const avgRecent = recent3.reduce((s, r) => s + r.coletados, 0) / 3;
+    const avgOverall = total / records.length;
+
+    if (avgOverall >= 2 && avgRecent <= avgOverall * 0.6) {
+      const dropPct = Math.round(((avgOverall - avgRecent) / avgOverall) * 100);
+      return {
+        dropPct,
+        avgOverall: avgOverall.toFixed(1),
+        avgRecent: avgRecent.toFixed(1)
+      };
+    }
+    return null;
+  }, [records, total]);
 
   return (
     <div className="rounded-2xl border border-theme-border/60 bg-theme-surface overflow-hidden shadow-lg transition-all hover:border-theme-border">
@@ -537,15 +775,32 @@ function LotCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 divide-x divide-theme-border border-t border-theme-border">
+      {/* ── CARD ALERTA DE QUEDA DE POSTURA ── */}
+      {anomalyInfo && (
+        <div className="mx-4 mb-3 p-3 bg-red-500/15 border border-red-500/30 rounded-xl flex items-start gap-2.5 text-xs text-red-300 animate-pulse">
+          <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-black text-red-400 uppercase text-[10px] tracking-wider">
+              ⚠️ Alerta: Queda de {anomalyInfo.dropPct}% na Postura
+            </p>
+            <p className="text-[11px] leading-relaxed text-red-200/90">
+              A produção recente caiu para <strong>{anomalyInfo.avgRecent} ovos/dia</strong> (Média da baia: <strong>{anomalyInfo.avgOverall}/dia</strong>). Verifique alimentação, água ou sintomas de estresse/doença.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Grid de 5 colunas: Coletados, Estoque, Choco, Vendidos, Perdidos */}
+      <div className="grid grid-cols-5 divide-x divide-theme-border border-t border-theme-border">
         {[{ label: 'Coletados', value: total, color: 'text-amber-400' },
+          { label: 'Estoque', value: totalEstoque, color: 'text-blue-400' },
+          { label: 'Em Choco', value: totalIncubados, color: 'text-purple-400' },
           { label: 'Vendidos', value: totalVendidos, color: 'text-green-400' },
-          { label: 'Perdidos', value: totalPerdidos, color: 'text-red-400' },
-          { label: 'Estoque', value: totalEstoque, color: 'text-blue-400' }
+          { label: 'Perdidos', value: totalPerdidos, color: 'text-red-400' }
         ].map(s => (
-          <div key={s.label} className="p-2.5 text-center">
-            <p className={`text-base font-black ${s.color}`}>{s.value}</p>
-            <p className="text-[9px] text-theme-text-muted uppercase font-bold">{s.label}</p>
+          <div key={s.label} className="p-2 text-center">
+            <p className={`text-sm sm:text-base font-black ${s.color}`}>{s.value}</p>
+            <p className="text-[8px] sm:text-[9px] text-theme-text-muted uppercase font-bold truncate">{s.label}</p>
           </div>
         ))}
       </div>
@@ -558,15 +813,39 @@ function LotCard({
         <span className={`text-[10px] font-black ${efBar >= 80 ? 'text-green-400' : efBar >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{eficiencia.toFixed(0)}%</span>
       </div>
 
-      <div className="px-4 pb-3 pt-2 flex items-center gap-2 border-t border-theme-border">
+      {/* Ações Rápidas do Lote */}
+      <div className="px-4 pb-3 pt-2 flex items-center gap-1.5 flex-wrap border-t border-theme-border">
         {isAtivo && (
-          <button onClick={() => onRegister(lot)} className="flex-1 btn-primary py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400">
+          <button onClick={() => onRegister(lot)} className="flex-1 btn-primary py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 min-w-[110px]">
             <Plus size={14} />
             <span>Registrar Dia</span>
           </button>
         )}
-        <button onClick={() => setExpanded(v => !v)} className="px-3 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
-          <BarChart2 size={14} />
+
+        {totalEstoque > 0 && isAtivo && (
+          <>
+            <button
+              onClick={() => onSendToIncubation(lot, totalEstoque)}
+              className="px-2.5 py-2 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 active:scale-95"
+              title="Enviar ovos do estoque para incubação/chocadeira"
+            >
+              <Sparkles size={13} />
+              <span>Choco ({totalEstoque})</span>
+            </button>
+
+            <button
+              onClick={() => onSellFromStock(lot, totalEstoque)}
+              className="px-2.5 py-2 rounded-xl border border-green-500/30 bg-green-500/10 text-green-300 hover:bg-green-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 active:scale-95"
+              title="Registrar venda de ovos do estoque"
+            >
+              <ShoppingCart size={13} />
+              <span>Vender</span>
+            </button>
+          </>
+        )}
+
+        <button onClick={() => setExpanded(v => !v)} className="px-2.5 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
+          <BarChart2 size={13} />
           <span>Análise</span>
           {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
@@ -578,8 +857,8 @@ function LotCard({
             <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2 flex items-center gap-1.5">
               <BarChart2 size={11} /> Produção Diária (últimos 14 dias)
             </p>
-            <div className="flex items-center gap-4 mb-2">
-              {[{ color: 'bg-amber-400/40', label: 'Coletados' }, { color: 'bg-green-400/70', label: 'Vendidos' }, { color: 'bg-red-400/70', label: 'Perdidos' }].map(l => (
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              {[{ color: 'bg-amber-400/40', label: 'Coletados' }, { color: 'bg-green-400/70', label: 'Vendidos' }, { color: 'bg-purple-400/70', label: 'Incubados' }, { color: 'bg-red-400/70', label: 'Perdidos' }].map(l => (
                 <div key={l.label} className="flex items-center gap-1">
                   <div className={`w-2.5 h-2.5 rounded-sm ${l.color}`} />
                   <span className="text-[10px] text-theme-text-muted font-bold">{l.label}</span>
@@ -622,23 +901,24 @@ function LotCard({
                       <span className="text-theme-text-muted w-16 shrink-0 font-mono text-[11px]">{formatDate(r.data)}</span>
                       <span className="text-amber-400 font-bold shrink-0">{r.coletados} ovos</span>
                       {r.vendidos > 0 && <span className="text-green-400 shrink-0">+{r.vendidos}v</span>}
+                      {(r.incubados || 0) > 0 && <span className="text-purple-400 shrink-0">+{r.incubados}c</span>}
                       {r.perdidos > 0 && <span className="text-red-400 shrink-0">-{r.perdidos}p</span>}
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <button 
-                        onClick={() => onEditRecord(lot, r)} 
+                      <button
+                        onClick={() => onEditRecord(lot, r)}
                         className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors"
                         title="Editar lançamento"
                       >
                         <Edit2 size={13} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           if (confirm(`Deseja realmente excluir o registro do dia ${formatDate(r.data)}?`)) {
                             onDeleteRecord(lot, r.id);
                           }
-                        }} 
+                        }}
                         className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
                         title="Excluir lançamento"
                       >
@@ -660,27 +940,39 @@ function LotCard({
 // Componente Principal: Eggs
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
-  const { eggLots, addEggLot, editEggLot, birds } = useAppContext();
+  const { eggLots, addEggLot, editEggLot, birds, addIncubationLot } = useAppContext();
 
   const [registerTarget, setRegisterTarget] = useState<EggLot | null>(null);
   const [editingRecord, setEditingRecord] = useState<EggDailyRecord | null>(null);
   const [isCreateLotModalOpen, setIsCreateLotModalOpen] = useState(false);
   const [period, setPeriod] = useState<7 | 30 | 999>(30);
 
-  const { kpiColetados, kpiVendidos, kpiPerdidos, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
+  // Modais de Destino dos Ovos
+  const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
+  const [sellStockTarget, setSellStockTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
+
+  // Sincroniza lembrete de coleta diária no celular (Push)
+  useEffect(() => {
+    const today = todayISO();
+    const hasRegisteredToday = eggLots.some(lot => (lot.registros || []).some(r => r.data === today));
+    syncDailyEggReminder(hasRegisteredToday);
+  }, [eggLots]);
+
+  const { kpiColetados, kpiVendidos, kpiPerdidos, kpiIncubados, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
     const cutoff = period === 999 ? '2000-01-01' : new Date(Date.now() - period * 86400000).toISOString().split('T')[0];
-    let col = 0, vend = 0, perd = 0, rec = 0, cst = 0;
+    let col = 0, vend = 0, perd = 0, inc = 0, rec = 0, cst = 0;
     for (const lot of eggLots) {
       for (const r of (lot.registros ?? [])) {
         if (r.data < cutoff) continue;
         col += r.coletados;
         vend += r.vendidos;
         perd += r.perdidos;
+        inc += (r.incubados || 0);
         rec += (r.vendidos / 12) * r.precoVenda;
         cst += r.vendidos * r.custoProd;
       }
     }
-    return { kpiColetados: col, kpiVendidos: vend, kpiPerdidos: perd, kpiReceita: rec, kpiCusto: cst, kpiLucro: rec - cst };
+    return { kpiColetados: col, kpiVendidos: vend, kpiPerdidos: perd, kpiIncubados: inc, kpiReceita: rec, kpiCusto: cst, kpiLucro: rec - cst };
   }, [eggLots, period]);
 
   const aproveitamento = kpiColetados > 0 ? Math.round(((kpiColetados - kpiPerdidos) / kpiColetados) * 100) : 0;
@@ -695,11 +987,9 @@ export function Eggs() {
     let updatedRegistros: EggDailyRecord[];
 
     if (existingIndex >= 0) {
-      // Atualiza o registro existente
       updatedRegistros = [...(registerTarget.registros || [])];
       updatedRegistros[existingIndex] = rec;
     } else {
-      // Insere um novo registro
       updatedRegistros = [...(registerTarget.registros || []), rec];
     }
 
@@ -710,6 +1000,48 @@ export function Eggs() {
   const handleDeleteRecord = (lot: EggLot, recordId: string) => {
     const updatedRegistros = (lot.registros || []).filter(r => r.id !== recordId);
     editEggLot(lot.id, { registros: updatedRegistros });
+  };
+
+  // Confirmação de envio para incubação / choco
+  const handleConfirmIncubation = (count: number) => {
+    if (!incubationTarget) return;
+    const { lot } = incubationTarget;
+
+    // 1. Cria o Lote de Incubação
+    const newIncubationLot: IncubationLot = {
+      id: uid(),
+      coupleId: '',
+      numeroLote: `Baia ${lot.baia}`,
+      quantidadeOvos: count,
+      dataInicio: todayISO(),
+      baia: lot.baia,
+      ovoscopia1Realizada: false,
+      ovoscopia2Realizada: false,
+      ovosDescartados1: 0,
+      ovosDescartados2: 0,
+      eclodido: false
+    };
+    addIncubationLot(newIncubationLot);
+
+    // 2. Abate do estoque acumulando em `incubados` nos registros do lote
+    const records = [...(lot.registros || [])].sort((a, b) => b.data.localeCompare(a.data));
+    if (records.length > 0) {
+      records[0].incubados = (records[0].incubados || 0) + count;
+      editEggLot(lot.id, { registros: records });
+    }
+  };
+
+  // Confirmação de venda direta do estoque
+  const handleConfirmSellStock = (count: number, pricePerDozen: number) => {
+    if (!sellStockTarget) return;
+    const { lot } = sellStockTarget;
+
+    const records = [...(lot.registros || [])].sort((a, b) => b.data.localeCompare(a.data));
+    if (records.length > 0) {
+      records[0].vendidos = (records[0].vendidos || 0) + count;
+      records[0].precoVenda = pricePerDozen;
+      editEggLot(lot.id, { registros: records });
+    }
   };
 
   const periodLabel = period === 7 ? '7 dias' : period === 30 ? '30 dias' : 'Tudo';
@@ -732,9 +1064,9 @@ export function Eggs() {
           {/* Seletor de Período */}
           <div className="flex bg-theme-surface border border-theme-border rounded-xl p-1 gap-1">
             {([7, 30, 999] as const).map(p => (
-              <button 
-                key={p} 
-                onClick={() => setPeriod(p)} 
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all ${period === p ? 'bg-amber-400 text-black' : 'text-theme-text-muted hover:text-white'}`}
               >
                 {p === 999 ? 'Tudo' : `${p}d`}
@@ -742,8 +1074,8 @@ export function Eggs() {
             ))}
           </div>
 
-          {/* Botão Novo Lote Direto na Tela de Ovos */}
-          <button 
+          {/* Botão Novo Lote */}
+          <button
             onClick={() => setIsCreateLotModalOpen(true)}
             className="btn-primary px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1.5 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 shadow-md shrink-0"
           >
@@ -755,8 +1087,8 @@ export function Eggs() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <KpiCard icon={Egg} label="Coletados" value={String(kpiColetados)} sub={periodLabel} color="amber" />
-        <KpiCard icon={TrendingUp} label="Aproveitamento" value={`${aproveitamento}%`} sub={`${kpiPerdidos} perdidos`} color={aproveitamento >= 80 ? 'green' : 'red'} />
+        <KpiCard icon={Egg} label="Coletados" value={String(kpiColetados)} sub={`${aproveitamento}% aproveitamento (${periodLabel})`} color="amber" />
+        <KpiCard icon={Sparkles} label="Em Choco" value={String(kpiIncubados)} sub={`${kpiColetados - kpiVendidos - kpiPerdidos - kpiIncubados} estoque`} color="purple" />
         <KpiCard icon={DollarSign} label="Receita Total" value={fmtBRL(kpiReceita)} sub={`Custo ${fmtBRL(kpiCusto)}`} color="blue" />
         <KpiCard icon={kpiLucro >= 0 ? TrendingUp : TrendingDown} label="Lucro Líquido" value={fmtBRL(kpiLucro)} sub={`${kpiVendidos} vendidos`} color={kpiLucro >= 0 ? 'green' : 'red'} />
       </div>
@@ -771,7 +1103,7 @@ export function Eggs() {
               Cadastre um lote para começar a registrar as coletas diárias e acompanhar os lucros do seu criatório.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setIsCreateLotModalOpen(true)}
             className="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 shadow-lg shadow-amber-500/10"
           >
@@ -789,13 +1121,15 @@ export function Eggs() {
             <span>Lotes Ativos ({activeLots.length})</span>
           </h3>
           {activeLots.map(lot => (
-            <LotCard 
-              key={lot.id} 
-              lot={lot} 
-              birds={birds} 
+            <LotCard
+              key={lot.id}
+              lot={lot}
+              birds={birds}
               onRegister={l => { setEditingRecord(null); setRegisterTarget(l); }}
               onEditRecord={(l, r) => { setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
+              onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
+              onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
             />
           ))}
         </div>
@@ -809,13 +1143,15 @@ export function Eggs() {
             <span>Lotes Encerrados ({endedLots.length})</span>
           </h3>
           {endedLots.map(lot => (
-            <LotCard 
-              key={lot.id} 
-              lot={lot} 
-              birds={birds} 
+            <LotCard
+              key={lot.id}
+              lot={lot}
+              birds={birds}
               onRegister={l => { setEditingRecord(null); setRegisterTarget(l); }}
               onEditRecord={(l, r) => { setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
+              onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
+              onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
             />
           ))}
         </div>
@@ -823,19 +1159,39 @@ export function Eggs() {
 
       {/* Modal: Registrar / Editar Dia */}
       {registerTarget && (
-        <RegisterDaySheet 
-          lot={registerTarget} 
+        <RegisterDaySheet
+          lot={registerTarget}
           editingRecord={editingRecord}
-          onClose={() => { setRegisterTarget(null); setEditingRecord(null); }} 
+          onClose={() => { setRegisterTarget(null); setEditingRecord(null); }}
           onSave={handleSaveRecord}
+        />
+      )}
+
+      {/* Modal: Enviar para Incubação */}
+      {incubationTarget && (
+        <SendToIncubationModal
+          lot={incubationTarget.lot}
+          availableStock={incubationTarget.stock}
+          onClose={() => setIncubationTarget(null)}
+          onConfirm={handleConfirmIncubation}
+        />
+      )}
+
+      {/* Modal: Registrar Venda do Estoque */}
+      {sellStockTarget && (
+        <SellFromStockModal
+          lot={sellStockTarget.lot}
+          availableStock={sellStockTarget.stock}
+          onClose={() => setSellStockTarget(null)}
+          onConfirm={handleConfirmSellStock}
         />
       )}
 
       {/* Modal: Criar Lote de Postura */}
       {isCreateLotModalOpen && (
-        <CreateEggLotModal 
-          onClose={() => setIsCreateLotModalOpen(false)} 
-          onSave={addEggLot} 
+        <CreateEggLotModal
+          onClose={() => setIsCreateLotModalOpen(false)}
+          onSave={addEggLot}
         />
       )}
     </div>

@@ -81,6 +81,7 @@ export type EggDailyRecord = {
   coletados: number;
   vendidos: number;
   perdidos: number;
+  incubados?: number;     // quantidade enviada para incubação / choco
   precoVenda: number;     // R$ por dúzia
   custoProd: number;      // R$ por ovo
   observacao?: string;

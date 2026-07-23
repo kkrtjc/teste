@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mura-manager-v2';
+const CACHE_NAME = 'mura-manager-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -48,7 +48,6 @@ self.addEventListener('fetch', (e) => {
 });
 
 // ── Push Notification Handler ──────────────────────────────────────────────
-// Recebe notificações push do servidor (ou do agendador local)
 self.addEventListener('push', (e) => {
   if (!e.data) return;
 
@@ -75,26 +74,26 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Se o app já está aberto, foca nele
       const existing = clients.find((c) => c.url.includes(self.location.origin));
-      if (existing) return existing.focus();
-      // Senão abre uma nova janela
+      if (existing) {
+        existing.navigate(targetUrl);
+        return existing.focus();
+      }
       return self.clients.openWindow(targetUrl);
     })
   );
 });
 
-// ── Agendamento local de notificações de trial ─────────────────────────────
-// Recebe mensagens do app para agendar/cancelar lembretes via setTimeout
+// ── Agendadores locais de lembretes (Trial e Coleta de Ovos) ──────────────
 let trialReminderTimer = null;
+let eggReminderTimer = null;
 
 self.addEventListener('message', (e) => {
   const { type, delayMs, title, body, icon, badge, tag, data } = e.data || {};
 
+  // Lembrete de Trial
   if (type === 'SCHEDULE_TRIAL_REMINDER') {
-    // Cancela timer anterior se existir
     if (trialReminderTimer) clearTimeout(trialReminderTimer);
-
     trialReminderTimer = setTimeout(() => {
       self.registration.showNotification(title || 'Mura Manager — Aviso de Trial', {
         body: body || 'Seu período de teste está acabando. Assine agora!',
@@ -102,7 +101,7 @@ self.addEventListener('message', (e) => {
         badge: badge || '/favicon.svg',
         tag: tag || 'mura-trial-reminder',
         data: data || { url: '/' },
-        requireInteraction: true, // Persiste até o usuário tocar
+        requireInteraction: true,
         silent: false,
       });
       trialReminderTimer = null;
@@ -113,6 +112,30 @@ self.addEventListener('message', (e) => {
     if (trialReminderTimer) {
       clearTimeout(trialReminderTimer);
       trialReminderTimer = null;
+    }
+  }
+
+  // Lembrete Amigável de Coleta de Ovos
+  if (type === 'SCHEDULE_EGG_REMINDER') {
+    if (eggReminderTimer) clearTimeout(eggReminderTimer);
+    eggReminderTimer = setTimeout(() => {
+      self.registration.showNotification(title || '🥚 Lembrete de Coleta Mura Manager', {
+        body: body || 'Ei, não se esqueça de registrar as coletas de hoje para manter tudo atualizado!',
+        icon: icon || '/favicon.svg',
+        badge: badge || '/favicon.svg',
+        tag: tag || 'mura-egg-reminder',
+        data: data || { url: '/eggs' },
+        requireInteraction: false,
+        silent: false,
+      });
+      eggReminderTimer = null;
+    }, delayMs || 5 * 60 * 60 * 1000);
+  }
+
+  if (type === 'CANCEL_EGG_REMINDER') {
+    if (eggReminderTimer) {
+      clearTimeout(eggReminderTimer);
+      eggReminderTimer = null;
     }
   }
 });
