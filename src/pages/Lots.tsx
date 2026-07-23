@@ -16,6 +16,15 @@ function calcDays(start: string) {
 }
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('pt-BR'); }
 
+// Bloqueia letras em campos numéricos (inclusive Android que ignora type=number)
+const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowed = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','.',','];
+  if (allowed.includes(e.key)) return;
+  if (e.ctrlKey || e.metaKey) return;
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+};
+const sanitizeNumeric = (val: string) => val.replace(/[^0-9.,]/g, '');
+
 const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors placeholder-theme-text-muted";
 const labelCls = "text-[10px] font-bold text-theme-text-muted uppercase tracking-wider";
 
@@ -791,7 +800,8 @@ export function Lots() {
                       <div className="space-y-1">
                         <SectionLabel>Quantidade de Fêmeas</SectionLabel>
                         <input type="number" min="1" inputMode="numeric" placeholder="Ex: 30" value={pQtd}
-                          onChange={e=>{setPQtd(e.target.value);setPExpectativa(String(Math.round((parseInt(e.target.value)||0)*0.85)));}}
+                          onKeyDown={onlyNumericKeyDown}
+                          onChange={e=>{const v=sanitizeNumeric(e.target.value);setPQtd(v);setPExpectativa(String(Math.round((parseInt(v)||0)*0.85)));}}
                           className={inputCls + " text-2xl font-black text-center py-4"}/>
                       </div>
                     )
@@ -800,7 +810,7 @@ export function Lots() {
                 <div className="space-y-1">
                   <SectionLabel>Expectativa de Ovos por Dia</SectionLabel>
                   <div className="relative">
-                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onChange={e=>setPExpectativa(e.target.value)} placeholder="Auto-calculado (85% da qtd)" className={inputCls}/>
+                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onKeyDown={onlyNumericKeyDown} onChange={e=>setPExpectativa(sanitizeNumeric(e.target.value))} placeholder="Auto-calculado (85% da qtd)" className={inputCls}/>
                   </div>
                   <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10}/>Calculado automaticamente em 85% das fêmeas. Você pode ajustar manualmente.</p>
                 </div>
@@ -811,14 +821,14 @@ export function Lots() {
                       <label className={labelCls}>Preço/Dúzia (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400"/>
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={pPreco} onChange={e=>setPPreco(e.target.value)} className={inputCls + " pl-8"}/>
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e=>setPPreco(sanitizeNumeric(e.target.value))} className={inputCls + " pl-8"}/>
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Custo/Ovo (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400"/>
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={pCusto} onChange={e=>setPCusto(e.target.value)} className={inputCls + " pl-8"}/>
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e=>setPCusto(sanitizeNumeric(e.target.value))} className={inputCls + " pl-8"}/>
                       </div>
                     </div>
                   </div>

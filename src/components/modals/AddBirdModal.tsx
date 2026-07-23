@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 import { calculateExactAge } from '../../lib/utils';
@@ -20,6 +20,148 @@ function StepDots({ total, current }: { total: number; current: number }) {
           }`}
         />
       ))}
+    </div>
+  );
+}
+
+// ─── Numeric input filter ─────────────────────────────────────────────────────
+// Impede digitação de letras em campos que devem ser apenas numéricos
+const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.', ','];
+  if (allowed.includes(e.key)) return;
+  if (e.ctrlKey || e.metaKey) return; // permite Ctrl+A, Ctrl+C, Ctrl+V
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+};
+
+const sanitizeNumeric = (val: string) => val.replace(/[^0-9.,]/g, '');
+
+// ─── Mini-overlay: detalhes da ave duplicada ──────────────────────────────────
+function BirdDetailOverlay({
+  bird,
+  onClose,
+}: {
+  bird: ReturnType<typeof useAppContext>['birds'][number];
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
+          <p className="font-black text-white text-sm flex items-center gap-2">
+            <Eye size={14} className="text-theme-primary" />
+            Detalhes da Ave
+          </p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-3">
+          {/* Foto + info principal */}
+          <div className="flex items-center gap-3">
+            {(bird.imagem || bird.imagens?.[0]) ? (
+              <img
+                src={bird.imagem || bird.imagens?.[0]}
+                alt={bird.anilha}
+                className="w-16 h-16 rounded-xl object-cover border border-theme-border shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-theme-base border border-theme-border flex items-center justify-center shrink-0">
+                <span className="text-2xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="font-black text-white text-base truncate">{bird.nome || `Anilha ${bird.anilha}`}</p>
+              <p className="text-xs text-theme-text-muted">Anilha: <span className="text-theme-primary font-bold">{bird.anilha}</span></p>
+              <p className="text-xs text-theme-text-muted">{bird.sexo} · {bird.raca || 'Sem raça'}</p>
+            </div>
+          </div>
+
+          {/* Detalhes em grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'Status', value: bird.status },
+              { label: 'Baia', value: bird.baia || '—' },
+              { label: 'Peso', value: bird.peso || '—' },
+              { label: 'Origem', value: bird.origem || '—' },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
+                <p className="text-[10px] text-theme-text-muted uppercase font-bold">{label}</p>
+                <p className="text-xs font-bold text-white truncate">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {bird.dataNascimento && (
+            <div className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
+              <p className="text-[10px] text-theme-text-muted uppercase font-bold">Idade</p>
+              <p className="text-xs font-bold text-white">{calculateExactAge(bird.dataNascimento)}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 pb-4">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-theme-primary text-black text-sm font-black transition-all active:scale-95"
+          >
+            Fechar Detalhes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lista de aves da baia ────────────────────────────────────────────────────
+function BaiaDetailOverlay({
+  baia,
+  avesNaBaia,
+  onClose,
+}: {
+  baia: string;
+  avesNaBaia: ReturnType<typeof useAppContext>['birds'];
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
+          <p className="font-black text-white text-sm flex items-center gap-2">
+            <Home size={14} className="text-amber-400" />
+            Baia {baia} — {avesNaBaia.length} ave(s)
+          </p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+          {avesNaBaia.map(b => (
+            <div key={b.id} className="flex items-center gap-3 bg-theme-base rounded-xl px-3 py-2.5 border border-theme-border/50">
+              {(b.imagem || b.imagens?.[0]) ? (
+                <img src={b.imagem || b.imagens?.[0]} alt={b.anilha} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center shrink-0">
+                  <span className="text-lg">{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">{b.nome || `Anilha ${b.anilha}`}</p>
+                <p className="text-[10px] text-theme-text-muted">{b.sexo} · {b.status} · {b.raca || 'Sem raça'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-4 pb-4 pt-2">
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-theme-primary text-black text-sm font-black transition-all active:scale-95">
+            Fechar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -56,12 +198,18 @@ export function AddBirdModal() {
   const TOTAL_STEPS = 4;
   const [step, setStep] = useState(0);
 
+  // ── Duplicate / Overlap state ──
+  const [detailBird, setDetailBird] = useState<typeof birds[number] | null>(null);
+  const [showBaiaDetail, setShowBaiaDetail] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Populate when editing ──
   useEffect(() => {
     if (!isAddBirdModalOpen) return;
     setStep(0);
+    setDetailBird(null);
+    setShowBaiaDetail(false);
 
     if (birdToEditId) {
       const b = birds.find(x => x.id === birdToEditId);
@@ -78,8 +226,6 @@ export function AddBirdModal() {
         setMaeId(b.isMaeExterno ? '' : b.maeId || '');
         setMaeExterno(b.isMaeExterno ? b.maeId || '' : '');
         setDescricaoOrigem('');
-
-        // Parse vaccines checkboxes
         const parsedVacs = (b.vacinas || '').split(',').map(v => v.trim().toLowerCase());
         setSelectedVacs(['bouba', 'marek', 'newcastle', 'coriza'].filter(v => parsedVacs.includes(v)));
       }
@@ -101,6 +247,27 @@ export function AddBirdModal() {
       if (c) { setPaiId(c.machoId); setMaeId(c.femeaId); }
     }
   }, [casalId]);
+
+  // ── Duplicate detection (memoized) ──
+  const otherBirds = useMemo(
+    () => birds.filter(b => b.id !== birdToEditId),
+    [birds, birdToEditId]
+  );
+
+  const duplicateAnilha = useMemo(() => {
+    if (!anilha.trim()) return null;
+    return otherBirds.find(b => b.anilha.trim().toLowerCase() === anilha.trim().toLowerCase()) || null;
+  }, [anilha, otherBirds]);
+
+  const duplicateNome = useMemo(() => {
+    if (!nome.trim()) return null;
+    return otherBirds.find(b => b.nome && b.nome.trim().toLowerCase() === nome.trim().toLowerCase()) || null;
+  }, [nome, otherBirds]);
+
+  const avesNaBaia = useMemo(() => {
+    if (!baia.trim()) return [];
+    return otherBirds.filter(b => b.baia && b.baia.trim().toLowerCase() === baia.trim().toLowerCase());
+  }, [baia, otherBirds]);
 
   if (!isAddBirdModalOpen) return null;
 
@@ -138,7 +305,6 @@ export function AddBirdModal() {
 
     const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
 
-    // Map checkboxes array back to comma-separated capitalized string
     const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
     const finalVacinas = vacList.join(', ');
 
@@ -241,6 +407,24 @@ export function AddBirdModal() {
             className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
             placeholder="Ex: Titan, Guerreiro..."
           />
+          {/* Aviso nome duplicado */}
+          {duplicateNome && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={13} className="text-amber-400 shrink-0" />
+                <span className="text-[11px] text-amber-300 truncate">
+                  Já existe: <strong>{duplicateNome.anilha}</strong> ({duplicateNome.sexo} · {duplicateNome.status})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailBird(duplicateNome)}
+                className="text-[11px] font-black text-amber-400 hover:text-amber-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Detalhes
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Raça */}
@@ -262,9 +446,29 @@ export function AddBirdModal() {
           <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
           <input
             type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
-            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            className={`w-full bg-theme-base border rounded-xl p-3 text-sm text-white focus:outline-none transition-colors ${
+              duplicateAnilha ? 'border-red-500 focus:border-red-400' : 'border-theme-border focus:border-theme-primary'
+            }`}
             placeholder="Ex: BR-2024-001"
           />
+          {/* Aviso anilha duplicada */}
+          {duplicateAnilha && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={13} className="text-red-400 shrink-0" />
+                <span className="text-[11px] text-red-300 truncate">
+                  Anilha já cadastrada: <strong>{duplicateAnilha.nome || duplicateAnilha.anilha}</strong> ({duplicateAnilha.sexo} · {duplicateAnilha.status})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailBird(duplicateAnilha)}
+                className="text-[11px] font-black text-red-400 hover:text-red-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Detalhes
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Sexo */}
@@ -336,14 +540,21 @@ export function AddBirdModal() {
     // ── STEP 1: Peso, Baia, Categoria ──────────────────────────────────────
     if (step === 1) return (
       <div className="space-y-4">
-        {/* Peso */}
+        {/* Peso — somente numérico */}
         <div className="space-y-1">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Peso</label>
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+            Peso <span className="text-theme-text-muted/60 normal-case font-normal">(kg ou g)</span>
+          </label>
           <input
-            type="text" value={peso} onChange={e => setPeso(e.target.value)}
+            type="text"
+            inputMode="decimal"
+            value={peso}
+            onChange={e => setPeso(sanitizeNumeric(e.target.value))}
+            onKeyDown={onlyNumericKeyDown}
             className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
-            placeholder="Ex: 3.2 kg"
+            placeholder="Ex: 3.2"
           />
+          <p className="text-[10px] text-theme-text-muted">Apenas números. Use ponto ou vírgula para decimais.</p>
         </div>
 
         {/* Baia */}
@@ -354,6 +565,24 @@ export function AddBirdModal() {
             className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
             placeholder="Ex: B-04"
           />
+          {/* Aviso baia ocupada */}
+          {avesNaBaia.length > 0 && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <Home size={13} className="text-blue-400 shrink-0" />
+                <span className="text-[11px] text-blue-300 truncate">
+                  Baia <strong>{baia}</strong> já tem {avesNaBaia.length} ave(s)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBaiaDetail(true)}
+                className="text-[11px] font-black text-blue-400 hover:text-blue-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Aves
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Categoria */}
@@ -405,7 +634,7 @@ export function AddBirdModal() {
           </div>
         </div>
 
-        {/* Nascido Aqui: dropdowns for father (reprodutor) and mother (matriz) */}
+        {/* Nascido Aqui: dropdowns for father and mother */}
         {nascidaAqui === true && (
           <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
             <div className="space-y-1">
@@ -459,7 +688,7 @@ export function AddBirdModal() {
           </div>
         )}
 
-        {/* Idade picker in same step */}
+        {/* Idade picker */}
         {nascidaAqui !== null && (
           <div className="space-y-1 pt-2">
             <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Idade (Data de Nascimento)</label>
@@ -479,7 +708,7 @@ export function AddBirdModal() {
       </div>
     );
 
-    // ── STEP 3: Vacinas (Bouba, Marek, Newcastle, Coriza) ──────────────────
+    // ── STEP 3: Vacinas ──────────────────────────────────────────────────────
     if (step === 3) {
       const vaccineOptions = [
         { id: 'bouba', label: 'Bouba Aviária' },
@@ -535,7 +764,18 @@ export function AddBirdModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh] rounded-2xl">
+      {/* Container relativo para os overlays internos */}
+      <div className="relative bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh]">
+
+        {/* ── Mini-overlay: detalhe de ave duplicada ── */}
+        {detailBird && (
+          <BirdDetailOverlay bird={detailBird} onClose={() => setDetailBird(null)} />
+        )}
+
+        {/* ── Mini-overlay: aves na baia ── */}
+        {showBaiaDetail && avesNaBaia.length > 0 && (
+          <BaiaDetailOverlay baia={baia} avesNaBaia={avesNaBaia} onClose={() => setShowBaiaDetail(false)} />
+        )}
 
         {/* Header */}
         <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0">

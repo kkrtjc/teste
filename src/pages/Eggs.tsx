@@ -17,6 +17,12 @@ function daysBetween(a: string, b: string) {
   return Math.max(1, Math.ceil((new Date(b).getTime()-new Date(a).getTime())/86400000)+1);
 }
 function fmtBRL(n: number) { return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowed = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','.',','];
+  if (allowed.includes(e.key)) return;
+  if (e.ctrlKey || e.metaKey) return;
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+};
 
 // BarChart
 function BarChart({ records }: { records: EggDailyRecord[] }) {
@@ -126,26 +132,26 @@ function RegisterDaySheet({lot,onClose,onSave}:{lot:EggLot;onClose:()=>void;onSa
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Ovos Coletados <span className="text-amber-400">*</span></label>
-            <input type="number" min="0" inputMode="numeric" placeholder="Ex: 24" value={form.coletados} onChange={set('coletados')} className={`${inputCls} text-3xl font-black text-center text-amber-400 py-4`}/>
+            <input type="number" min="0" inputMode="numeric" placeholder="Ex: 24" value={form.coletados} onChange={set('coletados')} onKeyDown={onlyNumericKeyDown} className={`${inputCls} text-3xl font-black text-center text-amber-400 py-4`}/>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Vendidos</label>
-              <input type="number" min="0" inputMode="numeric" placeholder="0" value={form.vendidos} onChange={set('vendidos')} className={inputCls}/>
+              <input type="number" min="0" inputMode="numeric" placeholder="0" value={form.vendidos} onChange={set('vendidos')} onKeyDown={onlyNumericKeyDown} className={inputCls}/>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Perdidos</label>
-              <input type="number" min="0" inputMode="numeric" placeholder="0" value={form.perdidos} onChange={set('perdidos')} className={inputCls}/>
+              <input type="number" min="0" inputMode="numeric" placeholder="0" value={form.perdidos} onChange={set('perdidos')} onKeyDown={onlyNumericKeyDown} className={inputCls}/>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço / Dúzia (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={form.precoVenda} onChange={set('precoVenda')} className={inputCls}/>
+              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={form.precoVenda} onChange={set('precoVenda')} onKeyDown={onlyNumericKeyDown} className={inputCls}/>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo / Ovo (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={form.custoProd} onChange={set('custoProd')} className={inputCls}/>
+              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={form.custoProd} onChange={set('custoProd')} onKeyDown={onlyNumericKeyDown} className={inputCls}/>
             </div>
           </div>
           <div className="space-y-1">
