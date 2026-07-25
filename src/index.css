@@ -3,149 +3,55 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    overflow: hidden;
-    height: 100%;
-    -webkit-tap-highlight-color: transparent;
-  }
   body {
     @apply bg-theme-base text-theme-text-main font-sans antialiased selection:bg-theme-primary selection:text-black;
-    overflow: hidden;
-    height: 100%;
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-    position: fixed;
-    width: 100%;
-    text-rendering: optimizeSpeed;
-  }
-  #root {
-    height: 100%;
-    overflow: hidden;
   }
 }
 
 @layer components {
   .premium-card {
-    @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium transition-transform duration-200;
-    transform: translateZ(0);
+    @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium backdrop-blur-xl transition-all duration-300;
   }
   
   .glass-panel {
-    @apply bg-theme-surface border border-theme-border/50 shadow-premium;
-    transform: translateZ(0);
+    @apply bg-theme-surface/60 backdrop-blur-md border border-theme-border/50 shadow-premium;
   }
   
   .btn-primary {
-    @apply px-4 py-2 rounded-full bg-theme-primary text-black font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-[1.03] active:scale-[0.97] transition-transform duration-150;
+    @apply px-4 py-2 rounded-xl bg-theme-primary text-black font-bold text-sm tracking-wide shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 transition-all;
   }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* 60fps GPU-Accelerated Scroll & Render Helpers */
-.smooth-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
-  transform: translateZ(0);
-}
-
-.gpu-accelerated {
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  will-change: transform, opacity;
-}
-
-.content-visibility-auto {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 120px;
-}
-
-/* Hardware-Accelerated Animations */
+/* ── Keyframe animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translate3d(0, 0, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translate3d(0, 16px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-
 @keyframes scaleUp {
-  from { transform: scale3d(0.96, 0.96, 1); opacity: 0; }
-  to { transform: scale3d(1, 1, 1); opacity: 1; }
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes bounceX {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(4px); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50% { transform: translate3d(0, -8px, 0) rotate(1deg); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity;
-  transform: translateZ(0);
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
-  transform: translateZ(0);
-}
-
-.animate-scale-up {
-  animation: scaleUp 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
-  transform: translateZ(0);
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-  will-change: transform;
-}
-
-.text-shimmer {
-  background: linear-gradient(90deg, #ffffff 0%, #fde68a 35%, #f59e0b 65%, #ffffff 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmer 3s linear infinite;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-card-hover:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(245, 158, 11, 0.2);
-  transform: translate3d(0, -2px, 0);
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.delay-100 { animation-delay: 0.05s; }
-.delay-200 { animation-delay: 0.1s; }
-.delay-300 { animation-delay: 0.15s; }
-.delay-400 { animation-delay: 0.2s; }
+.animate-fade-in   { animation: fadeIn  0.2s ease both; }
+.animate-scale-up  { animation: scaleUp 0.18s ease both; }
+.animate-bounce-x  { animation: bounceX 1s ease-in-out infinite; }
