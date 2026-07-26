@@ -30,7 +30,7 @@ export function Birds() {
       if (breed) {
         setBreedToEditId(breed.id);
         setNewBreedName(breed.nome);
-        setNewBreedFocus(breed.foco);
+        setNewBreedFocus(breed.foco || 'Misto (Carne e Ovos)');
         setNewBreedDesc(breed.descricao);
         setPreviewImage(breed.imagem || null);
       }
@@ -63,10 +63,14 @@ export function Birds() {
       addBreed({
         id: Date.now().toString(),
         nome: newBreedName,
+        origem: 'Brasil',
         descricao: newBreedDesc,
         foco: newBreedFocus,
-        totalAves: 0,
-        imagem: previewImage || undefined
+        porte: 'Médio',
+        posturaAnual: '200 ovos/ano',
+        pesoMedio: '3.5 kg',
+        temperamento: 'Dócil',
+        imagem: previewImage || 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=600&q=80'
       });
       if (!activeBreed) setActiveBreed(newBreedName);
     }

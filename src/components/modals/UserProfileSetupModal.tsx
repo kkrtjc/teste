@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { User, Mail, Shield, Camera, Check, Sparkles, Building2, Phone } from 'lucide-react';
-import { useAppContext, type UserProfile } from '../../lib/AppContext';
+import { User, Mail, Camera, Check, Sparkles, Building2, Phone } from 'lucide-react';
+import { useAppContext } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
 
 export function UserProfileSetupModal({
   isOpen,
-  onClose,
   onComplete
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onComplete: () => void;
 }) {
   const { userProfile, updateUserProfile, isTourOpen } = useAppContext();

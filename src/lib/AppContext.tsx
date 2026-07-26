@@ -12,6 +12,7 @@ export type Breed = {
   posturaAnual: string;
   pesoMedio: string;
   temperamento: string;
+  foco?: string;
 };
 
 export type Bird = {
@@ -21,7 +22,7 @@ export type Bird = {
   sexo: 'Macho' | 'Fêmea';
   raca: string;
   baia: string;
-  status: 'Reprodutor' | 'Matriz' | 'Frango(a)' | 'Pintinho' | 'Vendida' | 'Óbito';
+  status: 'Reprodutor' | 'Matriz' | 'Frango(a)' | 'Pintinho' | 'Vendida' | 'Óbito' | 'Adulto' | 'Vendido' | 'Faleceu';
   imagem?: string;
   paiId?: string;
   maeId?: string;
@@ -40,19 +41,27 @@ export type DailyEggRecord = {
   observacao?: string;
 };
 
+export type EggRecord = DailyEggRecord; // alias for backwards compatibility
+
 export type EggLot = {
   id: string;
   baia: string;
   avesIds: string[];
+  femeasIds?: string[];
   qtdGalinhas: number;
+  qtdFemeas?: number;
   dataInicio: string;
-  expPosturaDiaria: number; // Expectativa de ovos por dia
+  expPosturaDiaria: number;
+  expectativaDiaria?: number;
   precoOvoUnitario?: number;
+  precoVendaPadrao?: number;
+  custoProdPadrao?: number;
   raca?: string;
   observacao?: string;
   registros: DailyEggRecord[];
   ovosVendidosTotal?: number;
   ovosIncubadosTotal?: number;
+  status?: 'Ativo' | 'Encerrado' | string;
 };
 
 export type IncubatorBatch = {
@@ -66,6 +75,7 @@ export type IncubatorBatch = {
   temperatura?: string;
   umidade?: string;
   raca?: string;
+  loteId?: string;
 };
 
 export type MeatLot = {
