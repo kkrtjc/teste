@@ -1,53 +1,56 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 export type Breed = {
   id: string;
   nome: string;
-  foco: string;
+  origem: string;
+  imagem: string;
   descricao: string;
-  totalAves: number;
-  imagem?: string;
+  porte: string;
+  posturaAnual: string;
+  pesoMedio: string;
+  temperamento: string;
 };
 
 export type Bird = {
   id: string;
   anilha: string;
   nome: string;
-  sexo: string;
+  sexo: 'Macho' | 'Fêmea';
   raca: string;
   baia: string;
-  status: string;
+  status: 'Reprodutor' | 'Matriz' | 'Frango(a)' | 'Pintinho' | 'Vendida' | 'Óbito';
   imagem?: string;
-  vacinas?: string;
-  origem?: 'Criatório' | 'Externo';
   paiId?: string;
   maeId?: string;
   isPaiExterno?: boolean;
   isMaeExterno?: boolean;
+  vacinas?: string;
+  origem?: 'Criatório' | 'Externo';
 };
 
-export type EggRecord = {
-  data: string;       // ISO date
+export type DailyEggRecord = {
+  id: string;
+  data: string;
   quantidade: number;
-  vendidos?: number;
   incubados?: number;
+  vendidos?: number;
   observacao?: string;
 };
 
 export type EggLot = {
   id: string;
   baia: string;
-  femeasIds: string[];
-  qtdFemeas: number;
-  expectativaDiaria: number;
+  avesIds: string[];
+  qtdGalinhas: number;
   dataInicio: string;
-  status: 'Ativo' | 'Encerrado';
+  expPosturaDiaria: number; // Expectativa de ovos por dia
+  precoOvoUnitario?: number;
   raca?: string;
-  precoVendaPadrao?: number;
-  custoProdPadrao?: number;
   observacao?: string;
-  registros?: EggRecord[];
+  registros: DailyEggRecord[];
   ovosVendidosTotal?: number;
   ovosIncubadosTotal?: number;
 };
@@ -55,13 +58,11 @@ export type EggLot = {
 export type IncubatorBatch = {
   id: string;
   nome: string;
-  loteId?: string;
-  baia?: string;
   dataEntrada: string;
   previsaoEclosao: string;
   ovosSetados: number;
   ovosFerteis?: number;
-  status: 'Em Incubação' | 'Eclosão Próxima' | 'Concluído';
+  status: 'Em Incubação' | 'Eclodido' | 'Cancelado' | 'Concluído';
   temperatura?: string;
   umidade?: string;
   raca?: string;
@@ -78,6 +79,14 @@ export type MeatLot = {
   status: 'Crescimento' | 'Terminação' | 'Abatido';
   raca?: string;
   observacao?: string;
+};
+
+export type UserProfile = {
+  nome: string;
+  email: string;
+  nomeCriatorio: string;
+  fotoUrl?: string;
+  telefone?: string;
 };
 
 // ─── Context Type ─────────────────────────────────────────────────────────────
@@ -101,6 +110,14 @@ type AppContextType = {
   incubators: IncubatorBatch[];
   addIncubatorBatch: (batch: IncubatorBatch) => void;
   editIncubatorBatch: (id: string, updated: Partial<IncubatorBatch>) => void;
+
+  // Profile & Setup
+  userProfile: UserProfile;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  isProfileSetupOpen: boolean;
+  openProfileSetup: () => void;
+  closeProfileSetup: () => void;
+  finishProfileSetup: () => void;
 
   // Modals state
   isAddBirdModalOpen: boolean;
@@ -152,9 +169,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   ]));
 
-  // Tour & Trial States (First Login Flow: Tour FIRST, then Trial Modal)
+  // User Profile State
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => loadStorage('@mura-manager:userProfile', {
+    nome: 'João Paulo',
+    email: '',
+    nomeCriatorio: 'Criatório Galos Mura'
+  }));
+  const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
+
+  // Tour & Trial States (Linear Sequence: 1. Tour ➔ 2. Profile Setup ➔ 3. Trial 7 Days Gift)
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
-    return localStorage.getItem('@mura-manager:hasSeenTour_v2.0') !== 'true';
+    return localStorage.getItem('@mura-manager:hasSeenTour_v3.0') !== 'true';
   });
   const [isTrialModalOpen, setIsTrialModalOpen] = useState<boolean>(false);
 
@@ -164,6 +189,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('@mura-manager:eggLots', JSON.stringify(eggLots)); }, [eggLots]);
   useEffect(() => { localStorage.setItem('@mura-manager:meatLots', JSON.stringify(meatLots)); }, [meatLots]);
   useEffect(() => { localStorage.setItem('@mura-manager:incubators', JSON.stringify(incubators)); }, [incubators]);
+  useEffect(() => { localStorage.setItem('@mura-manager:userProfile', JSON.stringify(userProfile)); }, [userProfile]);
+
+  // Profile Helpers
+  const updateUserProfile = (updated: Partial<UserProfile>) => {
+    setUserProfile(prev => ({ ...prev, ...updated }));
+  };
+  const openProfileSetup = () => setIsProfileSetupOpen(true);
+  const closeProfileSetup = () => setIsProfileSetupOpen(false);
+  const finishProfileSetup = () => {
+    setIsProfileSetupOpen(false);
+    localStorage.setItem('@mura-manager:hasSetupProfile_v3.0', 'true');
+    // Open trial gift modal sequentially after profile setup!
+    if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
+      setIsTrialModalOpen(true);
+    }
+  };
 
   // ── Modals ──
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
@@ -174,27 +215,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ── Tour & Trial Helpers ──
   const startTour = () => {
     setIsTrialModalOpen(false);
+    setIsProfileSetupOpen(false);
     setIsTourOpen(true);
   };
   const closeTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v2.0', 'true');
-    // Show trial modal sequentially after closing/skipping tour if not seen
-    if (localStorage.getItem('@mura-manager:hasSeenTrial_v2.0') !== 'true') {
+    localStorage.setItem('@mura-manager:hasSeenTour_v3.0', 'true');
+    // Open Profile Setup sequentially after tour!
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v3.0') !== 'true') {
+      setIsProfileSetupOpen(true);
+    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
       setIsTrialModalOpen(true);
     }
   };
   const finishTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v2.0', 'true');
-    // Show trial modal sequentially after tour finishes!
-    if (localStorage.getItem('@mura-manager:hasSeenTrial_v2.0') !== 'true') {
+    localStorage.setItem('@mura-manager:hasSeenTour_v3.0', 'true');
+    // Open Profile Setup sequentially after tour!
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v3.0') !== 'true') {
+      setIsProfileSetupOpen(true);
+    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
       setIsTrialModalOpen(true);
     }
   };
   const closeTrialModal = () => {
     setIsTrialModalOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTrial_v2.0', 'true');
+    localStorage.setItem('@mura-manager:hasSeenTrial_v3.0', 'true');
   };
 
   // ── Breeds ──
@@ -248,6 +294,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       eggLots, addEggLot, editEggLot,
       meatLots, addMeatLot, editMeatLot,
       incubators, addIncubatorBatch, editIncubatorBatch,
+      userProfile, updateUserProfile, isProfileSetupOpen, openProfileSetup, closeProfileSetup, finishProfileSetup,
       isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
       openAddBirdModal, openBirdProfile, closeModals,
       isTourOpen, isTrialModalOpen, startTour, closeTour, finishTour, closeTrialModal,

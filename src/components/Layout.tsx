@@ -3,11 +3,13 @@ import { LayoutDashboard, Dna, Activity, Settings, LogOut, Beef, Skull, Bird, La
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
 import { OnboardingTour, TrialWelcomeModal } from './modals/OnboardingTour';
+import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
 import { useAppContext } from '../lib/AppContext';
 
 export function Layout() {
   const {
-    isTourOpen, isTrialModalOpen, startTour, closeTour, finishTour, closeTrialModal
+    isTourOpen, isTrialModalOpen, startTour, closeTour, finishTour, closeTrialModal,
+    userProfile, isProfileSetupOpen, closeProfileSetup, finishProfileSetup, openProfileSetup
   } = useAppContext();
 
   const menuItems = [
@@ -26,11 +28,16 @@ export function Layout() {
       <AddBirdModal />
       <BirdProfileModal />
 
-      {/* Tutorial Guiado (Manual) & Modal de Boas-Vindas 7 Dias Grátis */}
+      {/* Tutorial Guiado (Manual), Formulário do Perfil & Modal 7 Dias Grátis */}
       <OnboardingTour
         isOpen={isTourOpen}
         onClose={closeTour}
         onComplete={finishTour}
+      />
+      <UserProfileSetupModal
+        isOpen={isProfileSetupOpen}
+        onClose={closeProfileSetup}
+        onComplete={finishProfileSetup}
       />
       <TrialWelcomeModal
         isOpen={isTrialModalOpen}
@@ -109,13 +116,21 @@ export function Layout() {
             </button>
 
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-white">Criatório Galos Mura</p>
+              <p className="text-sm font-bold text-white">{userProfile?.nomeCriatorio || 'Criatório Galos Mura'}</p>
               <p className="text-xs text-amber-400 font-bold flex items-center gap-1 justify-end">
                 <Sparkles size={11}/> Plano Elite PRO
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-theme-surface-hover border border-theme-border overflow-hidden">
-              <img src="https://ui-avatars.com/api/?name=Joao+Paulo&background=F59E0B&color=000" alt="Avatar" />
+            <div
+              onClick={openProfileSetup}
+              title="Clique para editar o perfil do criatório"
+              className="w-10 h-10 rounded-full bg-theme-surface-hover border border-theme-border overflow-hidden cursor-pointer hover:border-amber-400 transition-colors shadow-md"
+            >
+              <img
+                src={userProfile?.fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.nome || 'Joao Paulo')}&background=F59E0B&color=000`}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </header>
