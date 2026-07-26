@@ -646,8 +646,8 @@ export function Lots() {
     return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
   };
 
-  const totalFemeaAtivas = eggLots.reduce((a: number, l: EggLot) => a + (l.status === 'Ativo' ? (l.femeasIds.length || l.qtdFemeas || 0) : 0), 0);
-  const totalExpDiaria   = eggLots.reduce((a: number, l: EggLot) => a + (l.status === 'Ativo' ? l.expectativaDiaria : 0), 0);
+  const totalFemeaAtivas = eggLots.reduce((a: number, l: EggLot) => a + (l.status === 'Ativo' ? ((l.femeasIds?.length || 0) || l.qtdFemeas || l.qtdGalinhas || 0) : 0), 0);
+  const totalExpDiaria   = eggLots.reduce((a: number, l: EggLot) => a + (l.status === 'Ativo' ? (l.expectativaDiaria || l.expPosturaDiaria || 0) : 0), 0);
 
   const pSubmitDisabled = !pBaia.trim() || pQtdFemeasAtual === 0;
 
@@ -716,7 +716,7 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {eggLots.map((lot: EggLot) => {
               const dias = calcDays(lot.dataInicio);
-              const qtdF = Math.max(lot.qtdFemeas || 0, lot.femeasIds.length);
+              const qtdF = Math.max(lot.qtdFemeas || 0, lot.femeasIds?.length || 0, lot.qtdGalinhas || 0);
               const registros: EggRecord[] = lot.registros || [];
               const totalColetados = registros.reduce((a: number, r: any) => a + r.quantidade, 0);
               const totalVendidos = (lot.ovosVendidosTotal || 0) + registros.reduce((a, r) => a + (r.vendidos || 0), 0);
@@ -728,8 +728,9 @@ export function Lots() {
                 if (!sorted.length) return 0;
                 return Math.round(sorted.reduce((a: number, r: EggRecord) => a + r.quantidade, 0) / sorted.length);
               })();
-              const efic = lot.expectativaDiaria > 0
-                ? Math.round((mediaUlt7 / lot.expectativaDiaria) * 100)
+              const expVal = lot.expectativaDiaria || lot.expPosturaDiaria || 0;
+              const efic = expVal > 0
+                ? Math.round((mediaUlt7 / expVal) * 100)
                 : null;
 
               return (
@@ -1093,7 +1094,7 @@ export function Lots() {
                 </h4>
                 <EfficencyChart
                   registros={selectedLotRegs}
-                  expectativa={selectedLot.expectativaDiaria}
+                  expectativa={selectedLot.expectativaDiaria || selectedLot.expPosturaDiaria || 0}
                   precoVenda={selectedLot.precoVendaPadrao ?? 6}
                   custoProd={selectedLot.custoProdPadrao ?? 0.30}
                 />
