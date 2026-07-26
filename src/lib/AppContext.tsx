@@ -19,10 +19,10 @@ export type Bird = {
   id: string;
   anilha: string;
   nome: string;
-  sexo: 'Macho' | 'Fêmea';
+  sexo: 'Macho' | 'Fêmea' | string;
   raca: string;
   baia: string;
-  status: 'Reprodutor' | 'Matriz' | 'Frango(a)' | 'Pintinho' | 'Vendida' | 'Óbito' | 'Adulto' | 'Vendido' | 'Faleceu';
+  status: 'Reprodutor' | 'Matriz' | 'Frango(a)' | 'Pintinho' | 'Vendida' | 'Óbito' | 'Adulto' | 'Vendido' | 'Faleceu' | 'Ativo' | string;
   imagem?: string;
   paiId?: string;
   maeId?: string;
@@ -33,7 +33,7 @@ export type Bird = {
 };
 
 export type DailyEggRecord = {
-  id: string;
+  id?: string;
   data: string;
   quantidade: number;
   incubados?: number;
@@ -46,12 +46,12 @@ export type EggRecord = DailyEggRecord; // alias for backwards compatibility
 export type EggLot = {
   id: string;
   baia: string;
-  avesIds: string[];
+  avesIds?: string[];
   femeasIds?: string[];
-  qtdGalinhas: number;
+  qtdGalinhas?: number;
   qtdFemeas?: number;
   dataInicio: string;
-  expPosturaDiaria: number;
+  expPosturaDiaria?: number;
   expectativaDiaria?: number;
   precoOvoUnitario?: number;
   precoVendaPadrao?: number;
@@ -71,11 +71,12 @@ export type IncubatorBatch = {
   previsaoEclosao: string;
   ovosSetados: number;
   ovosFerteis?: number;
-  status: 'Em Incubação' | 'Eclodido' | 'Cancelado' | 'Concluído';
+  status: 'Em Incubação' | 'Eclodido' | 'Cancelado' | 'Concluído' | string;
   temperatura?: string;
   umidade?: string;
   raca?: string;
   loteId?: string;
+  baia?: string;
 };
 
 export type MeatLot = {
@@ -86,7 +87,7 @@ export type MeatLot = {
   dataInicio: string;
   pesoMedioInicial: string;
   pesoMeta?: string;
-  status: 'Crescimento' | 'Terminação' | 'Abatido';
+  status: 'Crescimento' | 'Terminação' | 'Abatido' | string;
   raca?: string;
   observacao?: string;
 };
