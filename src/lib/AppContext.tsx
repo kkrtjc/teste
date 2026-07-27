@@ -150,6 +150,7 @@ type AppContextType = {
   removeMeatLot: (id: string) => void;
   
   farmSettings: FarmSettings;
+  setFarmSettings: (settings: FarmSettings) => void;
   updateFarmSettings: (settings: Partial<FarmSettings>) => void;
   importBackup: (backupData: any) => Promise<void>;
 
@@ -171,6 +172,16 @@ type AppContextType = {
   addIncubationLot: (lot: IncubationLot) => void;
   editIncubationLot: (id: string, updatedLot: Partial<IncubationLot>) => void;
   removeIncubationLot: (id: string) => void;
+
+  // Onboarding & Profile Setup Optional Helpers
+  isTourOpen?: boolean;
+  isProfileSetupOpen?: boolean;
+  openProfileSetup?: () => void;
+  closeProfileSetup?: () => void;
+  finishProfileSetup?: () => void;
+  startTour?: () => void;
+  closeTour?: () => void;
+  finishTour?: () => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -1799,6 +1810,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
+    return localStorage.getItem('@mura-manager:hasSeenTour_v10.0') !== 'true';
+  });
+  const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
+
+  const startTour = () => setIsTourOpen(true);
+  const closeTour = () => {
+    setIsTourOpen(false);
+    localStorage.setItem('@mura-manager:hasSeenTour_v10.0', 'true');
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v10.0') !== 'true') {
+      setIsProfileSetupOpen(true);
+    }
+  };
+  const finishTour = () => {
+    setIsTourOpen(false);
+    localStorage.setItem('@mura-manager:hasSeenTour_v10.0', 'true');
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v10.0') !== 'true') {
+      setIsProfileSetupOpen(true);
+    }
+  };
+
+  const openProfileSetup = () => setIsProfileSetupOpen(true);
+  const closeProfileSetup = () => setIsProfileSetupOpen(false);
+  const finishProfileSetup = () => {
+    setIsProfileSetupOpen(false);
+    localStorage.setItem('@mura-manager:hasSetupProfile_v10.0', 'true');
+  };
+
   const contextValue = useMemo(() => ({
     isReady,
     breeds, addBreed, editBreed, removeBreed,
@@ -1807,17 +1846,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
     eggLots, addEggLot, editEggLot, removeEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot,
-    farmSettings, updateFarmSettings,
+    farmSettings, setFarmSettings, updateFarmSettings,
     importBackup,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
     openAddBirdModal, openBirdProfile, closeModals,
     isTutorialOpen, openTutorial, closeTutorial,
     activeBreed, setActiveBreed,
-    incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot
+    incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
+    isTourOpen, isProfileSetupOpen,
+    startTour, closeTour, finishTour,
+    openProfileSetup, closeProfileSetup, finishProfileSetup
   }), [
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots
+    isTutorialOpen, activeBreed, incubationLots, isTourOpen, isProfileSetupOpen
   ]);
 
   return (

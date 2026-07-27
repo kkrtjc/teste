@@ -4,13 +4,15 @@
 
 @layer base {
   html {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     height: 100%;
     -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-theme-base text-theme-text-main font-sans antialiased selection:bg-theme-primary selection:text-black;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     height: 100%;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
@@ -20,7 +22,8 @@
   }
   #root {
     height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 }
 
@@ -96,6 +99,11 @@
   50% { transform: translate3d(0, -8px, 0) rotate(1deg); }
 }
 
+@keyframes pulseSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
@@ -122,6 +130,10 @@
 .animate-float {
   animation: float 6s ease-in-out infinite;
   will-change: transform;
+}
+
+.animate-bounce-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
 }
 
 .text-shimmer {

@@ -9,6 +9,8 @@ import {
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
 import { TutorialModal } from './modals/TutorialModal';
+import { OnboardingTour } from './modals/OnboardingTour';
+import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -34,7 +36,7 @@ interface LayoutProps {
 }
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
-  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen } = useAppContext();
+  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen, isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup } = useAppContext();
   const navigate = useNavigate();
   const { cpf, isLocalMode, triggerWebhookPayment } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
@@ -309,6 +311,8 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       {isAddBirdModalOpen && <AddBirdModal />}
       {selectedBirdProfileId && <BirdProfileModal />}
       {isTutorialOpen && <TutorialModal />}
+      {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
+      {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
