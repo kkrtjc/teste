@@ -180,6 +180,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   ]));
 
+  // Force Clear Old Tour Cache Flags on App Load (Version Bump to v10.0)
+  useEffect(() => {
+    const TOUR_VERSION = 'v10.0';
+    const lastVersion = localStorage.getItem('@mura-manager:tour_version');
+    if (lastVersion !== TOUR_VERSION) {
+      localStorage.removeItem('@mura-manager:hasSeenTour');
+      localStorage.removeItem('@mura-manager:hasSeenTour_v2.0');
+      localStorage.removeItem('@mura-manager:hasSeenTour_v3.0');
+      localStorage.removeItem('@mura-manager:hasSeenTrial');
+      localStorage.removeItem('@mura-manager:hasSeenTrial_v2.0');
+      localStorage.removeItem('@mura-manager:hasSeenTrial_v3.0');
+      localStorage.setItem('@mura-manager:tour_version', TOUR_VERSION);
+    }
+  }, []);
+
   // User Profile State
   const [userProfile, setUserProfile] = useState<UserProfile>(() => loadStorage('@mura-manager:userProfile', {
     nome: 'João Paulo',
@@ -190,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Tour & Trial States (Linear Sequence: 1. Tour ➔ 2. Profile Setup ➔ 3. Trial 7 Days Gift)
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
-    return localStorage.getItem('@mura-manager:hasSeenTour_v3.0') !== 'true';
+    return localStorage.getItem('@mura-manager:hasSeenTour_v10.0') !== 'true';
   });
   const [isTrialModalOpen, setIsTrialModalOpen] = useState<boolean>(false);
 
@@ -210,9 +225,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const closeProfileSetup = () => setIsProfileSetupOpen(false);
   const finishProfileSetup = () => {
     setIsProfileSetupOpen(false);
-    localStorage.setItem('@mura-manager:hasSetupProfile_v3.0', 'true');
+    localStorage.setItem('@mura-manager:hasSetupProfile_v10.0', 'true');
     // Open trial gift modal sequentially after profile setup!
-    if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
+    if (localStorage.getItem('@mura-manager:hasSeenTrial_v10.0') !== 'true') {
       setIsTrialModalOpen(true);
     }
   };
@@ -231,27 +246,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const closeTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v3.0', 'true');
+    localStorage.setItem('@mura-manager:hasSeenTour_v10.0', 'true');
     // Open Profile Setup sequentially after tour!
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v3.0') !== 'true') {
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v10.0') !== 'true') {
       setIsProfileSetupOpen(true);
-    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
+    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v10.0') !== 'true') {
       setIsTrialModalOpen(true);
     }
   };
   const finishTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v3.0', 'true');
+    localStorage.setItem('@mura-manager:hasSeenTour_v10.0', 'true');
     // Open Profile Setup sequentially after tour!
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v3.0') !== 'true') {
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v10.0') !== 'true') {
       setIsProfileSetupOpen(true);
-    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v3.0') !== 'true') {
+    } else if (localStorage.getItem('@mura-manager:hasSeenTrial_v10.0') !== 'true') {
       setIsTrialModalOpen(true);
     }
   };
   const closeTrialModal = () => {
     setIsTrialModalOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTrial_v3.0', 'true');
+    localStorage.setItem('@mura-manager:hasSeenTrial_v10.0', 'true');
   };
 
   // ── Breeds ──
