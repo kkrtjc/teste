@@ -13,7 +13,14 @@ export function UserProfileSetupModal({
   onComplete: () => void;
 }) {
   const { userProfile, updateUserProfile, isTourOpen } = useAppContext();
-  const { user } = useAuth();
+  
+  let authUser: any = null;
+  try {
+    const auth = useAuth();
+    authUser = auth?.user;
+  } catch {
+    authUser = null;
+  }
 
   const [nome, setNome] = useState(userProfile?.nome || '');
   const [email, setEmail] = useState('');
@@ -27,13 +34,14 @@ export function UserProfileSetupModal({
     if (isOpen) {
       const savedEmail = localStorage.getItem('mura_user_email') ||
                          localStorage.getItem('@mura-manager:user_email') ||
-                         (user as any)?.email ||
+                         authUser?.email ||
+                         userProfile?.email ||
                          '';
       setEmail(savedEmail);
       if (userProfile?.nome) setNome(userProfile.nome);
       if (userProfile?.nomeCriatorio) setNomeCriatorio(userProfile.nomeCriatorio);
     }
-  }, [isOpen, user, userProfile]);
+  }, [isOpen, authUser, userProfile]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,7 +136,7 @@ export function UserProfileSetupModal({
             <input
               type="email"
               readOnly
-              value={email || (user as any)?.email || 'usuario@criatorio.com'}
+              value={email || authUser?.email || 'usuario@criatorio.com'}
               className="w-full bg-theme-base/60 border border-theme-border/60 rounded-xl p-3 text-sm text-white/70 focus:outline-none cursor-not-allowed"
             />
           </div>
