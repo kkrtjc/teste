@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
-import { OnboardingModal } from './components/modals/OnboardingModal';
 import { PaywallScreen } from './components/PaywallScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { ADMIN_CPF } from './lib/AuthContext';
@@ -19,7 +18,7 @@ const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.S
 const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 
 function AppContent() {
-  const { isReady, isTutorialOpen } = useAppContext();
+  const { isReady } = useAppContext();
   const { user, cpf, loading: authLoading, isExpired, trialInfo } = useAuth();
 
   // ── Estado do popup de trial ──
@@ -27,24 +26,14 @@ function AppContent() {
   const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
   const isAdmin = cpf === ADMIN_CPF;
 
-  const showOnboarding = false;
-
-  // Decide se deve mostrar o popup de trial:
-  // IMPORTANTE: Só mostra DEPOIS que o tutorial e onboarding forem concluídos/fechados!
+  // Decide se deve mostrar o popup de trial
   useEffect(() => {
     if (!user || !isReady || isExpired || isAdmin) return;
 
-    // Se o tutorial manual ou o onboarding estão ativos, bloqueia a exibição simultânea do popup de trial
-    if (isTutorialOpen || showOnboarding) {
-      setShowTrialPopup(false);
-      return;
-    }
-
-    // Se tutorial/onboarding foram concluídos ou fechados, aí sim exibe o popup de trial (1x a cada 24h)
     if (shouldShowTrialPopup(trialInfo.isTrial, isAdmin)) {
       setShowTrialPopup(true);
     }
-  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial, isTutorialOpen, showOnboarding]);
+  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
 
   // 1. Carrega a sessão de autenticação primeiro
   if (authLoading) {
@@ -110,7 +99,7 @@ function AppContent() {
         />
       )}
 
-      {showOnboarding && <OnboardingModal />}
+      {/* App Router */}
 
       <Router>
         <Suspense fallback={

@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
-import { TutorialModal } from './modals/TutorialModal';
 import { OnboardingTour } from './modals/OnboardingTour';
 import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
 import { useAppContext } from '../lib/AppContext';
@@ -36,7 +35,7 @@ interface LayoutProps {
 }
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
-  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTutorialOpen, isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup } = useAppContext();
+  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup } = useAppContext();
   const navigate = useNavigate();
   const { cpf, isLocalMode, triggerWebhookPayment } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
@@ -310,7 +309,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pb-[env(safe-area-inset-bottom)]">
       {isAddBirdModalOpen && <AddBirdModal />}
       {selectedBirdProfileId && <BirdProfileModal />}
-      {isTutorialOpen && !isTourOpen && <TutorialModal />}
       {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
       {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
       
@@ -834,10 +832,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         </div>,
         document.body
       )}
-
-      {/* Tutorial Guide Overlay */}
-      <TutorialModal />
     </div>
   );
 }
-
