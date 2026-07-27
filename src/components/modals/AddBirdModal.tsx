@@ -1,310 +1,856 @@
-import { useState, useRef, useEffect } from 'react';
-import { Camera, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
-import { SearchableSelect } from '../SearchableSelect';
+import { compressImage } from '../../lib/imageCompression';
+import { calculateExactAge } from '../../lib/utils';
 
+// ─── Step indicator ──────────────────────────────────────────────────────────
+function StepDots({ total, current }: { total: number; current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-2">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`rounded-full transition-all duration-300 ${
+            i === current
+              ? 'w-6 h-2 bg-theme-primary'
+              : i < current
+              ? 'w-2 h-2 bg-theme-primary/50'
+              : 'w-2 h-2 bg-theme-border'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Numeric input filter ─────────────────────────────────────────────────────
+// Impede digitação de letras em campos que devem ser apenas numéricos
+const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.', ','];
+  if (allowed.includes(e.key)) return;
+  if (e.ctrlKey || e.metaKey) return; // permite Ctrl+A, Ctrl+C, Ctrl+V
+  if (!/^\d$/.test(e.key)) e.preventDefault();
+};
+
+const sanitizeNumeric = (val: string) => val.replace(/[^0-9.,]/g, '');
+
+// ─── Mini-overlay: detalhes da ave duplicada ──────────────────────────────────
+function BirdDetailOverlay({
+  bird,
+  onClose,
+}: {
+  bird: ReturnType<typeof useAppContext>['birds'][number];
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
+          <p className="font-black text-white text-sm flex items-center gap-2">
+            <Eye size={14} className="text-theme-primary" />
+            Detalhes da Ave
+          </p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-3">
+          {/* Foto + info principal */}
+          <div className="flex items-center gap-3">
+            {(bird.imagem || bird.imagens?.[0]) ? (
+              <img
+                src={bird.imagem || bird.imagens?.[0]}
+                alt={bird.anilha}
+                className="w-16 h-16 rounded-xl object-cover border border-theme-border shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl bg-theme-base border border-theme-border flex items-center justify-center shrink-0">
+                <span className="text-2xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="font-black text-white text-base truncate">{bird.nome || `Anilha ${bird.anilha}`}</p>
+              <p className="text-xs text-theme-text-muted">Anilha: <span className="text-theme-primary font-bold">{bird.anilha}</span></p>
+              <p className="text-xs text-theme-text-muted">{bird.sexo} · {bird.raca || 'Sem raça'}</p>
+            </div>
+          </div>
+
+          {/* Detalhes em grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'Status', value: bird.status },
+              { label: 'Baia', value: bird.baia || '—' },
+              { label: 'Peso', value: bird.peso || '—' },
+              { label: 'Origem', value: bird.origem || '—' },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
+                <p className="text-[10px] text-theme-text-muted uppercase font-bold">{label}</p>
+                <p className="text-xs font-bold text-white truncate">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {bird.dataNascimento && (
+            <div className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
+              <p className="text-[10px] text-theme-text-muted uppercase font-bold">Idade</p>
+              <p className="text-xs font-bold text-white">{calculateExactAge(bird.dataNascimento)}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 pb-4">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-theme-primary text-black text-sm font-black transition-all active:scale-95"
+          >
+            Fechar Detalhes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lista de aves da baia ────────────────────────────────────────────────────
+function BaiaDetailOverlay({
+  baia,
+  avesNaBaia,
+  onClose,
+}: {
+  baia: string;
+  avesNaBaia: ReturnType<typeof useAppContext>['birds'];
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
+          <p className="font-black text-white text-sm flex items-center gap-2">
+            <Home size={14} className="text-amber-400" />
+            Baia {baia} — {avesNaBaia.length} ave(s)
+          </p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+          {avesNaBaia.map(b => (
+            <div key={b.id} className="flex items-center gap-3 bg-theme-base rounded-xl px-3 py-2.5 border border-theme-border/50">
+              {(b.imagem || b.imagens?.[0]) ? (
+                <img src={b.imagem || b.imagens?.[0]} alt={b.anilha} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-theme-surface border border-theme-border flex items-center justify-center shrink-0">
+                  <span className="text-lg">{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">{b.nome || `Anilha ${b.anilha}`}</p>
+                <p className="text-[10px] text-theme-text-muted">{b.sexo} · {b.status} · {b.raca || 'Sem raça'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-4 pb-4 pt-2">
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-theme-primary text-black text-sm font-black transition-all active:scale-95">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 export function AddBirdModal() {
-  const { isAddBirdModalOpen, closeModals, breeds, addBird, editBird, preSelectedBreedForNewBird, birds, birdToEditId } = useAppContext();
+  const {
+    isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
+    preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple
+  } = useAppContext();
 
-  const [newBirdAnilha, setNewBirdAnilha] = useState('');
-  const [newBirdName, setNewBirdName] = useState('');
-  const [newBirdSex, setNewBirdSex] = useState('Macho');
-  const [newBirdBreed, setNewBirdBreed] = useState('');
-  const [newBirdBaia, setNewBirdBaia] = useState('');
-  const [newBirdStatus, setNewBirdStatus] = useState('Reprodutor');
-  const [newBirdVacinas, setNewBirdVacinas] = useState('');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // ── Form fields ──
+  const [anilha, setAnilha] = useState('');
+  const [nome, setNome] = useState('');
+  const [sexo, setSexo] = useState('Macho');
+  const [raca, setRaca] = useState('');
+  const [baia, setBaia] = useState('');
+  const [status, setStatus] = useState('Reprodutor');
+  const [dataNasc, setDataNasc] = useState('');
+  const [peso, setPeso] = useState('');
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
 
-  // New states for Origins
-  const [birdOrigin, setBirdOrigin] = useState<'Criatório' | 'Externo'>('Criatório');
-  
-  const [isPaiExterno, setIsPaiExterno] = useState(false);
+  // ── Origin ──
+  const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null);
   const [paiId, setPaiId] = useState('');
-  const [paiNameExterno, setPaiNameExterno] = useState('');
-
-  const [isMaeExterno, setIsMaeExterno] = useState(false);
   const [maeId, setMaeId] = useState('');
-  const [maeNameExterno, setMaeNameExterno] = useState('');
+  const [paiExterno, setPaiExterno] = useState('');
+  const [maeExterno, setMaeExterno] = useState('');
+  const [descricaoOrigem, setDescricaoOrigem] = useState('');
+  const [casalId, setCasalId] = useState('');
+  const [selectedVacs, setSelectedVacs] = useState<string[]>([]);
+
+  // ── Steps ──
+  const TOTAL_STEPS = 4;
+  const [step, setStep] = useState(0);
+
+  // ── Duplicate / Overlap state ──
+  const [detailBird, setDetailBird] = useState<typeof birds[number] | null>(null);
+  const [showBaiaDetail, setShowBaiaDetail] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync initial state when opened
+  // ── Populate when editing ──
   useEffect(() => {
-    if (isAddBirdModalOpen) {
-      if (birdToEditId) {
-        const bird = birds.find(b => b.id === birdToEditId);
-        if (bird) {
-          setNewBirdAnilha(bird.anilha);
-          setNewBirdName(bird.nome);
-          setNewBirdSex(bird.sexo);
-          setNewBirdBreed(bird.raca);
-          setNewBirdBaia(bird.baia);
-          setNewBirdStatus(bird.status);
-          setNewBirdVacinas(bird.vacinas || '');
-          setBirdOrigin(bird.origem || 'Criatório');
-          setPreviewImage(bird.imagem || null);
-          
-          setIsPaiExterno(bird.isPaiExterno || false);
-          if (bird.isPaiExterno) setPaiNameExterno(bird.paiId || '');
-          else setPaiId(bird.paiId || '');
+    if (!isAddBirdModalOpen) return;
+    setStep(0);
+    setDetailBird(null);
+    setShowBaiaDetail(false);
 
-          setIsMaeExterno(bird.isMaeExterno || false);
-          if (bird.isMaeExterno) setMaeNameExterno(bird.maeId || '');
-          else setMaeId(bird.maeId || '');
-        }
-      } else {
-        // Reset for new
-        setNewBirdAnilha('');
-        setNewBirdName('');
-        setNewBirdSex('Macho');
-        setNewBirdBreed(preSelectedBreedForNewBird || (breeds[0]?.nome || ''));
-        setNewBirdBaia('');
-        setNewBirdStatus('Reprodutor');
-        setNewBirdVacinas('');
-        setBirdOrigin('Criatório');
-        setPreviewImage(null);
-        setIsPaiExterno(false);
-        setPaiId('');
-        setPaiNameExterno('');
-        setIsMaeExterno(false);
-        setMaeId('');
-        setMaeNameExterno('');
+    if (birdToEditId) {
+      const b = birds.find(x => x.id === birdToEditId);
+      if (b) {
+        setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
+        setBaia(b.baia); setStatus(b.status);
+        setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
+        setPreviewImages(b.imagens || (b.imagem ? [b.imagem] : []));
+        const orig = b.origem || 'Criatório';
+        setNascidaAqui(orig !== 'Externo');
+        setCasalId(b.casalId || '');
+        setPaiId(b.isPaiExterno ? '' : b.paiId || '');
+        setPaiExterno(b.isPaiExterno ? b.paiId || '' : '');
+        setMaeId(b.isMaeExterno ? '' : b.maeId || '');
+        setMaeExterno(b.isMaeExterno ? b.maeId || '' : '');
+        setDescricaoOrigem('');
+        const parsedVacs = (b.vacinas || '').split(',').map(v => v.trim().toLowerCase());
+        setSelectedVacs(['bouba', 'marek', 'newcastle', 'coriza'].filter(v => parsedVacs.includes(v)));
       }
+    } else {
+      setAnilha(''); setNome(''); setSexo('Macho');
+      setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
+      setBaia(''); setStatus('Reprodutor');
+      setDataNasc(''); setPeso(''); setPreviewImages([]);
+      setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
+      setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
+      setSelectedVacs([]);
     }
-  }, [isAddBirdModalOpen, birdToEditId, preSelectedBreedForNewBird, breeds, birds]);
+  }, [isAddBirdModalOpen, birdToEditId]);
+
+  // ── Auto-fill parents when a couple is selected ──
+  useEffect(() => {
+    if (casalId) {
+      const c = couples.find(x => x.id === casalId);
+      if (c) { setPaiId(c.machoId); setMaeId(c.femeaId); }
+    }
+  }, [casalId]);
+
+  // ── Duplicate detection (memoized) ──
+  const otherBirds = useMemo(
+    () => birds.filter(b => b.id !== birdToEditId),
+    [birds, birdToEditId]
+  );
+
+  const duplicateAnilha = useMemo(() => {
+    if (!anilha.trim()) return null;
+    return otherBirds.find(b => b.anilha.trim().toLowerCase() === anilha.trim().toLowerCase()) || null;
+  }, [anilha, otherBirds]);
+
+  const duplicateNome = useMemo(() => {
+    if (!nome.trim()) return null;
+    return otherBirds.find(b => b.nome && b.nome.trim().toLowerCase() === nome.trim().toLowerCase()) || null;
+  }, [nome, otherBirds]);
+
+  const avesNaBaia = useMemo(() => {
+    if (!baia.trim()) return [];
+    return otherBirds.filter(b => b.baia && b.baia.trim().toLowerCase() === baia.trim().toLowerCase());
+  }, [baia, otherBirds]);
 
   if (!isAddBirdModalOpen) return null;
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewImage(url);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const remainingSlots = 10 - previewImages.length;
+      if (remainingSlots <= 0) {
+        alert('Você já atingiu o limite máximo de 10 imagens.');
+        return;
+      }
+
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+      // Comprime todas as imagens em paralelo para não travar a UI em celulares antigos
+      const results = await Promise.allSettled(
+        filesToUpload.map(file => compressImage(file, 1200, 1200, 0.82))
+      );
+      const compressed: string[] = results
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+        .map(r => r.value);
+
+      setPreviewImages(prev => [...prev, ...compressed]);
+    }
+    if (e.target) {
+      e.target.value = '';
     }
   };
 
-  const handleSaveBird = () => {
-    if (!newBirdAnilha || !newBirdBreed) return;
+  const handleSave = () => {
+    if (!anilha || !raca) return;
 
-    const birdData = {
-      anilha: newBirdAnilha,
-      nome: newBirdName,
-      sexo: newBirdSex,
-      raca: newBirdBreed,
-      baia: newBirdBaia || 'ND',
-      status: newBirdStatus,
-      vacinas: newBirdVacinas,
-      origem: birdOrigin,
+    const isPaiExterno = !paiId && !!paiExterno;
+    const isMaeExterno = !maeId && !!maeExterno;
+
+    const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
+
+    const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
+    const finalVacinas = vacList.join(', ');
+
+    const data = {
+      anilha, nome, sexo, raca,
+      baia: baia || 'ND',
+      status, vacinas: finalVacinas, origem,
+      casalId: casalId || undefined,
       isPaiExterno,
-      paiId: isPaiExterno ? paiNameExterno : paiId,
+      paiId: isPaiExterno ? paiExterno : paiId,
       isMaeExterno,
-      maeId: isMaeExterno ? maeNameExterno : maeId,
-      imagem: previewImage || undefined
+      maeId: isMaeExterno ? maeExterno : maeId,
+      dataNascimento: dataNasc, peso,
+      imagem: previewImages[0] || undefined,
+      imagens: previewImages,
+      observacoes: descricaoOrigem || undefined,
     };
 
     if (birdToEditId) {
-      editBird(birdToEditId, birdData);
+      editBird(birdToEditId, data);
     } else {
-      addBird({
-        id: Date.now().toString(),
-        ...birdData
-      });
+      const newId = Date.now().toString();
+      addBird({ id: newId, ...data });
+
+      // ── Auto-create virtual couple for genealogy if both parents registered ──
+      if (paiId && maeId && !casalId) {
+        const alreadyExists = couples.some(
+          c => c.machoId === paiId && c.femeaId === maeId
+        );
+        if (!alreadyExists) {
+          addCouple({
+            id: `auto-${Date.now()}`,
+            machoId: paiId,
+            femeaId: maeId,
+            objetivo: 'Genealogia (gerado automaticamente)',
+            dataInicio: new Date().toISOString().split('T')[0],
+            status: 'Ativo',
+          });
+        }
+      }
     }
 
     closeModals();
   };
 
-  const breedOptions = breeds.map(b => ({ label: b.nome, value: b.nome }));
-  const sexOptions = [
-    { label: 'Macho', value: 'Macho' },
-    { label: 'Fêmea', value: 'Fêmea' }
-  ];
+  // ─── Options ─────────────────────────────────────────────────────────────
   const statusOptions = [
     { label: 'Reprodutor', value: 'Reprodutor' },
-    { label: 'Matriz', value: 'Matriz' },
+    { label: 'Adulto', value: 'Adulto' },
     { label: 'Crescimento', value: 'Crescimento' },
-    { label: 'Descarte', value: 'Descarte' }
+    { label: 'Matriz', value: 'Matriz' },
+    { label: 'Engorda', value: 'Engorda' },
   ];
 
-  const paiOptions = [
-    { label: 'Desconhecido', value: '' },
-    ...birds.filter(b => b.sexo === 'Macho' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha} - ${b.nome}`, value: b.id }))
+  if (birdToEditId) {
+    const b = birds.find(x => x.id === birdToEditId);
+    if (b && (b.status === 'Vendido' || b.status === 'Faleceu')) {
+      statusOptions.push({ label: b.status, value: b.status });
+    }
+  }
+
+  const machoOptions = [
+    { label: 'Desconhecido / Não informado', value: '' },
+    ...birds
+      .filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.id !== birdToEditId)
+      .map(b => ({
+        label: `Anilha ${b.anilha}${b.nome ? ' – ' + b.nome : ''} (${b.raca || 'Sem raça'} · ${b.status})`,
+        value: b.id
+      }))
   ];
 
-  const maeOptions = [
-    { label: 'Desconhecida', value: '' },
-    ...birds.filter(b => b.sexo === 'Fêmea' && b.id !== birdToEditId).map(b => ({ label: `${b.anilha} - ${b.nome}`, value: b.id }))
+  const femeaOptions = [
+    { label: 'Desconhecida / Não informada', value: '' },
+    ...birds
+      .filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.id !== birdToEditId)
+      .map(b => ({
+        label: `Anilha ${b.anilha}${b.nome ? ' – ' + b.nome : ''} (${b.raca || 'Sem raça'} · ${b.status})`,
+        value: b.id
+      }))
   ];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50">
-          <h3 className="font-bold text-lg text-white">
-            {birdToEditId ? 'Editar Cadastro de Ave' : 'Cadastrar Nova Ave'}
-          </h3>
-          <button onClick={closeModals} className="text-theme-text-muted hover:text-white">✕</button>
+  const canNext = step === 0
+    ? !!anilha && !!raca
+    : step === 1
+    ? true
+    : step === 2
+    ? nascidaAqui !== null
+    : true;
+
+  // ─── Step content ─────────────────────────────────────────────────────────
+  const renderStep = () => {
+    // ── STEP 0: Nome, Raça, Anilha, Sexo, Foto ─────────────────────────────
+    if (step === 0) return (
+      <div className="space-y-4">
+        {/* Nome */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Nome da Ave (opcional)</label>
+          <input
+            type="text" value={nome} onChange={e => setNome(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            placeholder="Ex: Titan, Guerreiro..."
+          />
+          {/* Aviso nome duplicado */}
+          {duplicateNome && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={13} className="text-amber-400 shrink-0" />
+                <span className="text-[11px] text-amber-300 truncate">
+                  Já existe: <strong>{duplicateNome.anilha}</strong> ({duplicateNome.sexo} · {duplicateNome.status})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailBird(duplicateNome)}
+                className="text-[11px] font-black text-amber-400 hover:text-amber-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Detalhes
+              </button>
+            </div>
+          )}
         </div>
-        
-        <div className="p-6 overflow-y-auto space-y-6">
-          <div className="flex gap-4 items-start">
-            <input 
-              type="file" 
-              accept="image/*" 
-              ref={fileInputRef} 
-              onChange={handleImageUpload} 
-              className="hidden" 
-            />
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-32 h-32 rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base shrink-0 overflow-hidden relative group"
+
+        {/* Raça */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Raça / Genética *</label>
+          <select
+            value={raca}
+            onChange={e => setRaca(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors appearance-none"
+          >
+            {breeds.map(b => (
+              <option key={b.id} value={b.nome}>{b.nome}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Anilha */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Anilha / ID *</label>
+          <input
+            type="text" value={anilha} onChange={e => setAnilha(e.target.value)}
+            className={`w-full bg-theme-base border rounded-xl p-3 text-sm text-white focus:outline-none transition-colors ${
+              duplicateAnilha ? 'border-red-500 focus:border-red-400' : 'border-theme-border focus:border-theme-primary'
+            }`}
+            placeholder="Ex: BR-2024-001"
+          />
+          {/* Aviso anilha duplicada */}
+          {duplicateAnilha && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={13} className="text-red-400 shrink-0" />
+                <span className="text-[11px] text-red-300 truncate">
+                  Anilha já cadastrada: <strong>{duplicateAnilha.nome || duplicateAnilha.anilha}</strong> ({duplicateAnilha.sexo} · {duplicateAnilha.status})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailBird(duplicateAnilha)}
+                className="text-[11px] font-black text-red-400 hover:text-red-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Detalhes
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Sexo */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Sexo *</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSexo('Macho')}
+              className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
+                sexo === 'Macho'
+                  ? 'border-blue-500 bg-blue-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
             >
-              {previewImage ? (
-                <>
-                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold text-white text-xs uppercase">Trocar</div>
-                </>
-              ) : (
-                <>
-                  <Camera size={24} className="mb-2" />
-                  <span className="text-[10px] font-bold uppercase text-center px-2">Adicionar<br/>Foto</span>
-                </>
-              )}
-            </div>
-
-            <div className="flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Anilha / ID *</label>
-                  <input type="text" value={newBirdAnilha} onChange={e => setNewBirdAnilha(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: BR-2024-001" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Nome (Opcional)</label>
-                  <input type="text" value={newBirdName} onChange={e => setNewBirdName(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Titan" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1 relative z-50">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Raça / Genética *</label>
-                  <SearchableSelect 
-                    options={breedOptions}
-                    value={newBirdBreed}
-                    onChange={setNewBirdBreed}
-                    placeholder="Selecione a raça..."
-                  />
-                </div>
-                <div className="space-y-1 relative z-50">
-                  <label className="text-xs font-bold text-theme-text-muted uppercase">Sexo *</label>
-                  <SearchableSelect 
-                    options={sexOptions}
-                    value={newBirdSex}
-                    onChange={setNewBirdSex}
-                  />
-                </div>
-              </div>
-            </div>
+              <span>🐓</span> Macho
+            </button>
+            <button
+              type="button"
+              onClick={() => setSexo('Fêmea')}
+              className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
+                sexo === 'Fêmea'
+                  ? 'border-pink-500 bg-pink-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
+            >
+              <span>🐔</span> Fêmea
+            </button>
           </div>
+        </div>
 
-          <div className="border border-theme-border rounded-xl p-4 bg-theme-base/30 space-y-4">
-            <div className="flex items-center gap-4">
-              <label className="text-sm font-bold text-white">A ave veio de outro criatório (Externa)?</label>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setBirdOrigin('Criatório')}
-                  className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${birdOrigin === 'Criatório' ? 'bg-theme-primary/20 border-theme-primary text-theme-primary' : 'bg-theme-base border-theme-border text-theme-text-muted'}`}
-                >Nascida Aqui</button>
-                <button 
-                  onClick={() => setBirdOrigin('Externo')}
-                  className={`px-3 py-1 rounded-md text-xs font-bold border transition-colors ${birdOrigin === 'Externo' ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-theme-base border-theme-border text-theme-text-muted'}`}
-                >Comprada / Externa</button>
+        {/* Foto */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
+            Fotos da Ave (Mín. 1, Máx. 10)
+          </label>
+          <div className="grid grid-cols-5 gap-2">
+            {previewImages.map((img, idx) => (
+              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
+                <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                {idx === 0 && (
+                  <span className="absolute top-1 left-1 bg-theme-primary text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow">Capa</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewImages(prev => prev.filter((_, i) => i !== idx))}
+                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow flex items-center justify-center"
+                >
+                  <X size={10} />
+                </button>
+                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">{idx + 1}</span>
               </div>
-            </div>
-            
-            {birdOrigin === 'Externo' && (
-              <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-200 text-sm">
-                <AlertTriangle className="text-orange-400 shrink-0 mt-0.5" size={16} />
-                <p><strong>Aviso de Quarentena:</strong> Como esta ave veio de fora, mantenha-a isolada do plantel principal por pelo menos 30 a 40 dias para evitar a introdução de doenças.</p>
+            ))}
+            {previewImages.length < 10 && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
+              >
+                <Camera size={20} className="mb-0.5" />
+                <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
               </div>
             )}
           </div>
+          <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+        </div>
+      </div>
+    );
 
-          <div className="grid grid-cols-2 gap-4 border-t border-theme-border pt-6 relative z-40">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-theme-text-muted uppercase">Pai (Macho)</label>
-                <label className="flex items-center gap-2 text-xs text-theme-text-muted cursor-pointer">
-                  <input type="checkbox" checked={isPaiExterno} onChange={e => setIsPaiExterno(e.target.checked)} className="accent-theme-primary" />
-                  Pai Externo
-                </label>
+    // ── STEP 1: Peso, Baia, Categoria ──────────────────────────────────────
+    if (step === 1) return (
+      <div className="space-y-4">
+        {/* Peso — somente numérico */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+            Peso <span className="text-theme-text-muted/60 normal-case font-normal">(kg ou g)</span>
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={peso}
+            onChange={e => setPeso(sanitizeNumeric(e.target.value))}
+            onKeyDown={onlyNumericKeyDown}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            placeholder="Ex: 3.2"
+          />
+          <p className="text-[10px] text-theme-text-muted">Apenas números. Use ponto ou vírgula para decimais.</p>
+        </div>
+
+        {/* Baia */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Baia</label>
+          <input
+            type="text" value={baia} onChange={e => setBaia(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+            placeholder="Ex: B-04"
+          />
+          {/* Aviso baia ocupada */}
+          {avesNaBaia.length > 0 && (
+            <div className="flex items-center justify-between gap-2 mt-1 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 animate-fade-in">
+              <div className="flex items-center gap-2 min-w-0">
+                <Home size={13} className="text-blue-400 shrink-0" />
+                <span className="text-[11px] text-blue-300 truncate">
+                  Baia <strong>{baia}</strong> já tem {avesNaBaia.length} ave(s)
+                </span>
               </div>
-              {isPaiExterno ? (
-                <input type="text" value={paiNameExterno} onChange={e => setPaiNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Galo Campeão (Criatório X)" />
-              ) : (
-                <SearchableSelect 
-                  options={paiOptions}
-                  value={paiId}
-                  onChange={setPaiId}
-                  placeholder="Selecione o Pai..."
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setShowBaiaDetail(true)}
+                className="text-[11px] font-black text-blue-400 hover:text-blue-200 whitespace-nowrap underline underline-offset-2"
+              >
+                Ver Aves
+              </button>
             </div>
-            <div className="space-y-2 relative z-30">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-theme-text-muted uppercase">Mãe (Fêmea)</label>
-                <label className="flex items-center gap-2 text-xs text-theme-text-muted cursor-pointer">
-                  <input type="checkbox" checked={isMaeExterno} onChange={e => setIsMaeExterno(e.target.checked)} className="accent-theme-primary" />
-                  Mãe Externa
-                </label>
-              </div>
-              {isMaeExterno ? (
-                <input type="text" value={maeNameExterno} onChange={e => setMaeNameExterno(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Matriz Importada" />
-              ) : (
-                <SearchableSelect 
-                  options={maeOptions}
-                  value={maeId}
-                  onChange={setMaeId}
-                  placeholder="Selecione a Mãe..."
-                />
-              )}
+          )}
+        </div>
+
+        {/* Categoria */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Categoria</label>
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+          >
+            {statusOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+
+    // ── STEP 2: Pedigree (Nascido Aqui / Vindo de Fora) + Idade ─────────────
+    if (step === 2) return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Pedigree (Origem)</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setNascidaAqui(true)}
+              className={`p-4 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-center ${
+                nascidaAqui === true
+                  ? 'border-theme-primary bg-theme-primary/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
+            >
+              <span className="text-2xl">🥚</span>
+              <span className="text-xs">Nascido Aqui</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNascidaAqui(false)}
+              className={`p-4 rounded-xl border flex flex-col items-center gap-1.5 transition-all text-center ${
+                nascidaAqui === false
+                  ? 'border-orange-500 bg-orange-500/10 text-white font-bold'
+                  : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+              }`}
+            >
+              <span className="text-2xl">🚛</span>
+              <span className="text-xs">Vindo de Fora</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Nascido Aqui: dropdowns for father and mother */}
+        {nascidaAqui === true && (
+          <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Pai (Reprodutores Cadastrados)</label>
+              <select
+                value={paiId}
+                onChange={e => { setPaiId(e.target.value); setPaiExterno(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+              >
+                {machoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Mãe (Matrizes Cadastradas)</label>
+              <select
+                value={maeId}
+                onChange={e => { setMaeId(e.target.value); setMaeExterno(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+              >
+                {femeaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
             </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-4 relative z-20">
+        {/* Vindo de Fora: text inputs */}
+        {nascidaAqui === false && (
+          <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase">Baia de Alojamento</label>
-              <input type="text" value={newBirdBaia} onChange={e => setNewBirdBaia(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: B-04" />
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Pai (Texto Livre)</label>
+              <input
+                type="text"
+                value={paiExterno}
+                onChange={e => { setPaiExterno(e.target.value); setPaiId(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                placeholder="Ex: Galo campeão importado"
+              />
             </div>
+
             <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase">Status</label>
-              <SearchableSelect 
-                options={statusOptions}
-                value={newBirdStatus}
-                onChange={setNewBirdStatus}
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Mãe (Texto Livre)</label>
+              <input
+                type="text"
+                value={maeExterno}
+                onChange={e => { setMaeExterno(e.target.value); setMaeId(''); }}
+                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                placeholder="Ex: Matriz de fora"
               />
             </div>
           </div>
+        )}
 
-          <div className="space-y-2 relative z-10">
-            <label className="text-xs font-bold text-theme-text-muted uppercase">Vacinas e Imunizações</label>
-            <input type="text" value={newBirdVacinas} onChange={e => setNewBirdVacinas(e.target.value)} className="w-full bg-theme-base border border-theme-border rounded-lg p-3 text-sm text-white focus:border-theme-primary outline-none" placeholder="Ex: Marek, Bouba Aviária, Newcastle..." />
-            
-            {(!newBirdVacinas || newBirdVacinas.trim() === '') && (
-              <div className="flex items-center gap-2 text-red-400 mt-2 text-xs bg-red-500/10 p-2 rounded border border-red-500/20">
-                <ShieldAlert size={14} />
-                <span><strong>Atenção:</strong> Aves sem vacinas em dia representam risco biológico ao seu plantel.</span>
-              </div>
-            )}
-            {newBirdVacinas && newBirdVacinas.trim() !== '' && (
-              <p className="text-[10px] text-theme-text-muted mt-1">Separe as vacinas por vírgula.</p>
+        {/* Idade picker */}
+        {nascidaAqui !== null && (
+          <div className="space-y-1 pt-2">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Idade (Data de Nascimento)</label>
+            <input
+              type="date"
+              value={dataNasc}
+              onChange={e => setDataNasc(e.target.value)}
+              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]"
+            />
+            {dataNasc && (
+              <p className="text-xs text-theme-primary font-bold mt-1">
+                Idade calculada: {calculateExactAge(dataNasc)}
+              </p>
             )}
           </div>
+        )}
+      </div>
+    );
+
+    // ── STEP 3: Vacinas ──────────────────────────────────────────────────────
+    if (step === 3) {
+      const vaccineOptions = [
+        { id: 'bouba', label: 'Bouba Aviária' },
+        { id: 'marek', label: 'Marek' },
+        { id: 'newcastle', label: 'Newcastle' },
+        { id: 'coriza', label: 'Coriza Infecciosa' }
+      ];
+
+      const toggleVaccine = (id: string) => {
+        setSelectedVacs(prev =>
+          prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+        );
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="font-bold text-white text-base">Vacinas e Imunizações</p>
+            <p className="text-xs text-theme-text-muted">Selecione todas as vacinas aplicadas nesta ave:</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5">
+            {vaccineOptions.map(v => {
+              const checked = selectedVacs.includes(v.id);
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => toggleVaccine(v.id)}
+                  className={`w-full p-4 rounded-xl border flex items-center justify-between text-left transition-all ${
+                    checked
+                      ? 'border-emerald-500 bg-emerald-500/10 text-white font-bold'
+                      : 'border-theme-border bg-theme-base text-theme-text-muted hover:border-theme-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{checked ? '🛡️' : '💉'}</span>
+                    <span>{v.label}</span>
+                  </div>
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                    checked ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-theme-border'
+                  }`}>
+                    {checked && <span className="text-[10px] font-black">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
+      {/* Container relativo para os overlays internos */}
+      <div className="relative bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh] gpu-accelerated animate-scale-up">
+
+        {/* ── Mini-overlay: detalhe de ave duplicada ── */}
+        {detailBird && (
+          <BirdDetailOverlay bird={detailBird} onClose={() => setDetailBird(null)} />
+        )}
+
+        {/* ── Mini-overlay: aves na baia ── */}
+        {showBaiaDetail && avesNaBaia.length > 0 && (
+          <BaiaDetailOverlay baia={baia} avesNaBaia={avesNaBaia} onClose={() => setShowBaiaDetail(false)} />
+        )}
+
+        {/* Header */}
+        <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="font-black text-lg text-white">
+              {birdToEditId ? 'Editar Ave' : 'Nova Ave'}
+            </h3>
+            <button onClick={closeModals} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-theme-text-muted mb-1">
+            <span className={step >= 0 ? 'text-theme-primary font-bold' : ''}>Identificação</span>
+            <ChevronRight size={12} />
+            <span className={step >= 1 ? 'text-theme-primary font-bold' : ''}>Características</span>
+            <ChevronRight size={12} />
+            <span className={step >= 2 ? 'text-theme-primary font-bold' : ''}>Pedigree</span>
+            <ChevronRight size={12} />
+            <span className={step >= 3 ? 'text-theme-primary font-bold' : ''}>Vacinas</span>
+          </div>
+          <StepDots total={TOTAL_STEPS} current={step} />
         </div>
 
-        <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50 relative z-10">
-          <button onClick={closeModals} className="px-5 py-2 text-theme-text-muted">Cancelar</button>
-          <button onClick={handleSaveBird} className="btn-primary">
-            {birdToEditId ? 'Salvar Alterações' : 'Salvar Ave no Plantel'}
-          </button>
+        {/* Body – fully scrollable */}
+        <div className="flex-1 overflow-y-auto smooth-scroll p-5 overscroll-contain">
+          {renderStep()}
+        </div>
+
+        {/* Footer nav */}
+        <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
+          {step > 0 ? (
+            <button
+              onClick={() => setStep(s => s - 1)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <ChevronLeft size={16} /> Voltar
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={closeModals} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">
+                Cancelar
+              </button>
+              {birdToEditId && (
+                <button
+                  onClick={() => {
+                    if (confirm('Deseja excluir permanentemente esta ave?')) {
+                      removeBird(birdToEditId);
+                      closeModals();
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} /> Excluir
+                </button>
+              )}
+            </div>
+          )}
+
+          {step < TOTAL_STEPS - 1 ? (
+            <button
+              onClick={() => setStep(s => s + 1)}
+              disabled={!canNext}
+              className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Próximo <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button
+              onClick={handleSave}
+              disabled={!anilha || !raca}
+              className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <CheckCircle size={16} /> {birdToEditId ? 'Salvar Alterações' : 'Salvar Ave'}
+            </button>
+          )}
         </div>
       </div>
     </div>

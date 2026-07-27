@@ -142,7 +142,7 @@ export function calculatePairInbreeding(
     sexo: 'Macho',
     raca: '',
     baia: '',
-    status: 'Reprodutor',
+    status: 'Adulto',
     paiId: machoId,
     maeId: femeaId,
     isPaiExterno: false,

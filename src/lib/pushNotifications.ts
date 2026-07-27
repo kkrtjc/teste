@@ -139,6 +139,6 @@ export async function syncDailyEggReminder(hasRegisteredToday: boolean): Promise
     icon: '/favicon.svg',
     badge: '/favicon.svg',
     tag: 'mura-egg-reminder',
-    data: { url: '/lots' }
+    data: { url: '/eggs' }
   });
 }
