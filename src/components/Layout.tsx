@@ -35,7 +35,7 @@ interface LayoutProps {
 }
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
-  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup } = useAppContext();
+  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup } = useAppContext();
   const navigate = useNavigate();
   const { cpf, isLocalMode, triggerWebhookPayment } = useAuth();
   const isAdmin = cpf === ADMIN_CPF;
@@ -364,7 +364,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           
           {/* Help / Tutorial Trigger */}
           <button
-            onClick={openTutorial}
+            onClick={startTour || openTutorial}
             className="p-2 hover:bg-white/5 text-theme-text-muted hover:text-white rounded-xl transition-all active:scale-95 shrink-0 ml-auto mr-2 flex items-center gap-1.5 text-xs font-bold"
             title="Tutorial de Uso"
           >
