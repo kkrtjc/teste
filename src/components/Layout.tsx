@@ -310,7 +310,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pb-[env(safe-area-inset-bottom)]">
       {isAddBirdModalOpen && <AddBirdModal />}
       {selectedBirdProfileId && <BirdProfileModal />}
-      {isTutorialOpen && <TutorialModal />}
+      {isTutorialOpen && !isTourOpen && <TutorialModal />}
       {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
       {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
       

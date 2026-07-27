@@ -19,7 +19,7 @@ const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.S
 const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 
 function AppContent() {
-  const { isReady, farmSettings, isTutorialOpen } = useAppContext();
+  const { isReady, isTutorialOpen } = useAppContext();
   const { user, cpf, loading: authLoading, isExpired, trialInfo } = useAuth();
 
   // ── Estado do popup de trial ──
@@ -27,8 +27,7 @@ function AppContent() {
   const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
   const isAdmin = cpf === ADMIN_CPF;
 
-  const isProfileConfigured = !!(farmSettings.name && farmSettings.email);
-  const showOnboarding = !isProfileConfigured && !isTutorialOpen;
+  const showOnboarding = false;
 
   // Decide se deve mostrar o popup de trial:
   // IMPORTANTE: Só mostra DEPOIS que o tutorial e onboarding forem concluídos/fechados!
