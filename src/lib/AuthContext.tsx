@@ -478,31 +478,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userEmail = user.email;
     if (!cleanCpf && !userEmail) return;
 
-    if (cleanCpf === ADMIN_CPF) return;
+    if (cleanCpf === ADMIN_CPF) {
+      setIsExpired(false);
+      setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
+      return;
+    }
 
     async function checkCurrentCpfAccess() {
       try {
         let rawExpiresAt: string | null = null;
+        const userKey = user.id || user.email || cleanCpf;
+        const storedExpiresAt: string | null = await localforage.getItem(`@mura-manager:locked-trial-expires:${userKey}`);
 
         if (!isSupabaseConfigured) {
           const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
           let localData = localAllowedList.find(item => item.cpf === cleanCpf || item.email === userEmail);
           
           if (!localData && userEmail) {
-            const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+            const initialExpires = storedExpiresAt || new Date(Date.now() + 7 * 86400000).toISOString();
             const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
             localData = {
               cpf: tempCpf,
               nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário',
               email: userEmail,
-              expires_at: trialExpiresAt
+              expires_at: initialExpires
             };
             localAllowedList.push(localData);
             await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
+            await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
           }
-          rawExpiresAt = localData?.expires_at ?? null;
+          rawExpiresAt = localData?.expires_at ?? storedExpiresAt;
         } else {
-          // Validação online no Supabase com busca segura sem falha de sintaxe PostgREST
+          // Validação online no Supabase com busca segura
           const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
           let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
 
@@ -522,29 +529,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           if (!data && userEmail) {
-            const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+            const initialExpires = storedExpiresAt || (user?.created_at 
+              ? new Date(new Date(user.created_at).getTime() + 7 * 86400000).toISOString()
+              : new Date(Date.now() + 7 * 86400000).toISOString());
+
             const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
             const newClient = {
               cpf: tempCpf,
               nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
               email: normEmail,
-              expires_at: trialExpiresAt
+              expires_at: initialExpires
             };
             await supabase!.from('allowed_cpfs').insert([newClient]);
-            rawExpiresAt = trialExpiresAt;
+            await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
+            rawExpiresAt = initialExpires;
           } else {
-            rawExpiresAt = data?.expires_at ?? null;
+            rawExpiresAt = data?.expires_at ?? storedExpiresAt;
           }
         }
 
-        // ── Cálculo Preciso de Expiração e Período de Testes ──
+        // ── Cálculo Rigoroso Travado de Expiração ──
         let expDateObj = parseIsoDate(rawExpiresAt);
 
-        // Se o registro não contiver data de expiração explícita, calcula 7 dias a partir da criação da conta no Supabase Auth
+        // Se o registro no DB não contiver expiração explícita, calcula a partir do user.created_at (Data de Cadastro)
         if (!expDateObj && user?.created_at) {
           const createdAt = parseIsoDate(user.created_at);
           if (createdAt) {
             expDateObj = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+          }
+        }
+
+        // Se ainda não houver expiração, usa o horário gravado na 1ª inicialização da conta
+        if (!expDateObj) {
+          if (storedExpiresAt) {
+            expDateObj = parseIsoDate(storedExpiresAt);
+          } else {
+            const firstInitExp = new Date(Date.now() + 7 * 86400000).toISOString();
+            await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, firstInitExp);
+            expDateObj = parseIsoDate(firstInitExp);
           }
         }
 
@@ -554,7 +576,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const diffMs = expMs - nowMs;
           const expired = diffMs <= 0;
 
-          // Arredonda dias restantes para cima para exibir de forma intuitiva (ex: 6.8 dias -> 7 dias)
+          // Salva no cache local para garantir trava contra desincronizações
+          if (rawExpiresAt) {
+            await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, expDateObj.toISOString());
+          }
+
           const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
           setIsExpired(expired);
@@ -563,15 +589,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             remainingDays: daysLeft,
             expiresAt: expDateObj.toISOString()
           });
-        } else {
-          // Fallback seguro de trial de 7 dias se nenhuma data puder ser inferida
-          const fallbackExp = new Date(Date.now() + 7 * 86400000).toISOString();
-          setIsExpired(false);
-          setTrialInfo({
-            isTrial: true,
-            remainingDays: 7,
-            expiresAt: fallbackExp
-          });
         }
       } catch (err) {
         console.error('Erro de conexão ao validar usuário:', err);
@@ -579,8 +596,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     checkCurrentCpfAccess();
-    // Verificação a cada 10 minutos — equilibra responsividade com economia de bateria e cota de API
-    const interval = setInterval(checkCurrentCpfAccess, 10 * 60 * 1000);
+    // Verificação periódica a cada 5 minutos
+    const interval = setInterval(checkCurrentCpfAccess, 5 * 60 * 1000);
 
     return () => {
       clearInterval(interval);
