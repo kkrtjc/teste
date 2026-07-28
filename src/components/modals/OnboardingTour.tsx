@@ -62,15 +62,52 @@ export function OnboardingTour({
   onComplete: () => void;
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const navigate = useNavigate();
 
   const currentStep = TOUR_STEPS[currentStepIndex];
 
+  // Navigate to path on step change
   useEffect(() => {
     if (isOpen && currentStep?.path) {
       navigate(currentStep.path);
     }
   }, [isOpen, currentStepIndex, currentStep, navigate]);
+
+  // Track target element bounding rect fluidly
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateTarget = () => {
+      const isMobile = window.innerWidth < 768;
+      const targetId = currentStep.targetId;
+      
+      let el = document.getElementById(targetId);
+      if (!el && isMobile) {
+        el = document.getElementById(`mobile-${targetId}`);
+      }
+      if (!el) {
+        el = document.querySelector(`#${targetId}`) || document.querySelector(`[id*="${targetId}"]`);
+      }
+
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+      } else {
+        setTargetRect(null);
+      }
+    };
+
+    updateTarget();
+    const interval = setInterval(updateTarget, 150);
+    window.addEventListener('resize', updateTarget);
+    window.addEventListener('scroll', updateTarget, true);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', updateTarget);
+      window.removeEventListener('scroll', updateTarget, true);
+    };
+  }, [isOpen, currentStepIndex, currentStep]);
 
   if (!isOpen) return null;
 
@@ -88,13 +125,95 @@ export function OnboardingTour({
     }
   };
 
+  // Fluid Dynamic Card Positioning Math
+  const getFluidCardStyle = (): React.CSSProperties => {
+    const isMobile = window.innerWidth < 768;
+
+    if (!targetRect) {
+      return isMobile 
+        ? { position: 'fixed', bottom: '24px', left: '16px', right: '16px' }
+        : { position: 'fixed', bottom: '32px', right: '32px', width: '420px' };
+    }
+
+    const screenHeight = window.innerHeight;
+    const targetCenterY = targetRect.top + targetRect.height / 2;
+    const targetCenterX = targetRect.left + targetRect.width / 2;
+
+    // Mobile viewport
+    if (isMobile) {
+      if (targetCenterY > screenHeight / 2) {
+        // Target is at the bottom (e.g. mobile bottom bar) -> Float Card near top
+        return {
+          position: 'fixed',
+          top: '80px',
+          left: '16px',
+          right: '16px',
+          zIndex: 10001,
+        };
+      } else {
+        // Target is in header -> Float Card near bottom
+        return {
+          position: 'fixed',
+          bottom: '24px',
+          left: '16px',
+          right: '16px',
+          zIndex: 10001,
+        };
+      }
+    }
+
+    // Desktop viewport
+    if (targetCenterX < 300) {
+      // Target is on left sidebar -> Position card to the right of sidebar
+      const topPos = Math.max(80, Math.min(targetRect.top - 20, screenHeight - 340));
+      return {
+        position: 'fixed',
+        left: `${targetRect.right + 24}px`,
+        top: `${topPos}px`,
+        width: '420px',
+        zIndex: 10001,
+      };
+    } else if (targetCenterY < 120) {
+      // Target is in header (e.g. profile button) -> Position card under header
+      return {
+        position: 'fixed',
+        right: '32px',
+        top: `${targetRect.bottom + 16}px`,
+        width: '420px',
+        zIndex: 10001,
+      };
+    } else {
+      // Target is in main content area -> Position card safely in bottom-right
+      return {
+        position: 'fixed',
+        right: '32px',
+        bottom: '32px',
+        width: '420px',
+        zIndex: 10001,
+      };
+    }
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
-      {/* Light Glass Backdrop: Keeps the underlying app bright, visible and crisp */}
+      {/* Light Glass Backdrop: Keeps app 100% visible behind tour */}
       <div 
         onClick={onClose}
         className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] transition-opacity duration-300"
       />
+
+      {/* Spotlight Ring around target element */}
+      {targetRect && (
+        <div
+          className="fixed z-[10000] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.6)] animate-pulse"
+          style={{
+            left: targetRect.left - 6,
+            top: targetRect.top - 6,
+            width: targetRect.width + 12,
+            height: targetRect.height + 12,
+          }}
+        />
+      )}
 
       {/* Spotlight Top Badge Banner */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] bg-theme-surface/90 border border-theme-primary/40 px-4 py-1.5 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
@@ -104,8 +223,11 @@ export function OnboardingTour({
         </span>
       </div>
 
-      {/* Floating Bottom Right Tour Glass Card */}
-      <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:bottom-6 sm:max-w-md z-[10000] animate-scale-up">
+      {/* Fluid Dynamic Tour Glass Card */}
+      <div 
+        style={getFluidCardStyle()}
+        className="transition-all duration-500 ease-out animate-scale-up"
+      >
         <div className="bg-theme-surface/95 border border-theme-primary/40 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-4">
           
           {/* Top Line & Progress Badge */}
