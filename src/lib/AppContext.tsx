@@ -953,9 +953,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [isReady, user]);
 
-  // Autopromoção de 'Crescimento' para 'Adulto' e migração de status obsoletos ('Ativo')
+  // Autopromoção de 'Crescimento' para 'Adulto' e migração de status obsoletos ('Ativo') — Executa 1x ao carregar
   useEffect(() => {
-    if (!isReady || birds.length === 0) return;
+    if (!isReady || birds.length === 0 || breeds.length === 0) return;
 
     let hasUpdates = false;
     const updatedBirds = birds.map(bird => {
@@ -968,7 +968,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Autopromoção de 'Crescimento' para 'Adulto'
-      if (bird.status === 'Crescimento' && bird.dataNascimento && breeds.length > 0) {
+      if (bird.status === 'Crescimento' && bird.dataNascimento) {
         const breedObj = breeds.find(b => b.nome === bird.raca);
         const tempoCrescimento = breedObj?.tempoCrescimento || 0;
         if (tempoCrescimento > 0) {
@@ -997,7 +997,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), updatedBirds).catch(err => console.error(err));
       if (isSupabaseConfigured && user) {
         const promises = updatedBirds
-          .filter((b, idx) => b.status !== birds[idx].status)
+          .filter((b, idx) => b.status !== birds[idx]?.status)
           .map(b => 
             supabase!
               .from('birds')
@@ -1007,7 +1007,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         Promise.all(promises).catch(err => console.error('Erro ao atualizar status Supabase:', err));
       }
     }
-  }, [isReady, birds, breeds, user]);
+    // Executa apenas na inicialização inicial do app
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady]);
 
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {

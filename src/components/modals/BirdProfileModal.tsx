@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
@@ -142,6 +142,14 @@ export function BirdProfileModal() {
   if (!bird) {
     return null;
   }
+
+  const inbreedingF = useMemo(() => {
+    return calculateInbreedingCoefficient(bird.id, birds);
+  }, [bird.id, birds]);
+
+  const relatedList = useMemo(() => {
+    return findRelatedBirds(bird, birds);
+  }, [bird, birds]);
 
   const getStatusColorClass = (status: string) => {
     switch (status) {
@@ -443,9 +451,6 @@ export function BirdProfileModal() {
 
             {/* ── 🌳 ÁRVORE GENEALÓGICA VERTICAL 100% RESPONSIVA (SEM ROLAGEM LATERAL NO CELULAR) ── */}
             {(() => {
-              const inbreedingF = calculateInbreedingCoefficient(bird.id, birds);
-              const relatedList = findRelatedBirds(bird, birds);
-
               // Resolução dos Pais e Avós
               const fatherBird = bird.paiId && !bird.isPaiExterno ? birds.find(b => b.id === bird.paiId) : null;
               const motherBird = bird.maeId && !bird.isMaeExterno ? birds.find(b => b.id === bird.maeId) : null;
