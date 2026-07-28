@@ -9,7 +9,8 @@ import {
   LayoutDashboard,
   Bird,
   Layers,
-  Settings
+  Settings,
+  ArrowDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,9 +83,15 @@ export function OnboardingTour({
       const isMobile = window.innerWidth < 768;
       const targetId = currentStep.targetId;
       
-      let el = document.getElementById(targetId);
-      if (!el && isMobile) {
+      let el: HTMLElement | null = null;
+
+      if (isMobile) {
+        // Try mobile specific ID first (e.g. mobile-nav-link-dashboard)
         el = document.getElementById(`mobile-${targetId}`);
+      }
+
+      if (!el) {
+        el = document.getElementById(targetId);
       }
       if (!el) {
         el = document.querySelector(`#${targetId}`) || document.querySelector(`[id*="${targetId}"]`);
@@ -98,7 +105,7 @@ export function OnboardingTour({
     };
 
     updateTarget();
-    const interval = setInterval(updateTarget, 150);
+    const interval = setInterval(updateTarget, 100);
     window.addEventListener('resize', updateTarget);
     window.addEventListener('scroll', updateTarget, true);
 
@@ -131,38 +138,40 @@ export function OnboardingTour({
 
     if (!targetRect) {
       return isMobile 
-        ? { position: 'fixed', bottom: '24px', left: '16px', right: '16px' }
-        : { position: 'fixed', bottom: '32px', right: '32px', width: '420px' };
+        ? { position: 'fixed', top: '64px', left: '12px', right: '12px', zIndex: 10001 }
+        : { position: 'fixed', bottom: '32px', right: '32px', width: '420px', zIndex: 10001 };
     }
 
     const screenHeight = window.innerHeight;
     const targetCenterY = targetRect.top + targetRect.height / 2;
     const targetCenterX = targetRect.left + targetRect.width / 2;
 
-    // Mobile viewport
+    // Mobile viewport guarantees
     if (isMobile) {
-      if (targetCenterY > screenHeight / 2) {
-        // Target is at the bottom (e.g. mobile bottom bar) -> Float Card near top
+      if (targetCenterY > screenHeight * 0.4) {
+        // Target is in bottom navigation bar or lower screen area
+        // -> Put card at VERY TOP (below top badge), leaving bottom navbar 100% visible!
         return {
           position: 'fixed',
-          top: '80px',
-          left: '16px',
-          right: '16px',
+          top: '64px',
+          left: '12px',
+          right: '12px',
           zIndex: 10001,
         };
       } else {
-        // Target is in header -> Float Card near bottom
+        // Target is in header or top screen area
+        // -> Put card near bottom with clearance above bottom navbar (bottom: 96px)
         return {
           position: 'fixed',
-          bottom: '24px',
-          left: '16px',
-          right: '16px',
+          bottom: '96px',
+          left: '12px',
+          right: '12px',
           zIndex: 10001,
         };
       }
     }
 
-    // Desktop viewport
+    // Desktop viewport guarantees
     if (targetCenterX < 300) {
       // Target is on left sidebar -> Position card to the right of sidebar
       const topPos = Math.max(80, Math.min(targetRect.top - 20, screenHeight - 340));
@@ -173,8 +182,8 @@ export function OnboardingTour({
         width: '420px',
         zIndex: 10001,
       };
-    } else if (targetCenterY < 120) {
-      // Target is in header (e.g. profile button) -> Position card under header
+    } else if (targetCenterY < 140) {
+      // Target is in header -> Position card under header
       return {
         position: 'fixed',
         right: '32px',
@@ -194,6 +203,9 @@ export function OnboardingTour({
     }
   };
 
+  const isMobile = window.innerWidth < 768;
+  const isTargetAtBottomOnMobile = isMobile && targetRect && (targetRect.top + targetRect.height / 2 > window.innerHeight * 0.4);
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
       {/* Light Glass Backdrop: Keeps app 100% visible behind tour */}
@@ -205,20 +217,20 @@ export function OnboardingTour({
       {/* Spotlight Ring around target element */}
       {targetRect && (
         <div
-          className="fixed z-[10000] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.6)] animate-pulse"
+          className="fixed z-[10000] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.8)] animate-pulse"
           style={{
-            left: targetRect.left - 6,
-            top: targetRect.top - 6,
-            width: targetRect.width + 12,
-            height: targetRect.height + 12,
+            left: targetRect.left - 4,
+            top: targetRect.top - 4,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
           }}
         />
       )}
 
       {/* Spotlight Top Badge Banner */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] bg-theme-surface/90 border border-theme-primary/40 px-4 py-1.5 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] bg-theme-surface/95 border border-theme-primary/40 px-4 py-1 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
         <Sparkles size={14} className="text-theme-primary" />
-        <span className="text-xs font-bold text-white tracking-wide">
+        <span className="text-[11px] font-bold text-white tracking-wide">
           Demonstrando: <strong className="text-theme-primary">{currentStep.title}</strong>
         </span>
       </div>
@@ -228,7 +240,7 @@ export function OnboardingTour({
         style={getFluidCardStyle()}
         className="transition-all duration-500 ease-out animate-scale-up"
       >
-        <div className="bg-theme-surface/95 border border-theme-primary/40 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-4">
+        <div className="bg-theme-surface/95 border border-theme-primary/40 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3">
           
           {/* Top Line & Progress Badge */}
           <div className="flex items-center justify-between border-b border-theme-border/60 pb-3">
@@ -262,6 +274,14 @@ export function OnboardingTour({
           <p className="text-xs text-theme-text-muted leading-relaxed font-medium">
             {currentStep.description}
           </p>
+
+          {/* Mobile Down Arrow Indicator when pointing to Bottom Bar */}
+          {isTargetAtBottomOnMobile && (
+            <div className="flex items-center justify-center gap-1 text-[10px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-xl py-1 px-2 animate-bounce">
+              <ArrowDown size={12} />
+              <span>Veja o ícone destacado na barra inferior abaixo 👇</span>
+            </div>
+          )}
 
           {/* Controls Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-theme-border/40">

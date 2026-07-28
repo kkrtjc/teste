@@ -1811,22 +1811,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
-    return localStorage.getItem('@mura-manager:hasSeenTour_v20.0') !== 'true';
+    return localStorage.getItem('@mura-manager:hasSeenTour_v25.0') !== 'true';
   });
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
 
   const startTour = () => setIsTourOpen(true);
   const closeTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v20.0', 'true');
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v20.0') !== 'true') {
+    localStorage.setItem('@mura-manager:hasSeenTour_v25.0', 'true');
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v25.0') !== 'true') {
       setIsProfileSetupOpen(true);
     }
   };
   const finishTour = () => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v20.0', 'true');
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v20.0') !== 'true') {
+    localStorage.setItem('@mura-manager:hasSeenTour_v25.0', 'true');
+    if (localStorage.getItem('@mura-manager:hasSetupProfile_v25.0') !== 'true') {
       setIsProfileSetupOpen(true);
     }
   };
@@ -1835,7 +1835,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const closeProfileSetup = () => setIsProfileSetupOpen(false);
   const finishProfileSetup = () => {
     setIsProfileSetupOpen(false);
-    localStorage.setItem('@mura-manager:hasSetupProfile_v20.0', 'true');
+    localStorage.setItem('@mura-manager:hasSetupProfile_v25.0', 'true');
   };
 
   const contextValue = useMemo(() => ({
