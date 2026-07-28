@@ -208,27 +208,29 @@ export function OnboardingTour({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
-      {/* Light Glass Backdrop: Keeps app 100% visible behind tour */}
-      <div 
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px] transition-opacity duration-300"
-      />
-
-      {/* Spotlight Ring around target element */}
-      {targetRect && (
+      {/* ── Crystal Clear Cutout Spotlight Overlay (Hole Punch Effect) ── */}
+      {/* The highlighted target element stays 100% crisp, bright and un-blurred */}
+      {targetRect ? (
         <div
-          className="fixed z-[10000] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.8)] animate-pulse"
+          onClick={onClose}
+          className="fixed z-[10000] border-2 border-amber-400 rounded-2xl pointer-events-auto cursor-pointer transition-all duration-300 animate-pulse"
           style={{
-            left: targetRect.left - 4,
-            top: targetRect.top - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
+            left: targetRect.left - 6,
+            top: targetRect.top - 6,
+            width: targetRect.width + 12,
+            height: targetRect.height + 12,
+            boxShadow: '0 0 0 9999px rgba(8, 12, 24, 0.45), 0 0 30px rgba(245, 158, 11, 0.9)',
           }}
+        />
+      ) : (
+        <div 
+          onClick={onClose}
+          className="absolute inset-0 bg-slate-950/45 transition-opacity duration-300"
         />
       )}
 
       {/* Spotlight Top Badge Banner */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] bg-theme-surface/95 border border-theme-primary/40 px-4 py-1 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10001] bg-theme-surface/95 border border-theme-primary/40 px-4 py-1 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
         <Sparkles size={14} className="text-theme-primary" />
         <span className="text-[11px] font-bold text-white tracking-wide">
           Demonstrando: <strong className="text-theme-primary">{currentStep.title}</strong>
@@ -238,7 +240,7 @@ export function OnboardingTour({
       {/* Fluid Dynamic Tour Glass Card */}
       <div 
         style={getFluidCardStyle()}
-        className="transition-all duration-500 ease-out animate-scale-up"
+        className="transition-all duration-500 ease-out animate-scale-up z-[10001]"
       >
         <div className="bg-theme-surface/95 border border-theme-primary/40 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3">
           
