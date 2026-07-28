@@ -2,8 +2,105 @@ import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Camera, Search, X, ChevronRight, Trash2 } from 'lucide-react';
-import { useAppContext, type Bird } from '../lib/AppContext';
+import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
+
+const BreedItemCard = memo(function BreedItemCard({
+  breed,
+  count,
+  onSelect,
+  onEdit,
+  onDelete
+}: {
+  breed: Breed;
+  count: number;
+  onSelect: (nome: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, nome: string) => void;
+}) {
+  return (
+    <div 
+      onClick={() => onSelect(breed.nome)}
+      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation content-visibility-auto"
+      style={{ containIntrinsicSize: '1px 220px' }}
+    >
+      {/* Image block 1:1 */}
+      <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
+        {breed.imagem ? (
+          <img
+            src={breed.imagem}
+            alt={breed.nome}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <span className="text-5xl group-hover:scale-105 transition-transform duration-300 select-none">🐓</span>
+        )}
+        
+        {/* Focus Badge */}
+        <div className="absolute top-2 right-2">
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider bg-theme-surface border border-theme-border/50 text-theme-text-muted">
+            {breed.foco.split(' ')[0]}
+          </span>
+        </div>
+
+        {/* Aves Count Badge */}
+        <div className="absolute bottom-2 left-2">
+          <span className="text-[10px] font-black bg-black/70 text-theme-accent px-2 py-0.5 rounded border border-theme-accent/30 shadow-md">
+            {count} ave{count !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Details block */}
+      <div className="p-3 flex flex-col justify-between flex-1 gap-2">
+        <div>
+          <h4 className="font-black text-white text-sm group-hover:text-theme-primary transition-colors truncate">
+            {breed.nome}
+          </h4>
+          <p className="text-xs text-theme-text-muted truncate">
+            {breed.descricao || 'Sem descrição'}
+          </p>
+          <div className="flex flex-wrap gap-1 mt-1 text-[9px] font-bold">
+            {breed.tempoCrescimento && breed.tempoCrescimento > 0 ? (
+              <span className="bg-theme-base/60 text-emerald-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
+                ⏱ {breed.tempoCrescimento} dias
+              </span>
+            ) : null}
+            {breed.pesoMedio ? (
+              <span className="bg-theme-base/60 text-amber-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
+                ⚖️ {breed.pesoMedio}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-theme-border/30">
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(breed.id); }} 
+              className="p-1 text-theme-text-muted hover:text-white hover:bg-white/5 rounded transition-colors"
+              title="Editar Raça"
+            >
+              <Edit2 size={13} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(breed.id, breed.nome); }} 
+              className="p-1 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+              title="Excluir Raça"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+          <span className="text-[10px] font-bold text-theme-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+            Ver aves <ChevronRight size={12} />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const BirdItemCard = memo(function BirdItemCard({ 
   bird, 
@@ -458,101 +555,27 @@ export function Birds() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {filteredBreeds.map(breed => {
-                  const count = birdCountByBreed[breed.nome] || 0;
-                  return (
-                    <div 
-                      key={breed.id}
-                      onClick={() => {
-                        setActiveBreed(breed.nome);
-                        setActiveTab('aves');
-                      }}
-                      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface"
-                    >
-                      {/* Image block 1:1 */}
-                      <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
-                        {breed.imagem ? (
-                          <img
-                            src={breed.imagem}
-                            alt={breed.nome}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <span className="text-5xl group-hover:scale-105 transition-transform duration-500">🐓</span>
-                        )}
-                        
-                        {/* Focus Badge */}
-                        <div className="absolute top-2 right-2">
-                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider bg-theme-surface border border-theme-border/50 text-theme-text-muted">
-                            {breed.foco.split(' ')[0]}
-                          </span>
-                        </div>
-
-                        {/* Aves Count Badge */}
-                        <div className="absolute bottom-2 left-2">
-                          <span className="text-[10px] font-black bg-black/70 text-theme-accent px-2 py-0.5 rounded border border-theme-accent/30 shadow-md">
-                            {count} ave{count !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Details block */}
-                      <div className="p-3 flex flex-col justify-between flex-1 gap-2">
-                        <div>
-                          <h4 className="font-black text-white text-sm group-hover:text-theme-primary transition-colors truncate">
-                            {breed.nome}
-                          </h4>
-                          <p className="text-xs text-theme-text-muted truncate">
-                            {breed.descricao || 'Sem descrição'}
-                          </p>
-                          <div className="flex flex-wrap gap-1 mt-1 text-[9px] font-bold">
-                            {breed.tempoCrescimento && breed.tempoCrescimento > 0 ? (
-                              <span className="bg-theme-base/60 text-emerald-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
-                                ⏱ {breed.tempoCrescimento} dias
-                              </span>
-                            ) : null}
-                            {breed.pesoMedio ? (
-                              <span className="bg-theme-base/60 text-amber-400 border border-theme-border/50 px-1.5 py-0.5 rounded">
-                                ⚖️ {breed.pesoMedio}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-theme-border/30">
-                          <div className="flex items-center gap-1.5">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); openBreedModal(breed.id); }} 
-                              className="p-1 text-theme-text-muted hover:text-white hover:bg-white/5 rounded transition-colors"
-                              title="Editar Raça"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-                            <button 
-                              onClick={(e) => { 
-                                e.stopPropagation();
-                                const avesVinculadas = birds.filter(b => b.raca === breed.nome && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
-                                const aviso = avesVinculadas > 0
-                                  ? `Existem ${avesVinculadas} ave(s) vinculada(s) a esta raça. Elas ficarão sem raça definida.\n\nDeseja realmente apagar a raça "${breed.nome}" permanentemente?`
-                                  : `Deseja realmente apagar a raça "${breed.nome}" permanentemente?`;
-                                if (window.confirm(aviso)) {
-                                  removeBreed(breed.id);
-                                }
-                              }} 
-                              className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                              title="Apagar Raça"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                          <span className="text-[10px] text-theme-primary font-black uppercase tracking-wider">
-                            Ver Plantel
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {filteredBreeds.map(breed => (
+                  <BreedItemCard
+                    key={breed.id}
+                    breed={breed}
+                    count={birdCountByBreed[breed.nome] || 0}
+                    onSelect={(nome) => {
+                      setActiveBreed(nome);
+                      setActiveTab('aves');
+                    }}
+                    onEdit={(id) => openBreedModal(id)}
+                    onDelete={(id, nome) => {
+                      const avesVinculadas = birds.filter(b => b.raca === nome && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
+                      const aviso = avesVinculadas > 0
+                        ? `Existem ${avesVinculadas} ave(s) vinculada(s) a esta raça. Elas ficarão sem raça definida.\n\nDeseja realmente apagar a raça "${nome}" permanentemente?`
+                        : `Deseja realmente apagar a raça "${nome}" permanentemente?`;
+                      if (window.confirm(aviso)) {
+                        removeBreed(id);
+                      }
+                    }}
+                  />
+                ))}
               </div>
             )}
           </div>

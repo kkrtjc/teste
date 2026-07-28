@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
@@ -9,13 +9,13 @@ import { ADMIN_CPF } from './lib/AuthContext';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 import { Activity } from 'lucide-react';
 
-// Lazy loading das páginas internas para otimização de bundle inicial no celular
-const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
-const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
-const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
-const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
-const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
-const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
+// Importação direta síncrona das páginas para resposta instantânea (0ms) na troca de abas no celular
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { Lots } from './pages/Lots';
+import { Birds } from './pages/Birds';
+import { Settings } from './pages/Settings';
+import { Eggs } from './pages/Eggs';
 
 function AppContent() {
   const { isReady } = useAppContext();
@@ -48,16 +48,7 @@ function AppContent() {
 
   // 2. Se não estiver autenticado, exibe a tela de login
   if (!user) {
-    return (
-      <Suspense fallback={
-        <div className="flex flex-col items-center justify-center min-h-screen bg-theme-base text-white p-4 text-center">
-          <Activity size={48} className="text-theme-primary animate-pulse mb-4" />
-          <h2 className="text-2xl font-black text-white">Carregando Login...</h2>
-        </div>
-      }>
-        <Login />
-      </Suspense>
-    );
+    return <Login />;
   }
 
   // 3. Se estiver autenticado, mas o banco offline ainda está carregando
@@ -99,25 +90,17 @@ function AppContent() {
         />
       )}
 
-      {/* App Router */}
-
+      {/* App Router com resposta síncrona instantânea (0ms) */}
       <Router>
-        <Suspense fallback={
-          <div className="flex flex-col items-center justify-center min-h-[300px] w-full text-center text-theme-text-muted">
-            <Activity size={32} className="animate-spin text-theme-primary mb-2" />
-            <p className="text-sm font-medium">Carregando tela...</p>
-          </div>
-        }>
-          <Routes>
-            <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-              <Route index element={<Dashboard />} />
-              <Route path="birds" element={<Birds />} />
-              <Route path="lots" element={<Lots />} />
-              <Route path="eggs" element={<Eggs />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+            <Route index element={<Dashboard />} />
+            <Route path="birds" element={<Birds />} />
+            <Route path="lots" element={<Lots />} />
+            <Route path="eggs" element={<Eggs />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Routes>
       </Router>
     </>
   );
