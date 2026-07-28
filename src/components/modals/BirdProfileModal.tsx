@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Camera, GitBranch, Activity, Info, Edit2, Syringe, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { 
+  Camera, GitBranch, Activity, Info, Edit2, Syringe, 
+  ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
+  AlertCircle, UserPlus, X 
+} from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
@@ -11,6 +15,7 @@ function PedigreeTreeNode({
   externalName,
   genderHint,
   onSelect,
+  onLinkClick,
 }: {
   label: string;
   bird?: any;
@@ -18,10 +23,11 @@ function PedigreeTreeNode({
   externalName?: string;
   genderHint?: 'Macho' | 'Fêmea';
   onSelect?: (id: string) => void;
+  onLinkClick?: () => void;
 }) {
   if (isExternal && externalName) {
     return (
-      <div className="p-2.5 bg-theme-base/70 border border-amber-500/40 rounded-xl flex items-center gap-2.5 min-w-[130px] max-w-[160px] shadow-sm">
+      <div className="p-2.5 bg-theme-base/70 border border-amber-500/40 rounded-xl flex items-center gap-2.5 min-w-[130px] max-w-[165px] shadow-sm relative group">
         <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xs shrink-0 font-bold">
           {genderHint === 'Macho' ? '🐓' : '🐔'}
         </div>
@@ -29,6 +35,15 @@ function PedigreeTreeNode({
           <span className="text-[9px] font-black text-amber-400 uppercase tracking-tight block truncate">{label} (Ext.)</span>
           <p className="text-xs font-bold text-white truncate">{externalName}</p>
         </div>
+        {onLinkClick && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onLinkClick(); }}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-theme-surface border border-theme-primary text-theme-primary hover:bg-theme-primary hover:text-black flex items-center justify-center text-[10px] font-bold shadow transition-all opacity-0 group-hover:opacity-100"
+            title="Alterar vínculo"
+          >
+            ✏️
+          </button>
+        )}
       </div>
     );
   }
@@ -38,7 +53,7 @@ function PedigreeTreeNode({
     return (
       <div 
         onClick={() => onSelect && onSelect(bird.id)}
-        className={`p-2.5 bg-theme-base/80 hover:bg-theme-primary/10 border ${isMale ? 'border-blue-500/40 hover:border-blue-400' : 'border-pink-500/40 hover:border-pink-400'} rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 shadow-md group`}
+        className={`p-2.5 bg-theme-base/80 hover:bg-theme-primary/10 border ${isMale ? 'border-blue-500/40 hover:border-blue-400' : 'border-pink-500/40 hover:border-pink-400'} rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 shadow-md group relative`}
       >
         <div className={`w-8 h-8 rounded-full border ${isMale ? 'border-blue-500' : 'border-pink-500'} bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-inner`}>
           {(bird.imagem || bird.imagens?.[0]) ? (
@@ -54,19 +69,34 @@ function PedigreeTreeNode({
           <p className="text-xs font-black text-white truncate group-hover:text-theme-primary transition-colors">{bird.anilha}</p>
           {bird.nome && <p className="text-[10px] text-theme-text-muted truncate">{bird.nome}</p>}
         </div>
+        {onLinkClick && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onLinkClick(); }}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-theme-surface border border-theme-border text-theme-text-muted hover:border-theme-primary hover:text-theme-primary flex items-center justify-center text-[10px] font-bold shadow transition-all opacity-0 group-hover:opacity-100"
+            title="Alterar vínculo"
+          >
+            ✏️
+          </button>
+        )}
       </div>
     );
   }
 
-  // Unfilled branch node
+  // Unfilled branch node with clickable (+) link trigger
   return (
-    <div className="p-2.5 bg-theme-base/20 border border-dashed border-theme-border/60 rounded-xl flex items-center gap-2.5 min-w-[130px] max-w-[160px] opacity-60">
-      <div className="w-8 h-8 rounded-full border border-dashed border-theme-border flex items-center justify-center text-xs text-theme-text-muted shrink-0">
-        ❓
+    <div 
+      onClick={onLinkClick}
+      className="p-2.5 bg-theme-base/30 hover:bg-theme-primary/10 border border-dashed border-theme-primary/50 hover:border-theme-primary rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 group shadow-sm"
+      title={`Clique para vincular ${label}`}
+    >
+      <div className="w-8 h-8 rounded-full border border-dashed border-theme-primary/70 bg-theme-primary/10 flex items-center justify-center text-xs text-theme-primary shrink-0 group-hover:scale-110 transition-transform">
+        <Plus size={14} />
       </div>
       <div className="min-w-0 flex-1">
-        <span className="text-[9px] font-bold text-theme-text-muted uppercase block tracking-wider truncate">{label}</span>
-        <p className="text-[10px] text-theme-text-muted italic truncate">Não cadastrado</p>
+        <span className="text-[9px] font-black text-theme-primary uppercase block tracking-wider truncate">{label}</span>
+        <p className="text-[10px] text-theme-primary font-bold truncate group-hover:text-white flex items-center gap-1">
+          <span>➕ Vincular</span>
+        </p>
       </div>
     </div>
   );
@@ -76,8 +106,24 @@ export function BirdProfileModal() {
   const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
+  // ── States para modal interativo de vínculo direto na árvore ──
+  const [linkingTarget, setLinkingTarget] = useState<{
+    targetBirdId: string;
+    role: 'pai' | 'mae' | 'avo_paterno' | 'avo_paterna' | 'avo_materno' | 'avo_materna';
+    roleLabel: string;
+    genderRequired: 'Macho' | 'Fêmea';
+  } | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [confirmingCandidate, setConfirmingCandidate] = useState<any | null>(null);
+  const [isExternalTab, setIsExternalTab] = useState(false);
+  const [externalInput, setExternalInput] = useState('');
+
   useEffect(() => {
     setCurrentImgIndex(0);
+    setLinkingTarget(null);
+    setConfirmingCandidate(null);
+    setSearchQuery('');
   }, [selectedBirdProfileId]);
 
   if (!selectedBirdProfileId) return null;
@@ -125,9 +171,55 @@ export function BirdProfileModal() {
     setCurrentImgIndex(prev => (prev - 1 + images.length) % images.length);
   };
 
+  // Executa a vinculação confirmada de uma ave parente
+  const handleConfirmLink = (candidate: any) => {
+    if (!linkingTarget) return;
+
+    const { targetBirdId, role } = linkingTarget;
+
+    if (role === 'pai') {
+      editBird(targetBirdId, { paiId: candidate.id, isPaiExterno: false });
+    } else if (role === 'mae') {
+      editBird(targetBirdId, { maeId: candidate.id, isMaeExterno: false });
+    } else if (role === 'avo_paterno') {
+      editBird(targetBirdId, { paiId: candidate.id, isPaiExterno: false });
+    } else if (role === 'avo_paterna') {
+      editBird(targetBirdId, { maeId: candidate.id, isMaeExterno: false });
+    } else if (role === 'avo_materno') {
+      editBird(targetBirdId, { paiId: candidate.id, isPaiExterno: false });
+    } else if (role === 'avo_materna') {
+      editBird(targetBirdId, { maeId: candidate.id, isMaeExterno: false });
+    }
+
+    setLinkingTarget(null);
+    setConfirmingCandidate(null);
+    setSearchQuery('');
+  };
+
+  // Executa a vinculação de parente externo
+  const handleConfirmExternalLink = () => {
+    if (!linkingTarget || !externalInput.trim()) return;
+
+    const { targetBirdId, role } = linkingTarget;
+    const val = externalInput.trim();
+
+    if (role === 'pai' || role === 'avo_paterno' || role === 'avo_materno') {
+      editBird(targetBirdId, { paiId: val, isPaiExterno: true });
+    } else if (role === 'mae' || role === 'avo_paterna' || role === 'avo_materna') {
+      editBird(targetBirdId, { maeId: val, isMaeExterno: true });
+    }
+
+    setLinkingTarget(null);
+    setConfirmingCandidate(null);
+    setExternalInput('');
+    setSearchQuery('');
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] gpu-accelerated animate-scale-up">
+      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] gpu-accelerated animate-scale-up relative">
+        
+        {/* Header */}
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
           <div className="flex items-center gap-4">
@@ -340,7 +432,7 @@ export function BirdProfileModal() {
               </div>
             )}
 
-            {/* ── ASCENDÊNCIA, PEDIGREE & RAMIFICAÇÃO DA ÁRVORE GENEALÓGICA ── */}
+            {/* ── ASCENDÊNCIA, PEDIGREE & RAMIFICAÇÃO INTERATIVA DA ÁRVORE GENEALÓGICA ── */}
             {(() => {
               const inbreedingF = calculateInbreedingCoefficient(bird.id, birds);
               const relatedList = findRelatedBirds(bird, birds);
@@ -380,17 +472,17 @@ export function BirdProfileModal() {
                   <div className="bg-theme-base p-4 border-b border-theme-border flex flex-wrap justify-between items-center gap-2">
                     <div>
                       <h4 className="font-black text-white flex items-center gap-2 text-base">
-                        <GitBranch size={18} className="text-theme-primary" /> Árvore Genealógica (Pedigree em Ramificação)
+                        <GitBranch size={18} className="text-theme-primary" /> Árvore Genealógica (Pedigree Interativo)
                       </h4>
                       <p className="text-xs text-theme-text-muted mt-0.5">
-                        Diagrama de ramificação zootécnica de 3 Gerações
+                        Clique em qualquer ramo desimpedido ➕ para vincular a ave correspondente
                       </p>
                     </div>
                     <button 
                       onClick={() => openAddBirdModal('', bird.id)}
                       className="text-xs text-theme-primary hover:text-orange-400 font-bold uppercase transition-colors px-3 py-1.5 rounded-xl border border-theme-primary/30 bg-theme-primary/10 hover:bg-theme-primary/20"
                     >
-                      Editar Pais
+                      Editar Formulário
                     </button>
                   </div>
 
@@ -412,11 +504,16 @@ export function BirdProfileModal() {
                       </p>
                     </div>
 
-                    {/* ── 🌳 DIAGRAMA RAMIFICADO DA ÁRVORE GENEALÓGICA ── */}
+                    {/* ── 🌳 DIAGRAMA RAMIFICADO INTERATIVO DA ÁRVORE GENEALÓGICA ── */}
                     <div className="space-y-2">
-                      <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <span>🌳</span> Ramificação Genealógica (Ave · Pais · Avós)
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                          <span>🌳</span> Ramificação Genealógica (Ave · Pais · Avós)
+                        </p>
+                        <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
+                          <UserPlus size={12} /> Clique no ramo para vincular
+                        </span>
+                      </div>
 
                       <div className="w-full overflow-x-auto pb-4 pt-1 smooth-scroll">
                         <div className="min-w-[660px] p-4 bg-theme-base/60 border border-theme-border rounded-2xl flex items-center justify-start sm:justify-center gap-3 relative select-none">
@@ -453,7 +550,13 @@ export function BirdProfileModal() {
                                 isExternal={bird.isPaiExterno} 
                                 externalName={bird.paiId} 
                                 genderHint="Macho" 
-                                onSelect={openBirdProfile} 
+                                onSelect={openBirdProfile}
+                                onLinkClick={() => setLinkingTarget({
+                                  targetBirdId: bird.id,
+                                  role: 'pai',
+                                  roleLabel: 'Pai (Reprodutor)',
+                                  genderRequired: 'Macho',
+                                })}
                               />
 
                               <div className="w-4 h-0.5 bg-blue-500/50 shrink-0" />
@@ -465,7 +568,25 @@ export function BirdProfileModal() {
                                   isExternal={fatherBird?.isPaiExterno}
                                   externalName={fatherBird?.paiId}
                                   genderHint="Macho" 
-                                  onSelect={openBirdProfile} 
+                                  onSelect={openBirdProfile}
+                                  onLinkClick={() => {
+                                    if (!fatherBird) {
+                                      alert('⚠️ Para vincular o Avô Paterno, vincule primeiro o Pai da ave!');
+                                      setLinkingTarget({
+                                        targetBirdId: bird.id,
+                                        role: 'pai',
+                                        roleLabel: 'Pai (Reprodutor)',
+                                        genderRequired: 'Macho',
+                                      });
+                                    } else {
+                                      setLinkingTarget({
+                                        targetBirdId: fatherBird.id,
+                                        role: 'avo_paterno',
+                                        roleLabel: `Avô Paterno (Pai de ${fatherBird.anilha})`,
+                                        genderRequired: 'Macho',
+                                      });
+                                    }
+                                  }}
                                 />
                                 <PedigreeTreeNode 
                                   label="Avó Paterna" 
@@ -473,7 +594,25 @@ export function BirdProfileModal() {
                                   isExternal={fatherBird?.isMaeExterno}
                                   externalName={fatherBird?.maeId}
                                   genderHint="Fêmea" 
-                                  onSelect={openBirdProfile} 
+                                  onSelect={openBirdProfile}
+                                  onLinkClick={() => {
+                                    if (!fatherBird) {
+                                      alert('⚠️ Para vincular a Avó Paterna, vincule primeiro o Pai da ave!');
+                                      setLinkingTarget({
+                                        targetBirdId: bird.id,
+                                        role: 'pai',
+                                        roleLabel: 'Pai (Reprodutor)',
+                                        genderRequired: 'Macho',
+                                      });
+                                    } else {
+                                      setLinkingTarget({
+                                        targetBirdId: fatherBird.id,
+                                        role: 'avo_paterna',
+                                        roleLabel: `Avó Paterna (Mãe de ${fatherBird.anilha})`,
+                                        genderRequired: 'Fêmea',
+                                      });
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -486,7 +625,13 @@ export function BirdProfileModal() {
                                 isExternal={bird.isMaeExterno} 
                                 externalName={bird.maeId} 
                                 genderHint="Fêmea" 
-                                onSelect={openBirdProfile} 
+                                onSelect={openBirdProfile}
+                                onLinkClick={() => setLinkingTarget({
+                                  targetBirdId: bird.id,
+                                  role: 'mae',
+                                  roleLabel: 'Mãe (Matriz)',
+                                  genderRequired: 'Fêmea',
+                                })}
                               />
 
                               <div className="w-4 h-0.5 bg-pink-500/50 shrink-0" />
@@ -498,7 +643,25 @@ export function BirdProfileModal() {
                                   isExternal={motherBird?.isPaiExterno}
                                   externalName={motherBird?.paiId}
                                   genderHint="Macho" 
-                                  onSelect={openBirdProfile} 
+                                  onSelect={openBirdProfile}
+                                  onLinkClick={() => {
+                                    if (!motherBird) {
+                                      alert('⚠️ Para vincular o Avô Materno, vincule primeiro a Mãe da ave!');
+                                      setLinkingTarget({
+                                        targetBirdId: bird.id,
+                                        role: 'mae',
+                                        roleLabel: 'Mãe (Matriz)',
+                                        genderRequired: 'Fêmea',
+                                      });
+                                    } else {
+                                      setLinkingTarget({
+                                        targetBirdId: motherBird.id,
+                                        role: 'avo_materno',
+                                        roleLabel: `Avô Materno (Pai de ${motherBird.anilha})`,
+                                        genderRequired: 'Macho',
+                                      });
+                                    }
+                                  }}
                                 />
                                 <PedigreeTreeNode 
                                   label="Avó Materna" 
@@ -506,7 +669,25 @@ export function BirdProfileModal() {
                                   isExternal={motherBird?.isMaeExterno}
                                   externalName={motherBird?.maeId}
                                   genderHint="Fêmea" 
-                                  onSelect={openBirdProfile} 
+                                  onSelect={openBirdProfile}
+                                  onLinkClick={() => {
+                                    if (!motherBird) {
+                                      alert('⚠️ Para vincular a Avó Materna, vincule primeiro a Mãe da ave!');
+                                      setLinkingTarget({
+                                        targetBirdId: bird.id,
+                                        role: 'mae',
+                                        roleLabel: 'Mãe (Matriz)',
+                                        genderRequired: 'Fêmea',
+                                      });
+                                    } else {
+                                      setLinkingTarget({
+                                        targetBirdId: motherBird.id,
+                                        role: 'avo_materna',
+                                        roleLabel: `Avó Materna (Mãe de ${motherBird.anilha})`,
+                                        genderRequired: 'Fêmea',
+                                      });
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -567,7 +748,7 @@ export function BirdProfileModal() {
 
                     {relatedList.length === 0 && !bird.paiId && !bird.maeId && (
                       <div className="p-6 text-center text-theme-text-muted text-xs italic bg-theme-base/30 rounded-xl border border-theme-border/40 border-dashed">
-                        Nenhum parente cadastrado para esta ave. A estrutura da árvore permanece disponível para quando você cadastrar ou vincular os pais.
+                        Nenhum parente cadastrado. Clique no botão ➕ de qualquer ramo acima para vincular os pais e avós!
                       </div>
                     )}
                   </div>
@@ -576,6 +757,214 @@ export function BirdProfileModal() {
             })()}
           </div>
         </div>
+
+        {/* ── MODAL FLUTUANTE DE SELEÇÃO E CONFIRMAÇÃO DE VÍNCULO DIRETO ── */}
+        {linkingTarget && (
+          <div className="absolute inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 animate-fade-in">
+            <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+              
+              {/* Header do Seletor */}
+              <div className="p-4 border-b border-theme-border flex items-center justify-between bg-theme-base/60">
+                <div className="flex items-center gap-2">
+                  <UserPlus size={18} className="text-theme-primary" />
+                  <h4 className="font-black text-white text-sm">
+                    Vincular <span className="text-theme-primary">{linkingTarget.roleLabel}</span>
+                  </h4>
+                </div>
+                <button 
+                  onClick={() => { setLinkingTarget(null); setConfirmingCandidate(null); }}
+                  className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Tabs: No Criatório vs Fora do Criatório */}
+              <div className="flex border-b border-theme-border bg-theme-base/30">
+                <button
+                  onClick={() => setIsExternalTab(false)}
+                  className={`flex-1 py-2.5 text-xs font-bold transition-colors border-b-2 ${
+                    !isExternalTab ? 'border-theme-primary text-theme-primary bg-theme-primary/5' : 'border-transparent text-theme-text-muted hover:text-white'
+                  }`}
+                >
+                  🐔 Ave no Criatório ({linkingTarget.genderRequired})
+                </button>
+                <button
+                  onClick={() => setIsExternalTab(true)}
+                  className={`flex-1 py-2.5 text-xs font-bold transition-colors border-b-2 ${
+                    isExternalTab ? 'border-theme-primary text-theme-primary bg-theme-primary/5' : 'border-transparent text-theme-text-muted hover:text-white'
+                  }`}
+                >
+                  📝 Parente Externo (Fora do Criatório)
+                </button>
+              </div>
+
+              {/* Conteúdo da Tab */}
+              <div className="p-4 flex-1 overflow-y-auto space-y-3">
+                {!isExternalTab ? (
+                  <>
+                    {/* Barra de pesquisa de aves */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" />
+                      <input 
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={`Buscar por Anilha, Nome, Raça ou Baia...`}
+                        className="w-full pl-9 pr-3 py-2 bg-theme-base border border-theme-border rounded-xl text-xs text-white placeholder-theme-text-muted outline-none focus:border-theme-primary transition-all"
+                      />
+                    </div>
+
+                    {/* Lista de Aves Candidatas */}
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 smooth-scroll">
+                      {(() => {
+                        const candidates = birds.filter(b => {
+                          // Exclui a própria ave alvo
+                          if (b.id === linkingTarget.targetBirdId) return false;
+                          if (b.id === bird.id) return false;
+                          
+                          // Filtro de Busca
+                          if (searchQuery.trim()) {
+                            const q = searchQuery.toLowerCase();
+                            const matches = (
+                              b.anilha.toLowerCase().includes(q) ||
+                              (b.nome && b.nome.toLowerCase().includes(q)) ||
+                              (b.raca && b.raca.toLowerCase().includes(q)) ||
+                              (b.baia && b.baia.toLowerCase().includes(q))
+                            );
+                            if (!matches) return false;
+                          }
+
+                          return true;
+                        }).sort((a, b) => {
+                          // Prioriza o gênero recomendado no topo
+                          const aGenderMatch = a.sexo === linkingTarget.genderRequired ? 1 : 0;
+                          const bGenderMatch = b.sexo === linkingTarget.genderRequired ? 1 : 0;
+                          return bGenderMatch - aGenderMatch;
+                        });
+
+                        if (candidates.length === 0) {
+                          return (
+                            <div className="p-6 text-center text-theme-text-muted text-xs italic bg-theme-base/20 rounded-xl border border-theme-border/40">
+                              Nenhuma ave encontrada com esse filtro.
+                            </div>
+                          );
+                        }
+
+                        return candidates.map(c => {
+                          const isGenderMatch = c.sexo === linkingTarget.genderRequired;
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => setConfirmingCandidate(c)}
+                              className={`p-3 bg-theme-base/60 hover:bg-theme-primary/10 border ${
+                                confirmingCandidate?.id === c.id ? 'border-theme-primary bg-theme-primary/10' : 'border-theme-border/60 hover:border-theme-primary/30'
+                              } rounded-xl cursor-pointer flex items-center justify-between gap-3 transition-all`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={`w-9 h-9 rounded-full border ${isGenderMatch ? (c.sexo === 'Macho' ? 'border-blue-500' : 'border-pink-500') : 'border-theme-border'} bg-theme-surface flex items-center justify-center overflow-hidden shrink-0`}>
+                                  {(c.imagem || c.imagens?.[0]) ? (
+                                    <img src={c.imagem || c.imagens?.[0]} className="w-full h-full object-cover" alt="" />
+                                  ) : (
+                                    <span className="text-sm">{c.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-bold text-white text-xs truncate">{c.anilha}</p>
+                                    <span className={`text-[8px] font-black px-1.5 py-0.2 rounded border ${
+                                      c.sexo === 'Macho' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-pink-500/20 text-pink-400 border-pink-500/30'
+                                    }`}>
+                                      {c.sexo}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-theme-text-muted truncate">
+                                    {c.nome ? `${c.nome} · ` : ''}{c.raca || 'Sem raça'} {c.baia ? `(Baia ${c.baia})` : ''}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button className="px-3 py-1 rounded-lg bg-theme-primary/10 border border-theme-primary/30 text-theme-primary hover:bg-theme-primary hover:text-black font-black text-[10px] uppercase transition-all shrink-0">
+                                Selecionar
+                              </button>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-3 p-2">
+                    <p className="text-xs text-theme-text-muted leading-relaxed font-medium">
+                      Caso o {linkingTarget.roleLabel.toLowerCase()} pertença a outro criatório ou não esteja cadastrado na plataforma, digite o nome/anilha de identificação externa abaixo:
+                    </p>
+                    <input 
+                      type="text"
+                      value={externalInput}
+                      onChange={(e) => setExternalInput(e.target.value)}
+                      placeholder={`Ex: Reprodutor Galo Mura 01 (Granja X)`}
+                      className="w-full px-3.5 py-2.5 bg-theme-base border border-theme-border rounded-xl text-xs text-white placeholder-theme-text-muted outline-none focus:border-theme-primary transition-all font-bold"
+                    />
+                    <button
+                      onClick={handleConfirmExternalLink}
+                      disabled={!externalInput.trim()}
+                      className="w-full py-2.5 bg-theme-primary hover:bg-amber-400 disabled:opacity-50 text-black font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <Check size={14} />
+                      <span>Salvar Parente Externo</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Box de Confirmação Final quando uma ave é selecionada */}
+              {confirmingCandidate && !isExternalTab && (
+                <div className="p-4 border-t border-theme-border bg-theme-base/90 space-y-3 animate-slide-up">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                    <AlertCircle size={16} />
+                    <span>Confirmar Vinculação na Árvore Genealógica?</span>
+                  </div>
+
+                  <div className="p-3 bg-theme-surface border border-theme-primary/40 rounded-xl flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full border border-theme-primary overflow-hidden shrink-0">
+                      {(confirmingCandidate.imagem || confirmingCandidate.imagens?.[0]) ? (
+                        <img src={confirmingCandidate.imagem || confirmingCandidate.imagens?.[0]} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        <span className="text-lg">{confirmingCandidate.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-white">
+                        {confirmingCandidate.anilha} {confirmingCandidate.nome ? `(${confirmingCandidate.nome})` : ''}
+                      </p>
+                      <p className="text-[10px] text-theme-primary font-bold">
+                        Vincular como <strong className="uppercase">{linkingTarget.roleLabel}</strong> da ave <strong className="text-white">{bird.anilha}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => setConfirmingCandidate(null)}
+                      className="flex-1 py-2 bg-theme-base border border-theme-border text-xs font-bold text-theme-text-muted hover:text-white rounded-xl transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleConfirmLink(confirmingCandidate)}
+                      className="flex-1 py-2 bg-theme-primary hover:bg-amber-400 text-black font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
+                    >
+                      <Check size={14} />
+                      <span>Confirmar Vinculação</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
