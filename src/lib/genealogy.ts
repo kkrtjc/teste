@@ -22,12 +22,14 @@ export type RelationshipType =
   | 'Sobrinho'
   | 'Sobrinha'
   | 'Neto'
-  | 'Neta';
+  | 'Neta'
+  | 'Primo'
+  | 'Prima';
 
 export type RelatedBirdInfo = {
   bird: Bird;
   relationship: RelationshipType;
-  relationshipGroup: 'Pais' | 'Irmãos' | 'Avós' | 'Tios' | 'Filhos' | 'Sobrinhos' | 'Netos';
+  relationshipGroup: 'Pais' | 'Irmãos' | 'Avós' | 'Tios' | 'Filhos' | 'Sobrinhos' | 'Netos' | 'Primos';
   geneticsSharePercent: number;
 };
 
@@ -388,6 +390,24 @@ export function findRelatedBirds(targetBird: Bird, birds: Bird[]): RelatedBirdIn
         relationship: other.sexo === 'Macho' ? 'Neto' : 'Neta',
         relationshipGroup: 'Netos',
         geneticsSharePercent: 25
+      });
+    }
+  });
+
+  // 8. PRIMOS E PRIMAS (Filhos dos Tios)
+  birds.forEach(other => {
+    if (other.id === targetId || addedIds.has(other.id)) return;
+    const oPai = other.paiId && !other.isPaiExterno ? other.paiId : null;
+    const oMae = other.maeId && !other.isMaeExterno ? other.maeId : null;
+
+    const uncleIds = new Set(results.filter(r => r.relationshipGroup === 'Tios').map(r => r.bird.id));
+    if ((oPai && uncleIds.has(oPai)) || (oMae && uncleIds.has(oMae))) {
+      addedIds.add(other.id);
+      results.push({
+        bird: other,
+        relationship: other.sexo === 'Macho' ? 'Primo' : 'Prima',
+        relationshipGroup: 'Primos',
+        geneticsSharePercent: 12.5
       });
     }
   });

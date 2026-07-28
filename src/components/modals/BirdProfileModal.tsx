@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
-  AlertCircle, UserPlus, X 
+  AlertCircle, UserPlus, X
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
@@ -14,6 +14,7 @@ function PedigreeTreeNode({
   isExternal,
   externalName,
   genderHint,
+  badgeText,
   onSelect,
   onLinkClick,
 }: {
@@ -22,12 +23,13 @@ function PedigreeTreeNode({
   isExternal?: boolean;
   externalName?: string;
   genderHint?: 'Macho' | 'Fêmea';
+  badgeText?: string;
   onSelect?: (id: string) => void;
   onLinkClick?: () => void;
 }) {
   if (isExternal && externalName) {
     return (
-      <div className="p-2.5 bg-theme-base/70 border border-amber-500/40 rounded-xl flex items-center gap-2.5 min-w-[130px] max-w-[165px] shadow-sm relative group">
+      <div className="p-2.5 bg-theme-base/70 border border-amber-500/40 rounded-xl flex items-center gap-2.5 min-w-[135px] max-w-[170px] shadow-sm relative group shrink-0">
         <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xs shrink-0 font-bold">
           {genderHint === 'Macho' ? '🐓' : '🐔'}
         </div>
@@ -53,7 +55,7 @@ function PedigreeTreeNode({
     return (
       <div 
         onClick={() => onSelect && onSelect(bird.id)}
-        className={`p-2.5 bg-theme-base/80 hover:bg-theme-primary/10 border ${isMale ? 'border-blue-500/40 hover:border-blue-400' : 'border-pink-500/40 hover:border-pink-400'} rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 shadow-md group relative`}
+        className={`p-2.5 bg-theme-base/80 hover:bg-theme-primary/10 border ${isMale ? 'border-blue-500/40 hover:border-blue-400' : 'border-pink-500/40 hover:border-pink-400'} rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[140px] max-w-[175px] transition-all duration-300 shadow-md group relative shrink-0`}
       >
         <div className={`w-8 h-8 rounded-full border ${isMale ? 'border-blue-500' : 'border-pink-500'} bg-theme-surface flex items-center justify-center overflow-hidden shrink-0 shadow-inner`}>
           {(bird.imagem || bird.imagens?.[0]) ? (
@@ -63,9 +65,16 @@ function PedigreeTreeNode({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <span className={`text-[9px] font-black uppercase tracking-wider block truncate ${isMale ? 'text-blue-400' : 'text-pink-400'}`}>
-            {label}
-          </span>
+          <div className="flex items-center justify-between gap-1">
+            <span className={`text-[9px] font-black uppercase tracking-wider block truncate ${isMale ? 'text-blue-400' : 'text-pink-400'}`}>
+              {label}
+            </span>
+            {badgeText && (
+              <span className="text-[7.5px] font-extrabold bg-theme-primary/15 text-theme-primary px-1 py-0.2 rounded border border-theme-primary/30 shrink-0">
+                {badgeText}
+              </span>
+            )}
+          </div>
           <p className="text-xs font-black text-white truncate group-hover:text-theme-primary transition-colors">{bird.anilha}</p>
           {bird.nome && <p className="text-[10px] text-theme-text-muted truncate">{bird.nome}</p>}
         </div>
@@ -86,7 +95,7 @@ function PedigreeTreeNode({
   return (
     <div 
       onClick={onLinkClick}
-      className="p-2.5 bg-theme-base/30 hover:bg-theme-primary/10 border border-dashed border-theme-primary/50 hover:border-theme-primary rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 group shadow-sm"
+      className="p-2.5 bg-theme-base/30 hover:bg-theme-primary/10 border border-dashed border-theme-primary/50 hover:border-theme-primary rounded-xl cursor-pointer flex items-center gap-2.5 min-w-[135px] max-w-[165px] transition-all duration-300 group shadow-sm shrink-0"
       title={`Clique para vincular ${label}`}
     >
       <div className="w-8 h-8 rounded-full border border-dashed border-theme-primary/70 bg-theme-primary/10 flex items-center justify-center text-xs text-theme-primary shrink-0 group-hover:scale-110 transition-transform">
@@ -105,6 +114,7 @@ function PedigreeTreeNode({
 export function BirdProfileModal() {
   const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [treeTab, setTreeTab] = useState<'all' | 'ancestors' | 'colaterals' | 'descendants'>('all');
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -432,7 +442,7 @@ export function BirdProfileModal() {
               </div>
             )}
 
-            {/* ── ASCENDÊNCIA, PEDIGREE & RAMIFICAÇÃO INTERATIVA DA ÁRVORE GENEALÓGICA ── */}
+            {/* ── 🌳 ARVORE GENEALÓGICA INTEGRADA E COMPLETA (360° TODOS OS PARENTES NAS RAMIFICAÇÕES) ── */}
             {(() => {
               const inbreedingF = calculateInbreedingCoefficient(bird.id, birds);
               const relatedList = findRelatedBirds(bird, birds);
@@ -447,16 +457,17 @@ export function BirdProfileModal() {
               const maternalGrandfather = motherBird?.paiId && !motherBird.isPaiExterno ? birds.find(b => b.id === motherBird.paiId) : null;
               const maternalGrandmother = motherBird?.maeId && !motherBird.isMaeExterno ? birds.find(b => b.id === motherBird.maeId) : null;
 
-              // Agrupa os outros parentes por categoria
-              const groups: Record<string, typeof relatedList> = {
-                'Irmãos': relatedList.filter(r => r.relationshipGroup === 'Irmãos'),
-                'Tios': relatedList.filter(r => r.relationshipGroup === 'Tios'),
-                'Filhos': relatedList.filter(r => r.relationshipGroup === 'Filhos'),
-                'Sobrinhos': relatedList.filter(r => r.relationshipGroup === 'Sobrinhos'),
-                'Netos': relatedList.filter(r => r.relationshipGroup === 'Netos'),
-              };
+              // Detalhamento dos Grupos Relativos
+              const fullSiblings = relatedList.filter(r => r.relationship === 'Irmão Pleno' || r.relationship === 'Irmã Plena');
+              const paternalHalfSiblings = relatedList.filter(r => r.relationship === 'Meio-Irmão (Paterno)' || r.relationship === 'Meia-Irmã (Paterna)');
+              const maternalHalfSiblings = relatedList.filter(r => r.relationship === 'Meio-Irmão (Materno)' || r.relationship === 'Meia-Irmã (Materna)');
+              const unclesPaternal = relatedList.filter(r => r.relationship === 'Tio Paterno' || r.relationship === 'Tia Paterna');
+              const unclesMaternal = relatedList.filter(r => r.relationship === 'Tio Materno' || r.relationship === 'Tia Materna');
+              const cousins = relatedList.filter(r => r.relationshipGroup === 'Primos');
+              const children = relatedList.filter(r => r.relationshipGroup === 'Filhos');
+              const nephews = relatedList.filter(r => r.relationshipGroup === 'Sobrinhos');
+              const grandchildren = relatedList.filter(r => r.relationshipGroup === 'Netos');
 
-              // Cor visual do nível de consanguinidade
               const getInbreedingBadge = (f: number) => {
                 if (f === 0) return { label: '0.0% (Sem Endogamia Direta)', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
                 if (f <= 6.25) return { label: `${f.toFixed(1)}% (Consanguinidade Leve)`, color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' };
@@ -468,289 +479,333 @@ export function BirdProfileModal() {
 
               return (
                 <div className="border border-theme-border rounded-2xl overflow-hidden bg-theme-surface/50 shadow-lg space-y-0">
-                  {/* Banner de Header da Genealogia */}
+                  
+                  {/* Header da Árvore Genealógica */}
                   <div className="bg-theme-base p-4 border-b border-theme-border flex flex-wrap justify-between items-center gap-2">
                     <div>
                       <h4 className="font-black text-white flex items-center gap-2 text-base">
-                        <GitBranch size={18} className="text-theme-primary" /> Árvore Genealógica (Pedigree Interativo)
+                        <GitBranch size={18} className="text-theme-primary" /> Árvore Genealógica (Ramificação 360°)
                       </h4>
                       <p className="text-xs text-theme-text-muted mt-0.5">
-                        Clique em qualquer ramo desimpedido ➕ para vincular a ave correspondente
+                        Todos os parentes (Pais, Avós, Irmãos, Tios, Primos, Filhos, Sobrinhos e Netos) conectados nas ramificações
                       </p>
                     </div>
                     <button 
                       onClick={() => openAddBirdModal('', bird.id)}
                       className="text-xs text-theme-primary hover:text-orange-400 font-bold uppercase transition-colors px-3 py-1.5 rounded-xl border border-theme-primary/30 bg-theme-primary/10 hover:bg-theme-primary/20"
                     >
-                      Editar Formulário
+                      Editar Registros
                     </button>
                   </div>
 
-                  <div className="p-4 space-y-5">
-                    {/* Badge do Coeficiente de Consanguinidade (Wright's F) */}
-                    <div className="p-4 rounded-xl bg-theme-base/60 border border-theme-border space-y-2">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1.5">
-                          🧬 Coeficiente de Consanguinidade (Wright):
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-black border ${fBadge.color}`}>
-                          {fBadge.label}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-theme-text-muted leading-relaxed">
-                        {inbreedingF === 0
-                          ? 'Esta ave não possui ancestrais em comum diretos mapeados na linhagem.'
-                          : `Mede o nível de endogamia (acasalamento entre parentes). ${inbreedingF >= 25 ? '⚠️ Nível alto: recomendado cruzar com linhagem distante.' : ''}`}
-                      </p>
+                  <div className="p-4 space-y-4">
+                    {/* Coeficiente de Consanguinidade */}
+                    <div className="p-3.5 rounded-xl bg-theme-base/60 border border-theme-border flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                        🧬 Coeficiente de Consanguinidade (Wright):
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-black border ${fBadge.color}`}>
+                        {fBadge.label}
+                      </span>
                     </div>
 
-                    {/* ── 🌳 DIAGRAMA RAMIFICADO INTERATIVO DA ÁRVORE GENEALÓGICA ── */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                          <span>🌳</span> Ramificação Genealógica (Ave · Pais · Avós)
-                        </p>
-                        <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                          <UserPlus size={12} /> Clique no ramo para vincular
-                        </span>
-                      </div>
+                    {/* ── BARRA DE TABS DAS RAMIFICAÇÕES ── */}
+                    <div className="flex border-b border-theme-border bg-theme-base/40 rounded-xl p-1 gap-1 overflow-x-auto">
+                      {[
+                        { id: 'all', label: '🌐 Visão Geral Completa', count: relatedList.length },
+                        { id: 'ancestors', label: '🌳 Ascendência & Tios', count: (fatherBird ? 1 : 0) + (motherBird ? 1 : 0) + unclesPaternal.length + unclesMaternal.length },
+                        { id: 'colaterals', label: '🐣 Irmãos & Primos', count: fullSiblings.length + paternalHalfSiblings.length + maternalHalfSiblings.length + cousins.length },
+                        { id: 'descendants', label: '🐥 Descendência & Sobrinhos', count: children.length + nephews.length + grandchildren.length },
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setTreeTab(tab.id as any)}
+                          className={`px-3 py-2 rounded-lg text-xs font-black transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                            treeTab === tab.id
+                              ? 'bg-theme-primary text-black shadow-md'
+                              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${treeTab === tab.id ? 'bg-black/20 text-black' : 'bg-theme-border text-white'}`}>
+                            {tab.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
 
-                      <div className="w-full overflow-x-auto pb-4 pt-1 smooth-scroll">
-                        <div className="min-w-[660px] p-4 bg-theme-base/60 border border-theme-border rounded-2xl flex items-center justify-start sm:justify-center gap-3 relative select-none">
+                    {/* ── VIZUALIZAÇÃO DAS RAMIFICAÇÕES DA ÁRVORE ── */}
+                    <div className="w-full overflow-x-auto pb-4 pt-1 smooth-scroll">
+                      
+                      {/* TAB 1: VISÃO GERAL COMPLETA DA ÁRVORE 360° */}
+                      {treeTab === 'all' && (
+                        <div className="min-w-[780px] p-5 bg-theme-base/60 border border-theme-border rounded-2xl flex flex-col gap-6 select-none">
                           
-                          {/* ── NÍVEL 1: AVE ALVO (Esquerda) ── */}
-                          <div className="flex flex-col items-center justify-center shrink-0 z-10">
-                            <div className="p-3 bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-theme-primary rounded-2xl flex flex-col items-center text-center shadow-[0_0_20px_rgba(245,158,11,0.2)] min-w-[130px]">
-                              <div className="w-12 h-12 rounded-full border-2 border-theme-primary bg-theme-surface flex items-center justify-center overflow-hidden mb-1 shadow-lg">
-                                {currentImage ? (
-                                  <img src={currentImage} className="w-full h-full object-cover" alt="" />
-                                ) : (
-                                  <span className="text-xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
-                                )}
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full bg-theme-primary text-black font-black text-[9px] uppercase tracking-wider mb-1 shadow-sm">
-                                Ave Alvo
-                              </span>
-                              <h5 className="font-black text-white text-xs truncate max-w-[110px]">{bird.anilha}</h5>
-                              {bird.nome && <p className="text-[10px] text-theme-primary font-bold truncate max-w-[110px]">{bird.nome}</p>}
-                            </div>
-                          </div>
-
-                          {/* Conector Central (Alvo -> Ramos Paterno/Materno) */}
-                          <div className="w-4 h-0.5 bg-theme-primary/60 shrink-0" />
-
-                          {/* ── NÍVEL 2 E 3: PAIS E AVÓS (Direita) ── */}
-                          <div className="flex flex-col gap-5 flex-1 shrink-0">
-                            
-                            {/* RAMO PATERNO (PAI + AVÓS PATERNO) */}
-                            <div className="flex items-center gap-3 relative bg-theme-surface/30 p-2.5 rounded-2xl border border-blue-500/20">
+                          {/* LINHA SUPERIOR: ASCENDÊNCIA (PAIS E AVÓS) */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">
+                              ⬆️ Ramo de Ascendência (Pais & Avós)
+                            </span>
+                            <div className="flex items-center justify-center gap-4 bg-theme-surface/40 p-3 rounded-xl border border-blue-500/20">
                               <PedigreeTreeNode 
-                                label="Pai (Reprodutor)" 
+                                label="Pai" 
                                 bird={fatherBird} 
                                 isExternal={bird.isPaiExterno} 
                                 externalName={bird.paiId} 
                                 genderHint="Macho" 
+                                badgeText="50%"
                                 onSelect={openBirdProfile}
-                                onLinkClick={() => setLinkingTarget({
-                                  targetBirdId: bird.id,
-                                  role: 'pai',
-                                  roleLabel: 'Pai (Reprodutor)',
-                                  genderRequired: 'Macho',
-                                })}
+                                onLinkClick={() => setLinkingTarget({ targetBirdId: bird.id, role: 'pai', roleLabel: 'Pai', genderRequired: 'Macho' })}
                               />
+                              <div className="w-3 h-0.5 bg-blue-500/40" />
+                              <PedigreeTreeNode label="Avô Paterno" bird={paternalGrandfather} genderHint="Macho" badgeText="25%" onSelect={openBirdProfile} />
+                              <PedigreeTreeNode label="Avó Paterna" bird={paternalGrandmother} genderHint="Fêmea" badgeText="25%" onSelect={openBirdProfile} />
 
-                              <div className="w-4 h-0.5 bg-blue-500/50 shrink-0" />
+                              <div className="w-6 h-0.5 bg-theme-border" />
 
-                              <div className="flex flex-col gap-2">
-                                <PedigreeTreeNode 
-                                  label="Avô Paterno" 
-                                  bird={paternalGrandfather} 
-                                  isExternal={fatherBird?.isPaiExterno}
-                                  externalName={fatherBird?.paiId}
-                                  genderHint="Macho" 
-                                  onSelect={openBirdProfile}
-                                  onLinkClick={() => {
-                                    if (!fatherBird) {
-                                      alert('⚠️ Para vincular o Avô Paterno, vincule primeiro o Pai da ave!');
-                                      setLinkingTarget({
-                                        targetBirdId: bird.id,
-                                        role: 'pai',
-                                        roleLabel: 'Pai (Reprodutor)',
-                                        genderRequired: 'Macho',
-                                      });
-                                    } else {
-                                      setLinkingTarget({
-                                        targetBirdId: fatherBird.id,
-                                        role: 'avo_paterno',
-                                        roleLabel: `Avô Paterno (Pai de ${fatherBird.anilha})`,
-                                        genderRequired: 'Macho',
-                                      });
-                                    }
-                                  }}
-                                />
-                                <PedigreeTreeNode 
-                                  label="Avó Paterna" 
-                                  bird={paternalGrandmother} 
-                                  isExternal={fatherBird?.isMaeExterno}
-                                  externalName={fatherBird?.maeId}
-                                  genderHint="Fêmea" 
-                                  onSelect={openBirdProfile}
-                                  onLinkClick={() => {
-                                    if (!fatherBird) {
-                                      alert('⚠️ Para vincular a Avó Paterna, vincule primeiro o Pai da ave!');
-                                      setLinkingTarget({
-                                        targetBirdId: bird.id,
-                                        role: 'pai',
-                                        roleLabel: 'Pai (Reprodutor)',
-                                        genderRequired: 'Macho',
-                                      });
-                                    } else {
-                                      setLinkingTarget({
-                                        targetBirdId: fatherBird.id,
-                                        role: 'avo_paterna',
-                                        roleLabel: `Avó Paterna (Mãe de ${fatherBird.anilha})`,
-                                        genderRequired: 'Fêmea',
-                                      });
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* RAMO MATERNO (MÃE + AVÓS MATERNO) */}
-                            <div className="flex items-center gap-3 relative bg-theme-surface/30 p-2.5 rounded-2xl border border-pink-500/20">
                               <PedigreeTreeNode 
-                                label="Mãe (Matriz)" 
+                                label="Mãe" 
                                 bird={motherBird} 
                                 isExternal={bird.isMaeExterno} 
                                 externalName={bird.maeId} 
                                 genderHint="Fêmea" 
+                                badgeText="50%"
                                 onSelect={openBirdProfile}
-                                onLinkClick={() => setLinkingTarget({
-                                  targetBirdId: bird.id,
-                                  role: 'mae',
-                                  roleLabel: 'Mãe (Matriz)',
-                                  genderRequired: 'Fêmea',
-                                })}
+                                onLinkClick={() => setLinkingTarget({ targetBirdId: bird.id, role: 'mae', roleLabel: 'Mãe', genderRequired: 'Fêmea' })}
                               />
+                              <div className="w-3 h-0.5 bg-pink-500/40" />
+                              <PedigreeTreeNode label="Avô Materno" bird={maternalGrandfather} genderHint="Macho" badgeText="25%" onSelect={openBirdProfile} />
+                              <PedigreeTreeNode label="Avó Materna" bird={maternalGrandmother} genderHint="Fêmea" badgeText="25%" onSelect={openBirdProfile} />
+                            </div>
+                          </div>
 
-                              <div className="w-4 h-0.5 bg-pink-500/50 shrink-0" />
-
-                              <div className="flex flex-col gap-2">
-                                <PedigreeTreeNode 
-                                  label="Avô Materno" 
-                                  bird={maternalGrandfather} 
-                                  isExternal={motherBird?.isPaiExterno}
-                                  externalName={motherBird?.paiId}
-                                  genderHint="Macho" 
-                                  onSelect={openBirdProfile}
-                                  onLinkClick={() => {
-                                    if (!motherBird) {
-                                      alert('⚠️ Para vincular o Avô Materno, vincule primeiro a Mãe da ave!');
-                                      setLinkingTarget({
-                                        targetBirdId: bird.id,
-                                        role: 'mae',
-                                        roleLabel: 'Mãe (Matriz)',
-                                        genderRequired: 'Fêmea',
-                                      });
-                                    } else {
-                                      setLinkingTarget({
-                                        targetBirdId: motherBird.id,
-                                        role: 'avo_materno',
-                                        roleLabel: `Avô Materno (Pai de ${motherBird.anilha})`,
-                                        genderRequired: 'Macho',
-                                      });
-                                    }
-                                  }}
-                                />
-                                <PedigreeTreeNode 
-                                  label="Avó Materna" 
-                                  bird={maternalGrandmother} 
-                                  isExternal={motherBird?.isMaeExterno}
-                                  externalName={motherBird?.maeId}
-                                  genderHint="Fêmea" 
-                                  onSelect={openBirdProfile}
-                                  onLinkClick={() => {
-                                    if (!motherBird) {
-                                      alert('⚠️ Para vincular a Avó Materna, vincule primeiro a Mãe da ave!');
-                                      setLinkingTarget({
-                                        targetBirdId: bird.id,
-                                        role: 'mae',
-                                        roleLabel: 'Mãe (Matriz)',
-                                        genderRequired: 'Fêmea',
-                                      });
-                                    } else {
-                                      setLinkingTarget({
-                                        targetBirdId: motherBird.id,
-                                        role: 'avo_materna',
-                                        roleLabel: `Avó Materna (Mãe de ${motherBird.anilha})`,
-                                        genderRequired: 'Fêmea',
-                                      });
-                                    }
-                                  }}
-                                />
+                          {/* LINHA CENTRAL: AVE ALVO + IRMÃOS + TIOS + PRIMOS */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Ramo Irmãos */}
+                            <div className="p-3 bg-theme-surface/30 rounded-xl border border-purple-500/20 space-y-2">
+                              <span className="text-[10px] font-black text-purple-400 uppercase tracking-wider block">
+                                ↔️ Irmãos & Meios-Irmãos ({fullSiblings.length + paternalHalfSiblings.length + maternalHalfSiblings.length})
+                              </span>
+                              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 smooth-scroll">
+                                {fullSiblings.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Irmão Pleno" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
+                                ))}
+                                {paternalHalfSiblings.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Meio-Irmão (Paterno)" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {maternalHalfSiblings.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Meio-Irmão (Materno)" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {fullSiblings.length === 0 && paternalHalfSiblings.length === 0 && maternalHalfSiblings.length === 0 && (
+                                  <p className="text-[10px] text-theme-text-muted italic p-2">Sem irmãos diretos cadastrados</p>
+                                )}
                               </div>
                             </div>
 
-                          </div>
-
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* RENDERIZADOR DE OUTRAS CATEGORIAS (Irmãos, Tios, Filhos, Sobrinhos, Netos) */}
-                    {[
-                      { key: 'Irmãos', title: '🐣 Irmãos & Meios-Irmãos', color: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
-                      { key: 'Tios', title: '🐓 Tios & Tias', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' },
-                      { key: 'Filhos', title: '🐥 Filhos & Descendentes', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' },
-                      { key: 'Sobrinhos', title: '🐤 Sobrinhos & Sobrinhas', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
-                      { key: 'Netos', title: '🥚 Netos & Netas', color: 'border-teal-500/30 text-teal-400 bg-teal-500/10' },
-                    ].map(cat => {
-                      const list = groups[cat.key] || [];
-                      if (list.length === 0) return null;
-
-                      return (
-                        <div key={cat.key} className="space-y-2 border-t border-theme-border/40 pt-4">
-                          <p className="text-xs font-black text-white uppercase tracking-wider flex items-center justify-between">
-                            <span>{cat.title} ({list.length})</span>
-                          </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            {list.map(rel => (
-                              <div
-                                key={rel.bird.id}
-                                onClick={() => openBirdProfile(rel.bird.id)}
-                                className="p-3 bg-theme-base/50 hover:bg-theme-primary/10 border border-theme-border/60 hover:border-theme-primary/30 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-300 shadow-sm"
-                              >
-                                <div className="w-10 h-10 rounded-full bg-theme-surface border border-theme-border flex items-center justify-center overflow-hidden shrink-0">
-                                  {(rel.bird.imagem || rel.bird.imagens?.[0]) ? (
-                                    <img src={rel.bird.imagem || rel.bird.imagens?.[0]} className="w-full h-full object-cover" alt="" />
-                                  ) : (
-                                    <span className="text-lg">{rel.bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className="font-bold text-white text-xs truncate">{rel.bird.anilha}</p>
-                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded border ${cat.color}`}>
-                                      {rel.relationship} · {rel.geneticsSharePercent}%
-                                    </span>
-                                  </div>
-                                  <p className="text-[11px] text-theme-text-muted truncate mt-0.5">
-                                    {rel.bird.nome ? `${rel.bird.nome} · ` : ''}{rel.bird.raca || 'Sem raça'} ({rel.bird.status})
-                                  </p>
-                                </div>
+                            {/* Ave Alvo Destaque */}
+                            <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-theme-primary rounded-2xl text-center shadow-lg">
+                              <div className="w-14 h-14 rounded-full border-2 border-theme-primary bg-theme-surface flex items-center justify-center overflow-hidden mb-1.5 shadow-md">
+                                {currentImage ? (
+                                  <img src={currentImage} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                  <span className="text-2xl">{bird.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                                )}
                               </div>
-                            ))}
+                              <span className="px-2.5 py-0.5 rounded-full bg-theme-primary text-black font-black text-[9px] uppercase tracking-wider mb-1">
+                                Ave Alvo
+                              </span>
+                              <h5 className="font-black text-white text-sm truncate max-w-[140px]">{bird.anilha}</h5>
+                              {bird.nome && <p className="text-xs text-theme-primary font-bold truncate max-w-[140px]">{bird.nome}</p>}
+                            </div>
+
+                            {/* Ramo Tios & Primos */}
+                            <div className="p-3 bg-theme-surface/30 rounded-xl border border-cyan-500/20 space-y-2">
+                              <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block">
+                                ↗️ Tios & Primos ({unclesPaternal.length + unclesMaternal.length + cousins.length})
+                              </span>
+                              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 smooth-scroll">
+                                {unclesPaternal.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Tio Paterno" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {unclesMaternal.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Tio Materno" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {cousins.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Primo" bird={r.bird} badgeText="12.5%" onSelect={openBirdProfile} />
+                                ))}
+                                {unclesPaternal.length === 0 && unclesMaternal.length === 0 && cousins.length === 0 && (
+                                  <p className="text-[10px] text-theme-text-muted italic p-2">Sem tios ou primos cadastrados</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* LINHA INFERIOR: DESCENDÊNCIA (FILHOS, SOBRINHOS E NETOS) */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">
+                              ⬇️ Ramo de Descendência (Filhos, Sobrinhos & Netos)
+                            </span>
+                            <div className="flex items-center justify-center gap-4 bg-theme-surface/40 p-3 rounded-xl border border-emerald-500/20">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[9px] font-black text-emerald-400 uppercase">Filhos ({children.length})</span>
+                                {children.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Filho" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
+                                ))}
+                                {children.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem filhos</p>}
+                              </div>
+
+                              <div className="w-4 h-0.5 bg-emerald-500/40" />
+
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[9px] font-black text-indigo-400 uppercase">Sobrinhos ({nephews.length})</span>
+                                {nephews.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Sobrinho" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {nephews.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem sobrinhos</p>}
+                              </div>
+
+                              <div className="w-4 h-0.5 bg-emerald-500/40" />
+
+                              <div className="flex flex-col gap-2">
+                                <span className="text-[9px] font-black text-teal-400 uppercase">Netos ({grandchildren.length})</span>
+                                {grandchildren.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Neto" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {grandchildren.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem netos</p>}
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      )}
+
+                      {/* TAB 2: ASCENDÊNCIA E TIOS */}
+                      {treeTab === 'ancestors' && (
+                        <div className="min-w-[660px] p-4 bg-theme-base/60 border border-theme-border rounded-2xl flex items-center justify-center gap-3 relative select-none">
+                          <div className="flex flex-col items-center justify-center shrink-0">
+                            <div className="p-3 bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-theme-primary rounded-2xl flex flex-col items-center text-center shadow-lg min-w-[130px]">
+                              <span className="px-2 py-0.5 rounded-full bg-theme-primary text-black font-black text-[9px] uppercase tracking-wider mb-1">
+                                Ave Alvo
+                              </span>
+                              <h5 className="font-black text-white text-xs truncate max-w-[110px]">{bird.anilha}</h5>
+                            </div>
+                          </div>
+                          <div className="w-4 h-0.5 bg-theme-primary/60 shrink-0" />
+                          <div className="flex flex-col gap-4 flex-1">
+                            <div className="flex items-center gap-3 bg-theme-surface/30 p-2.5 rounded-2xl border border-blue-500/20">
+                              <PedigreeTreeNode label="Pai" bird={fatherBird} isExternal={bird.isPaiExterno} externalName={bird.paiId} genderHint="Macho" badgeText="50%" onSelect={openBirdProfile} />
+                              <div className="w-4 h-0.5 bg-blue-500/50" />
+                              <div className="flex flex-col gap-2">
+                                <PedigreeTreeNode label="Avô Paterno" bird={paternalGrandfather} genderHint="Macho" badgeText="25%" onSelect={openBirdProfile} />
+                                <PedigreeTreeNode label="Avó Paterna" bird={paternalGrandmother} genderHint="Fêmea" badgeText="25%" onSelect={openBirdProfile} />
+                                {unclesPaternal.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Tio Paterno" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 bg-theme-surface/30 p-2.5 rounded-2xl border border-pink-500/20">
+                              <PedigreeTreeNode label="Mãe" bird={motherBird} isExternal={bird.isMaeExterno} externalName={bird.maeId} genderHint="Fêmea" badgeText="50%" onSelect={openBirdProfile} />
+                              <div className="w-4 h-0.5 bg-pink-500/50" />
+                              <div className="flex flex-col gap-2">
+                                <PedigreeTreeNode label="Avô Materno" bird={maternalGrandfather} genderHint="Macho" badgeText="25%" onSelect={openBirdProfile} />
+                                <PedigreeTreeNode label="Avó Materna" bird={maternalGrandmother} genderHint="Fêmea" badgeText="25%" onSelect={openBirdProfile} />
+                                {unclesMaternal.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Tio Materno" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
+                      )}
 
-                    {relatedList.length === 0 && !bird.paiId && !bird.maeId && (
-                      <div className="p-6 text-center text-theme-text-muted text-xs italic bg-theme-base/30 rounded-xl border border-theme-border/40 border-dashed">
-                        Nenhum parente cadastrado. Clique no botão ➕ de qualquer ramo acima para vincular os pais e avós!
-                      </div>
-                    )}
+                      {/* TAB 3: IRMÃOS E PRIMOS */}
+                      {treeTab === 'colaterals' && (
+                        <div className="min-w-[660px] p-4 bg-theme-base/60 border border-theme-border rounded-2xl flex items-center justify-center gap-4 relative select-none">
+                          <div className="flex flex-col items-center justify-center shrink-0">
+                            <div className="p-3 bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-theme-primary rounded-2xl flex flex-col items-center text-center shadow-lg min-w-[130px]">
+                              <span className="px-2 py-0.5 rounded-full bg-theme-primary text-black font-black text-[9px] uppercase tracking-wider mb-1">
+                                Ave Alvo
+                              </span>
+                              <h5 className="font-black text-white text-xs truncate max-w-[110px]">{bird.anilha}</h5>
+                            </div>
+                          </div>
+                          <div className="w-4 h-0.5 bg-purple-500/60 shrink-0" />
+                          <div className="grid grid-cols-2 gap-3 flex-1">
+                            <div className="space-y-2 p-3 bg-theme-surface/30 rounded-xl border border-purple-500/20">
+                              <span className="text-[10px] font-black text-purple-400 uppercase">Irmãos Plenos ({fullSiblings.length})</span>
+                              {fullSiblings.map(r => (
+                                <PedigreeTreeNode key={r.bird.id} label="Irmão Pleno" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
+                              ))}
+                              {fullSiblings.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Nenhum irmão pleno</p>}
+                            </div>
+                            <div className="space-y-2 p-3 bg-theme-surface/30 rounded-xl border border-blue-500/20">
+                              <span className="text-[10px] font-black text-blue-400 uppercase">Meios-Irmãos ({paternalHalfSiblings.length + maternalHalfSiblings.length})</span>
+                              {paternalHalfSiblings.map(r => (
+                                <PedigreeTreeNode key={r.bird.id} label="Meio-Irmão (Paterno)" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                              ))}
+                              {maternalHalfSiblings.map(r => (
+                                <PedigreeTreeNode key={r.bird.id} label="Meio-Irmão (Materno)" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                              ))}
+                              {paternalHalfSiblings.length === 0 && maternalHalfSiblings.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Nenhum meio-irmão</p>}
+                            </div>
+                            <div className="col-span-2 space-y-2 p-3 bg-theme-surface/30 rounded-xl border border-cyan-500/20">
+                              <span className="text-[10px] font-black text-cyan-400 uppercase">Primos & Primas ({cousins.length})</span>
+                              <div className="flex flex-wrap gap-2">
+                                {cousins.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Primo" bird={r.bird} badgeText="12.5%" onSelect={openBirdProfile} />
+                                ))}
+                                {cousins.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Nenhum primo registrado</p>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TAB 4: DESCENDÊNCIA & SOBRINHOS */}
+                      {treeTab === 'descendants' && (
+                        <div className="min-w-[660px] p-4 bg-theme-base/60 border border-theme-border rounded-2xl flex items-center justify-center gap-4 relative select-none">
+                          <div className="flex flex-col items-center justify-center shrink-0">
+                            <div className="p-3 bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-2 border-theme-primary rounded-2xl flex flex-col items-center text-center shadow-lg min-w-[130px]">
+                              <span className="px-2 py-0.5 rounded-full bg-theme-primary text-black font-black text-[9px] uppercase tracking-wider mb-1">
+                                Ave Alvo
+                              </span>
+                              <h5 className="font-black text-white text-xs truncate max-w-[110px]">{bird.anilha}</h5>
+                            </div>
+                          </div>
+                          <div className="w-4 h-0.5 bg-emerald-500/60 shrink-0" />
+                          <div className="flex flex-col gap-3 flex-1">
+                            <div className="p-3 bg-theme-surface/30 rounded-xl border border-emerald-500/20 space-y-2">
+                              <span className="text-[10px] font-black text-emerald-400 uppercase">Filhos & Filhas ({children.length})</span>
+                              <div className="flex flex-wrap gap-2">
+                                {children.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Filho" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
+                                ))}
+                                {children.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem filhos cadastrados</p>}
+                              </div>
+                            </div>
+                            <div className="p-3 bg-theme-surface/30 rounded-xl border border-indigo-500/20 space-y-2">
+                              <span className="text-[10px] font-black text-indigo-400 uppercase">Sobrinhos & Sobrinhas ({nephews.length})</span>
+                              <div className="flex flex-wrap gap-2">
+                                {nephews.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Sobrinho" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {nephews.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem sobrinhos cadastrados</p>}
+                              </div>
+                            </div>
+                            <div className="p-3 bg-theme-surface/30 rounded-xl border border-teal-500/20 space-y-2">
+                              <span className="text-[10px] font-black text-teal-400 uppercase">Netos & Netas ({grandchildren.length})</span>
+                              <div className="flex flex-wrap gap-2">
+                                {grandchildren.map(r => (
+                                  <PedigreeTreeNode key={r.bird.id} label="Neto" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />
+                                ))}
+                                {grandchildren.length === 0 && <p className="text-[10px] text-theme-text-muted italic">Sem netos cadastrados</p>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
                   </div>
                 </div>
               );
@@ -819,11 +874,9 @@ export function BirdProfileModal() {
                     <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 smooth-scroll">
                       {(() => {
                         const candidates = birds.filter(b => {
-                          // Exclui a própria ave alvo
                           if (b.id === linkingTarget.targetBirdId) return false;
                           if (b.id === bird.id) return false;
                           
-                          // Filtro de Busca
                           if (searchQuery.trim()) {
                             const q = searchQuery.toLowerCase();
                             const matches = (
@@ -837,7 +890,6 @@ export function BirdProfileModal() {
 
                           return true;
                         }).sort((a, b) => {
-                          // Prioriza o gênero recomendado no topo
                           const aGenderMatch = a.sexo === linkingTarget.genderRequired ? 1 : 0;
                           const bGenderMatch = b.sexo === linkingTarget.genderRequired ? 1 : 0;
                           return bGenderMatch - aGenderMatch;
