@@ -170,7 +170,7 @@ function BaiaDetailOverlay({
 export function AddBirdModal() {
   const {
     isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
-    preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple
+    preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple, openBirdProfile
   } = useAppContext();
 
   // ── Form fields ──
@@ -193,6 +193,7 @@ export function AddBirdModal() {
   const [descricaoOrigem, setDescricaoOrigem] = useState('');
   const [casalId, setCasalId] = useState('');
   const [selectedVacs, setSelectedVacs] = useState<string[]>([]);
+  const [outrasVacinas, setOutrasVacinas] = useState('');
 
   // ── Steps ──
   const TOTAL_STEPS = 4;
@@ -217,7 +218,7 @@ export function AddBirdModal() {
         setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
         setBaia(b.baia); setStatus(b.status);
         setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
-        setPreviewImages(b.imagens || (b.imagem ? [b.imagem] : []));
+        setPreviewImages((b.imagens || (b.imagem ? [b.imagem] : [])).slice(0, 3));
         const orig = b.origem || 'Criatório';
         setNascidaAqui(orig !== 'Externo');
         setCasalId(b.casalId || '');
@@ -226,8 +227,14 @@ export function AddBirdModal() {
         setMaeId(b.isMaeExterno ? '' : b.maeId || '');
         setMaeExterno(b.isMaeExterno ? b.maeId || '' : '');
         setDescricaoOrigem('');
-        const parsedVacs = (b.vacinas || '').split(',').map(v => v.trim().toLowerCase());
-        setSelectedVacs(['bouba', 'marek', 'newcastle', 'coriza'].filter(v => parsedVacs.includes(v)));
+        
+        const rawVacs = (b.vacinas || '').split(',').map(v => v.trim());
+        const knownList = ['bouba', 'marek', 'newcastle', 'coriza'];
+        const matchedKnown = rawVacs.filter(v => knownList.includes(v.toLowerCase())).map(v => v.toLowerCase());
+        const customVacs = rawVacs.filter(v => !knownList.includes(v.toLowerCase())).join(', ');
+
+        setSelectedVacs(matchedKnown);
+        setOutrasVacinas(customVacs);
       }
     } else {
       setAnilha(''); setNome(''); setSexo('Macho');
@@ -237,6 +244,7 @@ export function AddBirdModal() {
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
       setSelectedVacs([]);
+      setOutrasVacinas('');
     }
   }, [isAddBirdModalOpen, birdToEditId]);
 
@@ -274,9 +282,9 @@ export function AddBirdModal() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const remainingSlots = 10 - previewImages.length;
+      const remainingSlots = 3 - previewImages.length;
       if (remainingSlots <= 0) {
-        alert('Você já atingiu o limite máximo de 10 imagens.');
+        alert('Você já atingiu o limite máximo de 3 fotos por ave.');
         return;
       }
 
@@ -290,7 +298,7 @@ export function AddBirdModal() {
         .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
         .map(r => r.value);
 
-      setPreviewImages(prev => [...prev, ...compressed]);
+      setPreviewImages(prev => [...prev, ...compressed].slice(0, 3));
     }
     if (e.target) {
       e.target.value = '';
@@ -306,7 +314,12 @@ export function AddBirdModal() {
     const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
 
     const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
+    if (outrasVacinas.trim()) {
+      vacList.push(outrasVacinas.trim());
+    }
     const finalVacinas = vacList.join(', ');
+
+    const imagesToSave = previewImages.slice(0, 3);
 
     const data = {
       anilha, nome, sexo, raca,
@@ -318,16 +331,18 @@ export function AddBirdModal() {
       isMaeExterno,
       maeId: isMaeExterno ? maeExterno : maeId,
       dataNascimento: dataNasc, peso,
-      imagem: previewImages[0] || undefined,
-      imagens: previewImages,
+      imagem: imagesToSave[0] || undefined,
+      imagens: imagesToSave,
       observacoes: descricaoOrigem || undefined,
     };
+
+    let targetId = birdToEditId;
 
     if (birdToEditId) {
       editBird(birdToEditId, data);
     } else {
-      const newId = Date.now().toString();
-      addBird({ id: newId, ...data });
+      targetId = Date.now().toString();
+      addBird({ id: targetId, ...data });
 
       // ── Auto-create virtual couple for genealogy if both parents registered ──
       if (paiId && maeId && !casalId) {
@@ -347,7 +362,14 @@ export function AddBirdModal() {
       }
     }
 
+    alert('✨ Ave cadastrada com sucesso!');
     closeModals();
+
+    if (targetId) {
+      setTimeout(() => {
+        openBirdProfile(targetId);
+      }, 100);
+    }
   };
 
   // ─── Options ─────────────────────────────────────────────────────────────
@@ -502,10 +524,13 @@ export function AddBirdModal() {
 
         {/* Foto */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
-            Fotos da Ave (Mín. 1, Máx. 10)
-          </label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
+              Fotos da Ave (Máx. 3 fotos)
+            </label>
+            <span className="text-[10px] text-theme-primary font-bold">{previewImages.length}/3 fotos</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {previewImages.map((img, idx) => (
               <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-theme-border bg-theme-base group shadow-md">
                 <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
@@ -522,13 +547,13 @@ export function AddBirdModal() {
                 <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.2 rounded">{idx + 1}</span>
               </div>
             ))}
-            {previewImages.length < 10 && (
+            {previewImages.length < 3 && (
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="aspect-square rounded-xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary hover:text-theme-primary cursor-pointer bg-theme-base transition-colors"
               >
                 <Camera size={20} className="mb-0.5" />
-                <span className="text-[9px] font-bold uppercase text-center">Add Foto</span>
+                <span className="text-[9px] font-bold uppercase text-center">Add Foto ({previewImages.length}/3)</span>
               </div>
             )}
           </div>
@@ -756,6 +781,21 @@ export function AddBirdModal() {
                 </button>
               );
             })}
+          </div>
+
+          {/* Campo para escrever vacinas não listadas */}
+          <div className="space-y-1.5 pt-3 border-t border-theme-border/60">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">
+              Outras Vacinas / Imunizações Personalizadas
+            </label>
+            <input 
+              type="text"
+              value={outrasVacinas}
+              onChange={e => setOutrasVacinas(e.target.value)}
+              placeholder="Digite outras vacinas aplicadas (ex: Gumboro, Coriza B, Avian...)"
+              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-xs text-white placeholder-theme-text-muted outline-none focus:border-theme-primary transition-colors font-medium"
+            />
+            <p className="text-[10px] text-theme-text-muted">Escreva o nome de vacinas adicionais aplicadas a esta ave que não estão na lista acima.</p>
           </div>
         </div>
       );
