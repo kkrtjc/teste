@@ -31,6 +31,13 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function parseIsoDate(dateStr: any): Date | null {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
@@ -475,6 +482,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function checkCurrentCpfAccess() {
       try {
+        let rawExpiresAt: string | null = null;
+
         if (!isSupabaseConfigured) {
           const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
           let localData = localAllowedList.find(item => item.cpf === cleanCpf || item.email === userEmail);
@@ -491,98 +500,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localAllowedList.push(localData);
             await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
           }
+          rawExpiresAt = localData?.expires_at ?? null;
+        } else {
+          // Validação online no Supabase com busca segura sem falha de sintaxe PostgREST
+          const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
+          let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
 
-          if (!localData) {
-            // Acesso revogado — sinaliza expiração sem interromper a UI com alert
-            setIsExpired(true);
-            signOut();
-          } else {
-            const expDate = localData.expires_at;
-            if (expDate) {
-              const diffMs = new Date(expDate).getTime() - Date.now();
-              // Usa floor para não antecipar o bloqueio (1h restante = 0 dias, mas não expirado)
-              const daysLeft = diffMs > 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) : 0;
-              const expired = diffMs <= 0;
-              setIsExpired(expired);
-              setTrialInfo({
-                // isTrial = true durante os 7 dias, enquanto não expirou
-                isTrial: !expired && daysLeft <= 7,
-                remainingDays: daysLeft,
-                expiresAt: expDate
-              });
-            } else {
-              // Sem data de expiração = assinante permanente (admin inseriu sem limite)
-              setIsExpired(false);
-              setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
-            }
+          if (normEmail && cleanCpf) {
+            query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
+          } else if (normEmail) {
+            query = query.ilike('email', normEmail);
+          } else if (cleanCpf) {
+            query = query.eq('cpf', cleanCpf);
           }
-          return;
+
+          const { data, error } = await query.maybeSingle();
+
+          if (error) {
+            console.error('Erro ao validar acesso do usuário ativo:', error);
+            return;
+          }
+
+          if (!data && userEmail) {
+            const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
+            const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+            const newClient = {
+              cpf: tempCpf,
+              nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
+              email: normEmail,
+              expires_at: trialExpiresAt
+            };
+            await supabase!.from('allowed_cpfs').insert([newClient]);
+            rawExpiresAt = trialExpiresAt;
+          } else {
+            rawExpiresAt = data?.expires_at ?? null;
+          }
         }
 
-        // Validação online no Supabase com busca segura sem falha de sintaxe PostgREST
-        const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
-        let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
+        // ── Cálculo Preciso de Expiração e Período de Testes ──
+        let expDateObj = parseIsoDate(rawExpiresAt);
 
-        if (normEmail && cleanCpf) {
-          query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
-        } else if (normEmail) {
-          query = query.ilike('email', normEmail);
-        } else if (cleanCpf) {
-          query = query.eq('cpf', cleanCpf);
+        // Se o registro não contiver data de expiração explícita, calcula 7 dias a partir da criação da conta no Supabase Auth
+        if (!expDateObj && user?.created_at) {
+          const createdAt = parseIsoDate(user.created_at);
+          if (createdAt) {
+            expDateObj = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+          }
         }
 
-        const { data, error } = await query.maybeSingle();
+        if (expDateObj) {
+          const nowMs = Date.now();
+          const expMs = expDateObj.getTime();
+          const diffMs = expMs - nowMs;
+          const expired = diffMs <= 0;
 
-        if (error) {
-          console.error('Erro ao validar acesso do usuário ativo:', error);
-          return;
-        }
+          // Arredonda dias restantes para cima para exibir de forma intuitiva (ex: 6.8 dias -> 7 dias)
+          const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
-        if (!data && userEmail) {
-          const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-          const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-          const newClient = {
-            cpf: tempCpf,
-            nome: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
-            email: normEmail,
-            expires_at: trialExpiresAt
-          };
-          await supabase!.from('allowed_cpfs').insert([newClient]);
+          setIsExpired(expired);
+          setTrialInfo({
+            isTrial: !expired && daysLeft <= 7,
+            remainingDays: daysLeft,
+            expiresAt: expDateObj.toISOString()
+          });
+        } else {
+          // Fallback seguro de trial de 7 dias se nenhuma data puder ser inferida
+          const fallbackExp = new Date(Date.now() + 7 * 86400000).toISOString();
           setIsExpired(false);
           setTrialInfo({
             isTrial: true,
             remainingDays: 7,
-            expiresAt: trialExpiresAt
+            expiresAt: fallbackExp
           });
-          return;
-        }
-
-        if (!data) {
-          // Acesso revogado — sinaliza expiração sem interromper a UI com alert
-          setIsExpired(true);
-          signOut();
-        } else {
-          const expDate = data.expires_at;
-          if (expDate) {
-            const expTime = new Date(expDate).getTime();
-            const nowTime = Date.now();
-            const diffMs = expTime - nowTime;
-            // Usa floor para não antecipar o bloqueio (1h restante = 0 dias, mas não expirado)
-            const daysLeft = diffMs > 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) : 0;
-            const expired = diffMs <= 0;
-
-            setIsExpired(expired);
-            setTrialInfo({
-              // isTrial = true durante os 7 dias, enquanto não expirou
-              isTrial: !expired && daysLeft <= 7,
-              remainingDays: daysLeft,
-              expiresAt: expDate
-            });
-          } else {
-            // Sem data de expiração = assinante permanente
-            setIsExpired(false);
-            setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
-          }
         }
       } catch (err) {
         console.error('Erro de conexão ao validar usuário:', err);
