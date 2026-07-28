@@ -306,7 +306,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   ];
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pb-[env(safe-area-inset-bottom)]">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {isAddBirdModalOpen && <AddBirdModal />}
       {selectedBirdProfileId && <BirdProfileModal />}
       {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
@@ -348,7 +348,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/5 rounded-full blur-[100px] pointer-events-none" />
         
         {/* Header */}
-        <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0 mt-[env(safe-area-inset-top)]">
+        <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="font-bold text-lg truncate text-white hidden md:block">{farmSettings.name || 'Mura Manager'}</h1>
             {/* Connection Status Badge */}
