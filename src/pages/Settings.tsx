@@ -8,6 +8,72 @@ import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 
+function TrialCountdownTimer({ trialInfo }: { trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null } }) {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    if (!trialInfo.expiresAt) return;
+
+    const updateTimer = () => {
+      const targetTime = new Date(trialInfo.expiresAt!).getTime();
+      const now = Date.now();
+      const diffMs = targetTime - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      setTimeLeft({ days, hours, minutes, seconds });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [trialInfo.expiresAt]);
+
+  if (!trialInfo.isTrial || !trialInfo.expiresAt) {
+    return (
+      <div className="flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black w-fit">
+        <span>👑 Plano Ativo · Acesso Liberado</span>
+      </div>
+    );
+  }
+
+  const isUrgent = (timeLeft?.days ?? trialInfo.remainingDays) <= 3;
+
+  return (
+    <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 px-3 py-1.5 rounded-xl border transition-all shadow-md ${
+      isUrgent
+        ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
+        : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+    }`}>
+      <div className="flex items-center gap-1.5 font-black text-xs">
+        <span className="text-sm">{isUrgent ? '⏳' : '⏱️'}</span>
+        <span>{isUrgent ? 'Teste Gratuito Acabando:' : 'Teste Gratuito:'}</span>
+      </div>
+
+      <div className="flex items-center gap-1 font-mono font-black text-xs text-white bg-black/60 px-2.5 py-0.5 rounded-lg border border-white/10 shadow-inner">
+        {timeLeft ? (
+          <>
+            <span className="text-amber-400 font-bold">{timeLeft.days}d</span> :
+            <span>{String(timeLeft.hours).padStart(2, '0')}h</span> :
+            <span>{String(timeLeft.minutes).padStart(2, '0')}m</span> :
+            <span className="text-orange-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+          </>
+        ) : (
+          <span>{trialInfo.remainingDays} dias restantes</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
@@ -15,8 +81,8 @@ export function Settings() {
     coupleEggs, incubationLots,
     importBackup, openTutorial
   } = useAppContext();
-  const { signOut, isLocalMode, cpf, user } = useAuth();
-  
+  const { signOut, isLocalMode, cpf, user, trialInfo } = useAuth();
+
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email || user?.email || '');
   const [phone, setPhone] = useState(farmSettings.phone);
@@ -174,7 +240,11 @@ export function Settings() {
             <p className="text-xs text-theme-text-muted mt-0.5">
               {user?.email || email || 'Conta do Mura Manager'}
             </p>
-            <div className="flex items-center gap-2 mt-1">
+
+            {/* ⏱️ TIMER DO TESTE GRATUITO SOBRE O NOME DO CRIATÓRIO */}
+            <TrialCountdownTimer trialInfo={trialInfo} />
+
+            <div className="flex items-center gap-2 mt-2">
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
                 isLocalMode 
                   ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
@@ -243,6 +313,9 @@ export function Settings() {
             )}
           </div>
           <p className="text-[11px] text-theme-text-muted mt-2">Clique para enviar ou alterar a foto do seu criatório</p>
+          
+          {/* ⏱️ TIMER DO TESTE GRATUITO ABAIXO DA FOTO */}
+          <TrialCountdownTimer trialInfo={trialInfo} />
         </div>
 
         {/* Form Fields */}
