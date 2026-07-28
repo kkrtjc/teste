@@ -448,7 +448,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       </main>
 
       {/* Floating Bottom Navigation (Mobile Dock) */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 touch-manipulation">
         <nav className="bg-theme-surface/95 border border-theme-border/50 rounded-2xl shadow-premium px-2 py-2">
           <div className="flex justify-around items-center h-14">
             {mobileNavItems.map((item) => (
@@ -457,7 +457,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                 to={item.path}
                 id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl ${
+                  `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl active:scale-95 touch-manipulation ${
                     isActive ? 'text-theme-primary' : 'text-theme-text-muted hover:text-white'
                   }`
                 }

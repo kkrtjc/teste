@@ -1,9 +1,88 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Camera, Search, X, ChevronRight, Trash2 } from 'lucide-react';
-import { useAppContext } from '../lib/AppContext';
+import { useAppContext, type Bird } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
+
+const BirdItemCard = memo(function BirdItemCard({ 
+  bird, 
+  onSelect 
+}: { 
+  bird: Bird; 
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div
+      onClick={() => onSelect(bird.id)}
+      className="flex items-center gap-3.5 p-3 rounded-2xl cursor-pointer border border-theme-border/50 bg-theme-surface/50 shadow-premium hover:border-theme-primary/50 transition-all w-full group content-visibility-auto"
+      style={{ containIntrinsicSize: '1px 96px' }}
+    >
+      {/* Imagem em quadrado limpo */}
+      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
+        {bird.imagem ? (
+          <img
+            src={bird.imagem}
+            alt={bird.anilha}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <span className="text-4xl group-hover:scale-105 transition-transform duration-300 select-none opacity-40">
+            {bird.sexo === 'Macho' ? '🐓' : '🐔'}
+          </span>
+        )}
+      </div>
+
+      {/* Informações detalhadas */}
+      <div className="flex-1 min-w-0 flex flex-col justify-between h-20 sm:h-24 py-1">
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
+              {bird.anilha}
+            </h4>
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border
+              ${bird.sexo === 'Macho' 
+                ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
+                : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
+              {bird.sexo}
+            </span>
+          </div>
+          <p className="text-xs text-theme-text-muted truncate mt-0.5">
+            {bird.nome || 'Sem nome'}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-theme-border/30 mt-1">
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="text-[10px] sm:text-xs text-theme-text-muted font-bold truncate">
+              {bird.raca}
+            </span>
+            {bird.baia && bird.baia !== 'ND' && (
+              <>
+                <span className="text-theme-border/50 text-[10px]">•</span>
+                <span className="text-[10px] sm:text-xs font-black text-theme-accent uppercase tracking-wider">
+                  Baia {bird.baia}
+                </span>
+              </>
+            )}
+          </div>
+          
+          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-theme-base/60 border border-theme-border/50
+            ${bird.status === 'Adulto' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
+              bird.status === 'Reprodutor' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
+              bird.status === 'Matriz' ? 'text-pink-400 border-pink-500/20 bg-pink-500/10' :
+              bird.status === 'Crescimento' ? 'text-green-400 border-green-500/20 bg-green-500/10' :
+              bird.status === 'Vendido' ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
+              bird.status === 'Faleceu' ? 'text-red-400 border-red-500/20 bg-red-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
+            {bird.status}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export function Birds() {
   const location = useLocation();
@@ -348,74 +427,7 @@ export function Birds() {
             ) : (
               <div className="flex flex-col space-y-3">
                 {filteredBirds.map(bird => (
-                  <div
-                    key={bird.id}
-                    onClick={() => openBirdProfile(bird.id)}
-                    className="flex items-center gap-4 p-3 rounded-2xl cursor-pointer border border-theme-border/50 bg-theme-surface/50 shadow-premium hover:border-theme-primary/50 transition-all w-full group"
-                  >
-                    {/* Imagem em quadrado limpo, sem sobreposição */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
-                      {bird.imagem ? (
-                        <img
-                          src={bird.imagem}
-                          alt={bird.anilha}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <span className="text-4xl group-hover:scale-105 transition-transform duration-500 select-none opacity-40">
-                          {bird.sexo === 'Macho' ? '🐓' : '🐔'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Informações detalhadas à direita */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between h-20 sm:h-24 py-1">
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
-                            {bird.anilha}
-                          </h4>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border
-                            ${bird.sexo === 'Macho' 
-                              ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
-                              : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
-                            {bird.sexo}
-                          </span>
-                        </div>
-                        <p className="text-xs text-theme-text-muted truncate mt-0.5">
-                          {bird.nome || 'Sem nome'}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-theme-border/30 mt-1">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <span className="text-[10px] sm:text-xs text-theme-text-muted font-bold truncate">
-                            {bird.raca}
-                          </span>
-                          {bird.baia && bird.baia !== 'ND' && (
-                            <>
-                              <span className="text-theme-border/50 text-[10px]">•</span>
-                              <span className="text-[10px] sm:text-xs font-black text-theme-accent uppercase tracking-wider">
-                                Baia {bird.baia}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-theme-base/60 border border-theme-border/50
-                          ${bird.status === 'Adulto' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
-                            bird.status === 'Reprodutor' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
-                            bird.status === 'Matriz' ? 'text-pink-400 border-pink-500/20 bg-pink-500/10' :
-                            bird.status === 'Crescimento' ? 'text-green-400 border-green-500/20 bg-green-500/10' :
-                            bird.status === 'Vendido' ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
-                            bird.status === 'Faleceu' ? 'text-red-400 border-red-500/20 bg-red-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
-                          {bird.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <BirdItemCard key={bird.id} bird={bird} onSelect={openBirdProfile} />
                 ))}
               </div>
             )}
