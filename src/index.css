@@ -159,3 +159,9 @@
 .delay-200 { animation-delay: 0.1s; }
 .delay-300 { animation-delay: 0.15s; }
 .delay-400 { animation-delay: 0.2s; }
+
+@keyframes loading {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}

@@ -4,10 +4,10 @@ import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { PaywallScreen } from './components/PaywallScreen';
+import { SplashScreen } from './components/SplashScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { ADMIN_CPF } from './lib/AuthContext';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
-import { Activity } from 'lucide-react';
 
 // Importação direta síncrona das páginas para resposta instantânea (0ms) na troca de abas no celular
 import { Login } from './pages/Login';
@@ -35,73 +35,60 @@ function AppContent() {
     }
   }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
 
-  // 1. Carrega a sessão de autenticação primeiro
-  if (authLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-theme-base text-white p-4 text-center">
-        <Activity size={48} className="text-theme-primary animate-pulse mb-4" />
-        <h2 className="text-2xl font-black text-white">Verificando Acesso...</h2>
-        <p className="text-theme-text-muted mt-2">Autenticando criatório...</p>
-      </div>
-    );
-  }
-
-  // 2. Se não estiver autenticado, exibe a tela de login
-  if (!user) {
+  // Se não estiver autenticado e a checagem inicial já concluiu, exibe a tela de login
+  if (!user && !authLoading) {
     return <Login />;
   }
 
-  // 3. Se estiver autenticado, mas o banco offline ainda está carregando
-  if (!isReady) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-theme-base text-white p-4 text-center">
-        <Activity size={48} className="text-theme-primary animate-pulse mb-4" />
-        <h2 className="text-2xl font-black text-white">Carregando Mura Manager...</h2>
-        <p className="text-theme-text-muted mt-2">Sincronizando banco de dados...</p>
-      </div>
-    );
-  }
-
-  // 3.5. Se o período de testes ou assinatura expirou, exibe a tela de bloqueio total
-  if (isExpired) {
+  // Se o período de testes ou assinatura expirou, exibe a tela de bloqueio total
+  if (user && isReady && isExpired) {
     return <PaywallScreen />;
   }
 
-  // 4. Primeiro login: perfil não configurado E tutorial concluído → exibe onboarding
+  const isAppLoading = authLoading || !isReady;
+
   return (
     <>
-      {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
-      {showTrialPopup && (
-        <TrialPopupModal
-          remainingDays={trialInfo.remainingDays}
-          totalTrialDays={7}
-          onClose={async () => {
-            setShowTrialPopup(false);
-            // Após o usuário fechar o popup, agenda notificação push para o dia seguinte
-            const granted = await requestPushPermission();
-            if (granted) {
-              await scheduleDailyTrialReminder(trialInfo.remainingDays);
-            }
-          }}
-          onUpgrade={() => {
-            setShowTrialPopup(false);
-            setShowUpgradeFromPopup(true);
-          }}
-        />
-      )}
+      {/* 🌟 SPLASH SCREEN ANIMADA: Fundo escuro com logo diminuindo e transição lisa ao carregar/logar */}
+      <SplashScreen isLoading={isAppLoading} />
 
-      {/* App Router com resposta síncrona instantânea (0ms) */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-            <Route index element={<Dashboard />} />
-            <Route path="birds" element={<Birds />} />
-            <Route path="lots" element={<Lots />} />
-            <Route path="eggs" element={<Eggs />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </Router>
+      {/* Renderiza o App Router apenas quando autenticado e com banco pronto */}
+      {user && isReady && (
+        <>
+          {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
+          {showTrialPopup && (
+            <TrialPopupModal
+              remainingDays={trialInfo.remainingDays}
+              totalTrialDays={7}
+              onClose={async () => {
+                setShowTrialPopup(false);
+                // Após o usuário fechar o popup, agenda notificação push para o dia seguinte
+                const granted = await requestPushPermission();
+                if (granted) {
+                  await scheduleDailyTrialReminder(trialInfo.remainingDays);
+                }
+              }}
+              onUpgrade={() => {
+                setShowTrialPopup(false);
+                setShowUpgradeFromPopup(true);
+              }}
+            />
+          )}
+
+          {/* App Router com resposta síncrona instantânea (0ms) */}
+          <Router>
+            <Routes>
+              <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+                <Route index element={<Dashboard />} />
+                <Route path="birds" element={<Birds />} />
+                <Route path="lots" element={<Lots />} />
+                <Route path="eggs" element={<Eggs />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+            </Routes>
+          </Router>
+        </>
+      )}
     </>
   );
 }
