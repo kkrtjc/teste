@@ -113,7 +113,10 @@ export function Lots() {
         setActiveTab(stateObj.tab);
       }
     }
-  }, [location.state]);
+    window.scrollTo(0, 0);
+    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+    scrollContainers.forEach(el => { el.scrollTop = 0; });
+  }, [location, activeTab]);
 
   const [showPostura, setShowPostura] = useState(false);
   const [pBaia, setPBaia] = useState('');

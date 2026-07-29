@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
@@ -287,6 +287,18 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     return days !== null && days <= 3;
   });
 
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
+  // Garante que qualquer redirecionamento, navegação por atalho ou troca de aba abra no TOPO da página
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname, location.search, (location as any).state]);
+
   const expiringCount = expiringClients.length;
 
   const navItems = [
@@ -404,7 +416,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6 gpu-accelerated">
+        <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6 gpu-accelerated">
           {showInstallBanner && (
             <div className="mb-4 bg-theme-surface border border-theme-primary/30 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 animate-fade-in relative overflow-hidden backdrop-blur-md">
               <div className="flex items-center gap-3">

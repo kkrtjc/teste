@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
@@ -128,11 +128,16 @@ export function BirdProfileModal() {
   const [isExternalTab, setIsExternalTab] = useState(false);
   const [externalInput, setExternalInput] = useState('');
 
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setCurrentImgIndex(0);
     setLinkingTarget(null);
     setConfirmingCandidate(null);
     setSearchQuery('');
+    if (modalScrollRef.current) {
+      modalScrollRef.current.scrollTop = 0;
+    }
   }, [selectedBirdProfileId]);
 
   if (!selectedBirdProfileId) return null;
@@ -258,7 +263,7 @@ export function BirdProfileModal() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden">
+        <div ref={modalScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden">
           {/* Cover / Header section with Carousel */}
           <div className="relative h-64 bg-theme-base select-none">
             {images.length > 0 ? (

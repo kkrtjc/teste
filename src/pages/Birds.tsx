@@ -205,6 +205,13 @@ export function Birds() {
       setActiveTab('aves');
     }
   }, [location]);
+
+  // Garante rolagem para o TOPO ao trocar de aba ou filtro de raça
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+    scrollContainers.forEach(el => { el.scrollTop = 0; });
+  }, [activeTab, activeBreed]);
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   const [breedSearch, setBreedSearch] = useState('');

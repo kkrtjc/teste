@@ -951,8 +951,12 @@ export function Eggs() {
   const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
   const [sellStockTarget, setSellStockTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
 
-  // Sincroniza lembrete de coleta diária no celular (Push)
+  // Sincroniza lembrete de coleta diária no celular (Push) e rola para o topo no carregamento
   useEffect(() => {
+    window.scrollTo(0, 0);
+    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+    scrollContainers.forEach(el => { el.scrollTop = 0; });
+
     const today = todayISO();
     const hasRegisteredToday = eggLots.some(lot => (lot.registros || []).some(r => r.data === today));
     syncDailyEggReminder(hasRegisteredToday);
