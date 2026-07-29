@@ -194,6 +194,17 @@ export function Birds() {
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<'aves' | 'racas'>('aves');
+
+  // Sincroniza aba selecionada via URL query ou state de navegação
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab') || (location.state as any)?.tab;
+    if (tabParam === 'racas' || tabParam === 'breeds') {
+      setActiveTab('racas');
+    } else if (tabParam === 'aves') {
+      setActiveTab('aves');
+    }
+  }, [location]);
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   const [breedSearch, setBreedSearch] = useState('');
