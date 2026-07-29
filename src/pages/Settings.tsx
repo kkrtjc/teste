@@ -30,10 +30,12 @@ function calcTimeLeft(expiresAt: string | null) {
 
 function TrialCountdownTimer({ 
   trialInfo, 
-  onOpenPaymentModal 
+  onOpenPaymentModal,
+  isAdmin 
 }: { 
   trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
   onOpenPaymentModal: () => void;
+  isAdmin?: boolean;
 }) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(() => calcTimeLeft(trialInfo.expiresAt));
 
@@ -48,6 +50,14 @@ function TrialCountdownTimer({
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [trialInfo.expiresAt]);
+
+  if (isAdmin) {
+    return (
+      <div className="flex items-center gap-2 mt-2 px-3.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-black w-fit shadow-md">
+        <span>👑 Administrador Principal · Acesso Vitalício</span>
+      </div>
+    );
+  }
 
   if (!trialInfo.isTrial || !trialInfo.expiresAt) {
     return (
@@ -108,7 +118,7 @@ export function Settings() {
     coupleEggs, incubationLots,
     importBackup, openTutorial
   } = useAppContext();
-  const { signOut, isLocalMode, cpf, user, trialInfo, triggerWebhookPayment } = useAuth();
+  const { signOut, isLocalMode, cpf, user, trialInfo, triggerWebhookPayment, isAdmin } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email || user?.email || '');
@@ -283,6 +293,7 @@ export function Settings() {
             <TrialCountdownTimer 
               trialInfo={trialInfo} 
               onOpenPaymentModal={() => setIsPaymentModalOpen(true)} 
+              isAdmin={isAdmin}
             />
 
             <div className="flex items-center gap-2 mt-2">
@@ -297,6 +308,31 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+      {/* ── PAINEL DE ADMINISTRADOR PRINCIPAL (VISÍVEL PARA CONTAS DE ADM) ── */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-theme-surface to-amber-500/5 border-2 border-amber-500/50 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">👑</span>
+                <h3 className="text-base font-black text-amber-400 font-serif">Painel de Controle de Administrador</h3>
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400 text-black">Acesso Vitalício</span>
+              </div>
+              <p className="text-xs text-theme-text-muted leading-relaxed max-w-xl">
+                Sua conta <strong className="text-white font-mono">{user?.email || 'galosmurabrasill@gmail.com'}</strong> está ativada como Administrador Principal. Você tem acesso ilimitado para cadastrar novos criadores, autorizar CPFs e gerenciar assinaturas.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-admin-modal'))}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs px-5 py-3 rounded-xl transition-all shadow-lg hover:shadow-amber-500/20 active:scale-95 flex items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <span>🛡️ Gerenciar Clientes & Liberações</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── RESUMO DOS DADOS SALVOS & ATALHOS RÁPIDOS DE NAVEGAÇÃO ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

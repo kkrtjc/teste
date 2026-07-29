@@ -37,8 +37,7 @@ interface LayoutProps {
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup } = useAppContext();
   const navigate = useNavigate();
-  const { cpf, isLocalMode, triggerWebhookPayment } = useAuth();
-  const isAdmin = cpf === ADMIN_CPF;
+  const { isLocalMode, triggerWebhookPayment, isAdmin } = useAuth();
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -112,8 +111,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       setShowInstallBanner(true);
     }
 
+    const handleOpenAdmin = () => setIsAdminModalOpen(true);
+    window.addEventListener('open-admin-modal', handleOpenAdmin);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('open-admin-modal', handleOpenAdmin);
     };
   }, []);
 

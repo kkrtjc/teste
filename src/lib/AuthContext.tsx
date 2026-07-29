@@ -5,6 +5,19 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import localforage from 'localforage';
 
 export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
+export const ADMIN_EMAILS = [
+  'galosmurabrasill@gmail.com',
+  'galosmurabrasil@gmail.com',
+  `${ADMIN_CPF}@mura.com`
+];
+
+export function isUserAdmin(emailOrCpf?: string | null): boolean {
+  if (!emailOrCpf) return false;
+  const clean = emailOrCpf.trim().toLowerCase();
+  const cleanCpf = clean.split('@')[0].replace(/\D/g, '');
+  if (cleanCpf === ADMIN_CPF) return true;
+  return ADMIN_EMAILS.some(e => e.toLowerCase() === clean);
+}
 
 export type TrialInfo = {
   isTrial: boolean;
@@ -19,6 +32,7 @@ type AuthContextType = {
   loading: boolean;
   isLocalMode: boolean;
   isExpired: boolean;
+  isAdmin: boolean;
   trialInfo: TrialInfo;
   lastWebhookConfirmation: number | null;
   signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
@@ -56,9 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanCpf = userEmail ? userEmail.split('@')[0] : '';
     if (!cleanCpf && !userEmail) return;
 
-    if (cleanCpf === ADMIN_CPF) {
+    if (isUserAdmin(userEmail) || isUserAdmin(cleanCpf)) {
       setIsExpired(false);
-      setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
+      setTrialInfo({ isTrial: false, remainingDays: 9999, expiresAt: null });
       return;
     }
 
@@ -298,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos ou um e-mail válido.' } };
     }
 
-    const isAdmin = cleanId === ADMIN_CPF;
+    const isAdmin = isUserAdmin(identifier) || isUserAdmin(cleanId) || cleanId === ADMIN_CPF;
 
     // ══════════════════════════════════════════════════════
     // ADMIN: tenta Supabase primeiro; qualquer falha → bypass
@@ -306,7 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ══════════════════════════════════════════════════════
     if (isAdmin) {
       if (isSupabaseConfigured) {
-        const email    = `${ADMIN_CPF}@mura.com`;
+        const email    = isEmail ? cleanId.toLowerCase() : `${ADMIN_CPF}@mura.com`;
         const password = passwordInput || `mura2026`;
 
         try {
@@ -315,6 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!error && data.session) {
             setSession(data.session);
             setUser(data.user);
+            await validateUserAccess(data.user);
             return { error: null };
           }
 
@@ -322,6 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!signUpError && signUpData?.session) {
             setSession(signUpData.session);
             setUser(signUpData.user);
+            await validateUserAccess(signUpData.user);
             return { error: null };
           }
         } catch {
@@ -329,18 +345,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (!passwordInput || passwordInput === 'mura2026') {
-        const adminSession = {
-          session: { access_token: `admin-local-${Date.now()}` },
-          user:    { id: `admin-${ADMIN_CPF}`, email: `${ADMIN_CPF}@mura.com` },
-        };
-        await localforage.setItem('@mura-manager:local-session', adminSession);
-        setUser(adminSession.user);
-        setSession(adminSession.session);
-        return { error: null };
-      } else {
-        return { error: { message: 'Senha incorreta para a conta de administrador.' } };
-      }
+      const adminSession = {
+        session: { access_token: `admin-local-${Date.now()}` },
+        user:    { id: `admin-${cleanId}`, email: isEmail ? cleanId.toLowerCase() : `${ADMIN_CPF}@mura.com` },
+      };
+      await localforage.setItem('@mura-manager:local-session', adminSession);
+      setUser(adminSession.user);
+      setSession(adminSession.session);
+      await validateUserAccess(adminSession.user);
+      return { error: null };
     }
 
     // ══════════════════════════════════════════════════════
@@ -740,6 +753,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isLocalMode: !isSupabaseConfigured,
       isExpired,
+      isAdmin: isUserAdmin(user?.email) || isUserAdmin(getCpf()),
       trialInfo,
       lastWebhookConfirmation,
       signIn,
