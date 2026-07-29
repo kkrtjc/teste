@@ -25,7 +25,7 @@ export interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     targetId: 'nav-link-dashboard',
-    title: 'Painel de Controle (Dashboard)',
+    title: 'Início (Painel Geral)',
     description: 'Acompanhe as métricas consolidadas do seu plantel em tempo real: total de aves, taxa de postura, chocadeiras ativas e indicadores zootécnicos.',
     badge: 'Passo 1 de 4',
     path: '/'

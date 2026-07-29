@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Sparkles, ChevronRight, Copy, MessageSquare, X
+  Database, Sparkles, ChevronRight, Copy, MessageSquare, X, ExternalLink
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -96,6 +97,7 @@ function TrialCountdownTimer({
 }
 
 export function Settings() {
+  const navigate = useNavigate();
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
@@ -292,19 +294,29 @@ export function Settings() {
         </div>
       </div>
 
-      {/* ── RESUMO DOS DADOS SALVOS ── */}
+      {/* ── RESUMO DOS DADOS SALVOS & ATALHOS RÁPIDOS DE NAVEGAÇÃO ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Aves Registradas', value: birds.length, icon: '🐓', color: 'text-blue-400' },
-          { label: 'Raças & Linhagens', value: breeds.length, icon: '🧬', color: 'text-purple-400' },
-          { label: 'Lotes de Ovos', value: eggLots.length, icon: '🥚', color: 'text-amber-400' },
-          { label: 'Lotes de Corte/Engorda', value: meatLots.length, icon: '🍗', color: 'text-orange-400' },
+          { label: 'Aves Registradas', value: birds.length, icon: '🐓', color: 'text-blue-400', path: '/birds' },
+          { label: 'Raças & Linhagens', value: breeds.length, icon: '🧬', color: 'text-purple-400', path: '/birds' },
+          { label: 'Lotes de Ovos', value: eggLots.length, icon: '🥚', color: 'text-amber-400', path: '/eggs' },
+          { label: 'Lotes de Corte/Engorda', value: meatLots.length, icon: '🍗', color: 'text-orange-400', path: '/lots' },
         ].map((item, idx) => (
-          <div key={idx} className="bg-theme-surface border border-theme-border/60 p-3.5 rounded-xl shadow-md flex items-center gap-3">
-            <span className="text-2xl">{item.icon}</span>
-            <div>
-              <p className={`text-lg font-black ${item.color}`}>{item.value}</p>
-              <p className="text-[10px] text-theme-text-muted uppercase font-bold leading-tight">{item.label}</p>
+          <div 
+            key={idx} 
+            onClick={() => navigate(item.path)}
+            className="bg-theme-surface border border-theme-border/60 p-3.5 rounded-2xl shadow-md flex items-center justify-between gap-2 hover:border-theme-primary/80 hover:bg-theme-surface-hover transition-all cursor-pointer group active:scale-95"
+            title={`Clique para ir para ${item.label}`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-2xl shrink-0">{item.icon}</span>
+              <div className="min-w-0">
+                <p className={`text-lg font-black ${item.color}`}>{item.value}</p>
+                <p className="text-[10px] text-theme-text-muted uppercase font-bold leading-tight truncate">{item.label}</p>
+              </div>
+            </div>
+            <div className="w-6 h-6 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-theme-primary group-hover:bg-theme-primary group-hover:text-black transition-colors shrink-0">
+              <ExternalLink size={12} />
             </div>
           </div>
         ))}

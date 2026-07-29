@@ -697,7 +697,7 @@ export function BirdProfileModal() {
                           </span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
                             {children.map(r => (
-                              <PedigreeTreeNode key={r.bird.id} label="Filho Directo" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
+                              <PedigreeTreeNode key={r.bird.id} label="Filho Direto" bird={r.bird} badgeText="50%" onSelect={openBirdProfile} />
                             ))}
                             {nephews.map(r => (
                               <PedigreeTreeNode key={r.bird.id} label="Sobrinho" bird={r.bird} badgeText="25%" onSelect={openBirdProfile} />

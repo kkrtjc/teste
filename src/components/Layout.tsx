@@ -290,7 +290,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const expiringCount = expiringClients.length;
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    { icon: LayoutDashboard, label: 'Início', path: '/' },
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
     { icon: Layers, label: 'Lotes', path: '/lots' },
     { icon: Egg, label: 'Ovos', path: '/eggs' },
