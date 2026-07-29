@@ -112,11 +112,11 @@ const BirdItemCard = memo(function BirdItemCard({
   return (
     <div
       onClick={() => onSelect(bird.id)}
-      className="flex items-center gap-3.5 p-3 rounded-2xl cursor-pointer border border-theme-border/50 bg-theme-surface/50 shadow-premium hover:border-theme-primary/50 transition-all w-full group content-visibility-auto"
-      style={{ containIntrinsicSize: '1px 96px' }}
+      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation content-visibility-auto"
+      style={{ containIntrinsicSize: '1px 240px' }}
     >
-      {/* Imagem em quadrado limpo */}
-      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-theme-base flex-shrink-0 flex items-center justify-center border border-theme-border/30">
+      {/* Bloco da Foto 1:1 Quadrada Grande igual a de Raças */}
+      <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
         {bird.imagem ? (
           <img
             src={bird.imagem}
@@ -126,47 +126,48 @@ const BirdItemCard = memo(function BirdItemCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <span className="text-4xl group-hover:scale-105 transition-transform duration-300 select-none opacity-40">
+          <span className="text-5xl group-hover:scale-105 transition-transform duration-300 select-none opacity-40">
             {bird.sexo === 'Macho' ? '🐓' : '🐔'}
           </span>
         )}
-      </div>
 
-      {/* Informações detalhadas */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between h-20 sm:h-24 py-1">
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <h4 className="font-black text-white text-sm sm:text-base truncate group-hover:text-theme-primary transition-colors">
-              {bird.anilha}
-            </h4>
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border
-              ${bird.sexo === 'Macho' 
-                ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' 
-                : 'bg-pink-500/15 text-pink-400 border-pink-500/25'}`}>
-              {bird.sexo}
+        {/* Badge Sexo no Canto Superior Direito */}
+        <div className="absolute top-2 right-2 z-10">
+          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md border backdrop-blur-sm
+            ${bird.sexo === 'Macho' 
+              ? 'bg-blue-500/80 text-white border-blue-400/50' 
+              : 'bg-pink-500/80 text-white border-pink-400/50'}`}>
+            {bird.sexo}
+          </span>
+        </div>
+
+        {/* Badge Baia no Canto Inferior Esquerdo (se houver) */}
+        {bird.baia && bird.baia !== 'ND' && (
+          <div className="absolute bottom-2 left-2 z-10">
+            <span className="text-[9px] font-black bg-black/75 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30 shadow-md uppercase tracking-wider">
+              Baia {bird.baia}
             </span>
           </div>
-          <p className="text-xs text-theme-text-muted truncate mt-0.5">
+        )}
+      </div>
+
+      {/* Informações detalhadas abaixo da foto */}
+      <div className="p-3 flex flex-col justify-between flex-1 gap-2">
+        <div>
+          <h4 className="font-black text-white text-sm sm:text-base group-hover:text-theme-primary transition-colors truncate">
+            {bird.anilha}
+          </h4>
+          <p className="text-xs text-theme-text-muted truncate">
             {bird.nome || 'Sem nome'}
+          </p>
+          <p className="text-[11px] font-bold text-amber-400/90 truncate mt-1">
+            {bird.raca}
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-theme-border/30 mt-1">
-          <div className="flex items-center gap-1.5 truncate">
-            <span className="text-[10px] sm:text-xs text-theme-text-muted font-bold truncate">
-              {bird.raca}
-            </span>
-            {bird.baia && bird.baia !== 'ND' && (
-              <>
-                <span className="text-theme-border/50 text-[10px]">•</span>
-                <span className="text-[10px] sm:text-xs font-black text-theme-accent uppercase tracking-wider">
-                  Baia {bird.baia}
-                </span>
-              </>
-            )}
-          </div>
-          
-          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-theme-base/60 border border-theme-border/50
+        {/* Status Badge + Indicador */}
+        <div className="pt-2 border-t border-theme-border/30 flex items-center justify-between mt-auto">
+          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border
             ${bird.status === 'Adulto' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
               bird.status === 'Reprodutor' ? 'text-blue-400 border-blue-500/20 bg-blue-500/10' :
               bird.status === 'Matriz' ? 'text-pink-400 border-pink-500/20 bg-pink-500/10' :
@@ -174,6 +175,9 @@ const BirdItemCard = memo(function BirdItemCard({
               bird.status === 'Vendido' ? 'text-amber-400 border-amber-500/20 bg-amber-500/10' :
               bird.status === 'Faleceu' ? 'text-red-400 border-red-500/20 bg-red-500/10' : 'text-theme-primary border-theme-primary/20'}`}>
             {bird.status}
+          </span>
+          <span className="text-[10px] font-bold text-theme-text-muted group-hover:text-theme-primary transition-colors flex items-center">
+            Perfil →
           </span>
         </div>
       </div>
@@ -522,7 +526,7 @@ export function Birds() {
                   : 'Nenhuma ave cadastrada no plantel.'}
               </div>
             ) : (
-              <div className="flex flex-col space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                 {filteredBirds.map(bird => (
                   <BirdItemCard key={bird.id} bird={bird} onSelect={openBirdProfile} />
                 ))}
