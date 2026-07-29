@@ -50,15 +50,133 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
+  async function validateUserAccess(targetUser: any) {
+    if (!targetUser) return;
+    const userEmail = targetUser.email;
+    const cleanCpf = userEmail ? userEmail.split('@')[0] : '';
+    if (!cleanCpf && !userEmail) return;
+
+    if (cleanCpf === ADMIN_CPF) {
+      setIsExpired(false);
+      setTrialInfo({ isTrial: false, remainingDays: 999, expiresAt: null });
+      return;
+    }
+
+    try {
+      let rawExpiresAt: string | null = null;
+      const userKey = targetUser.id || targetUser.email || cleanCpf;
+      const storedExpiresAt: string | null = await localforage.getItem(`@mura-manager:locked-trial-expires:${userKey}`);
+
+      if (!isSupabaseConfigured) {
+        const localAllowedList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+        let localData = localAllowedList.find(item => item.cpf === cleanCpf || item.email === userEmail);
+        
+        if (!localData && userEmail) {
+          const initialExpires = storedExpiresAt || new Date(Date.now() + 7 * 86400000).toISOString();
+          const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+          localData = {
+            cpf: tempCpf,
+            nome: targetUser.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário',
+            email: userEmail,
+            expires_at: initialExpires
+          };
+          localAllowedList.push(localData);
+          await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
+          await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
+        }
+        rawExpiresAt = localData?.expires_at ?? storedExpiresAt;
+      } else {
+        const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
+        let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
+
+        if (normEmail && cleanCpf) {
+          query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
+        } else if (normEmail) {
+          query = query.ilike('email', normEmail);
+        } else if (cleanCpf) {
+          query = query.eq('cpf', cleanCpf);
+        }
+
+        const { data, error } = await query.maybeSingle();
+
+        if (error) {
+          console.error('Erro ao validar acesso do usuário ativo:', error);
+          return;
+        }
+
+        if (!data && userEmail) {
+          const initialExpires = storedExpiresAt || (targetUser?.created_at 
+            ? new Date(new Date(targetUser.created_at).getTime() + 7 * 86400000).toISOString()
+            : new Date(Date.now() + 7 * 86400000).toISOString());
+
+          const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
+          const newClient = {
+            cpf: tempCpf,
+            nome: targetUser.user_metadata?.full_name || userEmail.split('@')[0] || 'Novo Usuário Social',
+            email: normEmail,
+            expires_at: initialExpires
+          };
+          await supabase!.from('allowed_cpfs').insert([newClient]);
+          await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
+          rawExpiresAt = initialExpires;
+        } else {
+          rawExpiresAt = data?.expires_at ?? storedExpiresAt;
+        }
+      }
+
+      let expDateObj = parseIsoDate(rawExpiresAt);
+
+      if (!expDateObj && targetUser?.created_at) {
+        const createdAt = parseIsoDate(targetUser.created_at);
+        if (createdAt) {
+          expDateObj = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      if (!expDateObj) {
+        if (storedExpiresAt) {
+          expDateObj = parseIsoDate(storedExpiresAt);
+        } else {
+          const firstInitExp = new Date(Date.now() + 7 * 86400000).toISOString();
+          await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, firstInitExp);
+          expDateObj = parseIsoDate(firstInitExp);
+        }
+      }
+
+      if (expDateObj) {
+        const nowMs = Date.now();
+        const expMs = expDateObj.getTime();
+        const diffMs = expMs - nowMs;
+        const expired = diffMs <= 0;
+
+        if (rawExpiresAt) {
+          await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, expDateObj.toISOString());
+        }
+
+        const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+        setIsExpired(expired);
+        setTrialInfo({
+          isTrial: !expired && daysLeft <= 7,
+          remainingDays: daysLeft,
+          expiresAt: expDateObj.toISOString()
+        });
+      }
+    } catch (err) {
+      console.error('Erro de conexão ao validar usuário:', err);
+    }
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       // Modo Local/Offline Fallback: recupera sessão local mockada se houver
       async function checkLocalSession() {
         try {
           const localSession: any = await localforage.getItem('@mura-manager:local-session');
-          if (localSession) {
+          if (localSession?.user) {
             setUser(localSession.user);
             setSession(localSession.session);
+            await validateUserAccess(localSession.user);
           }
         } catch (err) {
           console.error('Erro ao ler sessão local:', err);
@@ -71,15 +189,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Modo Online com Supabase
-    // Timeout de resiliência caso ocorra problema de rede
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
-    }, 2000);
+    }, 2500);
 
-    // 1. Pega a sessão salva de forma assíncrona
-    supabase!.auth.getSession().then(({ data: { session } }) => {
+    // 1. Pega a sessão salva e valida permissões de acesso ANTES de liberar o carregamento
+    supabase!.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
+        await validateUserAccess(session.user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
       clearTimeout(safetyTimeout);
     }).catch(err => {
@@ -89,9 +211,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // 2. Escuta mudanças de estado (login, token refresh, logout)
-    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
+        await validateUserAccess(session.user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
@@ -331,6 +458,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!error && data.session) {
         setSession(data.session);
         setUser(data.user);
+        await validateUserAccess(data.user);
         return { error: null };
       }
 

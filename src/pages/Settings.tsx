@@ -10,6 +10,24 @@ import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 
+function calcTimeLeft(expiresAt: string | null) {
+  if (!expiresAt) return null;
+  const targetTime = new Date(expiresAt).getTime();
+  const now = Date.now();
+  const diffMs = targetTime - now;
+
+  if (diffMs <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+
+  return {
+    days: Math.floor(diffMs / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((diffMs % (1000 * 60)) / 1000)
+  };
+}
+
 function TrialCountdownTimer({ 
   trialInfo, 
   onOpenPaymentModal 
@@ -17,27 +35,13 @@ function TrialCountdownTimer({
   trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
   onOpenPaymentModal: () => void;
 }) {
-  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(() => calcTimeLeft(trialInfo.expiresAt));
 
   useEffect(() => {
     if (!trialInfo.expiresAt) return;
 
     const updateTimer = () => {
-      const targetTime = new Date(trialInfo.expiresAt!).getTime();
-      const now = Date.now();
-      const diffMs = targetTime - now;
-
-      if (diffMs <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-
-      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-
-      setTimeLeft({ days, hours, minutes, seconds });
+      setTimeLeft(calcTimeLeft(trialInfo.expiresAt));
     };
 
     updateTimer();
