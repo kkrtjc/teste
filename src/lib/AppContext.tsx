@@ -1105,21 +1105,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
             id: bird.id,
             user_id: user.id,
             anilha: bird.anilha,
-            nome: bird.nome,
+            nome: bird.nome || null,
             sexo: bird.sexo,
             raca: bird.raca,
-            baia: bird.baia,
+            baia: bird.baia || 'ND',
             status: bird.status,
-            imagem: bird.imagens?.[0] || bird.imagem,
-            vacinas: bird.vacinas,
-            origem: bird.origem,
-            casal_id: bird.casalId,
-            pai_id: bird.paiId,
-            mae_id: bird.maeId,
-            is_pai_externo: bird.isPaiExterno,
-            is_mae_externo: bird.isMaeExterno,
-            data_nascimento: bird.dataNascimento,
-            peso: bird.peso,
+            imagem: bird.imagens?.[0] || bird.imagem || null,
+            vacinas: bird.vacinas || null,
+            origem: bird.origem || 'Criatório',
+            casal_id: bird.casalId || null,
+            pai_id: bird.paiId || null,
+            mae_id: bird.maeId || null,
+            is_pai_externo: !!bird.isPaiExterno,
+            is_mae_externo: !!bird.isMaeExterno,
+            data_nascimento: bird.dataNascimento || null,
+            peso: bird.peso || null,
             imagens: bird.imagens || [],
             observacoes: bird.observacoes || ''
           })
@@ -1148,12 +1148,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = { ...updatedBird };
-        if (updatedBird.casalId !== undefined) { dbUpdate.casal_id = updatedBird.casalId; delete dbUpdate.casalId; }
-        if (updatedBird.paiId !== undefined) { dbUpdate.pai_id = updatedBird.paiId; delete dbUpdate.paiId; }
-        if (updatedBird.maeId !== undefined) { dbUpdate.mae_id = updatedBird.maeId; delete dbUpdate.maeId; }
-        if (updatedBird.isPaiExterno !== undefined) { dbUpdate.is_pai_externo = updatedBird.isPaiExterno; delete dbUpdate.isPaiExterno; }
-        if (updatedBird.isMaeExterno !== undefined) { dbUpdate.is_mae_externo = updatedBird.isMaeExterno; delete dbUpdate.isMaeExterno; }
-        if (updatedBird.dataNascimento !== undefined) { dbUpdate.data_nascimento = updatedBird.dataNascimento; delete dbUpdate.dataNascimento; }
+        if (updatedBird.casalId !== undefined) { dbUpdate.casal_id = updatedBird.casalId || null; delete dbUpdate.casalId; }
+        if (updatedBird.paiId !== undefined) { dbUpdate.pai_id = updatedBird.paiId || null; delete dbUpdate.paiId; }
+        if (updatedBird.maeId !== undefined) { dbUpdate.mae_id = updatedBird.maeId || null; delete dbUpdate.maeId; }
+        if (updatedBird.isPaiExterno !== undefined) { dbUpdate.is_pai_externo = !!updatedBird.isPaiExterno; delete dbUpdate.isPaiExterno; }
+        if (updatedBird.isMaeExterno !== undefined) { dbUpdate.is_mae_externo = !!updatedBird.isMaeExterno; delete dbUpdate.isMaeExterno; }
+        if (updatedBird.dataNascimento !== undefined) { dbUpdate.data_nascimento = updatedBird.dataNascimento || null; delete dbUpdate.dataNascimento; }
+        if (updatedBird.peso !== undefined) { dbUpdate.peso = updatedBird.peso || null; }
         if (updatedBird.imagens !== undefined) {
           dbUpdate.imagem = updatedBird.imagens?.[0] || null;
           dbUpdate.imagens = updatedBird.imagens;

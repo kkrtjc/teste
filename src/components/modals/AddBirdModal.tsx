@@ -306,69 +306,79 @@ export function AddBirdModal() {
   };
 
   const handleSave = () => {
-    if (!anilha || !raca) return;
+    try {
+      if (!anilha.trim() || !raca.trim()) return;
 
-    const isPaiExterno = !paiId && !!paiExterno;
-    const isMaeExterno = !maeId && !!maeExterno;
+      const isPaiExternoVal = !paiId && !!paiExterno;
+      const isMaeExternoVal = !maeId && !!maeExterno;
+      const cleanPaiId = isPaiExternoVal ? paiExterno.trim() : paiId.trim();
+      const cleanMaeId = isMaeExternoVal ? maeExterno.trim() : maeId.trim();
 
-    const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
+      const origem: 'Criatório' | 'Externo' | 'Cruzamento' = nascidaAqui === false ? 'Externo' : casalId ? 'Cruzamento' : 'Criatório';
 
-    const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
-    if (outrasVacinas.trim()) {
-      vacList.push(outrasVacinas.trim());
-    }
-    const finalVacinas = vacList.join(', ');
+      const vacList = selectedVacs.map(v => v.charAt(0).toUpperCase() + v.slice(1));
+      if (outrasVacinas.trim()) {
+        vacList.push(outrasVacinas.trim());
+      }
+      const finalVacinas = vacList.join(', ');
 
-    const imagesToSave = previewImages.slice(0, 3);
+      const imagesToSave = previewImages.slice(0, 3);
 
-    const data = {
-      anilha, nome, sexo, raca,
-      baia: baia || 'ND',
-      status, vacinas: finalVacinas, origem,
-      casalId: casalId || undefined,
-      isPaiExterno,
-      paiId: isPaiExterno ? paiExterno : paiId,
-      isMaeExterno,
-      maeId: isMaeExterno ? maeExterno : maeId,
-      dataNascimento: dataNasc, peso,
-      imagem: imagesToSave[0] || undefined,
-      imagens: imagesToSave,
-      observacoes: descricaoOrigem || undefined,
-    };
+      const data = {
+        anilha: anilha.trim(),
+        nome: nome.trim(),
+        sexo,
+        raca: raca.trim(),
+        baia: baia.trim() || 'ND',
+        status,
+        vacinas: finalVacinas,
+        origem,
+        casalId: casalId || undefined,
+        isPaiExterno: isPaiExternoVal,
+        paiId: cleanPaiId || undefined,
+        isMaeExterno: isMaeExternoVal,
+        maeId: cleanMaeId || undefined,
+        dataNascimento: dataNasc || undefined,
+        peso: peso || undefined,
+        imagem: imagesToSave[0] || undefined,
+        imagens: imagesToSave,
+        observacoes: descricaoOrigem || undefined,
+      };
 
-    let targetId = birdToEditId;
+      let targetId = birdToEditId;
 
-    if (birdToEditId) {
-      editBird(birdToEditId, data);
-    } else {
-      targetId = Date.now().toString();
-      addBird({ id: targetId, ...data });
+      if (birdToEditId) {
+        editBird(birdToEditId, data);
+      } else {
+        targetId = Date.now().toString();
+        addBird({ id: targetId, ...data });
 
-      // ── Auto-create virtual couple for genealogy if both parents registered ──
-      if (paiId && maeId && !casalId) {
-        const alreadyExists = couples.some(
-          c => c.machoId === paiId && c.femeaId === maeId
-        );
-        if (!alreadyExists) {
-          addCouple({
-            id: `auto-${Date.now()}`,
-            machoId: paiId,
-            femeaId: maeId,
-            objetivo: 'Genealogia (gerado automaticamente)',
-            dataInicio: new Date().toISOString().split('T')[0],
-            status: 'Ativo',
-          });
+        // Auto-cria casal virtual para genealogia se ambos os pais forem cadastrados
+        if (paiId && maeId && !casalId) {
+          const alreadyExists = couples.some(
+            c => c.machoId === paiId && c.femeaId === maeId
+          );
+          if (!alreadyExists) {
+            addCouple({
+              id: `auto-${Date.now()}`,
+              machoId: paiId,
+              femeaId: maeId,
+              objetivo: 'Genealogia (gerado automaticamente)',
+              dataInicio: new Date().toISOString().split('T')[0],
+              status: 'Ativo',
+            });
+          }
         }
       }
-    }
 
-    alert('✨ Ave cadastrada com sucesso!');
-    closeModals();
+      closeModals();
 
-    if (targetId) {
-      setTimeout(() => {
+      if (targetId) {
         openBirdProfile(targetId);
-      }, 100);
+      }
+    } catch (err) {
+      console.error("Erro ao salvar ave:", err);
+      alert("Ocorreu um erro ao salvar a ave. Por favor, tente novamente.");
     }
   };
 
