@@ -1,14 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  ShieldCheck, Database
+  Database, Sparkles, ChevronRight, Copy, MessageSquare, X
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 
-function TrialCountdownTimer({ trialInfo }: { trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null } }) {
+function TrialCountdownTimer({ 
+  trialInfo, 
+  onOpenPaymentModal 
+}: { 
+  trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
+  onOpenPaymentModal: () => void;
+}) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
 
   useEffect(() => {
@@ -48,28 +55,42 @@ function TrialCountdownTimer({ trialInfo }: { trialInfo: { isTrial: boolean; rem
   const isUrgent = (timeLeft?.days ?? trialInfo.remainingDays) <= 3;
 
   return (
-    <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 px-3 py-1.5 rounded-xl border transition-all shadow-md ${
-      isUrgent
-        ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
-        : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-    }`}>
-      <div className="flex items-center gap-1.5 font-black text-xs">
-        <span className="text-sm">{isUrgent ? '⏳' : '⏱️'}</span>
-        <span>{isUrgent ? 'Teste Gratuito Acabando:' : 'Teste Gratuito:'}</span>
+    <div className="flex flex-col items-start gap-2 mt-2">
+      {/* Timer badge */}
+      <div className={`flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-xl border transition-all shadow-md ${
+        isUrgent
+          ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
+          : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+      }`}>
+        <div className="flex items-center gap-1.5 font-black text-xs">
+          <span className="text-sm">{isUrgent ? '⏳' : '⏱️'}</span>
+          <span>{isUrgent ? 'Teste Gratuito Acabando:' : 'Teste Gratuito:'}</span>
+        </div>
+
+        <div className="flex items-center gap-1 font-mono font-black text-xs text-white bg-black/60 px-2.5 py-0.5 rounded-lg border border-white/10 shadow-inner">
+          {timeLeft ? (
+            <>
+              <span className="text-amber-400 font-bold">{timeLeft.days}d</span> :
+              <span>{String(timeLeft.hours).padStart(2, '0')}h</span> :
+              <span>{String(timeLeft.minutes).padStart(2, '0')}m</span> :
+              <span className="text-orange-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+            </>
+          ) : (
+            <span>{trialInfo.remainingDays} dias restantes</span>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-1 font-mono font-black text-xs text-white bg-black/60 px-2.5 py-0.5 rounded-lg border border-white/10 shadow-inner">
-        {timeLeft ? (
-          <>
-            <span className="text-amber-400 font-bold">{timeLeft.days}d</span> :
-            <span>{String(timeLeft.hours).padStart(2, '0')}h</span> :
-            <span>{String(timeLeft.minutes).padStart(2, '0')}m</span> :
-            <span className="text-orange-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
-          </>
-        ) : (
-          <span>{trialInfo.remainingDays} dias restantes</span>
-        )}
-      </div>
+      {/* 💳 BOTÃO / LINK DE PAGAMENTO ANTECIPADO LOGO ABAIXO DO TIMER */}
+      <button
+        type="button"
+        onClick={onOpenPaymentModal}
+        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/25 to-amber-500/20 hover:from-amber-500/30 hover:to-orange-500/35 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-white text-xs font-black transition-all active:scale-95 shadow-lg group cursor-pointer"
+      >
+        <Sparkles size={14} className="text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
+        <span>Antecipar Pagamento / Renovar Assinatura</span>
+        <ChevronRight size={14} className="text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+      </button>
     </div>
   );
 }
@@ -81,7 +102,7 @@ export function Settings() {
     coupleEggs, incubationLots,
     importBackup, openTutorial
   } = useAppContext();
-  const { signOut, isLocalMode, cpf, user, trialInfo } = useAuth();
+  const { signOut, isLocalMode, cpf, user, trialInfo, triggerWebhookPayment } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email || user?.email || '');
@@ -90,6 +111,17 @@ export function Settings() {
   const [isSaved, setIsSaved] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
+
+  // Estado para Modal de Pagamento Antecipado da Assinatura
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [copiedPix, setCopiedPix] = useState(false);
+
+  const handleCopyPix = () => {
+    navigator.clipboard.writeText('mura.manager.pay@gmail.com');
+    setCopiedPix(true);
+    setTimeout(() => setCopiedPix(false), 3000);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -241,8 +273,11 @@ export function Settings() {
               {user?.email || email || 'Conta do Mura Manager'}
             </p>
 
-            {/* ⏱️ TIMER DO TESTE GRATUITO SOBRE O NOME DO CRIATÓRIO */}
-            <TrialCountdownTimer trialInfo={trialInfo} />
+            {/* ⏱️ TIMER DO TESTE GRATUITO COM LINK DE PAGAMENTO ANTECIPADO */}
+            <TrialCountdownTimer 
+              trialInfo={trialInfo} 
+              onOpenPaymentModal={() => setIsPaymentModalOpen(true)} 
+            />
 
             <div className="flex items-center gap-2 mt-2">
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
@@ -279,165 +314,147 @@ export function Settings() {
       <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
         <div className="border-b border-theme-border/40 pb-3">
           <h3 className="text-base font-black text-white flex items-center gap-2">
-            <Home size={18} className="text-theme-primary" /> Perfil do Criatório
+            <Home size={18} className="text-theme-primary" /> Informações do Criatório
           </h3>
-          <p className="text-xs text-theme-text-muted mt-0.5">Informações exibidas nos relatórios e fichas do sistema.</p>
+          <p className="text-xs text-theme-text-muted mt-1">
+            Personalize o nome e foto do seu criatório. Essas informações aparecem em relatórios exportados.
+          </p>
         </div>
 
-        {/* Foto */}
-        <div className="flex flex-col items-center">
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={fileInputRef} 
-            onChange={handleImageUpload} 
-            className="hidden" 
-          />
-          <div 
-            onClick={() => fileInputRef.current?.click()}
-            className="relative w-28 h-28 rounded-2xl border-2 border-dashed border-theme-border flex flex-col items-center justify-center text-theme-text-muted hover:border-theme-primary cursor-pointer bg-theme-base transition-all overflow-hidden group shadow-lg"
-          >
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative group shrink-0">
             {previewImage ? (
-              <>
-                <img src={previewImage} alt="Logo do Criatório" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                  <Camera size={22} className="mb-1" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Alterar</span>
-                </div>
-              </>
+              <img src={previewImage} alt="Preview" className="w-24 h-24 rounded-2xl object-cover border-2 border-theme-primary shadow-lg" />
             ) : (
-              <>
-                <Camera size={26} className="mb-1 opacity-60" />
-                <span className="text-[9px] font-bold uppercase tracking-wider">Enviar Logo</span>
-              </>
+              <div className="w-24 h-24 rounded-2xl bg-theme-base border-2 border-theme-border flex items-center justify-center text-4xl shadow-inner">
+                🐓
+              </div>
             )}
-          </div>
-          <p className="text-[11px] text-theme-text-muted mt-2">Clique para enviar ou alterar a foto do seu criatório</p>
-          
-          {/* ⏱️ TIMER DO TESTE GRATUITO ABAIXO DA FOTO */}
-          <TrialCountdownTimer trialInfo={trialInfo} />
-        </div>
+            
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity font-bold text-xs gap-1"
+            >
+              <Camera size={20} />
+              <span>Alterar Foto</span>
+            </button>
 
-        {/* Form Fields */}
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-              <Home size={13} /> Nome do Criatório
-            </label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-              placeholder="Ex: Criatório Mura &amp; Genética" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-                <Mail size={13} /> E-mail de Contato
+          <div className="space-y-4 flex-1 w-full">
+            <div>
+              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block mb-1.5">
+                Nome do Criatório
               </label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-                placeholder="Ex: contato@criatorio.com" 
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ex: Criatório Mura Elite"
+                className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-theme-primary transition-colors font-bold"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase flex items-center gap-2">
-                <Phone size={13} /> Telefone / WhatsApp
-              </label>
-              <input 
-                type="tel" 
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors" 
-                placeholder="Ex: (11) 99999-9999" 
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                  <Mail size={14} /> E-mail de Contato
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="contato@criatorio.com"
+                  className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-theme-primary transition-colors font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                  <Phone size={14} /> WhatsApp
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-theme-primary transition-colors font-medium"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <button 
-          onClick={handleSave}
-          className="w-full btn-primary flex justify-center items-center gap-2 py-3 rounded-xl font-black text-sm shadow-lg active:scale-95 transition-all"
-        >
+        <div className="flex items-center justify-between border-t border-theme-border/40 pt-4">
           {isSaved ? (
-            <span className="flex items-center gap-2 text-black font-black"><CheckCircle2 size={18} /> Salvo com Sucesso!</span>
-          ) : (
-            <><Save size={18} /> Salvar Alterações do Perfil</>
-          )}
-        </button>
+            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 animate-fade-in">
+              <CheckCircle2 size={16} /> Dados salvos com sucesso!
+            </span>
+          ) : <span />}
+
+          <button
+            onClick={handleSave}
+            className="btn-primary !px-5 !py-2.5 flex items-center gap-2 text-xs font-black shadow-lg shadow-theme-primary/20 active:scale-95 transition-all"
+          >
+            <Save size={16} /> Salvar Alterações
+          </button>
+        </div>
       </div>
 
-      {/* ── CARD 2: ESCLARECIMENTO DE NUVEM & BACKUP ── */}
-      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+      {/* ── CARD 2: BACKUP E SEGURANÇA DOS DADOS ── */}
+      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
         <div className="border-b border-theme-border/40 pb-3">
           <h3 className="text-base font-black text-white flex items-center gap-2">
-            <ShieldCheck size={18} className="text-emerald-400" /> Sincronização Automática na Nuvem
+            <Database size={18} className="text-theme-primary" /> Cópia de Segurança (Backup)
           </h3>
-          <p className="text-xs text-theme-text-muted mt-0.5">Segurança dos seus dados em tempo real.</p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
-          <p className="text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-            Seus dados estão protegidos e salvos na Nuvem (Supabase)!
-          </p>
-          <p className="text-[11px] leading-relaxed text-emerald-200/90">
-            Toda ave cadastrada, raça, lote ou registro de ovos é <strong>salvo automaticamente no seu perfil da nuvem</strong> a cada alteração. Mesmo que você troque de celular, formate o aparelho ou use outro navegador, basta fazer login com sua conta <strong>({user?.email || 'Google/E-mail'})</strong> para acessar todos os seus dados instantaneamente.
+          <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
+            Seus dados são sincronizados automaticamente na nuvem. Você também pode exportar um arquivo JSON com todo o histórico do criatório para guardar no computador ou celular.
           </p>
         </div>
 
-        {/* Central de Backup Manual */}
-        <div className="pt-2 space-y-3">
-          <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <Database size={14} className="text-theme-primary" /> Backup Manual (Cópia de Segurança Offline)
-          </h4>
-          <p className="text-xs text-theme-text-muted leading-relaxed">
-            Você pode baixar um arquivo <code>.json</code> contendo uma cópia completa dos seus dados para guardar no seu computador, WhatsApp ou Google Drive por precaução.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <button
-              onClick={handleExportBackup}
-              className="flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
-            >
-              <Download size={16} className="text-theme-primary" /> Exportar Backup (Baixar JSON)
-            </button>
-
-            <div className="relative">
-              <input
-                type="file"
-                accept=".json"
-                ref={importFileInputRef}
-                onChange={handleImportBackup}
-                className="hidden"
-              />
-              <button
-                onClick={() => importFileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 p-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
-              >
-                <Upload size={16} className="text-blue-400" /> Restaurar Backup (Importar JSON)
-              </button>
-            </div>
+        {importStatus !== 'idle' && (
+          <div className={`p-4 rounded-xl border text-xs font-bold flex items-center gap-2 animate-fade-in ${
+            importStatus === 'success' 
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}>
+            {importStatus === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            <span>{importMessage}</span>
           </div>
+        )}
 
-          {importStatus === 'success' && (
-            <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold text-center animate-fade-in flex items-center justify-center gap-2">
-              <CheckCircle2 size={16} /> {importMessage}
-            </div>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button
+            onClick={handleExportBackup}
+            className="flex items-center justify-center gap-2.5 p-3.5 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-theme-primary/60 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
+          >
+            <Download size={16} className="text-theme-primary" />
+            <span>Fazer Backup (Exportar JSON)</span>
+          </button>
 
-          {importStatus === 'error' && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold text-center animate-fade-in flex items-center justify-center gap-2">
-              <AlertCircle size={16} /> {importMessage}
-            </div>
-          )}
+          <button
+            onClick={() => importFileInputRef.current?.click()}
+            className="flex items-center justify-center gap-2.5 p-3.5 bg-theme-base hover:bg-theme-surface-hover border border-theme-border hover:border-blue-500/60 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md"
+          >
+            <Upload size={16} className="text-blue-400" />
+            <span>Restaurar Backup (Importar JSON)</span>
+          </button>
+
+          <input
+            type="file"
+            ref={importFileInputRef}
+            onChange={handleImportBackup}
+            accept=".json"
+            className="hidden"
+          />
         </div>
       </div>
 
@@ -474,6 +491,109 @@ export function Settings() {
           <LogOut size={16} /> Sair da Conta (Logout)
         </button>
       </div>
+
+      {/* 💳 MODAL PORTAL DE PAGAMENTO ANTECIPADO DA ASSINATURA */}
+      {isPaymentModalOpen && createPortal(
+        <div className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl p-6 space-y-5 animate-scale-up relative">
+            <div className="flex items-center justify-between border-b border-theme-border pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Antecipar Assinatura / Pagamento</h3>
+                  <p className="text-[10px] text-theme-text-muted">Ativação instantânea via Pix ou Cartão</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Plan selection */}
+            <div className="grid grid-cols-2 gap-3">
+              <div 
+                onClick={() => setSelectedPlan('monthly')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                  selectedPlan === 'monthly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                }`}
+              >
+                <p className="font-bold text-xs text-white">Plano Mensal</p>
+                <p className="text-lg font-black text-amber-400 mt-1">R$ 19,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
+              </div>
+
+              <div 
+                onClick={() => setSelectedPlan('yearly')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
+                  selectedPlan === 'yearly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                }`}
+              >
+                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">Promo</span>
+                <p className="font-bold text-xs text-white">Plano Anual</p>
+                <p className="text-lg font-black text-emerald-400 mt-1">R$ 199,90<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
+              </div>
+            </div>
+
+            {/* Pix Key */}
+            <div className="bg-theme-base/60 border border-theme-border p-4 rounded-2xl space-y-3 text-center">
+              <p className="text-xs font-bold text-white">Chave Pix Oficial para Pagamento</p>
+              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-xs">
+                <span className="font-mono text-white text-[11px] truncate">mura.manager.pay@gmail.com</span>
+                <button
+                  onClick={handleCopyPix}
+                  className="p-1.5 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors"
+                >
+                  {copiedPix ? <CheckCircle2 size={12}/> : <Copy size={12}/>}
+                  <span>{copiedPix ? 'Copiado!' : 'Copiar'}</span>
+                </button>
+              </div>
+
+              <div className="pt-2 space-y-2.5">
+                <button 
+                  onClick={async () => {
+                    const { error } = await triggerWebhookPayment(selectedPlan, cpf);
+                    if (!error) {
+                      alert('Assinatura ativada com sucesso! Seu criatório está com acesso total renovado.');
+                      setIsPaymentModalOpen(false);
+                    } else {
+                      alert('Erro ao enviar Notificação de Pagamento.');
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-lg shadow-amber-500/20"
+                >
+                  <Sparkles size={16} />
+                  <span>Confirmar Pagamento e Ativar Agora</span>
+                </button>
+
+                <a 
+                  href={`https://wa.me/55${farmSettings.phone.replace(/\D/g, '') || '5599999999999'}?text=${encodeURIComponent(`Olá! Realizei o pagamento antecipado da assinatura do Mura Manager (${cpf ? 'CPF: ' + cpf : 'Usuário'}). Segue comprovante para baixa.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-theme-text-muted hover:text-white bg-theme-surface border border-theme-border text-[11px]"
+                >
+                  <MessageSquare size={14} />
+                  <span>Enviar Comprovante pelo WhatsApp</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="px-4 py-2 bg-theme-base hover:bg-white/5 border border-theme-border text-white rounded-xl text-xs font-bold transition-all"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
