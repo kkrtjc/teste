@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
@@ -249,9 +250,9 @@ export function BirdProfileModal() {
     setSearchQuery('');
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
       onClick={closeModals}
       onTouchMove={e => e.preventDefault()}
     >
@@ -283,7 +284,7 @@ export function BirdProfileModal() {
           </div>
         </div>
         
-        <div ref={modalScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden">
+        <div ref={modalScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden modal-scrollable-content overscroll-contain touch-pan-y">
           {/* Cover / Header section with Carousel */}
           <div className="relative h-64 bg-theme-base select-none">
             {images.length > 0 ? (
@@ -953,6 +954,7 @@ export function BirdProfileModal() {
         )}
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

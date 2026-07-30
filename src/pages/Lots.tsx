@@ -919,7 +919,7 @@ export function Lots() {
               <button type="button" onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSavePosturaSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -1068,7 +1068,7 @@ export function Lots() {
               <button type="button" onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveEngordaSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -1186,7 +1186,7 @@ export function Lots() {
               <button type="button" onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSavePintinhosSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -1288,7 +1288,7 @@ export function Lots() {
               <button type="button" onClick={resetCrescimento} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveCrescimentoSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">

@@ -124,6 +124,13 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    document.body.classList.add('modal-open-lock');
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, []);
+
   const availableFemeas = useMemo(() => {
     return birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu');
   }, [birds]);
@@ -171,8 +178,16 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      onClick={onClose}
+      onTouchMove={e => e.preventDefault()}
+    >
+      <div 
+        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" 
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="font-black text-white flex items-center gap-2 text-sm">
@@ -186,7 +201,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
           </button>
         </div>
 
-        <div className="overflow-y-auto smooth-scroll flex-1 p-5 space-y-4 text-xs">
+        <div className="overflow-y-auto smooth-scroll flex-1 p-5 space-y-4 text-xs modal-scrollable-content overscroll-contain touch-pan-y">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 font-bold">
               <AlertCircle size={14} />

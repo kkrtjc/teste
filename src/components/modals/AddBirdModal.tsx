@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
@@ -820,9 +821,9 @@ export function AddBirdModal() {
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
       onClick={closeModals}
       onTouchMove={e => e.preventDefault()}
     >
@@ -866,7 +867,7 @@ export function AddBirdModal() {
         </div>
 
         {/* Body – fully scrollable */}
-        <div className="flex-1 overflow-y-auto smooth-scroll p-5 overscroll-contain">
+        <div className="flex-1 overflow-y-auto smooth-scroll p-5 overscroll-contain modal-scrollable-content touch-pan-y">
           {renderStep()}
         </div>
 
@@ -919,6 +920,7 @@ export function AddBirdModal() {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

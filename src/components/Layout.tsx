@@ -317,6 +317,23 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     };
   }, [isAnyModalActive]);
 
+  useEffect(() => {
+    if (!isAnyModalActive) return;
+
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      const scrollableContent = target?.closest('.modal-scrollable-content');
+      if (!scrollableContent) {
+        if (e.cancelable) e.preventDefault();
+      }
+    };
+
+    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener('touchmove', handleGlobalTouchMove);
+    };
+  }, [isAnyModalActive]);
+
   // Garante que qualquer redirecionamento, navegação por atalho ou troca de aba abra no TOPO da página
   useEffect(() => {
     if (mainScrollRef.current) {

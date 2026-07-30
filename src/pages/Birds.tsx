@@ -393,6 +393,17 @@ export function Birds() {
     );
   }, [currentBirds, birdSearch]);
 
+  useEffect(() => {
+    if (showNewBreedModal) {
+      document.body.classList.add('modal-open-lock');
+    } else {
+      document.body.classList.remove('modal-open-lock');
+    }
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, [showNewBreedModal]);
+
   return (
     <div className="space-y-5 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden flex flex-col h-full">
       
@@ -606,8 +617,16 @@ export function Birds() {
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={() => setShowNewBreedModal(false)}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          onClick={() => setShowNewBreedModal(false)}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-hidden animate-scale-up" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
               <h3 className="font-bold text-lg text-white">
                 {breedToEditId ? 'Editar Raça' : 'Cadastrar Nova Raça'}
@@ -615,7 +634,7 @@ export function Birds() {
               <button onClick={() => setShowNewBreedModal(false)} className="text-theme-text-muted hover:text-white">✕</button>
             </div>
             
-            <div className="p-5 space-y-5 overflow-y-auto flex-1 overscroll-contain">
+            <div className="p-5 space-y-5 overflow-y-auto flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
 
               {/* ── Nome + Foto em linha ── */}
               <div className="flex gap-3 items-start">
