@@ -292,6 +292,31 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
+  const isAnyModalActive = isAddBirdModalOpen || !!selectedBirdProfileId || isTourOpen || isProfileSetupOpen || isAdminModalOpen;
+
+  useEffect(() => {
+    if (isAnyModalActive) {
+      document.body.classList.add('modal-open-lock');
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = 'hidden';
+        mainScrollRef.current.style.pointerEvents = 'none';
+      }
+    } else {
+      document.body.classList.remove('modal-open-lock');
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = '';
+        mainScrollRef.current.style.pointerEvents = '';
+      }
+    }
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+      if (mainScrollRef.current) {
+        mainScrollRef.current.style.overflow = '';
+        mainScrollRef.current.style.pointerEvents = '';
+      }
+    };
+  }, [isAnyModalActive]);
+
   // Garante que qualquer redirecionamento, navegação por atalho ou troca de aba abra no TOPO da página
   useEffect(() => {
     if (mainScrollRef.current) {
