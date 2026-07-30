@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useAppContext } from '../lib/AppContext';
 import { 
@@ -30,13 +30,26 @@ export function PaywallScreen() {
     return `https://wa.me/55${farmSettings.phone.replace(/\D/g, '') || '5599999999999'}?text=${text}`;
   };
 
+  useEffect(() => {
+    document.body.classList.add('modal-open-lock');
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-hidden select-none">
+    <div 
+      className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 overflow-hidden select-none touch-none"
+      onTouchMove={e => e.preventDefault()}
+    >
       {/* Glow Effects */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-theme-primary/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* CARD FIXO ÚNICO SEM ROLAGEM */}
-      <div className="w-full max-w-xl bg-theme-surface border-2 border-theme-border/80 rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between max-h-[96vh] relative z-10 animate-scale-up">
+      <div 
+        className="w-full max-w-xl bg-theme-surface border-2 border-theme-border/80 rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between max-h-[96vh] relative z-10 animate-scale-up overflow-hidden"
+        onTouchMove={e => e.stopPropagation()}
+      >
         
         {/* Header Compacto */}
         <div className="text-center space-y-1">

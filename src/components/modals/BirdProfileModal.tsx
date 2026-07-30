@@ -130,6 +130,18 @@ export function BirdProfileModal() {
 
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
+  // ── Lock body scroll while modal is open ──
+  useEffect(() => {
+    if (selectedBirdProfileId) {
+      document.body.classList.add('modal-open-lock');
+    } else {
+      document.body.classList.remove('modal-open-lock');
+    }
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, [selectedBirdProfileId]);
+
   useEffect(() => {
     setCurrentImgIndex(0);
     setLinkingTarget(null);
@@ -238,8 +250,16 @@ export function BirdProfileModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={closeModals}>
-      <div className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-x-hidden touch-pan-y flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up relative" onClick={e=>e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      onClick={closeModals}
+      onTouchMove={e => e.preventDefault()}
+    >
+      <div 
+        className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up relative" 
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">

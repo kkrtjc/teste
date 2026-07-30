@@ -33,6 +33,14 @@
   --safe-right: max(env(safe-area-inset-right, 0px), 12px);
 }
 
+/* ── BLOQUEIO DE ROLAGEM DO FUNDO QUANDO MODAIS ESTÃO ABERTOS ── */
+body.modal-open-lock,
+body.modal-open-lock main {
+  overflow: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: contain !important;
+}
+
 .app-safe-frame {
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);

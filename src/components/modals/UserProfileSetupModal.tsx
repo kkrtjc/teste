@@ -62,11 +62,28 @@ export function UserProfileSetupModal({
     onComplete();
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open-lock');
+    } else {
+      document.body.classList.remove('modal-open-lock');
+    }
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto overflow-x-hidden">
-      <div className="bg-theme-surface border border-theme-primary/40 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative my-auto animate-scale-up space-y-6 overflow-x-hidden">
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-hidden touch-none select-none"
+      onTouchMove={e => e.preventDefault()}
+    >
+      <div 
+        className="bg-theme-surface border border-theme-primary/40 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative my-auto animate-scale-up space-y-6 overflow-hidden"
+        onTouchMove={e => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="text-center space-y-2 border-b border-theme-border/60 pb-4">

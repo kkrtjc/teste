@@ -205,6 +205,14 @@ export function AddBirdModal() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Lock body scroll while modal is open ──
+  useEffect(() => {
+    document.body.classList.add('modal-open-lock');
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, []);
+
   // ── Populate when editing ──
   useEffect(() => {
     if (!isAddBirdModalOpen) return;
@@ -813,9 +821,17 @@ export function AddBirdModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={closeModals}>
-      {/* Container relativo para os overlays internos */}
-      <div className="relative bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-x-hidden touch-pan-y flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up" onClick={e=>e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      onClick={closeModals}
+      onTouchMove={e => e.preventDefault()}
+    >
+      {/* Container relativo para os overlays internos (travado contra rolagem horizontal/vertical da janela) */}
+      <div 
+        className="relative bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up" 
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
 
         {/* ── Mini-overlay: detalhe de ave duplicada ── */}
         {detailBird && (

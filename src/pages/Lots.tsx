@@ -209,6 +209,18 @@ export function Lots() {
     target: 'engorda',
   });
 
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen;
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.classList.add('modal-open-lock');
+    } else {
+      document.body.classList.remove('modal-open-lock');
+    }
+    return () => {
+      document.body.classList.remove('modal-open-lock');
+    };
+  }, [isAnyModalOpen]);
+
   const openTransferModal = (lote: any, target: 'engorda' | 'crescimento') => {
     setConfirmTransfer({ isOpen: true, lote, target });
   };
@@ -889,10 +901,18 @@ export function Lots() {
         </div>
       )}
 
-      {/* ── MODAL POSTURA (TRAVADO HORIZONTALMENTE) ── */}
+      {/* ── MODAL POSTURA ── */}
       {showPostura && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={resetPostura}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          onClick={resetPostura}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Egg className="text-theme-primary" size={20} />Novo Lote de Postura</h3>
@@ -1030,10 +1050,18 @@ export function Lots() {
         document.body
       )}
 
-      {/* ── MODAL ENGORDA (TRAVADO HORIZONTALMENTE) ── */}
+      {/* ── MODAL ENGORDA ── */}
       {showEngorda && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={resetEngorda}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          onClick={resetEngorda}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Beef className="text-theme-primary" size={20} />Novo Lote de Engorda</h3>
@@ -1140,10 +1168,18 @@ export function Lots() {
         document.body
       )}
 
-      {/* ── MODAL PINTINHOS (TRAVADO HORIZONTALMENTE) ── */}
+      {/* ── MODAL PINTINHOS ── */}
       {showPintinhos && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={resetPintinhos}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          onClick={resetPintinhos}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Baby className="text-theme-primary" size={20} />Novo Lote de Pintinhos</h3>
@@ -1234,10 +1270,18 @@ export function Lots() {
         document.body
       )}
 
-      {/* ── MODAL CRESCIMENTO (TRAVADO HORIZONTALMENTE) ── */}
+      {/* ── MODAL CRESCIMENTO ── */}
       {showCrescimento && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={resetCrescimento}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          onClick={resetCrescimento}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Timer className="text-theme-primary" size={20} />Novo Lote de Crescimento</h3>
@@ -1330,8 +1374,16 @@ export function Lots() {
 
       {/* ── MODAL INTERATIVO DE CONFIRMAÇÃO DO NÚMERO TOTAL DE AVES NO LOTE ── */}
       {confirmLotModal.isOpen && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 animate-fade-in overflow-x-hidden touch-pan-y" onClick={() => setConfirmLotModal(prev => ({ ...prev, isOpen: false }))}>
-          <div className="bg-theme-surface border-2 border-theme-primary/50 w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 animate-fade-in overflow-hidden touch-none select-none" 
+          onClick={() => setConfirmLotModal(prev => ({ ...prev, isOpen: false }))}
+          onTouchMove={e => e.preventDefault()}
+        >
+          <div 
+            className="bg-theme-surface border-2 border-theme-primary/50 w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up overflow-hidden" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-theme-primary/15 border border-theme-primary/30 text-theme-primary flex items-center justify-center font-bold text-lg shrink-0">
                 <AlertCircle size={22} />
