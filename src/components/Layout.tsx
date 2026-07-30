@@ -321,9 +321,9 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   ];
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#121218] p-1 sm:p-2 pt-[max(env(safe-area-inset-top),6px)] pb-[max(env(safe-area-inset-bottom),6px)] pl-[max(env(safe-area-inset-left),6px)] pr-[max(env(safe-area-inset-right),6px)] box-border">
-      {/* Container Interno Protegido por Borda de Segurança Invisível */}
-      <div className="flex flex-1 w-full h-full border border-theme-border/40 rounded-2xl sm:rounded-3xl overflow-hidden bg-theme-base shadow-2xl relative min-w-0">
+    <div className="flex items-center justify-center h-[100dvh] w-full overflow-hidden bg-[#121218] p-2.5 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] box-border">
+      {/* Container Interno Protegido e Perfeitamente Centralizado */}
+      <div className="flex flex-1 w-full h-full max-w-7xl border border-theme-border/50 rounded-2xl sm:rounded-3xl overflow-hidden bg-theme-base shadow-2xl relative min-w-0">
         {isAddBirdModalOpen && <AddBirdModal />}
         {selectedBirdProfileId && <BirdProfileModal />}
         {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
