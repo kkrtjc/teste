@@ -190,7 +190,7 @@ export function Birds() {
   const { 
     breeds, addBreed, editBreed, removeBreed,
     birds, editBird, openAddBirdModal, openBirdProfile, 
-    activeBreed, setActiveBreed 
+    activeBreed, setActiveBreed, showToast 
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<'aves' | 'racas'>('aves');
@@ -340,6 +340,7 @@ export function Birds() {
       if (oldBreed && activeBreed === oldBreed.nome) {
         setActiveBreed(newBreedName);
       }
+      showToast("Raça salva com sucesso!", "success");
     } else {
       addBreed({
         id: Date.now().toString(),
@@ -351,6 +352,7 @@ export function Birds() {
         tempoCrescimento: newBreedTempoCrescimento,
         pesoMedio: newBreedPesoMedio
       });
+      showToast("Raça salva com sucesso!", "success");
     }
     
     setShowNewBreedModal(false);
@@ -381,7 +383,12 @@ export function Birds() {
       list = list.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu');
     }
     
-    return list;
+    // Ordenar em ordem crescente de anilha (natural sorting: 1, 2, 10, A-1, A-2, etc.)
+    return [...list].sort((a, b) => {
+      const anilhaA = (a.anilha || '').toString().trim();
+      const anilhaB = (b.anilha || '').toString().trim();
+      return anilhaA.localeCompare(anilhaB, undefined, { numeric: true, sensitivity: 'base' });
+    });
   }, [birds, activeBreed, sexFilter, statusFilter]);
 
   const filteredBirds = useMemo(() => {

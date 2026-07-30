@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import localforage from 'localforage';
 import { useAuth } from './AuthContext';
@@ -172,6 +172,9 @@ type AppContextType = {
   addIncubationLot: (lot: IncubationLot) => void;
   editIncubationLot: (id: string, updatedLot: Partial<IncubationLot>) => void;
   removeIncubationLot: (id: string) => void;
+
+  // Toast Notifications
+  showToast: (message: string, type?: 'success' | 'info' | 'warning') => void;
 
   // Onboarding & Profile Setup Optional Helpers
   isTourOpen?: boolean;
@@ -1834,6 +1837,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const [toast, setToast] = useState<{ message: string; type?: 'success' | 'info' | 'warning' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(prev => (prev?.message === message ? null : prev));
+    }, 3200);
+  }, []);
+
   const openProfileSetup = () => setIsProfileSetupOpen(true);
   const closeProfileSetup = () => setIsProfileSetupOpen(false);
   const finishProfileSetup = () => {
@@ -1856,18 +1868,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isTutorialOpen, openTutorial, closeTutorial,
     activeBreed, setActiveBreed,
     incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
+    showToast,
     isTourOpen, isProfileSetupOpen,
     startTour, closeTour, finishTour,
     openProfileSetup, closeProfileSetup, finishProfileSetup
   }), [
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots, isTourOpen, isProfileSetupOpen
+    isTutorialOpen, activeBreed, incubationLots, showToast, isTourOpen, isProfileSetupOpen
   ]);
 
   return (
     <AppContext.Provider value={contextValue}>
       {children}
+      {toast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none animate-bounce-in">
+          <div className={`px-5 py-3 rounded-2xl shadow-2xl border flex items-center gap-3 backdrop-blur-md transition-all ${
+            toast.type === 'success' 
+              ? 'bg-emerald-600/95 text-white border-emerald-400/50 shadow-emerald-900/40' 
+              : toast.type === 'warning'
+              ? 'bg-amber-600/95 text-white border-amber-400/50 shadow-amber-900/40'
+              : 'bg-blue-600/95 text-white border-blue-400/50 shadow-blue-900/40'
+          }`}>
+            <span className="text-lg font-black">{toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+            <span className="text-sm font-extrabold tracking-wide">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </AppContext.Provider>
   );
 }

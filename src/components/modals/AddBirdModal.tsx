@@ -171,7 +171,7 @@ function BaiaDetailOverlay({
 export function AddBirdModal() {
   const {
     isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
-    preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple, openBirdProfile
+    preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple, openBirdProfile, showToast
   } = useAppContext();
 
   // ── Form fields ──
@@ -358,9 +358,11 @@ export function AddBirdModal() {
 
       if (birdToEditId) {
         editBird(birdToEditId, data);
+        showToast("Ave salva com sucesso!", "success");
       } else {
         targetId = Date.now().toString();
         addBird({ id: targetId, ...data });
+        showToast("Ave salva com sucesso!", "success");
 
         // Auto-cria casal virtual para genealogia se ambos os pais forem cadastrados
         if (paiId && maeId && !casalId) {
