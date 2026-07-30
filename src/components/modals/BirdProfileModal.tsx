@@ -250,6 +250,22 @@ export function BirdProfileModal() {
     setSearchQuery('');
   };
 
+  const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const target = e.target as HTMLElement | null;
+    const scrollContainer = target?.closest('.modal-scrollable-content') as HTMLElement | null;
+
+    if (!scrollContainer) {
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+
+    const hasScroll = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+    if (!hasScroll) {
+      if (e.cancelable) e.preventDefault();
+    }
+  };
+
   return createPortal(
     <div 
       className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
@@ -259,11 +275,11 @@ export function BirdProfileModal() {
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up relative" 
         onClick={e => e.stopPropagation()}
-        onTouchMove={e => e.stopPropagation()}
+        onTouchMove={handleCardTouchMove}
       >
         
         {/* Header */}
-        <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
+        <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0 touch-none select-none">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
           <div className="flex items-center gap-4">
             <button

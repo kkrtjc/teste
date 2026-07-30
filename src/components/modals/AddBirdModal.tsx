@@ -821,6 +821,22 @@ export function AddBirdModal() {
     }
   };
 
+  const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    const target = e.target as HTMLElement | null;
+    const scrollContainer = target?.closest('.modal-scrollable-content') as HTMLElement | null;
+
+    if (!scrollContainer) {
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+
+    const hasScroll = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+    if (!hasScroll) {
+      if (e.cancelable) e.preventDefault();
+    }
+  };
+
   return createPortal(
     <div 
       className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
@@ -831,7 +847,7 @@ export function AddBirdModal() {
       <div 
         className="relative bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up" 
         onClick={e => e.stopPropagation()}
-        onTouchMove={e => e.stopPropagation()}
+        onTouchMove={handleCardTouchMove}
       >
 
         {/* ── Mini-overlay: detalhe de ave duplicada ── */}
@@ -845,7 +861,7 @@ export function AddBirdModal() {
         )}
 
         {/* Header */}
-        <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0">
+        <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0 touch-none select-none">
           <div className="flex justify-between items-center mb-1">
             <h3 className="font-black text-lg text-white">
               {birdToEditId ? 'Editar Ave' : 'Nova Ave'}
@@ -872,7 +888,7 @@ export function AddBirdModal() {
         </div>
 
         {/* Footer nav */}
-        <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0">
+        <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0 touch-none select-none">
           {step > 0 ? (
             <button
               onClick={() => setStep(s => s - 1)}
