@@ -25,6 +25,31 @@
   }
 }
 
+/* ── BORDA DE SEGURANÇA INVISÍVEL (SAFETY BARRIER & ADAPTIVE DISPLAY BOUNDS) ── */
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), 6px);
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+  --safe-left: max(env(safe-area-inset-left, 0px), 6px);
+  --safe-right: max(env(safe-area-inset-right, 0px), 6px);
+}
+
+.app-safe-frame {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  background-color: #121218;
+}
+
+.app-content-boundary {
+  max-width: 100%;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
 @layer components {
   .premium-card {
     @apply bg-theme-surface border border-theme-border rounded-2xl shadow-premium transition-transform duration-200;

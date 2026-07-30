@@ -194,7 +194,7 @@ export function Login() {
   const inputCls = "w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/40 focus:outline-none transition-colors";
 
   return (
-    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#0a0a0b] text-white font-sans">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#0a0a0b] text-white font-sans pt-[max(env(safe-area-inset-top),6px)] pb-[max(env(safe-area-inset-bottom),6px)] pl-[max(env(safe-area-inset-left),6px)] pr-[max(env(safe-area-inset-right),6px)] box-border">
 
       {/* ── BACKGROUND (GPU-composited, no CPU blur) ── */}
       <div

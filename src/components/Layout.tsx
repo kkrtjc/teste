@@ -321,11 +321,13 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   ];
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-theme-base pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      {isAddBirdModalOpen && <AddBirdModal />}
-      {selectedBirdProfileId && <BirdProfileModal />}
-      {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
-      {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#121218] p-1 sm:p-2 pt-[max(env(safe-area-inset-top),6px)] pb-[max(env(safe-area-inset-bottom),6px)] pl-[max(env(safe-area-inset-left),6px)] pr-[max(env(safe-area-inset-right),6px)] box-border">
+      {/* Container Interno Protegido por Borda de Segurança Invisível */}
+      <div className="flex flex-1 w-full h-full border border-theme-border/40 rounded-2xl sm:rounded-3xl overflow-hidden bg-theme-base shadow-2xl relative min-w-0">
+        {isAddBirdModalOpen && <AddBirdModal />}
+        {selectedBirdProfileId && <BirdProfileModal />}
+        {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
+        {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
@@ -489,6 +491,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
             ))}
           </div>
         </nav>
+      </div>
       </div>
 
       {/* Admin CPF Registration Modal Portal */}
