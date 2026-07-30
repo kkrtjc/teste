@@ -394,7 +394,7 @@ export function Birds() {
   }, [currentBirds, birdSearch]);
 
   return (
-    <div className="space-y-3.5 animate-fade-in h-full flex flex-col">
+    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden flex flex-col h-full">
       
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 shrink-0">
@@ -606,8 +606,8 @@ export function Birds() {
 
       {/* Modal Nova Raça / Editar */}
       {showNewBreedModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/85 animate-fade-in">
-          <div className="bg-theme-surface md:border border-theme-border md:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col h-[90dvh] md:h-auto md:max-h-[90vh] rounded-t-2xl md:rounded-2xl">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={() => setShowNewBreedModal(false)}>
+          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-x-hidden touch-pan-y animate-scale-up" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0">
               <h3 className="font-bold text-lg text-white">
                 {breedToEditId ? 'Editar Raça' : 'Cadastrar Nova Raça'}

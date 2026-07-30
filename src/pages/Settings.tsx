@@ -266,7 +266,7 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-3xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden">
       
       {/* ── HEADER DA PÁGINA ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-theme-surface border border-theme-border/60 p-5 rounded-2xl shadow-xl">

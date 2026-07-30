@@ -813,9 +813,9 @@ export function AddBirdModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={closeModals}>
       {/* Container relativo para os overlays internos */}
-      <div className="relative bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] md:max-h-[92vh] gpu-accelerated animate-scale-up">
+      <div className="relative bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-x-hidden touch-pan-y flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up" onClick={e=>e.stopPropagation()}>
 
         {/* ── Mini-overlay: detalhe de ave duplicada ── */}
         {detailBird && (

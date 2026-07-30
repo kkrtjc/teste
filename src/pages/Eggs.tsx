@@ -171,8 +171,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="font-black text-white flex items-center gap-2 text-sm">
@@ -341,8 +341,8 @@ function SendToIncubationModal({
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white focus:border-theme-primary outline-none text-center font-black text-2xl text-purple-400";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-sm rounded-2xl border border-purple-500/30 shadow-2xl overflow-hidden animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-purple-500/30 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-theme-border pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
@@ -444,8 +444,8 @@ function SellFromStockModal({
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2 text-xs text-white focus:border-theme-primary outline-none";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-sm rounded-2xl border border-green-500/30 shadow-2xl overflow-hidden animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-green-500/30 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-theme-border pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center">
@@ -607,8 +607,8 @@ function RegisterDaySheet({
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-2xl border border-theme-border/60 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
+      <div className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-3 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="font-black text-white text-sm flex items-center gap-2">
@@ -1051,7 +1051,7 @@ export function Eggs() {
   const periodLabel = period === 7 ? '7 dias' : period === 30 ? '30 dias' : 'Tudo';
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-10 animate-fade-in">
+    <div className="space-y-6 max-w-7xl mx-auto w-full pb-10 animate-fade-in overflow-x-hidden">
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>

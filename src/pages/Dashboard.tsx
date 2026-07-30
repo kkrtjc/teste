@@ -119,7 +119,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col items-center p-4 space-y-6 animate-fade-in">
+    <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden">
 
       {/* ── Farm photo + name ── */}
       <div className="flex flex-col items-center mt-4 space-y-3">
@@ -134,8 +134,8 @@ export function Dashboard() {
         </h2>
       </div>
 
-      {/* ── Stats grid 3x2 ── */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+      {/* ── Stats grid ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
         {/* Total Aves Card */}
         <div 
           onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Total' } })}
