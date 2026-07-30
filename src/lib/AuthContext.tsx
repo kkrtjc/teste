@@ -752,7 +752,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       isLocalMode: !isSupabaseConfigured,
-      isExpired,
+      isExpired: (isUserAdmin(user?.email) || isUserAdmin(getCpf())) ? false : isExpired,
       isAdmin: isUserAdmin(user?.email) || isUserAdmin(getCpf()),
       trialInfo,
       lastWebhookConfirmation,

@@ -6,7 +6,6 @@ import { Layout } from './components/Layout';
 import { PaywallScreen } from './components/PaywallScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
-import { ADMIN_CPF } from './lib/AuthContext';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 
 // Importação direta síncrona das páginas para resposta instantânea (0ms) na troca de abas no celular
@@ -19,12 +18,11 @@ import { Eggs } from './pages/Eggs';
 
 function AppContent() {
   const { isReady } = useAppContext();
-  const { user, cpf, loading: authLoading, isExpired, trialInfo } = useAuth();
+  const { user, loading: authLoading, isExpired, trialInfo, isAdmin } = useAuth();
 
   // ── Estado do popup de trial ──
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
-  const isAdmin = cpf === ADMIN_CPF;
 
   // Decide se deve mostrar o popup de trial
   useEffect(() => {
@@ -40,8 +38,8 @@ function AppContent() {
     return <Login />;
   }
 
-  // Se o período de testes ou assinatura expirou, exibe a tela de bloqueio total
-  if (user && isReady && isExpired) {
+  // Se o período de testes ou assinatura expirou (e não for conta de admin), exibe a tela de bloqueio total
+  if (user && isReady && isExpired && !isAdmin) {
     return <PaywallScreen />;
   }
 
