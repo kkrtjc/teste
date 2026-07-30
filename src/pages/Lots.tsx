@@ -99,10 +99,165 @@ function BirdPicker({ birds, selected, onToggle, onSelectAll, search, onSearch, 
   );
 }
 
+function BaiaMachoRelocationCard({
+  baia,
+  birds,
+  editBird,
+  showToast
+}: {
+  baia: string;
+  birds: any[];
+  editBird: (id: string, updated: any) => void;
+  showToast: (msg: string, type?: 'success' | 'info' | 'warning') => void;
+}) {
+  const [selectedMachoId, setSelectedMachoId] = useState<string | null>(null);
+  const [action, setAction] = useState<'idle' | 'keep' | 'change'>('idle');
+  const [newBaiaInput, setNewBaiaInput] = useState('');
+
+  if (!baia.trim()) return null;
+
+  const targetNorm = normalizeBaia(baia);
+  const baiaMachos = birds.filter(
+    b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu' && b.baia && normalizeBaia(b.baia) === targetNorm
+  );
+
+  if (baiaMachos.length === 0) return null;
+
+  return (
+    <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-3.5 space-y-3 animate-fade-in">
+      <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+        <span className="text-base">🐓</span>
+        <span>A Baia "{baia}" possui {baiaMachos.length} galo/macho cadastrado:</span>
+      </div>
+
+      {baiaMachos.map(macho => {
+        const isSelected = selectedMachoId === macho.id;
+        const isChanging = isSelected && action === 'change';
+        const isKept = isSelected && action === 'keep';
+
+        const newBaiaTargetBirds = newBaiaInput.trim()
+          ? birds.filter(b => b.baia && normalizeBaia(b.baia) === normalizeBaia(newBaiaInput) && b.id !== macho.id)
+          : [];
+
+        return (
+          <div key={macho.id} className="bg-theme-surface border border-theme-border/60 rounded-xl p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-white">Anilha: {macho.anilha} {macho.nome ? `(${macho.nome})` : ''}</p>
+                <p className="text-[10px] text-theme-text-muted">{macho.raca} · Baia Atual: {macho.baia}</p>
+              </div>
+              {isKept && (
+                <span className="text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                  ✓ Mantido na Baia
+                </span>
+              )}
+            </div>
+
+            <p className="text-[11px] font-bold text-theme-text-muted">
+              Deseja manter este macho na Baia "{baia}" ou alterar a baia dele?
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMachoId(macho.id);
+                  setAction('keep');
+                  showToast(`Macho Anilha ${macho.anilha} mantido na Baia ${baia}`, 'info');
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  isKept 
+                    ? 'bg-emerald-500 text-black font-black shadow-md' 
+                    : 'bg-theme-base border border-theme-border hover:border-emerald-500 text-white'
+                }`}
+              >
+                Manter Macho na Baia
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMachoId(macho.id);
+                  setAction('change');
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  isChanging 
+                    ? 'bg-blue-500 text-white font-black shadow-md' 
+                    : 'bg-theme-base border border-theme-border hover:border-blue-500 text-white'
+                }`}
+              >
+                Alterar Baia do Macho
+              </button>
+            </div>
+
+            {/* Painel para digitar a Nova Baia */}
+            {isChanging && (
+              <div className="pt-2 border-t border-theme-border/50 space-y-2 animate-fade-in">
+                <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider block">
+                  Qual a Nova Baia para o Macho {macho.anilha}? *
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ex: Baia 12"
+                    value={newBaiaInput}
+                    onChange={e => setNewBaiaInput(e.target.value)}
+                    className="flex-1 bg-theme-base border border-theme-border rounded-xl p-2.5 text-xs text-white focus:border-blue-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={!newBaiaInput.trim()}
+                    onClick={() => {
+                      const newBay = newBaiaInput.trim();
+                      editBird(macho.id, { baia: newBay });
+                      showToast(`Macho Anilha ${macho.anilha} transferido para a ${newBay} com sucesso!`, 'success');
+                      setAction('idle');
+                      setSelectedMachoId(null);
+                      setNewBaiaInput('');
+                    }}
+                    className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all active:scale-95 cursor-pointer shrink-0"
+                  >
+                    Confirmar Nova Baia
+                  </button>
+                </div>
+
+                {/* AVISO SE A NOVA BAIA JÁ POSSUI AVES CADASTRADAS */}
+                {newBaiaInput.trim() !== '' && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px]">
+                    {newBaiaTargetBirds.length > 0 ? (
+                      <div className="space-y-1">
+                        <p className="font-extrabold text-amber-400 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          A nova Baia "{newBaiaInput}" já possui {newBaiaTargetBirds.length} ave(s) cadastradas:
+                        </p>
+                        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                          {newBaiaTargetBirds.map(tb => (
+                            <span key={tb.id} className="bg-theme-base px-2 py-0.5 rounded text-[10px] text-white border border-theme-border">
+                              {tb.sexo === 'Macho' ? '🐓' : '🐔'} Anilha: {tb.anilha} {tb.nome ? `(${tb.nome})` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-emerald-400 font-bold flex items-center gap-1">
+                        ✓ A Baia "{newBaiaInput}" está livre (0 aves cadastradas).
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Lots() {
   const location = useLocation();
   const { 
-    birds, breeds, eggLots, addEggLot, editEggLot, removeEggLot,
+    birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot, removeEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
@@ -969,6 +1124,9 @@ export function Lots() {
                   </div>
                 )}
 
+                {/* 🐓 GESTÃO E PERGUNTA SE DESEJA MANTER OU ALTERAR A BAIA DO MACHO */}
+                <BaiaMachoRelocationCard baia={pBaia} birds={birds} editBird={editBird} showToast={showToast} />
+
                 <div className="space-y-1">
                   <SectionLabel>Data de Início</SectionLabel>
                   <input type="date" required value={pDataInicio} onChange={e => setPDataInicio(e.target.value)} className={inputCls} />
@@ -1115,6 +1273,9 @@ export function Lots() {
                   </div>
                 )}
 
+                {/* 🐓 GESTÃO E PERGUNTA SE DESEJA MANTER OU ALTERAR A BAIA DO MACHO */}
+                <BaiaMachoRelocationCard baia={eBaia} birds={birds} editBird={editBird} showToast={showToast} />
+
                 <div className="space-y-1">
                   <SectionLabel>Data de Início</SectionLabel>
                   <input type="date" required value={eDataInicio} onChange={e => setEDataInicio(e.target.value)} className={inputCls} />
@@ -1225,6 +1386,9 @@ export function Lots() {
                   </div>
                 )}
 
+                {/* 🐓 GESTÃO E PERGUNTA SE DESEJA MANTER OU ALTERAR A BAIA DO MACHO */}
+                <BaiaMachoRelocationCard baia={piBaia} birds={birds} editBird={editBird} showToast={showToast} />
+
                 <div className="space-y-1">
                   <SectionLabel>Data de Início</SectionLabel>
                   <input type="date" required value={piDataInicio} onChange={e => setPiDataInicio(e.target.value)} className={inputCls} />
@@ -1326,6 +1490,9 @@ export function Lots() {
                     </button>
                   </div>
                 )}
+
+                {/* 🐓 GESTÃO E PERGUNTA SE DESEJA MANTER OU ALTERAR A BAIA DO MACHO */}
+                <BaiaMachoRelocationCard baia={crBaia} birds={birds} editBird={editBird} showToast={showToast} />
 
                 <div className="space-y-1">
                   <SectionLabel>Data de Início</SectionLabel>
