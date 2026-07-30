@@ -412,7 +412,7 @@ export function Birds() {
   }, [showNewBreedModal]);
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden flex flex-col h-full">
+    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden">
       
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 shrink-0">
@@ -507,7 +507,7 @@ export function Birds() {
 
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
-        <div className="flex-1 flex flex-col space-y-3 min-h-0">
+        <div className="space-y-3">
           {/* Search Row */}
           <div className="w-full shrink-0">
             <div className="relative">
@@ -554,7 +554,7 @@ export function Birds() {
           )}
 
           {/* Birds Grid */}
-          <div className="flex-1 overflow-y-auto smooth-scroll pr-1">
+          <div className="w-full">
             {filteredBirds.length === 0 ? (
               <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
                 {birdSearch || activeBreed
@@ -574,7 +574,7 @@ export function Birds() {
 
       {/* ── Tab Content: Raças ── */}
       {activeTab === 'racas' && (
-        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+        <div className="space-y-4">
           {/* Search Row */}
           <div className="relative shrink-0">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
@@ -588,7 +588,7 @@ export function Birds() {
           </div>
 
           {/* Breeds Grid */}
-          <div className="flex-1 overflow-y-auto pr-1">
+          <div className="w-full">
             {filteredBreeds.length === 0 ? (
               <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
                 {breedSearch ? 'Nenhuma raça encontrada correspondente à busca.' : 'Nenhuma raça cadastrada.'}

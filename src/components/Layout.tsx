@@ -463,7 +463,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           </button>
         </header>
 
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-28 md:pb-6 gpu-accelerated">
+        <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-24 md:pb-6 gpu-accelerated">
           {showInstallBanner && (
             <div className="mb-4 bg-theme-surface border border-theme-primary/30 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 animate-fade-in relative overflow-hidden backdrop-blur-md">
               <div className="flex items-center gap-3">
@@ -508,7 +508,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
       {/* Floating Bottom Navigation (Mobile Dock) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 touch-manipulation">
-        <nav className="bg-theme-surface/95 border border-theme-border/50 rounded-2xl shadow-premium px-2 py-2">
+        <nav className="bg-theme-surface/85 backdrop-blur-xl border border-theme-border/60 rounded-2xl shadow-2xl px-2 py-2">
           <div className="flex justify-around items-center h-14">
             {mobileNavItems.map((item) => (
               <NavLink
