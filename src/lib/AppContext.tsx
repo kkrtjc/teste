@@ -87,6 +87,15 @@ export type EggDailyRecord = {
   observacao?: string;
 };
 
+export type LotMovementRecord = {
+  id: string;
+  tipo: 'entrada' | 'saida';
+  quantidade: number;
+  motivo: string;
+  data: string;           // YYYY-MM-DD
+  observacao?: string;
+};
+
 export type EggLot = {
   id: string;
   baia: string;
@@ -100,6 +109,7 @@ export type EggLot = {
   custoProdPadrao?: number;    // R$ por ovo — padrão para aba Ovos
   observacao?: string;
   registros?: EggDailyRecord[];
+  movimentacoes?: LotMovementRecord[];
 };
 
 export type MeatLot = {
@@ -113,6 +123,7 @@ export type MeatLot = {
   status: 'Crescimento' | 'Terminação' | 'Abatido';
   raca?: string;
   observacao?: string;
+  movimentacoes?: LotMovementRecord[];
 };
 
 export type FarmSettings = {
@@ -768,6 +779,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
 
+        let sbMovs: any[] = [];
+        if (Array.isArray(l.movimentacoes)) {
+          sbMovs = l.movimentacoes;
+        } else if (typeof l.movimentacoes === 'string' && l.movimentacoes.trim()) {
+          try { sbMovs = JSON.parse(l.movimentacoes); } catch { sbMovs = []; }
+        }
+        const localMovs: any[] = local?.movimentacoes || [];
+        let finalMovs = sbMovs.length >= localMovs.length ? sbMovs : localMovs;
+
         return {
           id: l.id,
           baia: l.baia || '',
@@ -776,11 +796,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dataInicio: l.data_inicio || l.dataInicio || '',
           status: l.status || 'Ativo',
           raca: l.raca || local?.raca || '',
-          qtdFemeas: l.qtd_femeas || l.qtdFemeas || local?.qtdFemeas || 0,
+          qtdFemeas: l.qtd_femeas !== undefined ? l.qtd_femeas : (l.qtdFemeas || local?.qtdFemeas || 0),
           precoVendaPadrao: l.preco_venda_padrao || l.precoVendaPadrao || local?.precoVendaPadrao || 6.0,
           custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
           observacao: l.observacao || local?.observacao || '',
-          registros: finalRegs
+          registros: finalRegs,
+          movimentacoes: finalMovs
         };
       });
 
@@ -802,7 +823,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             preco_venda_padrao: l.precoVendaPadrao || 6.0,
             custo_prod_padrao: l.custoProdPadrao || 0.30,
             observacao: l.observacao || '',
-            registros: l.registros || []
+            registros: l.registros || [],
+            movimentacoes: l.movimentacoes || []
           }));
           supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
             if (error) console.error('Erro lotes ovos pendentes:', error);
@@ -816,6 +838,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // ── LOTES DE CORTE: Mapeamento e preservação ──
       const mappedMeatLots = sbMeatLots.map((l: any) => {
         const local = (localMeatLots || []).find((x: any) => x.id === l.id);
+
+        let sbMovs: any[] = [];
+        if (Array.isArray(l.movimentacoes)) {
+          sbMovs = l.movimentacoes;
+        } else if (typeof l.movimentacoes === 'string' && l.movimentacoes.trim()) {
+          try { sbMovs = JSON.parse(l.movimentacoes); } catch { sbMovs = []; }
+        }
+        const localMovs: any[] = local?.movimentacoes || [];
+        let finalMovs = sbMovs.length >= localMovs.length ? sbMovs : localMovs;
+
         return {
           id: l.id,
           baia: l.baia || '',
@@ -826,7 +858,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           raca: l.raca || local?.raca || '',
           observacao: l.observacao || local?.observacao || '',
           pesoMeta: l.peso_meta || l.pesoMeta || local?.pesoMeta || '',
-          qtdAves: l.qtd_aves || l.qtdAves || local?.qtdAves || 0
+          qtdAves: l.qtd_aves !== undefined ? l.qtd_aves : (l.qtdAves || local?.qtdAves || 0),
+          movimentacoes: finalMovs
         };
       });
 
@@ -846,7 +879,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             raca: l.raca || '',
             observacao: l.observacao || '',
             peso_meta: l.pesoMeta || '',
-            qtd_aves: l.qtdAves || 0
+            qtd_aves: l.qtdAves || 0,
+            movimentacoes: l.movimentacoes || []
           }));
           supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
             if (error) console.error('Erro lotes corte pendentes:', error);
@@ -1591,7 +1625,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             preco_venda_padrao: lot.precoVendaPadrao || 6.0,
             custo_prod_padrao: lot.custoProdPadrao || 0.30,
             observacao: lot.observacao || '',
-            registros: lot.registros || []
+            registros: lot.registros || [],
+            movimentacoes: lot.movimentacoes || []
           })
           .then(({ error }) => { if (error) console.error('Erro Supabase addEggLot:', error); });
       }
@@ -1618,6 +1653,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedLot.custoProdPadrao !== undefined) dbUpdate.custo_prod_padrao = updatedLot.custoProdPadrao;
         if (updatedLot.qtdFemeas !== undefined) dbUpdate.qtd_femeas = updatedLot.qtdFemeas;
         if (updatedLot.registros !== undefined) dbUpdate.registros = updatedLot.registros;
+        if (updatedLot.movimentacoes !== undefined) dbUpdate.movimentacoes = updatedLot.movimentacoes;
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!
@@ -1646,10 +1682,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             id: lot.id,
             user_id: user.id,
             baia: lot.baia,
-            aves_ids: lot.avesIds,
+            aves_ids: lot.avesIds || [],
+            qtd_aves: lot.qtdAves || 0,
             data_inicio: lot.dataInicio,
             peso_medio_inicial: lot.pesoMedioInicial,
-            status: lot.status
+            peso_meta: lot.pesoMeta || '',
+            status: lot.status,
+            raca: lot.raca || '',
+            observacao: lot.observacao || '',
+            movimentacoes: lot.movimentacoes || []
           })
           .then(({ error }) => { if (error) console.error('Erro Supabase addMeatLot:', error); });
       }
@@ -1665,8 +1706,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = { ...updatedLot };
         if (updatedLot.avesIds !== undefined) { dbUpdate.aves_ids = updatedLot.avesIds; delete dbUpdate.avesIds; }
+        if (updatedLot.qtdAves !== undefined) { dbUpdate.qtd_aves = updatedLot.qtdAves; delete dbUpdate.qtdAves; }
         if (updatedLot.dataInicio !== undefined) { dbUpdate.data_inicio = updatedLot.dataInicio; delete dbUpdate.dataInicio; }
         if (updatedLot.pesoMedioInicial !== undefined) { dbUpdate.peso_medio_inicial = updatedLot.pesoMedioInicial; delete dbUpdate.pesoMedioInicial; }
+        if (updatedLot.pesoMeta !== undefined) { dbUpdate.peso_meta = updatedLot.pesoMeta; delete dbUpdate.pesoMeta; }
 
         supabase!
           .from('meat_lots')

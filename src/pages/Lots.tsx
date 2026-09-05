@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
-  DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle
+  DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
+  TrendingDown, TrendingUp, History
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -532,7 +533,17 @@ export function Lots() {
     target: 'engorda',
   });
 
-  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen;
+  const [movementModal, setMovementModal] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+    loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
+  }>({
+    isOpen: false,
+    lote: null,
+    loteType: 'engorda',
+  });
+
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen;
   useEffect(() => {
     if (isAnyModalOpen) {
       document.body.classList.add('modal-open-lock');
@@ -916,7 +927,19 @@ export function Lots() {
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="border-t border-theme-border/50 pt-3">
+                  <div className="pt-3 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'postura' })}
+                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group mb-3 shadow-sm"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-black">
+                        <Activity size={14} /> Movimentações & Baixas (+/-)
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[10px] font-extrabold text-theme-text-muted group-hover:text-white">
+                        {lote.movimentacoes?.length || 0} registro(s)
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Alterar Status</p>
                     <div className="grid grid-cols-2 gap-2">
                       {(['Ativo', 'Encerrado'] as const).map(st => (
@@ -1008,7 +1031,19 @@ export function Lots() {
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="border-t border-theme-border/50 pt-3">
+                  <div className="pt-3 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
+                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group mb-3 shadow-sm"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-black">
+                        <Activity size={14} /> Movimentações & Baixas (+/-)
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[10px] font-extrabold text-theme-text-muted group-hover:text-white">
+                        {lote.movimentacoes?.length || 0} registro(s)
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Alterar Status</p>
                     <div className="grid grid-cols-3 gap-2">
                       {(['Crescimento', 'Terminação', 'Abatido'] as const).map(st => (
@@ -1094,7 +1129,19 @@ export function Lots() {
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="border-t border-theme-border/50 pt-3">
+                  <div className="pt-3 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
+                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group mb-3 shadow-sm"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-black">
+                        <Activity size={14} /> Movimentações & Baixas (+/-)
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[10px] font-extrabold text-theme-text-muted group-hover:text-white">
+                        {lote.movimentacoes?.length || 0} registro(s)
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Transferir Lote para</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={() => openTransferModal(lote, 'crescimento')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
@@ -1180,7 +1227,19 @@ export function Lots() {
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="border-t border-theme-border/50 pt-3">
+                  <div className="pt-3 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'crescimento' })}
+                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group mb-3 shadow-sm"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-black">
+                        <Activity size={14} /> Movimentações & Baixas (+/-)
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[10px] font-extrabold text-theme-text-muted group-hover:text-white">
+                        {lote.movimentacoes?.length || 0} registro(s)
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Transferir Lote para</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={() => openTransferModal(lote, 'engorda')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
@@ -1764,6 +1823,398 @@ export function Lots() {
         </div>,
         document.body
       )}
+
+      {/* ── MODAL DE MOVIMENTAÇÕES & BAIXAS DE AVES DO LOTE ── */}
+      <LotMovementModal
+        isOpen={movementModal.isOpen}
+        onClose={() => setMovementModal({ isOpen: false, lote: null, loteType: 'engorda' })}
+        lote={movementModal.lote}
+        loteType={movementModal.loteType}
+        editEggLot={editEggLot}
+        editMeatLot={editMeatLot}
+        showToast={showToast}
+      />
     </div>
+  );
+}
+
+function LotMovementModal({
+  isOpen,
+  onClose,
+  lote,
+  loteType,
+  editEggLot,
+  editMeatLot,
+  showToast
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  lote: any;
+  loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
+  editEggLot: (id: string, updated: any) => void;
+  editMeatLot: (id: string, updated: any) => void;
+  showToast: (msg: string, type?: 'success' | 'info' | 'warning') => void;
+}) {
+  const [activeSubTab, setActiveSubTab] = useState<'novo' | 'historico'>('novo');
+  const [tipo, setTipo] = useState<'saida' | 'entrada'>('saida');
+  const [quantidade, setQuantidade] = useState('');
+  const [motivo, setMotivo] = useState('Mortalidade / Óbito');
+  const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
+  const [data, setData] = useState(todayISO());
+  const [observacao, setObservacao] = useState('');
+
+  if (!isOpen || !lote) return null;
+
+  const currentCount = lote.femeasIds?.length || lote.avesIds?.length || lote.qtdFemeas || lote.qtdAves || 0;
+
+  const motivosSaida = [
+    'Mortalidade / Óbito',
+    'Abate',
+    'Venda',
+    'Transferência de Baia',
+    'Ajuste de Inventário',
+    'Outro'
+  ];
+
+  const motivosEntrada = [
+    'Introdução / Nova Ave',
+    'Nascimento / Eclosão',
+    'Retorno de Baia',
+    'Ajuste de Inventário',
+    'Outro'
+  ];
+
+  const motivosDisponiveis = tipo === 'saida' ? motivosSaida : motivosEntrada;
+
+  const handleTipoChange = (newTipo: 'saida' | 'entrada') => {
+    setTipo(newTipo);
+    setMotivo(newTipo === 'saida' ? 'Mortalidade / Óbito' : 'Introdução / Nova Ave');
+    setMotivoPersonalizado('');
+  };
+
+  const handleSaveMovement = (e: React.FormEvent) => {
+    e.preventDefault();
+    const qtyNum = parseInt(quantidade);
+    if (!qtyNum || qtyNum <= 0) {
+      showToast('Por favor, informe uma quantidade válida maior que 0.', 'warning');
+      return;
+    }
+
+    const finalMotivo = motivo === 'Outro' ? (motivoPersonalizado.trim() || 'Outro') : motivo;
+
+    const newRecord = {
+      id: uid(),
+      tipo,
+      quantidade: qtyNum,
+      motivo: finalMotivo,
+      data: data || todayISO(),
+      observacao: observacao.trim() || undefined
+    };
+
+    const updatedMovimentacoes = [newRecord, ...(lote.movimentacoes || [])];
+
+    let newTotal = currentCount;
+    if (tipo === 'entrada') {
+      newTotal = currentCount + qtyNum;
+    } else {
+      newTotal = Math.max(0, currentCount - qtyNum);
+    }
+
+    if (loteType === 'postura') {
+      editEggLot(lote.id, {
+        qtdFemeas: newTotal,
+        movimentacoes: updatedMovimentacoes
+      });
+    } else {
+      editMeatLot(lote.id, {
+        qtdAves: newTotal,
+        movimentacoes: updatedMovimentacoes
+      });
+    }
+
+    showToast(
+      tipo === 'saida'
+        ? `Baixa de ${qtyNum} ave(s) registrada com sucesso (-${qtyNum})`
+        : `Entrada de ${qtyNum} ave(s) registrada com sucesso (+${qtyNum})`,
+      'success'
+    );
+
+    setQuantidade('');
+    setObservacao('');
+    setMotivoPersonalizado('');
+    setActiveSubTab('historico');
+  };
+
+  const handleDeleteMovement = (movId: string) => {
+    if (!window.confirm('Deseja remover esta movimentação do histórico?')) return;
+
+    const targetMov = lote.movimentacoes?.find((m: any) => m.id === movId);
+    if (!targetMov) return;
+
+    const updatedMovimentacoes = (lote.movimentacoes || []).filter((m: any) => m.id !== movId);
+
+    let newTotal = currentCount;
+    if (targetMov.tipo === 'entrada') {
+      newTotal = Math.max(0, currentCount - targetMov.quantidade);
+    } else {
+      newTotal = currentCount + targetMov.quantidade;
+    }
+
+    if (loteType === 'postura') {
+      editEggLot(lote.id, {
+        qtdFemeas: newTotal,
+        movimentacoes: updatedMovimentacoes
+      });
+    } else {
+      editMeatLot(lote.id, {
+        qtdAves: newTotal,
+        movimentacoes: updatedMovimentacoes
+      });
+    }
+
+    showToast('Movimentação removida e saldo atualizado!', 'info');
+  };
+
+  const lotTitleMap = {
+    postura: 'Lote de Postura',
+    engorda: 'Lote de Engorda',
+    pintinhos: 'Lote de Pintinhos',
+    crescimento: 'Lote de Crescimento'
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up my-auto max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-theme-border pb-4">
+          <div>
+            <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
+              Baia {lote.baia} · {lotTitleMap[loteType]}
+            </span>
+            <h2 className="text-lg font-black text-white flex items-center gap-2">
+              <Activity size={18} className="text-theme-primary" />
+              Ajuste & Baixas de Aves
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-full text-theme-text-muted hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Info Card current count */}
+        <div className="bg-theme-base border border-theme-border rounded-2xl p-3.5 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-theme-text-muted uppercase">Quantidade Atual no Lote</p>
+            <p className="text-2xl font-black text-white">{currentCount} <span className="text-xs font-bold text-theme-text-muted">aves</span></p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('novo')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'novo' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
+            >
+              <Plus size={13} /> Nova Movimentação
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('historico')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'historico' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
+            >
+              <History size={13} /> Histórico ({lote.movimentacoes?.length || 0})
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          {activeSubTab === 'novo' ? (
+            <form onSubmit={handleSaveMovement} className="space-y-4">
+              {/* Toggle Tipo */}
+              <div>
+                <SectionLabel>Tipo de Movimentação</SectionLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTipoChange('saida')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all ${
+                      tipo === 'saida'
+                        ? 'bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/30'
+                        : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                    }`}
+                  >
+                    <TrendingDown size={16} /> Baixa / Saída (-)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTipoChange('entrada')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all ${
+                      tipo === 'entrada'
+                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/30'
+                        : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                    }`}
+                  >
+                    <TrendingUp size={16} /> Entrada / Adição (+)
+                  </button>
+                </div>
+              </div>
+
+              {/* Quantidade & Data */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <SectionLabel>Quantidade de Aves</SectionLabel>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex: 3"
+                    value={quantidade}
+                    onKeyDown={onlyNumericKeyDown}
+                    onChange={e => setQuantidade(sanitizeNumeric(e.target.value))}
+                    className={inputCls}
+                    required
+                  />
+                </div>
+                <div>
+                  <SectionLabel>Data da Ocorrência</SectionLabel>
+                  <input
+                    type="date"
+                    value={data}
+                    onChange={e => setData(e.target.value)}
+                    className={inputCls}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Motivo */}
+              <div>
+                <SectionLabel>Motivo da Movimentação</SectionLabel>
+                <select
+                  value={motivo}
+                  onChange={e => setMotivo(e.target.value)}
+                  className={inputCls}
+                >
+                  {motivosDisponiveis.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {motivo === 'Outro' && (
+                <div>
+                  <SectionLabel>Especifique o Motivo</SectionLabel>
+                  <input
+                    type="text"
+                    placeholder="Descreva o motivo..."
+                    value={motivoPersonalizado}
+                    onChange={e => setMotivoPersonalizado(e.target.value)}
+                    className={inputCls}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Observações */}
+              <div>
+                <SectionLabel>Observações Adicionais (Opcional)</SectionLabel>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: 2 morreram de frio e 1 foi separada por machucado..."
+                  value={observacao}
+                  onChange={e => setObservacao(e.target.value)}
+                  className={inputCls + " resize-none"}
+                />
+              </div>
+
+              {/* Preview de Resultado */}
+              {parseInt(quantidade) > 0 && (
+                <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
+                  tipo === 'saida' ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                }`}>
+                  <span>Saldo estimado do lote após registrar:</span>
+                  <span className="text-sm font-black">
+                    {currentCount} {tipo === 'saida' ? '-' : '+'} {parseInt(quantidade)} = {
+                      tipo === 'saida' ? Math.max(0, currentCount - parseInt(quantidade)) : currentCount + parseInt(quantidade)
+                    } aves
+                  </span>
+                </div>
+              )}
+
+              {/* Submit */}
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-3 bg-theme-base border border-theme-border rounded-xl text-xs font-bold text-theme-text-muted hover:text-white transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${
+                    tipo === 'saida' ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-emerald-500 text-black hover:bg-emerald-400'
+                  }`}
+                >
+                  {tipo === 'saida' ? 'Confirmar Baixa' : 'Confirmar Entrada'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* Histórico */
+            <div className="space-y-3">
+              <SectionLabel>Histórico de Entradas e Baixas</SectionLabel>
+              {(!lote.movimentacoes || lote.movimentacoes.length === 0) ? (
+                <div className="text-center p-8 bg-theme-base rounded-2xl border border-dashed border-theme-border text-theme-text-muted">
+                  <History size={32} className="mx-auto mb-2 opacity-40" />
+                  <p className="font-bold text-xs text-white">Nenhuma movimentação registrada</p>
+                  <p className="text-[11px]">As baixas e entradas de aves neste lote aparecerão aqui.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {lote.movimentacoes.map((mov: any) => (
+                    <div
+                      key={mov.id}
+                      className="bg-theme-base border border-theme-border/60 rounded-2xl p-3.5 flex items-start justify-between gap-3 hover:border-theme-border transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                          mov.tipo === 'saida' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        }`}>
+                          {mov.tipo === 'saida' ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-black ${mov.tipo === 'saida' ? 'text-red-400' : 'text-emerald-400'}`}>
+                              {mov.tipo === 'saida' ? `-${mov.quantidade} ave(s)` : `+${mov.quantidade} ave(s)`}
+                            </span>
+                            <span className="text-[10px] text-theme-text-muted">· {fmtDate(mov.data)}</span>
+                          </div>
+                          <p className="text-xs font-bold text-white mt-0.5">{mov.motivo}</p>
+                          {mov.observacao && (
+                            <p className="text-[11px] text-theme-text-muted mt-1 italic">Obs: {mov.observacao}</p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMovement(mov.id)}
+                        className="text-theme-text-muted hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                        title="Remover este registro"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
