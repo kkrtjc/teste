@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  TrendingDown, TrendingUp, History
+  TrendingDown, TrendingUp, History, CheckCircle
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -1830,6 +1830,8 @@ export function Lots() {
         onClose={() => setMovementModal({ isOpen: false, lote: null, loteType: 'engorda' })}
         lote={movementModal.lote}
         loteType={movementModal.loteType}
+        birds={birds}
+        editBird={editBird}
         editEggLot={editEggLot}
         editMeatLot={editMeatLot}
         showToast={showToast}
@@ -1843,6 +1845,8 @@ function LotMovementModal({
   onClose,
   lote,
   loteType,
+  birds,
+  editBird,
   editEggLot,
   editMeatLot,
   showToast
@@ -1851,12 +1855,17 @@ function LotMovementModal({
   onClose: () => void;
   lote: any;
   loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
+  birds: any[];
+  editBird: (id: string, updated: any) => void;
   editEggLot: (id: string, updated: any) => void;
   editMeatLot: (id: string, updated: any) => void;
   showToast: (msg: string, type?: 'success' | 'info' | 'warning') => void;
 }) {
   const [activeSubTab, setActiveSubTab] = useState<'novo' | 'historico'>('novo');
   const [tipo, setTipo] = useState<'saida' | 'entrada'>('saida');
+  const [isRegistered, setIsRegistered] = useState<'yes' | 'no'>('yes');
+  const [selectedBirdIds, setSelectedBirdIds] = useState<string[]>([]);
+  const [birdSearch, setBirdSearch] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [motivo, setMotivo] = useState('Mortalidade / Óbito');
   const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
@@ -1890,19 +1899,57 @@ function LotMovementModal({
     setTipo(newTipo);
     setMotivo(newTipo === 'saida' ? 'Mortalidade / Óbito' : 'Introdução / Nova Ave');
     setMotivoPersonalizado('');
+    if (newTipo === 'entrada') {
+      setIsRegistered('yes');
+      setSelectedBirdIds([]);
+    }
   };
+
+  const availableBirds = birds.filter(b => {
+    if (b.status === 'Vendido' || b.status === 'Faleceu') return false;
+    if (loteType === 'postura' && b.sexo !== 'Fêmea') return false;
+    const existingIds = lote.femeasIds || lote.avesIds || [];
+    if (existingIds.includes(b.id)) return false;
+    return true;
+  });
+
+  const handleToggleBird = (id: string) => {
+    setSelectedBirdIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllBirds = (ids: string[]) => {
+    if (ids.every(id => selectedBirdIds.includes(id))) {
+      setSelectedBirdIds(prev => prev.filter(id => !ids.includes(id)));
+    } else {
+      setSelectedBirdIds(prev => Array.from(new Set([...prev, ...ids])));
+    }
+  };
+
+  const isAddingRegistered = tipo === 'entrada' && isRegistered === 'yes';
 
   const handleSaveMovement = (e: React.FormEvent) => {
     e.preventDefault();
-    const qtyNum = parseInt(quantidade);
-    if (!qtyNum || qtyNum <= 0) {
-      showToast('Por favor, informe uma quantidade válida maior que 0.', 'warning');
-      return;
+    let qtyNum = 0;
+
+    if (isAddingRegistered) {
+      if (selectedBirdIds.length === 0) {
+        showToast('Por favor, selecione ao menos uma ave da lista para adicionar.', 'warning');
+        return;
+      }
+      qtyNum = selectedBirdIds.length;
+    } else {
+      qtyNum = parseInt(quantidade);
+      if (!qtyNum || qtyNum <= 0) {
+        showToast('Por favor, informe uma quantidade válida maior que 0.', 'warning');
+        return;
+      }
     }
 
     const finalMotivo = motivo === 'Outro' ? (motivoPersonalizado.trim() || 'Outro') : motivo;
 
-    const newRecord = {
+    const newRecord: any = {
       id: uid(),
       tipo,
       quantidade: qtyNum,
@@ -1910,6 +1957,10 @@ function LotMovementModal({
       data: data || todayISO(),
       observacao: observacao.trim() || undefined
     };
+
+    if (isAddingRegistered) {
+      newRecord.avesIds = selectedBirdIds;
+    }
 
     const updatedMovimentacoes = [newRecord, ...(lote.movimentacoes || [])];
 
@@ -1920,14 +1971,31 @@ function LotMovementModal({
       newTotal = Math.max(0, currentCount - qtyNum);
     }
 
+    // Se adicionou aves registradas, atualiza a baia de cada uma das aves no sistema
+    if (isAddingRegistered && selectedBirdIds.length > 0) {
+      selectedBirdIds.forEach(birdId => {
+        editBird(birdId, { baia: lote.baia });
+      });
+    }
+
     if (loteType === 'postura') {
+      const updatedFemeas = isAddingRegistered
+        ? Array.from(new Set([...(lote.femeasIds || []), ...selectedBirdIds]))
+        : (lote.femeasIds || []);
+
       editEggLot(lote.id, {
         qtdFemeas: newTotal,
+        ...(isAddingRegistered ? { femeasIds: updatedFemeas } : {}),
         movimentacoes: updatedMovimentacoes
       });
     } else {
+      const updatedAves = isAddingRegistered
+        ? Array.from(new Set([...(lote.avesIds || []), ...selectedBirdIds]))
+        : (lote.avesIds || []);
+
       editMeatLot(lote.id, {
         qtdAves: newTotal,
+        ...(isAddingRegistered ? { avesIds: updatedAves } : {}),
         movimentacoes: updatedMovimentacoes
       });
     }
@@ -1935,11 +2003,12 @@ function LotMovementModal({
     showToast(
       tipo === 'saida'
         ? `Baixa de ${qtyNum} ave(s) registrada com sucesso (-${qtyNum})`
-        : `Entrada de ${qtyNum} ave(s) registrada com sucesso (+${qtyNum})`,
+        : `Entrada de ${qtyNum} ave(s) ${isAddingRegistered ? 'cadastrada(s)' : ''} registrada com sucesso (+${qtyNum})`,
       'success'
     );
 
     setQuantidade('');
+    setSelectedBirdIds([]);
     setObservacao('');
     setMotivoPersonalizado('');
     setActiveSubTab('historico');
@@ -1981,6 +2050,8 @@ function LotMovementModal({
     pintinhos: 'Lote de Pintinhos',
     crescimento: 'Lote de Crescimento'
   };
+
+  const effectiveQty = isAddingRegistered ? selectedBirdIds.length : (parseInt(quantidade) || 0);
 
   return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
@@ -2062,32 +2133,92 @@ function LotMovementModal({
                 </div>
               </div>
 
-              {/* Quantidade & Data */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <SectionLabel>Quantidade de Aves</SectionLabel>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Ex: 3"
-                    value={quantidade}
-                    onKeyDown={onlyNumericKeyDown}
-                    onChange={e => setQuantidade(sanitizeNumeric(e.target.value))}
-                    className={inputCls}
-                    required
-                  />
+              {/* Se for Entrada, Pergunta se as aves estão cadastradas */}
+              {tipo === 'entrada' && (
+                <div className="bg-theme-base/60 border border-theme-border rounded-xl p-3 space-y-2">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <CheckCircle size={14} className="text-theme-primary" />
+                    As aves sendo adicionadas já estão cadastradas no sistema?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsRegistered('yes')}
+                      className={`py-2 px-3 rounded-lg border text-xs font-extrabold transition-all ${
+                        isRegistered === 'yes'
+                          ? 'bg-theme-primary text-black border-theme-primary'
+                          : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      Sim (Selecionar da Lista)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRegistered('no')}
+                      className={`py-2 px-3 rounded-lg border text-xs font-extrabold transition-all ${
+                        isRegistered === 'no'
+                          ? 'bg-theme-primary text-black border-theme-primary'
+                          : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      Não (Informar Quantidade)
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <SectionLabel>Data da Ocorrência</SectionLabel>
-                  <input
-                    type="date"
-                    value={data}
-                    onChange={e => setData(e.target.value)}
-                    className={inputCls}
-                    required
+              )}
+
+              {/* Se Entrada & Cadastrada: Exibe Selecionador de Aves */}
+              {isAddingRegistered ? (
+                <div className="space-y-2">
+                  <SectionLabel>Selecionar Aves Cadastradas ({selectedBirdIds.length} selecionada(s))</SectionLabel>
+                  <BirdPicker
+                    birds={availableBirds}
+                    selected={selectedBirdIds}
+                    onToggle={handleToggleBird}
+                    onSelectAll={handleSelectAllBirds}
+                    search={birdSearch}
+                    onSearch={setBirdSearch}
+                    emptyMsg="Nenhuma ave disponível no sistema para vincular a este lote."
                   />
+                  <div>
+                    <SectionLabel>Data da Ocorrência</SectionLabel>
+                    <input
+                      type="date"
+                      value={data}
+                      onChange={e => setData(e.target.value)}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Quantidade & Data Manual */
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <SectionLabel>Quantidade de Aves</SectionLabel>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Ex: 3"
+                      value={quantidade}
+                      onKeyDown={onlyNumericKeyDown}
+                      onChange={e => setQuantidade(sanitizeNumeric(e.target.value))}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <SectionLabel>Data da Ocorrência</SectionLabel>
+                    <input
+                      type="date"
+                      value={data}
+                      onChange={e => setData(e.target.value)}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Motivo */}
               <div>
@@ -2130,14 +2261,14 @@ function LotMovementModal({
               </div>
 
               {/* Preview de Resultado */}
-              {parseInt(quantidade) > 0 && (
+              {effectiveQty > 0 && (
                 <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
                   tipo === 'saida' ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                 }`}>
                   <span>Saldo estimado do lote após registrar:</span>
                   <span className="text-sm font-black">
-                    {currentCount} {tipo === 'saida' ? '-' : '+'} {parseInt(quantidade)} = {
-                      tipo === 'saida' ? Math.max(0, currentCount - parseInt(quantidade)) : currentCount + parseInt(quantidade)
+                    {currentCount} {tipo === 'saida' ? '-' : '+'} {effectiveQty} = {
+                      tipo === 'saida' ? Math.max(0, currentCount - effectiveQty) : currentCount + effectiveQty
                     } aves
                   </span>
                 </div>
