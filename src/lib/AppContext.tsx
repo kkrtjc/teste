@@ -286,51 +286,103 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return `@mura-manager:${user.id}:${keyName}`;
   };
 
-  // Load data from Supabase or LocalForage on mount / user change
-  useEffect(() => {
-    async function loadData() {
-      setIsReady(false);
+  // Helper para carregar o cache offline em 0ms
+  const loadFromLocalForage = useCallback(async () => {
+    if (!user) return;
+    const storageItems = [
+      { suffix: 'breeds',          setter: setBreeds },
+      { suffix: 'birds',           setter: setBirds },
+      { suffix: 'couples',         setter: (d: any) => {
+          const migrated = (d || []).map((c: any) => ({
+            ...c,
+            femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
+          }));
+          setCouples(migrated);
+        }
+      },
+      { suffix: 'couple-eggs',     setter: setCoupleEggs },
+      { suffix: 'egglots',         setter: setEggLots },
+      { suffix: 'meatlots',        setter: setMeatLots },
+      { suffix: 'incubation-lots', setter: setIncubationLots },
+      { suffix: 'settings',        setter: setFarmSettings }
+    ];
 
-      if (!user) {
-        setBreeds([]);
-        setBirds([]);
-        setCouples([]);
-        setCoupleEggs([]);
-        setEggLots([]);
-        setMeatLots([]);
-        setIncubationLots([]);
-        setFarmSettings({
-          name: '',
-          photo: '',
-          email: '',
-          phone: ''
-        });
-        setActiveBreed('');
-        setIsReady(true);
-        return;
-      }
+    for (const item of storageItems) {
+      try {
+        const userKey = getStorageKey(item.suffix);
+        let data: any = await localforage.getItem(userKey);
 
-      // ── MODO ONLINE: SUPABASE CONFIGURADO E USUÁRIO LOGADO ──
-      if (isSupabaseConfigured && user) {
-        // 1. Carrega dados do cache local (para início instantâneo em 0ms)
-        await loadFromLocalForage();
-        setIsReady(true);
+        if (!data) {
+          const legacyKey = `@mura-manager:${item.suffix}`;
+          const legacyData = await localforage.getItem(legacyKey);
+          if (legacyData) {
+            data = legacyData;
+            await localforage.setItem(userKey, data);
+            await localforage.removeItem(legacyKey);
+          } else {
+            const oldData = localStorage.getItem(legacyKey);
+            if (oldData) {
+              data = JSON.parse(oldData);
+              await localforage.setItem(userKey, data);
+              localStorage.removeItem(legacyKey);
+            }
+          }
+        }
 
-        // 2. Sincroniza em segundo plano sem prender a tela do usuário
-        syncWithSupabaseBackground().catch(err => {
-          console.error('Erro na sincronização em segundo plano:', err);
-        });
-      } else {
-        // ── MODO OFFLINE ──
-        await loadFromLocalForage();
-        setIsReady(true);
+        if (data) {
+          if (item.suffix === 'breeds') {
+            let currentBreeds = data as Breed[];
+            
+            let uniqueLocalBreeds: Breed[] = [];
+            const seenLocalNames = new Set<string>();
+            for (const b of currentBreeds) {
+              const nameLower = (b.nome || '').trim().toLowerCase();
+              if (!seenLocalNames.has(nameLower)) {
+                seenLocalNames.add(nameLower);
+                uniqueLocalBreeds.push(b);
+              }
+            }
+            currentBreeds = uniqueLocalBreeds;
+
+            const missingLocal = DEFAULT_BREEDS.filter(
+              db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
+            );
+            currentBreeds = currentBreeds.map(b => {
+              const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === b.nome.toLowerCase());
+              if (seedMatch) {
+                return {
+                  ...b,
+                  foco: b.foco || seedMatch.foco,
+                  descricao: b.descricao || seedMatch.descricao,
+                  imagem: b.imagem || seedMatch.imagem,
+                  tempoCrescimento: b.tempoCrescimento || seedMatch.tempoCrescimento,
+                  pesoMedio: b.pesoMedio || seedMatch.pesoMedio
+                };
+              }
+              return b;
+            });
+            if (missingLocal.length > 0) {
+              currentBreeds = [...currentBreeds, ...missingLocal];
+              await localforage.setItem(userKey, currentBreeds);
+            }
+            (item.setter as any)(currentBreeds);
+          } else {
+            (item.setter as any)(data);
+          }
+        } else if (item.suffix === 'breeds') {
+          (item.setter as any)(DEFAULT_BREEDS);
+          await localforage.setItem(userKey, DEFAULT_BREEDS);
+        }
+      } catch (error) {
+        console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
     }
+  }, [user]);
 
-    async function syncWithSupabaseBackground() {
-      if (!isSupabaseConfigured || !user) return;
-      try {
-
+  // Função principal de sincronização com o Supabase com mesclagem defensiva de dados
+  const syncWithSupabaseBackground = useCallback(async () => {
+    if (!isSupabaseConfigured || !user) return;
+    try {
       const [
         resBreeds,
         resBirds,
@@ -360,7 +412,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbCoupleEggs = resCoupleEggs.data || [];
       let sbIncubationLots = resIncubationLots.data || [];
 
-      // ── PRIMEIRA INICIALIZAÇÃO / MIGRAÇÃO LOCAL ──
+      // Carrega dados locais para verificação defensiva de itens pendentes de sincronização
       const localBreeds: any = await localforage.getItem(getStorageKey('breeds'));
       const localBirds: any = await localforage.getItem(getStorageKey('birds'));
       const localCouples: any = await localforage.getItem(getStorageKey('couples'));
@@ -387,7 +439,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               tempo_crescimento: b.tempoCrescimento || 0,
               peso_medio: b.pesoMedio || ''
             }));
-            await supabase!.from('breeds').insert(breedsToInsert);
+            await supabase!.from('breeds').upsert(breedsToInsert, { onConflict: 'id' });
             sbBreeds = breedsToInsert;
           }
           if (localBirds && localBirds.length > 0) {
@@ -413,7 +465,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               imagens: b.imagens || [],
               observacoes: b.observacoes || ''
             }));
-            await supabase!.from('birds').insert(birdsToInsert);
+            await supabase!.from('birds').upsert(birdsToInsert, { onConflict: 'id' });
             sbBirds = birdsToInsert;
           }
           if (localCouples && localCouples.length > 0) {
@@ -421,12 +473,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               id: c.id,
               user_id: user.id,
               macho_id: c.machoId,
-              femea_id: c.femeaId,
+              femea_id: c.femeaIds?.[0] || c.femeaId || '',
               objetivo: c.objetivo,
               data_inicio: c.dataInicio,
               status: c.status
             }));
-            await supabase!.from('couples').insert(couplesToInsert);
+            await supabase!.from('couples').upsert(couplesToInsert, { onConflict: 'id' });
             sbCouples = couplesToInsert;
           }
           if (localEggLots && localEggLots.length > 0) {
@@ -445,7 +497,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               observacao: l.observacao || '',
               registros: l.registros || []
             }));
-            await supabase!.from('egg_lots').insert(eggLotsToInsert);
+            await supabase!.from('egg_lots').upsert(eggLotsToInsert, { onConflict: 'id' });
             sbEggLots = eggLotsToInsert;
           }
           if (localMeatLots && localMeatLots.length > 0) {
@@ -453,12 +505,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               id: l.id,
               user_id: user.id,
               baia: l.baia,
-              aves_ids: l.avesIds,
-              data_inicio: l.dataInicio,
-              peso_medio_inicial: l.pesoMedioInicial,
-              status: l.status
+              aves_ids: l.avesIds || [],
+              data_inicio: l.dataInicio || '',
+              peso_medio_inicial: l.pesoMedioInicial || '',
+              status: l.status || 'Crescimento'
             }));
-            await supabase!.from('meat_lots').insert(meatLotsToInsert);
+            await supabase!.from('meat_lots').upsert(meatLotsToInsert, { onConflict: 'id' });
             sbMeatLots = meatLotsToInsert;
           }
           if (localCoupleEggs && localCoupleEggs.length > 0) {
@@ -470,7 +522,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               status: e.status,
               data_introducao: e.dataIntroducao
             }));
-            await supabase!.from('couple_eggs').insert(coupleEggsToInsert);
+            await supabase!.from('couple_eggs').upsert(coupleEggsToInsert, { onConflict: 'id' });
+            sbCoupleEggs = coupleEggsToInsert;
           }
           if (localIncubationLots && localIncubationLots.length > 0) {
             const incubationLotsToInsert = localIncubationLots.map((l: any) => ({
@@ -487,7 +540,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ovos_descartados2: l.ovosDescartados2 || 0,
               eclodido: l.eclodido || false
             }));
-            await supabase!.from('incubation_lots').insert(incubationLotsToInsert);
+            await supabase!.from('incubation_lots').upsert(incubationLotsToInsert, { onConflict: 'id' });
+            sbIncubationLots = incubationLotsToInsert;
           }
           if (localSettings) {
             const settingsToInsert = { id: user.id, name: localSettings.name, photo: localSettings.photo, email: localSettings.email, phone: localSettings.phone };
@@ -495,11 +549,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             sbSettings = settingsToInsert;
           }
         } catch (migrationError) {
-          console.error('Erro durante a migracao automatica de IndexedDB para o Supabase, ignorando e prosseguindo:', migrationError);
+          console.error('Erro durante a migracao automatica para o Supabase:', migrationError);
         }
       }
 
-      // Evita raças duplicadas pelo nome (mantendo apenas o primeiro registro)
+      // ── RAÇAS: Mapeamento e preservação de não sincronizados ──
       let uniqueSbBreeds: any[] = [];
       const seenNames = new Set<string>();
       for (const b of sbBreeds) {
@@ -507,19 +561,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!seenNames.has(nameLower)) {
           seenNames.add(nameLower);
           uniqueSbBreeds.push(b);
-        } else {
-          // Se for duplicada, deletamos do Supabase para limpar o banco
-          if (isSupabaseConfigured && user) {
-            supabase!
-              .from('breeds')
-              .delete()
-              .eq('id', b.id)
-              .then(({ error }) => { if (error) console.error('Erro ao deletar raca duplicada no Supabase:', error); });
-          }
+        } else if (isSupabaseConfigured && user) {
+          supabase!.from('breeds').delete().eq('id', b.id).then(() => {});
         }
       }
 
-      // Grava no estado e sincroniza no cache localforage com preservação de propriedades locais
       let mappedBreeds: Breed[] = uniqueSbBreeds.map((b: any) => {
         const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
         const nameLower = (b.nome || '').toLowerCase();
@@ -559,10 +605,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Preservação de raças locais não sincronizadas
+      const sbBreedIds = new Set<string>(uniqueSbBreeds.map((b: any) => b.id));
+      const unsyncedLocalBreeds = (localBreeds || []).filter((lb: any) => lb && lb.id && !sbBreedIds.has(lb.id));
+      if (unsyncedLocalBreeds.length > 0) {
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBreeds.length} raça(s) local(is).`);
+        mappedBreeds.push(...unsyncedLocalBreeds);
+        if (isSupabaseConfigured && user) {
+          const breedsToPush = unsyncedLocalBreeds.map((b: any) => ({
+            id: b.id,
+            user_id: user.id,
+            nome: b.nome,
+            foco: b.foco,
+            descricao: b.descricao,
+            imagem: b.imagem,
+            tempo_crescimento: b.tempoCrescimento || 0,
+            peso_medio: b.pesoMedio || ''
+          }));
+          supabase!.from('breeds').upsert(breedsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ao subir raças pendentes:', error);
+          });
+        }
+      }
+
       setBreeds(mappedBreeds);
       await localforage.setItem(getStorageKey('breeds'), mappedBreeds);
 
-      // Mapeamento e mesclagem de imagens das aves
+      // ── AVES: Mapeamento e preservação de não sincronizados ──
       const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
       const mappedBirds: Bird[] = sbBirds.map((b: any) => {
         const localBird = (localBirds || []).find((x: any) => x.id === b.id);
@@ -598,11 +667,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // ── PROTEÇÃO CONTRA PERDA DE AVES LOCAIS ──
-      // Se houver aves criadas no dispositivo que ainda não estão no Supabase (ex: criadas offline ou em oscilação de rede)
       const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => lb && lb.id && !sbBirdIds.has(lb.id));
       if (unsyncedLocalBirds.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBirds.length} ave(s) salvas no dispositivo que ainda não subiram para a nuvem.`);
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBirds.length} ave(s) local(is).`);
         mappedBirds.push(...unsyncedLocalBirds);
 
         if (isSupabaseConfigured && user) {
@@ -630,7 +697,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }));
           
           supabase!.from('birds').upsert(birdsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir aves pendentes para o Supabase:', error);
+            if (error) console.error('Erro ao subir aves pendentes:', error);
           });
         }
       }
@@ -638,7 +705,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setBirds(mappedBirds);
       await localforage.setItem(getStorageKey('birds'), mappedBirds);
 
-      // Mapeia casais de snake_case para camelCase
+      // ── CASAIS: Mapeamento e preservação de não sincronizados ──
       const mappedCouples = sbCouples.map((c: any) => {
         const mapped = {
           id: c.id,
@@ -652,14 +719,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mapped.femeaIds = mapped.femeaIds.length > 0 ? mapped.femeaIds : (mapped.femeaId ? [mapped.femeaId] : []);
         return mapped;
       });
+
+      const sbCoupleIds = new Set<string>(sbCouples.map((c: any) => c.id));
+      const unsyncedLocalCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id));
+      if (unsyncedLocalCouples.length > 0) {
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalCouples.length} casal(is) local(is).`);
+        mappedCouples.push(...unsyncedLocalCouples);
+        if (isSupabaseConfigured && user) {
+          const couplesToPush = unsyncedLocalCouples.map((c: any) => ({
+            id: c.id,
+            user_id: user.id,
+            macho_id: c.machoId,
+            femea_id: c.femeaIds?.[0] || c.femeaId || '',
+            objetivo: c.objetivo,
+            data_inicio: c.dataInicio,
+            status: c.status
+          }));
+          supabase!.from('couples').upsert(couplesToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ao subir casais pendentes:', error);
+          });
+        }
+      }
+
       setCouples(mappedCouples);
       await localforage.setItem(getStorageKey('couples'), mappedCouples);
 
-      // Mapeia lotes de ovos de snake_case para camelCase preservando propriedades locais (como registros)
+      // ── LOTES DE OVOS: Mapeamento e preservação ──
       const mappedEggLots = sbEggLots.map((l: any) => {
         const local = (localEggLots || []).find((x: any) => x.id === l.id);
         
-        // registros vem do Supabase como jsonb (array) ou string ou do localforage
         let sbRegs: any[] = [];
         if (Array.isArray(l.registros)) {
           sbRegs = l.registros;
@@ -668,20 +756,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         const localRegs: any[] = local?.registros || [];
-        
-        // Mescla registros mantendo o mais completo entre local e nuvem
         let finalRegs = sbRegs;
         if (localRegs.length > sbRegs.length) {
           finalRegs = localRegs;
-          // Se o dispositivo local tem mais registros do que a nuvem, sincroniza forçado para o Supabase
           if (isSupabaseConfigured && user) {
             supabase!
               .from('egg_lots')
               .update({ registros: localRegs })
               .eq('id', l.id)
-              .then(({ error }) => {
-                if (error) console.error('Erro ao sincronizar registros de ovos locais para o Supabase:', error);
-              });
+              .then(({ error }) => { if (error) console.error('Erro registros ovos:', error); });
           }
         }
 
@@ -701,7 +784,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // Preserva também lotes de ovos criados localmente que ainda não estavam no Supabase
       const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
       const unsyncedEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
       if (unsyncedEggLots.length > 0) {
@@ -723,7 +805,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             registros: l.registros || []
           }));
           supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir lotes de ovos pendentes para o Supabase:', error);
+            if (error) console.error('Erro lotes ovos pendentes:', error);
           });
         }
       }
@@ -731,7 +813,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setEggLots(mappedEggLots);
       await localforage.setItem(getStorageKey('egglots'), mappedEggLots);
 
-      // Mapeia lotes de corte de snake_case para camelCase preservando propriedades locais (como raca, observacoes, pesoMeta)
+      // ── LOTES DE CORTE: Mapeamento e preservação ──
       const mappedMeatLots = sbMeatLots.map((l: any) => {
         const local = (localMeatLots || []).find((x: any) => x.id === l.id);
         return {
@@ -741,7 +823,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dataInicio: l.data_inicio || l.dataInicio || '',
           pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
           status: l.status || 'Crescimento',
-          // Preserva propriedades offline-first locais
           raca: l.raca || local?.raca || '',
           observacao: l.observacao || local?.observacao || '',
           pesoMeta: l.peso_meta || l.pesoMeta || local?.pesoMeta || '',
@@ -749,7 +830,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // Preserva também lotes de corte criados localmente que ainda não estavam no Supabase
       const sbMeatLotIds = new Set<string>(sbMeatLots.map((l: any) => l.id));
       const unsyncedMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
       if (unsyncedMeatLots.length > 0) {
@@ -769,7 +849,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             qtd_aves: l.qtdAves || 0
           }));
           supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir lotes de corte pendentes para o Supabase:', error);
+            if (error) console.error('Erro lotes corte pendentes:', error);
           });
         }
       }
@@ -777,7 +857,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMeatLots(mappedMeatLots);
       await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
-      // Mapeia ovos de casais de snake_case para camelCase
+      // ── OVOS DE CASAL: Mapeamento e preservação ──
       const mappedCoupleEggs = sbCoupleEggs.map((e: any) => ({
         id: e.id,
         coupleId: e.couple_id || e.coupleId || '',
@@ -785,10 +865,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: e.status || 'Em Espera',
         dataIntroducao: e.data_introducao || e.dataIntroducao || ''
       }));
+
+      const sbCoupleEggIds = new Set<string>(sbCoupleEggs.map((e: any) => e.id));
+      const unsyncedLocalCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id));
+      if (unsyncedLocalCoupleEggs.length > 0) {
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalCoupleEggs.length} ovo(s) de casal local(is).`);
+        mappedCoupleEggs.push(...unsyncedLocalCoupleEggs);
+        if (isSupabaseConfigured && user) {
+          const coupleEggsToPush = unsyncedLocalCoupleEggs.map((e: any) => ({
+            id: e.id,
+            user_id: user.id,
+            couple_id: e.coupleId,
+            femea_id: e.femeaId,
+            status: e.status,
+            data_introducao: e.dataIntroducao
+          }));
+          supabase!.from('couple_eggs').upsert(coupleEggsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro ovos casal pendentes:', error);
+          });
+        }
+      }
+
       setCoupleEggs(mappedCoupleEggs);
       await localforage.setItem(getStorageKey('couple-eggs'), mappedCoupleEggs);
 
-      // Mapeia lotes de incubação de snake_case para camelCase
+      // ── LOTES DE INCUBAÇÃO: Mapeamento e preservação ──
       const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
         id: l.id,
         coupleId: l.couple_id || l.coupleId || '',
@@ -802,131 +903,134 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ovosDescartados2: l.ovos_descartados2 !== undefined ? l.ovos_descartados2 : 0,
         eclodido: l.eclodido !== undefined ? l.eclodido : false
       }));
+
+      const sbIncubationLotIds = new Set<string>(sbIncubationLots.map((l: any) => l.id));
+      const unsyncedLocalIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id));
+      if (unsyncedLocalIncubationLots.length > 0) {
+        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalIncubationLots.length} lote(s) de incubação local(is).`);
+        mappedIncubationLots.push(...unsyncedLocalIncubationLots);
+        if (isSupabaseConfigured && user) {
+          const incubationLotsToPush = unsyncedLocalIncubationLots.map((l: any) => ({
+            id: l.id,
+            user_id: user.id,
+            couple_id: l.coupleId,
+            numero_lote: l.numeroLote,
+            quantidade_ovos: l.quantidadeOvos,
+            data_inicio: l.dataInicio,
+            baia: l.baia,
+            ovoscopia1_realizada: l.ovoscopia1Realizada || false,
+            ovoscopia2_realizada: l.ovoscopia2Realizada || false,
+            ovos_descartados1: l.ovosDescartados1 || 0,
+            ovos_descartados2: l.ovosDescartados2 || 0,
+            eclodido: l.eclodido || false
+          }));
+          supabase!.from('incubation_lots').upsert(incubationLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Erro lotes incubação pendentes:', error);
+          });
+        }
+      }
+
       setIncubationLots(mappedIncubationLots);
       await localforage.setItem(getStorageKey('incubation-lots'), mappedIncubationLots);
 
+      // ── CONFIGURAÇÕES DA FAZENDA ──
       if (sbSettings) {
         const settingsData = {
-          name: sbSettings.name || '',
-          photo: sbSettings.photo || '',
-          email: sbSettings.email || '',
-          phone: sbSettings.phone || ''
+          name: sbSettings.name || localSettings?.name || '',
+          photo: sbSettings.photo || localSettings?.photo || '',
+          email: sbSettings.email || localSettings?.email || '',
+          phone: sbSettings.phone || localSettings?.phone || ''
         };
         setFarmSettings(settingsData);
         await localforage.setItem(getStorageKey('settings'), settingsData);
+      } else if (localSettings && (localSettings.name || localSettings.photo || localSettings.email || localSettings.phone)) {
+        setFarmSettings(localSettings);
+        await supabase!.from('profiles').upsert({ id: user.id, ...localSettings });
       } else {
-        const defaultSettings = {
-          name: '',
-          photo: '',
-          email: '',
-          phone: ''
-        };
+        const defaultSettings = { name: '', photo: '', email: '', phone: '' };
         setFarmSettings(defaultSettings);
         await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
         await localforage.setItem(getStorageKey('settings'), defaultSettings);
       }
-      } catch (syncError) {
-        console.error("Erro critico na sincronizacao em background, fazendo fallback offline:", syncError);
+    } catch (syncError) {
+      console.error("Erro crítico na sincronização em background, fazendo fallback offline:", syncError);
+      await loadFromLocalForage();
+    }
+  }, [user, loadFromLocalForage]);
+
+  // Carregamento inicial de dados ao iniciar ou trocar de usuário
+  useEffect(() => {
+    async function loadData() {
+      setIsReady(false);
+
+      if (!user) {
+        setBreeds([]);
+        setBirds([]);
+        setCouples([]);
+        setCoupleEggs([]);
+        setEggLots([]);
+        setMeatLots([]);
+        setIncubationLots([]);
+        setFarmSettings({
+          name: '',
+          photo: '',
+          email: '',
+          phone: ''
+        });
+        setActiveBreed('');
+        setIsReady(true);
+        return;
+      }
+
+      if (isSupabaseConfigured && user) {
         await loadFromLocalForage();
+        setIsReady(true);
+        syncWithSupabaseBackground().catch(err => {
+          console.error('Erro na sincronização inicial em segundo plano:', err);
+        });
+      } else {
+        await loadFromLocalForage();
+        setIsReady(true);
       }
     }
 
-    async function loadFromLocalForage() {
-      if (!user) return;
-      const storageItems = [
-        { suffix: 'breeds',          setter: setBreeds },
-        { suffix: 'birds',           setter: setBirds },
-        { suffix: 'couples',         setter: (d: any) => {
-            const migrated = (d || []).map((c: any) => ({
-              ...c,
-              femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
-            }));
-            setCouples(migrated);
-          }
-        },
-        { suffix: 'couple-eggs',     setter: setCoupleEggs },
-        { suffix: 'egglots',         setter: setEggLots },
-        { suffix: 'meatlots',        setter: setMeatLots },
-        { suffix: 'incubation-lots', setter: setIncubationLots },
-        { suffix: 'settings',        setter: setFarmSettings }
-      ];
-
-      for (const item of storageItems) {
-        try {
-          const userKey = getStorageKey(item.suffix);
-          let data: any = await localforage.getItem(userKey);
-
-          // Fallback para chaves antigas sem prefixo
-          if (!data) {
-            const legacyKey = `@mura-manager:${item.suffix}`;
-            const legacyData = await localforage.getItem(legacyKey);
-            if (legacyData) {
-              data = legacyData;
-              await localforage.setItem(userKey, data);
-              await localforage.removeItem(legacyKey);
-            } else {
-              const oldData = localStorage.getItem(legacyKey);
-              if (oldData) {
-                data = JSON.parse(oldData);
-                await localforage.setItem(userKey, data);
-                localStorage.removeItem(legacyKey);
-              }
-            }
-          }
-
-          if (data) {
-            if (item.suffix === 'breeds') {
-              let currentBreeds = data as Breed[];
-              
-              // Limpeza de duplicados locais
-              let uniqueLocalBreeds: Breed[] = [];
-              const seenLocalNames = new Set<string>();
-              for (const b of currentBreeds) {
-                const nameLower = (b.nome || '').trim().toLowerCase();
-                if (!seenLocalNames.has(nameLower)) {
-                  seenLocalNames.add(nameLower);
-                  uniqueLocalBreeds.push(b);
-                }
-              }
-              currentBreeds = uniqueLocalBreeds;
-
-              const missingLocal = DEFAULT_BREEDS.filter(
-                db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
-              );
-              currentBreeds = currentBreeds.map(b => {
-                const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === b.nome.toLowerCase());
-                if (seedMatch) {
-                  return {
-                    ...b,
-                    foco: b.foco || seedMatch.foco,
-                    descricao: b.descricao || seedMatch.descricao,
-                    imagem: b.imagem || seedMatch.imagem,
-                    tempoCrescimento: b.tempoCrescimento || seedMatch.tempoCrescimento,
-                    pesoMedio: b.pesoMedio || seedMatch.pesoMedio
-                  };
-                }
-                return b;
-              });
-              if (missingLocal.length > 0) {
-                currentBreeds = [...currentBreeds, ...missingLocal];
-                await localforage.setItem(userKey, currentBreeds);
-              }
-              (item.setter as any)(currentBreeds);
-            } else {
-              (item.setter as any)(data);
-            }
-          } else if (item.suffix === 'breeds') {
-            (item.setter as any)(DEFAULT_BREEDS);
-            await localforage.setItem(userKey, DEFAULT_BREEDS);
-          }
-        } catch (error) {
-          console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
-        }
-      }
-    }
-    
     loadData();
-  }, [user]);
+  }, [user, loadFromLocalForage, syncWithSupabaseBackground]);
+
+  // Efeito de reconexão automática e sincronização contínua (Online / Focus / Timer 60s)
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user) return;
+
+    const handleOnline = () => {
+      console.log('[Rede] Conexão restaurada. Disparando sincronização com a nuvem...');
+      syncWithSupabaseBackground();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Foco App] Aplicativo visível. Sincronizando com a nuvem...');
+        syncWithSupabaseBackground();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Timer de checagem em segundo plano a cada 60 segundos
+    const syncInterval = setInterval(() => {
+      if (navigator.onLine) {
+        syncWithSupabaseBackground();
+      }
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(syncInterval);
+    };
+  }, [user, syncWithSupabaseBackground]);
 
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);
