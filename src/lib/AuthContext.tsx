@@ -4,10 +4,10 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import localforage from 'localforage';
 
-export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
+export const ADMIN_CPF = '14477751630';
+export const ADMIN_EMAIL = 'galosmurabrasill@gmail.com';
 export const ADMIN_EMAILS = [
   'galosmurabrasill@gmail.com',
-  'galosmurabrasil@gmail.com',
   `${ADMIN_CPF}@mura.com`
 ];
 
@@ -35,9 +35,14 @@ type AuthContextType = {
   isAdmin: boolean;
   trialInfo: TrialInfo;
   lastWebhookConfirmation: number | null;
+  isPasswordRecovery: boolean;
+  setIsPasswordRecovery: (value: boolean) => void;
   signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signInWithApple: () => Promise<{ error: any }>;
+  sendPasswordReset: (identifier: string) => Promise<{ error: any; email?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
+  linkCpfToUser: (cpfInput: string) => Promise<{ error: any }>;
   activateSubscription: (plan: 'monthly' | 'yearly') => Promise<{ error: any }>;
   triggerWebhookPayment: (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -76,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     remainingDays: 0,
     expiresAt: null
   });
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [loading, setLoading] = useState(() => {
     try {
       return !localStorage.getItem('@mura-manager:cached-user');
@@ -256,8 +262,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimeout);
     });
 
-    // 2. Escuta mudanças de estado (login, token refresh, logout)
+    // 2. Escuta mudanças de estado (login, token refresh, logout, recuperação de senha)
     const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       setSession(session);
       if (session?.user) {
         setUser(session.user);
@@ -355,21 +364,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: { message: 'Por favor, insira um CPF válido com 11 dígitos ou um e-mail válido.' } };
     }
 
-    const isAdmin = isUserAdmin(identifier) || isUserAdmin(cleanId) || cleanId === ADMIN_CPF;
+    const isAdmin = isUserAdmin(identifier) || isUserAdmin(cleanId) || cleanId === ADMIN_CPF || cleanId.toLowerCase() === ADMIN_EMAIL;
 
     // ══════════════════════════════════════════════════════
-    // ADMIN: tenta Supabase primeiro; qualquer falha → bypass
-    // local. Admin NUNCA fica bloqueado.
+    // ADMIN ÚNICO: galosmurabrasill@gmail.com & 14477751630
     // ══════════════════════════════════════════════════════
     if (isAdmin) {
       if (isSupabaseConfigured) {
-        const email    = isEmail ? cleanId.toLowerCase() : `${ADMIN_CPF}@mura.com`;
+        const email    = isEmail ? cleanId.toLowerCase() : ADMIN_EMAIL;
         const password = passwordInput || `mura2026`;
 
         try {
-          const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
+          let { data, error } = await supabase!.auth.signInWithPassword({ email, password });
 
-          if (!error && data.session) {
+          // Se falhar no email oficial, tenta o alias interno
+          if (error && !isEmail) {
+            const retry = await supabase!.auth.signInWithPassword({ email: `${ADMIN_CPF}@mura.com`, password });
+            if (!retry.error) {
+              data = retry.data;
+              error = null;
+            }
+          }
+
+          if (!error && data?.session) {
             setSession(data.session);
             setUser(data.user);
             await validateUserAccess(data.user);
@@ -390,7 +407,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const adminSession = {
         session: { access_token: `admin-local-${Date.now()}` },
-        user:    { id: `admin-${cleanId}`, email: isEmail ? cleanId.toLowerCase() : `${ADMIN_CPF}@mura.com` },
+        user:    { id: `admin-${ADMIN_CPF}`, email: ADMIN_EMAIL },
       };
       await localforage.setItem('@mura-manager:local-session', adminSession);
       setUser(adminSession.user);
@@ -413,7 +430,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const localAllowedList =
         (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
       const localData = localAllowedList.find(
-        (item) => item.cpf === cleanId || item.email === cleanId
+        (item) => item.cpf === cleanId || item.email?.toLowerCase() === cleanId.toLowerCase()
       );
 
       if (!localData) {
@@ -428,7 +445,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const mockSession = {
         session: { access_token: 'mock-token' },
-        user:    { id: `local-${localData.cpf}`, email: localData.email || `${localData.cpf}@mura.com` },
+        user:    { id: `local-${localData.cpf || localData.email}`, email: localData.email || `${localData.cpf}@mura.com` },
       };
       await localforage.setItem('@mura-manager:local-session', mockSession);
       setUser(mockSession.user);
@@ -437,44 +454,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // ══════════════════════════════════════════════════════
-    // MODO ONLINE — usuário não-admin
+    // MODO ONLINE — Usuário Regular
     // ══════════════════════════════════════════════════════
     let resolvedEmail = '';
 
     if (isEmail) {
-      resolvedEmail = cleanId;
-      const { data: allowedData, error: allowedError } = await supabase!
-        .from('allowed_cpfs')
-        .select('cpf, expires_at, email')
-        .eq('email', cleanId)
-        .maybeSingle();
-
-      if (allowedError) {
-        return { error: { message: 'Erro ao verificar permissão do e-mail. Tente novamente.' } };
-      }
-      
-      if (!allowedData) {
-        const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        const generatedCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-        const clientPayload = {
-          cpf: generatedCpf,
-          nome: cleanId.split('@')[0],
-          whatsapp: '',
-          expires_at: trialExpiresAt,
-          email: cleanId
-        };
-
-        const { error: insertError } = await supabase!
-          .from('allowed_cpfs')
-          .insert([clientPayload]);
-          
-        if (insertError) {
-          return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
-        }
-      } else {
-        resolvedEmail = allowedData.email || cleanId;
-      }
+      resolvedEmail = cleanId.toLowerCase();
     } else {
+      // Login com CPF: descobre o e-mail cadastrado
       const { data: allowedData, error: allowedError } = await supabase!
         .from('allowed_cpfs')
         .select('cpf, expires_at, email')
@@ -482,34 +469,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (allowedError) {
-        return { error: { message: 'Erro ao verificar permissão do CPF. Tente novamente.' } };
+        return { error: { message: 'Erro ao verificar CPF no servidor. Tente novamente.' } };
       }
 
-      if (!allowedData) {
-        const trialExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        const clientPayload = {
-          cpf: cleanId,
-          nome: 'Novo Criador',
-          whatsapp: '',
-          expires_at: trialExpiresAt,
-          email: `${cleanId}@mura.com`
+      if (!allowedData || !allowedData.email) {
+        return { 
+          error: { 
+            message: 'Nenhuma conta vinculada a este CPF foi encontrada. Se você ainda está no período gratuito de 7 dias, entre com seu e-mail cadastrado.' 
+          } 
         };
-
-        const { error: insertError } = await supabase!
-          .from('allowed_cpfs')
-          .insert([clientPayload]);
-          
-        if (insertError) {
-          return { error: { message: 'Erro ao criar conta de testes. Tente novamente.' } };
-        }
-        resolvedEmail = clientPayload.email;
-      } else {
-        resolvedEmail = allowedData.email || `${cleanId}@mura.com`;
       }
+
+      resolvedEmail = allowedData.email.toLowerCase();
     }
 
     try {
-      const { data, error } = await supabase!.auth.signInWithPassword({ email: resolvedEmail, password: passwordInput });
+      const { data, error } = await supabase!.auth.signInWithPassword({ 
+        email: resolvedEmail, 
+        password: passwordInput 
+      });
 
       if (!error && data.session) {
         setSession(data.session);
@@ -525,6 +503,144 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { error: error || { message: 'E-mail, CPF ou senha incorretos.' } };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  // ══════════════════════════════════════════════════════
+  // RECUPERAÇÃO DE SENHA POR EMAIL OU CPF
+  // ══════════════════════════════════════════════════════
+  const sendPasswordReset = async (identifier: string): Promise<{ error: any; email?: string }> => {
+    if (!isSupabaseConfigured) {
+      return { error: { message: 'Recuperação de senha não disponível no modo offline.' } };
+    }
+
+    const clean = identifier.trim().toLowerCase();
+    const isEmail = clean.includes('@');
+    let targetEmail = clean;
+
+    if (!isEmail) {
+      const cleanCpf = clean.replace(/\D/g, '');
+      if (cleanCpf === ADMIN_CPF) {
+        targetEmail = ADMIN_EMAIL;
+      } else {
+        const { data, error } = await supabase!
+          .from('allowed_cpfs')
+          .select('email')
+          .eq('cpf', cleanCpf)
+          .maybeSingle();
+
+        if (error || !data?.email) {
+          return { 
+            error: { 
+              message: 'Nenhum e-mail vinculado a este CPF foi encontrado. Se você ainda não cadastrou o CPF, informe seu e-mail de cadastro.' 
+            } 
+          };
+        }
+        targetEmail = data.email.toLowerCase();
+      }
+    }
+
+    try {
+      const { error } = await supabase!.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: `${window.location.origin}/`
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      // Mascara o e-mail para exibição segura (ex: g***l@gmail.com)
+      const parts = targetEmail.split('@');
+      const userPart = parts[0];
+      const domain = parts[1] || 'email.com';
+      const maskedUser = userPart.length > 2 
+        ? `${userPart[0]}***${userPart[userPart.length - 1]}` 
+        : `${userPart[0]}***`;
+      const maskedEmail = `${maskedUser}@${domain}`;
+
+      return { error: null, email: maskedEmail };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  // ══════════════════════════════════════════════════════
+  // DEFINIR NOVA SENHA (APÓS CLICAR NO LINK DO EMAIL)
+  // ══════════════════════════════════════════════════════
+  const updatePassword = async (newPassword: string) => {
+    if (!isSupabaseConfigured) {
+      return { error: { message: 'Operação não suportada no modo offline.' } };
+    }
+
+    try {
+      const { error } = await supabase!.auth.updateUser({ password: newPassword });
+      if (!error) {
+        setIsPasswordRecovery(false);
+      }
+      return { error };
+    } catch (err: any) {
+      return { error: err };
+    }
+  };
+
+  // ══════════════════════════════════════════════════════
+  // VINCULAR CPF AO USUÁRIO NO MOMENTO DO PAGAMENTO
+  // ══════════════════════════════════════════════════════
+  const linkCpfToUser = async (cpfInput: string) => {
+    const cleanCpf = cpfInput.replace(/\D/g, '');
+    if (cleanCpf.length !== 11) {
+      return { error: { message: 'CPF inválido. Digite os 11 dígitos do CPF.' } };
+    }
+
+    const emailToUse = user?.email?.toLowerCase().trim();
+    if (!emailToUse) {
+      return { error: { message: 'Nenhum usuário logado para vincular o CPF.' } };
+    }
+
+    try {
+      if (isSupabaseConfigured) {
+        // Verifica se o CPF já pertence a outro usuário com email diferente
+        const { data: existing } = await supabase!
+          .from('allowed_cpfs')
+          .select('email')
+          .eq('cpf', cleanCpf)
+          .neq('email', emailToUse)
+          .maybeSingle();
+
+        if (existing) {
+          return { error: { message: 'Este CPF já está associado a outra conta.' } };
+        }
+
+        // Atualiza a tabela allowed_cpfs com o CPF do usuário
+        const { error: updateErr } = await supabase!
+          .from('allowed_cpfs')
+          .update({ cpf: cleanCpf })
+          .eq('email', emailToUse);
+
+        if (updateErr) {
+          console.warn('Tentando upsert de CPF...', updateErr);
+          await supabase!
+            .from('allowed_cpfs')
+            .upsert({
+              email: emailToUse,
+              cpf: cleanCpf,
+              nome: emailToUse.split('@')[0],
+            }, { onConflict: 'email' });
+        }
+      } else {
+        const localList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+        const idx = localList.findIndex(item => item.email?.toLowerCase() === emailToUse);
+        if (idx >= 0) {
+          localList[idx].cpf = cleanCpf;
+        } else {
+          localList.push({ email: emailToUse, cpf: cleanCpf });
+        }
+        await localforage.setItem('@mura-manager:local-allowed-cpfs', localList);
+      }
+
+      return { error: null };
     } catch (err: any) {
       return { error: err };
     }
@@ -812,9 +928,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: isUserAdmin(user?.email) || isUserAdmin(getCpf()),
       trialInfo,
       lastWebhookConfirmation,
+      isPasswordRecovery,
+      setIsPasswordRecovery,
       signIn,
       signInWithGoogle,
       signInWithApple,
+      sendPasswordReset,
+      updatePassword,
+      linkCpfToUser,
       activateSubscription,
       triggerWebhookPayment,
       signOut

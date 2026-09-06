@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export function PaywallScreen() {
-  const { signOut, cpf, triggerWebhookPayment } = useAuth();
+  const { signOut, cpf, triggerWebhookPayment, linkCpfToUser } = useAuth();
   const { farmSettings } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copied, setCopied] = useState(false);
@@ -190,6 +190,13 @@ export function PaywallScreen() {
             <button 
               type="button"
               onClick={async () => {
+                const cleanCpf = paymentCpf.replace(/\D/g, '');
+                if (cleanCpf && cleanCpf.length === 11) {
+                  const { error: linkErr } = await linkCpfToUser(cleanCpf);
+                  if (linkErr) {
+                    alert(`Atenção ao vincular CPF: ${linkErr.message}`);
+                  }
+                }
                 const { error } = await triggerWebhookPayment(selectedPlan, paymentCpf || cpf);
                 if (error) {
                   alert('Erro ao enviar notificação de Webhook.');

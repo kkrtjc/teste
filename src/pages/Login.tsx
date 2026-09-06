@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
-  TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint
+  TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint,
+  KeyRound, ArrowLeft, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
@@ -46,7 +47,15 @@ const features = [
 ];
 
 export function Login() {
-  const { signIn, signInWithGoogle, isLocalMode } = useAuth();
+  const { 
+    signIn, 
+    signInWithGoogle, 
+    isLocalMode,
+    sendPasswordReset,
+    updatePassword,
+    isPasswordRecovery,
+    setIsPasswordRecovery
+  } = useAuth();
   const detailsRef = useRef<HTMLDivElement>(null);
 
   const [activeSlide, setActiveSlide] = useState(0);
@@ -60,6 +69,20 @@ export function Login() {
 
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+
+  // ── Recuperação de Senha ──
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+
+  // ── Definir Nova Senha (via link do e-mail) ──
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -114,6 +137,63 @@ export function Login() {
       setLoginError(err.message || 'Erro inesperado.');
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotIdentifier.trim()) {
+      setForgotError('Por favor, informe seu e-mail ou CPF.');
+      return;
+    }
+    setForgotError('');
+    setForgotSuccess('');
+    setForgotLoading(true);
+
+    try {
+      const { error, email } = await sendPasswordReset(forgotIdentifier);
+      if (error) {
+        setForgotError(error.message || 'Erro ao processar solicitação de recuperação.');
+      } else {
+        setForgotSuccess(`Instruções de redefinição de senha enviadas com sucesso para ${email || 'seu e-mail'}. Acesse seu e-mail para cadastrar uma nova senha.`);
+      }
+    } catch (err: any) {
+      setForgotError(err.message || 'Erro inesperado.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleUpdatePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setResetError('A nova senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setResetError('As senhas digitadas não coincidem.');
+      return;
+    }
+    setResetError('');
+    setResetSuccess('');
+    setResetLoading(true);
+
+    try {
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        setResetError(error.message || 'Erro ao atualizar a senha.');
+      } else {
+        setResetSuccess('Sua nova senha foi cadastrada com sucesso! Redirecionando para a plataforma...');
+        setTimeout(() => {
+          setIsPasswordRecovery(false);
+          setNewPassword('');
+          setConfirmNewPassword('');
+        }, 2000);
+      }
+    } catch (err: any) {
+      setResetError(err.message || 'Erro ao redefinir a senha.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -693,7 +773,22 @@ export function Login() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLoginForm(false);
+                      setShowForgotModal(true);
+                      setForgotError('');
+                      setForgotSuccess('');
+                      setForgotIdentifier(identifier);
+                    }}
+                    className="text-[11px] text-amber-500 hover:text-amber-400 font-bold transition-colors cursor-pointer"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
                   <input type="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
@@ -819,6 +914,181 @@ export function Login() {
           </div>
         </div>
       )}
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* MODAL RECUPERAÇÃO DE SENHA (POR EMAIL OU CPF)          */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
+            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <KeyRound size={16} style={{ color: '#f59e0b' }} />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Recuperar Minha Senha</h3>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Informe seu E-mail ou CPF cadastrado</p>
+                </div>
+              </div>
+              <button onClick={() => setShowForgotModal(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleForgotPasswordSubmit} className="px-7 py-6 space-y-4">
+              <p className="text-xs text-white/70 leading-relaxed">
+                Digite seu e-mail cadastrado ou o seu CPF. Nós localizaremos sua conta e enviaremos um link seguro para você redefinir sua senha diretamente no seu e-mail.
+              </p>
+
+              {forgotError && (
+                <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{forgotError}</span>
+                </div>
+              )}
+
+              {forgotSuccess && (
+                <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+                  <span>{forgotSuccess}</span>
+                </div>
+              )}
+
+              {!forgotSuccess && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail ou CPF</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="email@exemplo.com ou CPF" 
+                      value={forgotIdentifier}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setForgotIdentifier(v.includes('@') || /[a-zA-Z]/.test(v) ? v : formatCPF(v));
+                      }}
+                      className={inputCls} 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!forgotSuccess ? (
+                <button type="submit" disabled={forgotLoading}
+                  className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-1 cursor-pointer"
+                  style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
+                  {forgotLoading ? <Activity size={15} className="animate-spin" /> : <><Mail size={14} /> Enviar Link de Recuperação</>}
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={() => { setShowForgotModal(false); setShowLoginForm(true); }}
+                  className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-emerald-400 hover:bg-emerald-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogIn size={14} /> Voltar ao Login
+                </button>
+              )}
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotModal(false); setShowLoginForm(true); }}
+                  className="text-xs text-theme-text-muted hover:text-white transition-colors flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                >
+                  <ArrowLeft size={13} /> Voltar para a tela de Login
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* MODAL DEFINIR NOVA SENHA (DISPARADO PELO EMAIL)       */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {isPasswordRecovery && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.99)', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                  <KeyRound size={16} style={{ color: '#f59e0b' }} />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-white">Criar Nova Senha</h3>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Redefinição de acesso segura</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdatePasswordSubmit} className="px-7 py-6 space-y-4">
+              <p className="text-xs text-white/70 leading-relaxed">
+                Você confirmou a recuperação pelo link do e-mail. Agora, digite e confirme sua nova senha para acessar a plataforma.
+              </p>
+
+              {resetError && (
+                <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              {resetSuccess && (
+                <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+                  <span>{resetSuccess}</span>
+                </div>
+              )}
+
+              {!resetSuccess && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Nova Senha</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                      <input 
+                        type="password" 
+                        required 
+                        placeholder="Mínimo 6 caracteres" 
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        className={inputCls} 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Confirmar Nova Senha</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                      <input 
+                        type="password" 
+                        required 
+                        placeholder="Repita a nova senha" 
+                        value={confirmNewPassword}
+                        onChange={e => setConfirmNewPassword(e.target.value)}
+                        className={inputCls} 
+                      />
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={resetLoading}
+                    className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                    style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
+                    {resetLoading ? <Activity size={15} className="animate-spin" /> : <><Check size={14} /> Salvar Nova Senha</>}
+                  </button>
+                </>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════ */}
       {/* MODAL OFERTA DE ATIVAR BIOMETRIA (pós-login com senha) */}
       {/* ══════════════════════════════════════════════════════ */}
