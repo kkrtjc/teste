@@ -10,6 +10,7 @@ import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
 import { OnboardingTour } from './modals/OnboardingTour';
 import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
+import { PWAInstallGuideModal } from './modals/PWAInstallGuideModal';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -70,6 +71,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   // Estados para gerenciamento de atalho de PWA (Instalação rápida)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -481,12 +483,20 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {!isIOS && deferredPrompt && (
+                {!isIOS && deferredPrompt ? (
                   <button 
                     onClick={handleInstallClick}
-                    className="bg-theme-primary hover:bg-amber-400 text-black font-extrabold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
+                    className="bg-theme-primary hover:bg-amber-400 text-black font-extrabold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 shadow-md shadow-amber-500/20"
                   >
-                    Instalar
+                    <Download size={14} />
+                    <span>Instalar (1 Clique)</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsPwaGuideOpen(true)}
+                    className="bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <span>Como Salvar</span>
                   </button>
                 )}
                 <button 
@@ -889,6 +899,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         </div>,
         document.body
       )}
+
+      {/* Modal Interativo de Instruções PWA */}
+      <PWAInstallGuideModal
+        isOpen={isPwaGuideOpen}
+        onClose={() => setIsPwaGuideOpen(false)}
+      />
     </div>
   );
 }
