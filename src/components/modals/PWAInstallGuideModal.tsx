@@ -9,7 +9,6 @@ import {
   Copy, 
   Sparkles, 
   Apple, 
-  Compass, 
   MoreVertical, 
   DownloadCloud
 } from 'lucide-react';
@@ -128,67 +127,135 @@ export function PWAInstallGuideModal({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-sm flex-1 custom-scrollbar">
           {activeTab === 'ios' ? (
             <div className="space-y-4">
-              {/* Alerta importante sobre o Safari */}
-              <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-3">
-                <Compass className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <p className="font-bold text-amber-300">Atenção no iPhone:</p>
-                  <p className="text-zinc-300 mt-0.5">
-                    O sistema da Apple (iOS) só permite colocar o ícone na tela inicial usando o navegador nativo <strong className="text-white font-bold">Safari</strong>. Se estiver em outro navegador, copie o link abaixo e abra no Safari.
-                  </p>
+              {/* Seletor rápido de navegador no iPhone */}
+              <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Sparkles size={14} /> Qual navegador você está usando no iPhone?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
+                    <span className="text-xs font-black text-amber-400 block">Opção A: Chrome no iPhone</span>
+                    <span className="text-[10px] text-zinc-400">Pelos 3 pontinhos (...)</span>
+                  </div>
+                  <div className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-center">
+                    <span className="text-xs font-black text-white block">Opção B: Safari no iPhone</span>
+                    <span className="text-[10px] text-zinc-400">Pelo Compartilhar ⎋</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Passo a Passo Ilustrado iOS */}
-              <div className="space-y-3">
-                {/* Passo 1 */}
-                <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/5 rounded-2xl hover:border-amber-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-sm flex-shrink-0">
-                    1
+              {/* GUIA 1: CHROME NO IPHONE (PELOS 3 PONTINHOS) */}
+              <div className="border border-amber-500/30 bg-amber-500/5 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500 text-black flex items-center justify-center font-black text-xs">
+                    A
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
-                      Toque no botão Compartilhar
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-white/10 text-amber-400 border border-white/15">
-                        <Share size={13} />
-                      </span>
-                    </p>
-                    <p className="text-xs text-zinc-400">
-                      Na barra inferior do seu navegador Safari, clique no ícone de quadrado com uma seta para cima.
-                    </p>
-                  </div>
+                  <h3 className="font-black text-white text-xs sm:text-sm">
+                    Se você está no Google Chrome (iPhone)
+                  </h3>
                 </div>
 
-                {/* Passo 2 */}
-                <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/5 rounded-2xl hover:border-amber-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-sm flex-shrink-0">
-                    2
+                <div className="space-y-2.5">
+                  {/* Passo 1 */}
+                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-bold text-white flex items-center gap-1.5">
+                        Toque nos 3 pontinhos (...)
+                        <span className="px-1.5 py-0.5 bg-white/10 text-amber-400 rounded text-[11px] font-mono font-bold">
+                          ...
+                        </span>
+                      </p>
+                      <p className="text-zinc-400 mt-0.5">
+                        Eles ficam no canto inferior da tela (ou no topo direito ao lado da barra de endereço).
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5">
-                      Escolha "Adicionar à Tela de Início"
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-white/10 text-amber-400 border border-white/15">
-                        <PlusSquare size={13} />
-                      </span>
-                    </p>
-                    <p className="text-xs text-zinc-400">
-                      Role a lista de opções do menu para baixo até encontrar a opção com ícone de quadrado com o sinal de mais (+).
-                    </p>
+
+                  {/* Passo 2 */}
+                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-bold text-white flex items-center gap-1.5">
+                        Toque em "Compartilhar"
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-white/10 text-amber-400">
+                          <Share size={11} />
+                        </span>
+                      </p>
+                      <p className="text-zinc-400 mt-0.5">
+                        No menu que abrir após tocar nos pontinhos, clique na opção de Compartilhar.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Passo 3 */}
+                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                      3
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-bold text-white flex items-center gap-1.5">
+                        Role e escolha "Adicionar à Tela de Início"
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-white/10 text-amber-400">
+                          <PlusSquare size={11} />
+                        </span>
+                      </p>
+                      <p className="text-zinc-400 mt-0.5">
+                        Depois toque em <strong className="text-amber-400">"Adicionar"</strong> no canto superior direito. Pronto! O app fica na sua tela inicial!
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Passo 3 */}
-                <div className="flex items-start gap-3.5 p-3.5 bg-white/5 border border-white/5 rounded-2xl hover:border-amber-500/30 transition-all">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-sm flex-shrink-0">
-                    3
+              {/* GUIA 2: SAFARI NO IPHONE */}
+              <div className="border border-white/10 bg-white/5 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                  <div className="w-6 h-6 rounded-lg bg-white/10 text-white flex items-center justify-center font-black text-xs">
+                    B
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-bold text-white text-xs sm:text-sm">
-                      Confirme tocando em <span className="text-amber-400 font-extrabold">"Adicionar"</span>
-                    </p>
-                    <p className="text-xs text-zinc-400">
-                      No canto superior direito da tela do iPhone, toque em "Adicionar". O ícone oficial do Mura Manager será criado na sua tela inicial!
-                    </p>
+                  <h3 className="font-black text-white text-xs sm:text-sm">
+                    Se você está no Safari (Navegador da Maçã)
+                  </h3>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    <div className="w-6 h-6 rounded-lg bg-white/10 text-zinc-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-bold text-white flex items-center gap-1.5">
+                        Toque no botão de Compartilhar
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-white/10 text-amber-400">
+                          <Share size={11} />
+                        </span>
+                      </p>
+                      <p className="text-zinc-400 mt-0.5">
+                        É o quadrado com a seta para cima ⎋ na barra inferior do Safari (ou nos 3 pontinhos da barra se ela for compacta).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
+                    <div className="w-6 h-6 rounded-lg bg-white/10 text-zinc-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <div className="text-xs">
+                      <p className="font-bold text-white flex items-center gap-1.5">
+                        Selecione "Adicionar à Tela de Início"
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-white/10 text-amber-400">
+                          <PlusSquare size={11} />
+                        </span>
+                      </p>
+                      <p className="text-zinc-400 mt-0.5">
+                        Role as opções até encontrar o ícone de `+`. Depois clique em <strong>"Adicionar"</strong> no topo da tela.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -197,7 +264,7 @@ export function PWAInstallGuideModal({
               <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <p className="text-xs text-emerald-200">
-                  Ao abrir pelo ícone, o app roda em <strong>tela cheia</strong>, <strong>sem barras do navegador</strong> e mantém seu criatório sempre conectado.
+                  Feito isso, o Mura Manager abre com o ícone dourado oficial, em <strong>tela cheia</strong> e mantém o criatório sempre logado!
                 </p>
               </div>
             </div>

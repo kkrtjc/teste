@@ -473,7 +473,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                   <p className="font-black text-sm text-white">Instalar Mura Manager</p>
                   {isIOS ? (
                     <p className="text-xs text-theme-text-muted mt-0.5 leading-relaxed">
-                      Toque em <Share2 className="inline-block text-theme-primary mx-1" size={14} /> e selecione <strong className="text-white">Adicionar à Tela de Início</strong> no seu Safari.
+                      No iPhone: toque nos <strong className="text-amber-400">3 pontinhos (...)</strong> ou em <Share2 className="inline-block text-theme-primary mx-1" size={13} /> Compartilhar e escolha <strong className="text-white">Adicionar à Tela de Início</strong>.
                     </p>
                   ) : (
                     <p className="text-xs text-theme-text-muted mt-0.5">
