@@ -4,26 +4,20 @@
   "description": "Sistema de gestão inteligente de criatórios de aves de elite.",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192 512x512",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
+      "src": "/logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192 512x512",
       "purpose": "maskable"
     }
   ],
   "start_url": "/",
-  "background_color": "#020617",
+  "background_color": "#070709",
   "theme_color": "#F59E0B",
   "display": "standalone",
   "orientation": "portrait"

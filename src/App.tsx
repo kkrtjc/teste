@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
@@ -8,13 +8,13 @@ import { SplashScreen } from './components/SplashScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 
-// Importação direta síncrona das páginas para resposta instantânea (0ms) na troca de abas no celular
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { Lots } from './pages/Lots';
-import { Birds } from './pages/Birds';
-import { Settings } from './pages/Settings';
-import { Eggs } from './pages/Eggs';
+// Code-splitting com React.lazy para carregamento instantâneo do bundle principal
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
+const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 
 function AppContent() {
   const { isReady } = useAppContext();
@@ -33,9 +33,13 @@ function AppContent() {
     }
   }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
 
-  // Se não estiver autenticado e a checagem inicial já concluiu, exibe a tela de login
+  // Se não estiver autenticado e a checagem inicial já concluiu, exibe a tela de login imediatamente
   if (!user && !authLoading) {
-    return <Login />;
+    return (
+      <Suspense fallback={<SplashScreen isLoading={true} />}>
+        <Login />
+      </Suspense>
+    );
   }
 
   // Se o período de testes ou assinatura expirou (e não for conta de admin), exibe a tela de bloqueio total
@@ -75,15 +79,17 @@ function AppContent() {
 
           {/* App Router com resposta síncrona instantânea (0ms) */}
           <Router>
-            <Routes>
-              <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-                <Route index element={<Dashboard />} />
-                <Route path="birds" element={<Birds />} />
-                <Route path="lots" element={<Lots />} />
-                <Route path="eggs" element={<Eggs />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-            </Routes>
+            <Suspense fallback={<SplashScreen isLoading={true} />}>
+              <Routes>
+                <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="birds" element={<Birds />} />
+                  <Route path="lots" element={<Lots />} />
+                  <Route path="eggs" element={<Eggs />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+              </Routes>
+            </Suspense>
           </Router>
         </>
       )}

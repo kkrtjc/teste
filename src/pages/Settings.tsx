@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Sparkles, ChevronRight, Copy, MessageSquare, X, ExternalLink
+  Database, Sparkles, ChevronRight, Copy, MessageSquare, X, ExternalLink,
+  Smartphone
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
+import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal';
 
 function calcTimeLeft(expiresAt: string | null) {
   if (!expiresAt) return null;
@@ -130,6 +132,7 @@ export function Settings() {
 
   // Estado para Modal de Pagamento Antecipado da Assinatura
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copiedPix, setCopiedPix] = useState(false);
 
@@ -362,6 +365,39 @@ export function Settings() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── CARD ESPECIAL: INSTALAR NO CELULAR (IPHONE & ANDROID) ── */}
+      <div id="install-pwa-card" className="bg-gradient-to-br from-amber-500/15 via-[#0f0f14] to-[#070709] border-2 border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/10">
+              <Smartphone size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-black text-white">
+                  Instalar Aplicativo no Celular
+                </h3>
+                <span className="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
+                  Recomendado
+                </span>
+              </div>
+              <p className="text-xs text-amber-200/80 mt-1 max-w-xl">
+                Adicione o ícone do Mura Manager na tela inicial do seu <strong>iPhone</strong> ou <strong>Android</strong>. Abre em tela cheia instantaneamente e mantém seu login sempre salvo!
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsPwaGuideOpen(true)}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center justify-center gap-2 shrink-0"
+          >
+            <Smartphone size={16} />
+            <span>Como Instalar (Passo a Passo)</span>
+          </button>
+        </div>
       </div>
 
       {/* ── CARD 1: DADOS DO CRIATÓRIO E PERFIL ── */}
@@ -648,6 +684,12 @@ export function Settings() {
         </div>,
         document.body
       )}
+
+      {/* Modal de Instruções de Instalação PWA (iPhone e Android) */}
+      <PWAInstallGuideModal
+        isOpen={isPwaGuideOpen}
+        onClose={() => setIsPwaGuideOpen(false)}
+      />
 
     </div>
   );

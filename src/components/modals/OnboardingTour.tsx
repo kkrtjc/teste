@@ -10,9 +10,11 @@ import {
   Bird,
   Layers,
   Settings,
-  ArrowDown
+  ArrowDown,
+  Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PWAInstallGuideModal } from './PWAInstallGuideModal';
 
 export interface TourStep {
   targetId: string;
@@ -27,28 +29,35 @@ const TOUR_STEPS: TourStep[] = [
     targetId: 'nav-link-dashboard',
     title: 'Início (Painel Geral)',
     description: 'Acompanhe as métricas consolidadas do seu plantel em tempo real: total de aves, taxa de postura, chocadeiras ativas e indicadores zootécnicos.',
-    badge: 'Passo 1 de 4',
+    badge: 'Passo 1 de 5',
     path: '/'
   },
   {
     targetId: 'nav-link-birds',
     title: 'Cadastro & Anilhamento Individual',
     description: 'Cadastre reprodutores, matrizes e frangos com anilha, foto, baia, data de nascimento e árvore genealógica completa até os bisavós.',
-    badge: 'Passo 2 de 4',
+    badge: 'Passo 2 de 5',
     path: '/birds'
   },
   {
     targetId: 'nav-link-lots',
     title: 'Lotes de Postura & Gestão de Ovos',
     description: 'Acompanhe a produção diária de ovos por lote de postura, controle de estoque, transferências diretas para chocadeira e registro de vendas.',
-    badge: 'Passo 3 de 4',
+    badge: 'Passo 3 de 5',
     path: '/lots'
   },
   {
     targetId: 'header-profile-button',
     title: 'Perfil & Configurações do Criatório',
     description: 'Personalize o nome da sua granja, insira a foto de capa do seu perfil e gerencie seu plano de assinatura de forma simples.',
-    badge: 'Passo 4 de 4',
+    badge: 'Passo 4 de 5',
+    path: '/settings'
+  },
+  {
+    targetId: 'install-pwa-card',
+    title: 'Salvar Ícone na Tela Inicial (iPhone & Android)',
+    description: 'Coloque o aplicativo na tela inicial do seu celular para abrir em tela cheia, com acesso instantâneo e login sempre salvo sem precisar logar toda vez!',
+    badge: 'Passo 5 de 5 (Recomendado)',
     path: '/settings'
   }
 ];
@@ -64,6 +73,7 @@ export function OnboardingTour({
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
   const navigate = useNavigate();
 
   const currentStep = TOUR_STEPS[currentStepIndex];
@@ -277,6 +287,17 @@ export function OnboardingTour({
             {currentStep.description}
           </p>
 
+          {/* Botão de Ação Rápida para o Passo de Instalação no Celular */}
+          {currentStep.targetId === 'install-pwa-card' && (
+            <button
+              onClick={() => setIsPwaGuideOpen(true)}
+              className="w-full py-2.5 px-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
+            >
+              <Smartphone size={15} />
+              <span>Ver Passo a Passo com Fotos (iOS & Android)</span>
+            </button>
+          )}
+
           {/* Mobile Down Arrow Indicator when pointing to Bottom Bar */}
           {isTargetAtBottomOnMobile && (
             <div className="flex items-center justify-center gap-1 text-[10px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-xl py-1 px-2 animate-bounce">
@@ -325,7 +346,14 @@ export function OnboardingTour({
 
         </div>
       </div>
+
+      {/* Modal Interativo de Instalação PWA */}
+      <PWAInstallGuideModal
+        isOpen={isPwaGuideOpen}
+        onClose={() => setIsPwaGuideOpen(false)}
+      />
     </div>,
     document.body
   );
 }
+
