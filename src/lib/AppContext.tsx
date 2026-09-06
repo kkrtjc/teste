@@ -318,7 +318,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { suffix: 'settings',        setter: setFarmSettings }
     ];
 
-    for (const item of storageItems) {
+    await Promise.all(storageItems.map(async (item) => {
       try {
         const userKey = getStorageKey(item.suffix);
         let data: any = await localforage.getItem(userKey);
@@ -387,7 +387,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
-    }
+    }));
   }, [user]);
 
   // Função principal de sincronização com o Supabase com mesclagem defensiva de dados
@@ -424,14 +424,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbIncubationLots = resIncubationLots.data || [];
 
       // Carrega dados locais para verificação defensiva de itens pendentes de sincronização
-      const localBreeds: any = await localforage.getItem(getStorageKey('breeds'));
-      const localBirds: any = await localforage.getItem(getStorageKey('birds'));
-      const localCouples: any = await localforage.getItem(getStorageKey('couples'));
-      const localEggLots: any = await localforage.getItem(getStorageKey('egglots'));
-      const localMeatLots: any = await localforage.getItem(getStorageKey('meatlots'));
-      const localSettings: any = await localforage.getItem(getStorageKey('settings'));
-      const localCoupleEggs: any = await localforage.getItem(getStorageKey('couple-eggs'));
-      const localIncubationLots: any = await localforage.getItem(getStorageKey('incubation-lots'));
+      const [
+        localBreeds,
+        localBirds,
+        localCouples,
+        localEggLots,
+        localMeatLots,
+        localSettings,
+        localCoupleEggs,
+        localIncubationLots
+      ]: any = await Promise.all([
+        localforage.getItem(getStorageKey('breeds')),
+        localforage.getItem(getStorageKey('birds')),
+        localforage.getItem(getStorageKey('couples')),
+        localforage.getItem(getStorageKey('egglots')),
+        localforage.getItem(getStorageKey('meatlots')),
+        localforage.getItem(getStorageKey('settings')),
+        localforage.getItem(getStorageKey('couple-eggs')),
+        localforage.getItem(getStorageKey('incubation-lots'))
+      ]);
 
       const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
       const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
@@ -995,9 +1006,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Carregamento inicial de dados ao iniciar ou trocar de usuário
   useEffect(() => {
     async function loadData() {
-      setIsReady(false);
-
       if (!user) {
+        // Se ainda está determinando a sessão e há usuário em cache no localStorage, NÃO limpa a tela
+        const hasCachedUser = !!localStorage.getItem('@mura-manager:cached-user');
+        if (hasCachedUser) {
+          return;
+        }
+
         setBreeds([]);
         setBirds([]);
         setCouples([]);
@@ -1016,15 +1031,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (isSupabaseConfigured && user) {
-        await loadFromLocalForage();
-        setIsReady(true);
+      // Carrega dados offline locais primeiro (instantâneo ~0ms)
+      await loadFromLocalForage();
+      setIsReady(true);
+
+      // Sincroniza em segundo plano com a nuvem sem travar a interface
+      if (isSupabaseConfigured) {
         syncWithSupabaseBackground().catch(err => {
           console.error('Erro na sincronização inicial em segundo plano:', err);
         });
-      } else {
-        await loadFromLocalForage();
-        setIsReady(true);
       }
     }
 

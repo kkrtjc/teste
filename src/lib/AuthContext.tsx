@@ -53,8 +53,22 @@ function parseIsoDate(dateStr: any): Date | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('@mura-manager:cached-user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [session, setSession] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('@mura-manager:cached-session');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isExpired, setIsExpired] = useState(false);
   const [lastWebhookConfirmation, setLastWebhookConfirmation] = useState<number | null>(null);
   const [trialInfo, setTrialInfo] = useState<TrialInfo>({
@@ -62,7 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     remainingDays: 0,
     expiresAt: null
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('@mura-manager:cached-user');
+    } catch {
+      return true;
+    }
+  });
 
   async function validateUserAccess(targetUser: any) {
     if (!targetUser) return;
@@ -205,16 +225,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Modo Online com Supabase
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
-    }, 2500);
+    }, 1500);
 
-    // 1. Pega a sessão salva e valida permissões de acesso ANTES de liberar o carregamento
-    supabase!.auth.getSession().then(async ({ data: { session } }) => {
+    // 1. Pega a sessão salva e libera o app instantaneamente
+    supabase!.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         setUser(session.user);
-        await validateUserAccess(session.user);
+        try {
+          localStorage.setItem('@mura-manager:cached-user', JSON.stringify(session.user));
+          if (session.access_token) {
+            localStorage.setItem('@mura-manager:cached-session', JSON.stringify(session));
+          }
+        } catch {}
+        // Validação em segundo plano sem travar o carregamento da tela
+        validateUserAccess(session.user);
       } else {
         setUser(null);
+        setSession(null);
+        try {
+          localStorage.removeItem('@mura-manager:cached-user');
+          localStorage.removeItem('@mura-manager:cached-session');
+        } catch {}
       }
       setLoading(false);
       clearTimeout(safetyTimeout);
@@ -225,13 +257,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // 2. Escuta mudanças de estado (login, token refresh, logout)
-    const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
         setUser(session.user);
-        await validateUserAccess(session.user);
+        try {
+          localStorage.setItem('@mura-manager:cached-user', JSON.stringify(session.user));
+          if (session.access_token) {
+            localStorage.setItem('@mura-manager:cached-session', JSON.stringify(session));
+          }
+        } catch {}
+        validateUserAccess(session.user);
       } else {
         setUser(null);
+        setSession(null);
+        try {
+          localStorage.removeItem('@mura-manager:cached-user');
+          localStorage.removeItem('@mura-manager:cached-session');
+        } catch {}
       }
       setLoading(false);
     });
@@ -471,7 +514,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!error && data.session) {
         setSession(data.session);
         setUser(data.user);
-        await validateUserAccess(data.user);
+        try {
+          localStorage.setItem('@mura-manager:cached-user', JSON.stringify(data.user));
+          if (data.session.access_token) {
+            localStorage.setItem('@mura-manager:cached-session', JSON.stringify(data.session));
+          }
+        } catch {}
+        validateUserAccess(data.user);
         return { error: null };
       }
 
@@ -482,6 +531,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try {
+      localStorage.removeItem('@mura-manager:cached-user');
+      localStorage.removeItem('@mura-manager:cached-session');
+    } catch {}
+
     if (!isSupabaseConfigured) {
       await localforage.removeItem('@mura-manager:local-session');
       setUser(null);
@@ -490,6 +544,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await supabase!.auth.signOut();
+    setUser(null);
+    setSession(null);
   };
 
   const getCpf = () => {
