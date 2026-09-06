@@ -299,20 +299,17 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       document.body.classList.add('modal-open-lock');
       if (mainScrollRef.current) {
         mainScrollRef.current.style.overflow = 'hidden';
-        mainScrollRef.current.style.pointerEvents = 'none';
       }
     } else {
       document.body.classList.remove('modal-open-lock');
       if (mainScrollRef.current) {
         mainScrollRef.current.style.overflow = '';
-        mainScrollRef.current.style.pointerEvents = '';
       }
     }
     return () => {
       document.body.classList.remove('modal-open-lock');
       if (mainScrollRef.current) {
         mainScrollRef.current.style.overflow = '';
-        mainScrollRef.current.style.pointerEvents = '';
       }
     };
   }, [isAnyModalActive]);
