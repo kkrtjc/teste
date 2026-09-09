@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
@@ -425,8 +425,9 @@ function BaiaBirdsManagementCard({
 
 export function Lots() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { 
-    birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot, removeEggLot,
+    birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
@@ -895,19 +896,15 @@ export function Lots() {
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Egg size={100} /></div>
+                  {/* Cabeçalho */}
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Postura</h3>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
-                      <button onClick={() => { if (window.confirm('Deseja realmente apagar este lote de postura permanentemente?')) removeEggLot(lote.id); }}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
                   </div>
+                  {/* Métricas */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {[
                       { icon: Timer, label: 'Idade do Lote', value: `${dias}d` },
@@ -920,16 +917,15 @@ export function Lots() {
                       </div>
                     ))}
                   </div>
-                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
+                  {/* Aves no lote */}
+                  <div className="pt-3 border-t border-theme-border/50 mb-4 flex-1">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
-                        Aves no Lote ({totalF})
-                      </p>
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves no Lote ({totalF})</p>
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
                     {cadastradasF > 0 ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                           {lote.femeasIds.map(id => {
                             const b = birds.find(x => x.id === id);
                             return b ? (
@@ -940,46 +936,34 @@ export function Lots() {
                             ) : null;
                           })}
                           {avulsasF > 0 && (
-                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
-                              +{avulsasF} aves não cadastradas
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold">
+                              +{avulsasF} não cadastradas
                             </span>
                           )}
                         </div>
                         {avulsasF > 0 && (
                           <p className="text-[10px] text-theme-text-muted">
-                            Total: <strong className="text-white">{totalF} aves</strong> (<strong className="text-white">{cadastradasF}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasF}</strong> avulsas).
+                            Total: <strong className="text-white">{totalF} aves</strong> — <strong className="text-white">{cadastradasF}</strong> cadastradas + <strong className="text-amber-400">{avulsasF}</strong> avulsas
                           </p>
                         )}
                       </div>
                     ) : (
                       <p className="text-[10px] text-theme-text-muted italic">
-                        {totalF > 0 ? `${totalF} fêmeas registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
+                        {totalF > 0 ? `${totalF} fêmeas registradas (aves avulsas, não cadastradas individualmente)` : 'Nenhuma ave vinculada.'}
                       </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
+                  {/* Botão — navega para a aba Ovos */}
                   <div className="pt-3 border-t border-theme-border/50">
                     <button
                       type="button"
-                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'postura' })}
-                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group mb-3 shadow-sm"
+                      onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
+                      className="w-full py-2.5 px-4 bg-theme-primary/10 hover:bg-theme-primary/20 border border-theme-primary/40 hover:border-theme-primary/70 rounded-xl text-sm font-bold text-theme-primary flex items-center justify-center gap-2 transition-all"
                     >
-                      <span className="flex items-center gap-2 text-theme-primary font-black">
-                        <Activity size={14} /> Movimentações & Baixas (+/-)
-                      </span>
-                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[10px] font-extrabold text-theme-text-muted group-hover:text-white">
-                        {lote.movimentacoes?.length || 0} registro(s)
-                      </span>
+                      <Egg size={15} />
+                      Gerenciar na Aba Ovos
                     </button>
-                    <p className={labelCls + " mb-2"}>Alterar Status</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['Ativo', 'Encerrado'] as const).map(st => (
-                        <button key={st} onClick={() => editEggLot(lote.id, { status: st })}
-                          className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border transition-all ${lote.status === st ? 'bg-theme-primary text-black border-theme-primary' : 'bg-theme-surface/50 border-theme-border/50 text-theme-text-muted hover:text-white hover:border-theme-border'}`}>
-                          {st}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
               );

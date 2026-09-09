@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
 import type { EggDailyRecord, EggLot, IncubationLot } from '../lib/AppContext';
@@ -791,7 +792,7 @@ function LotCard({
   }, [records, total]);
 
   return (
-    <div className="rounded-2xl border border-theme-border/60 bg-theme-surface overflow-hidden shadow-lg transition-all hover:border-theme-border">
+    <div id={`egg-lot-${lot.id}`} className="rounded-2xl border border-theme-border/60 bg-theme-surface overflow-hidden shadow-lg transition-all hover:border-theme-border">
       <div className="p-4 flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0">
           <Egg size={18} className="text-amber-400" />
@@ -985,6 +986,7 @@ function LotCard({
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
   const { eggLots, addEggLot, editEggLot, birds, addIncubationLot } = useAppContext();
+  const location = useLocation();
 
   const [registerTarget, setRegisterTarget] = useState<EggLot | null>(null);
   const [editingRecord, setEditingRecord] = useState<EggDailyRecord | null>(null);
@@ -995,7 +997,7 @@ export function Eggs() {
   const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
   const [sellStockTarget, setSellStockTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
 
-  // Sincroniza lembrete de coleta diária no celular (Push) e rola para o topo no carregamento
+  // Rola para o topo no carregamento + sincroniza lembrete
   useEffect(() => {
     window.scrollTo(0, 0);
     const scrollContainers = document.querySelectorAll('.overflow-y-auto');
@@ -1005,6 +1007,27 @@ export function Eggs() {
     const hasRegisteredToday = eggLots.some(lot => (lot.registros || []).some(r => r.data === today));
     syncDailyEggReminder(hasRegisteredToday);
   }, [eggLots]);
+
+  // Rola até o lote específico quando vindo da aba Lotes
+  useEffect(() => {
+    const state = location.state as { scrollToLotId?: string } | null;
+    if (state?.scrollToLotId) {
+      const id = state.scrollToLotId;
+      // Aguarda o DOM renderizar os cards antes de rolar
+      const attempt = (tries: number) => {
+        const el = document.getElementById(`egg-lot-${id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Destaca brevemente o card
+          el.classList.add('ring-2', 'ring-theme-primary', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-theme-primary', 'ring-offset-2'), 2000);
+        } else if (tries > 0) {
+          setTimeout(() => attempt(tries - 1), 200);
+        }
+      };
+      setTimeout(() => attempt(5), 300);
+    }
+  }, [location.state]);
 
   const { kpiColetados, kpiVendidos, kpiPerdidos, kpiIncubados, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
     const cutoff = period === 999 ? '2000-01-01' : new Date(Date.now() - period * 86400000).toISOString().split('T')[0];
