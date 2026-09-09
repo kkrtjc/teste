@@ -26,13 +26,38 @@ export function Dashboard() {
       }
     });
 
+    // Soma as aves avulsas / não cadastradas presentes em lotes ativos
+    let avulsasPostura = 0;
+    (eggLots || []).forEach(l => {
+      if (l.status !== 'Encerrado') {
+        const t = Math.max(l.qtdFemeas || 0, l.femeasIds?.length || 0);
+        const cad = l.femeasIds?.length || 0;
+        avulsasPostura += Math.max(0, t - cad);
+      }
+    });
+
+    let avulsasOutros = 0;
+    let avulsasPintinhos = 0;
+    (meatLots || []).forEach(l => {
+      if (l.status !== 'Abatido') {
+        const t = Math.max(l.qtdAves || 0, l.avesIds?.length || 0);
+        const cad = l.avesIds?.length || 0;
+        const diff = Math.max(0, t - cad);
+        if (l.id.startsWith('chick-')) {
+          avulsasPintinhos += diff;
+        } else {
+          avulsasOutros += diff;
+        }
+      }
+    });
+
     const totalLotes = (eggLots?.length || 0) + (meatLots?.length || 0) + (incubationLots?.length || 0);
 
     return {
-      totalAves: total,
+      totalAves: total + avulsasPostura + avulsasOutros + avulsasPintinhos,
       totalMachos: machos,
-      totalFemeas: femeas,
-      totalPintinhos: pintinhos,
+      totalFemeas: femeas + avulsasPostura,
+      totalPintinhos: pintinhos + avulsasPintinhos,
       totalLotes: totalLotes
     };
   }, [birds, eggLots, meatLots, incubationLots]);

@@ -148,7 +148,10 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       return;
     }
 
-    const countFemeas = selectedFemeas.length > 0 ? selectedFemeas.length : (parseInt(qtdFemeas) || 0);
+    const numSel = selectedFemeas.length;
+    const numExtra = parseInt(qtdFemeas) || 0;
+    const countFemeas = numSel + numExtra;
+
     if (countFemeas <= 0) {
       setError('Informe a quantidade de fêmeas ou selecione as galinhas vinculadas.');
       return;
@@ -226,21 +229,33 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Nº de Fêmeas na Baia <span className="text-amber-400">*</span></label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Nº de Fêmeas Avulsas / Não Cadastradas</label>
             <input
               type="number"
-              min="1"
+              min="0"
               inputMode="numeric"
-              placeholder="Ex: 5"
+              placeholder="Ex: 30"
               value={qtdFemeas}
               onChange={e => {
                 const val = e.target.value;
                 setQtdFemeas(val);
-                handleFemeasChange(parseInt(val) || 0);
+                handleFemeasChange(selectedFemeas.length + (parseInt(val) || 0));
               }}
               onKeyDown={onlyNumericKeyDown}
               className={inputCls}
             />
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-theme-base border border-theme-border flex items-center justify-between text-xs">
+            <span className="text-theme-text-muted">Total de fêmeas no lote:</span>
+            <span className="font-black text-amber-400">
+              {selectedFemeas.length + (parseInt(qtdFemeas) || 0)} ave(s)
+              {selectedFemeas.length > 0 && (parseInt(qtdFemeas) || 0) > 0 && (
+                <span className="text-[10px] text-theme-text-muted font-normal ml-1.5">
+                  ({selectedFemeas.length} cadastradas + {parseInt(qtdFemeas) || 0} avulsas)
+                </span>
+              )}
+            </span>
           </div>
 
           <div className="space-y-1">
@@ -273,7 +288,9 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
 
           {availableFemeas.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-theme-border">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Vincular Galinhas Cadastradas (Opcional)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Vincular Galinhas Cadastradas ({selectedFemeas.length} selecionadas)</label>
+              </div>
               <div className="border border-theme-border rounded-xl max-h-32 overflow-y-auto p-2 divide-y divide-theme-border/50">
                 {availableFemeas.map(f => {
                   const isChecked = selectedFemeas.includes(f.id);
@@ -283,8 +300,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
                       onClick={() => {
                         setSelectedFemeas(prev => {
                           const next = isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
-                          setQtdFemeas(String(next.length || qtdFemeas));
-                          handleFemeasChange(next.length || parseInt(qtdFemeas) || 0);
+                          const totalCalc = next.length + (parseInt(qtdFemeas) || 0);
+                          handleFemeasChange(totalCalc);
                           return next;
                         });
                       }}
@@ -746,6 +763,9 @@ function LotCard({
   const dias = daysBetween(lot.dataInicio, todayISO());
   const mediaReal = records.length > 0 ? (total / records.length) : 0;
   const eficiencia = lot.expectativaDiaria > 0 ? Math.min(100, (mediaReal / lot.expectativaDiaria) * 100) : 0;
+  const totalFemeas = Math.max(lot.qtdFemeas || 0, lot.femeasIds?.length || 0);
+  const cadastradasCount = lot.femeasIds?.length || 0;
+  const avulsasCount = Math.max(0, totalFemeas - cadastradasCount);
   const femeaNomes = lot.femeasIds.map(id => birds.find(b => b.id === id)).filter(Boolean).map(b => b!.nome || b!.anilha).join(', ');
   const isAtivo = lot.status === 'Ativo';
   const efBar = Math.min(100, eficiencia);
@@ -784,9 +804,18 @@ function LotCard({
             </span>
           </div>
           <p className="text-xs text-theme-text-muted mt-0.5 truncate">
-            {lot.femeasIds.length || lot.qtdFemeas || 0} fêmea(s) &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}
+            <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}
           </p>
-          {femeaNomes && <p className="text-[10px] text-theme-text-muted/70 truncate mt-0.5">{femeaNomes}</p>}
+          {femeaNomes ? (
+            <p className="text-[10px] text-theme-text-muted/80 mt-0.5 truncate">
+              Aves: <span className="text-white/90 font-medium">{femeaNomes}</span>
+              {avulsasCount > 0 && <span className="text-amber-400 font-bold ml-1.5">+ {avulsasCount} não cadastrada(s)</span>}
+            </p>
+          ) : avulsasCount > 0 ? (
+            <p className="text-[10px] text-theme-text-muted/80 mt-0.5 truncate">
+              {avulsasCount} ave(s) não cadastradas individualmente no plantel
+            </p>
+          ) : null}
         </div>
       </div>
 

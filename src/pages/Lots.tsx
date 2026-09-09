@@ -872,7 +872,12 @@ export function Lots() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Lotes Ativos', value: eggLots.filter(l => l.status !== 'Encerrado').length },
-              { label: 'Total de Fêmeas em Postura', value: eggLots.filter(l => l.status !== 'Encerrado').reduce((a, l) => a + (l.femeasIds.length || l.qtdFemeas || 0), 0) },
+              { 
+                label: 'Total de Fêmeas em Postura', 
+                value: eggLots.filter(l => l.status !== 'Encerrado').reduce((a, l) => {
+                  return a + Math.max(l.qtdFemeas || 0, l.femeasIds?.length || 0);
+                }, 0) 
+              },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
                 <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
@@ -884,7 +889,9 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {eggLots.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const qtdF = lote.femeasIds.length || lote.qtdFemeas || 0;
+              const totalF = Math.max(lote.qtdFemeas || 0, lote.femeasIds?.length || 0);
+              const cadastradasF = lote.femeasIds?.length || 0;
+              const avulsasF = Math.max(0, totalF - cadastradasF);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Egg size={100} /></div>
@@ -904,7 +911,7 @@ export function Lots() {
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {[
                       { icon: Timer, label: 'Idade do Lote', value: `${dias}d` },
-                      { icon: Users, label: 'Fêmeas', value: qtdF },
+                      { icon: Users, label: 'Fêmeas', value: totalF },
                       { icon: Egg, label: 'Meta Ovos/dia', value: lote.expectativaDiaria || 0 },
                     ].map(m => (
                       <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -915,15 +922,39 @@ export function Lots() {
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.femeasIds.length})</p>
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
+                        Aves no Lote ({totalF})
+                      </p>
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
-                    {lote.femeasIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
-                        {lote.femeasIds.map(id => { const b = birds.find(x => x.id === id); return b ? (<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome ? ` (${b.nome})` : ''}</span>) : null; })}
+                    {cadastradasF > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                          {lote.femeasIds.map(id => {
+                            const b = birds.find(x => x.id === id);
+                            return b ? (
+                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
+                              </span>
+                            ) : null;
+                          })}
+                          {avulsasF > 0 && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                              +{avulsasF} aves não cadastradas
+                            </span>
+                          )}
+                        </div>
+                        {avulsasF > 0 && (
+                          <p className="text-[10px] text-theme-text-muted">
+                            Total: <strong className="text-white">{totalF} aves</strong> (<strong className="text-white">{cadastradasF}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasF}</strong> avulsas).
+                          </p>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">{qtdF > 0 ? `${qtdF} fêmeas registradas (sem vínculo individual)` : 'Nenhuma ave vinculada.'}</p>
+                      <p className="text-[10px] text-theme-text-muted italic">
+                        {totalF > 0 ? `${totalF} fêmeas registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
+                      </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
@@ -970,7 +1001,10 @@ export function Lots() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Lotes Ativos', value: filterEngorda.filter(l => l.status !== 'Abatido').length },
-              { label: 'Aves em Engorda', value: filterEngorda.reduce((a, l) => a + (l.status !== 'Abatido' ? (l.avesIds.length || l.qtdAves || 0) : 0), 0) },
+              { 
+                label: 'Aves em Engorda', 
+                value: filterEngorda.reduce((a, l) => a + (l.status !== 'Abatido' ? Math.max(l.qtdAves || 0, l.avesIds?.length || 0) : 0), 0) 
+              },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
                 <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
@@ -982,7 +1016,9 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filterEngorda.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const qtdA = lote.avesIds.length || lote.qtdAves || 0;
+              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const cadastradasA = lote.avesIds?.length || 0;
+              const avulsasA = Math.max(0, totalA - cadastradasA);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={100} /></div>
@@ -1003,7 +1039,7 @@ export function Lots() {
                     {[
                       { icon: Timer, label: 'Idade', value: `${dias}d` },
                       { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: qtdA },
+                      { icon: Activity, label: 'Aves', value: totalA },
                     ].map(m => (
                       <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                         <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
@@ -1019,15 +1055,39 @@ export function Lots() {
                   )}
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.avesIds.length})</p>
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
+                        Aves no Lote ({totalA})
+                      </p>
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
-                    {lote.avesIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
-                        {lote.avesIds.map(id => { const b = birds.find(x => x.id === id); return b ? (<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome ? ` (${b.nome})` : ''}</span>) : null; })}
+                    {cadastradasA > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                          {lote.avesIds.map(id => {
+                            const b = birds.find(x => x.id === id);
+                            return b ? (
+                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
+                              </span>
+                            ) : null;
+                          })}
+                          {avulsasA > 0 && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                              +{avulsasA} aves não cadastradas
+                            </span>
+                          )}
+                        </div>
+                        {avulsasA > 0 && (
+                          <p className="text-[10px] text-theme-text-muted">
+                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
+                          </p>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">{qtdA > 0 ? `${qtdA} aves registradas (sem vínculo individual)` : 'Nenhuma ave vinculada.'}</p>
+                      <p className="text-[10px] text-theme-text-muted italic">
+                        {totalA > 0 ? `${totalA} aves registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
+                      </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
@@ -1074,7 +1134,10 @@ export function Lots() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Lotes Ativos', value: filterPintinhos.filter(l => l.status !== 'Abatido').length },
-              { label: 'Total de Pintinhos', value: filterPintinhos.filter(l => l.status !== 'Abatido').reduce((a, l) => a + (l.avesIds.length || l.qtdAves || 0), 0) },
+              { 
+                label: 'Total de Pintinhos', 
+                value: filterPintinhos.filter(l => l.status !== 'Abatido').reduce((a, l) => a + Math.max(l.qtdAves || 0, l.avesIds?.length || 0), 0) 
+              },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
                 <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
@@ -1086,7 +1149,9 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filterPintinhos.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const qtdA = lote.avesIds.length || lote.qtdAves || 0;
+              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const cadastradasA = lote.avesIds?.length || 0;
+              const avulsasA = Math.max(0, totalA - cadastradasA);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1107,7 +1172,7 @@ export function Lots() {
                     {[
                       { icon: Timer, label: 'Idade', value: `${dias}d` },
                       { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: qtdA },
+                      { icon: Activity, label: 'Aves', value: totalA },
                     ].map(m => (
                       <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                         <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
@@ -1117,15 +1182,39 @@ export function Lots() {
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Pintinhos Vinculados ({lote.avesIds.length})</p>
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
+                        Aves no Lote ({totalA})
+                      </p>
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
-                    {lote.avesIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
-                        {lote.avesIds.map(id => { const b = birds.find(x => x.id === id); return b ? (<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome ? ` (${b.nome})` : ''}</span>) : null; })}
+                    {cadastradasA > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                          {lote.avesIds.map(id => {
+                            const b = birds.find(x => x.id === id);
+                            return b ? (
+                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
+                              </span>
+                            ) : null;
+                          })}
+                          {avulsasA > 0 && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                              +{avulsasA} pintinhos não cadastrados
+                            </span>
+                          )}
+                        </div>
+                        {avulsasA > 0 && (
+                          <p className="text-[10px] text-theme-text-muted">
+                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
+                          </p>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">{qtdA > 0 ? `${qtdA} pintinhos registrados (sem vínculo individual)` : 'Nenhum pintinho vinculado.'}</p>
+                      <p className="text-[10px] text-theme-text-muted italic">
+                        {totalA > 0 ? `${totalA} pintinhos registrados (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhum pintinho vinculado.'}
+                      </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
@@ -1172,7 +1261,10 @@ export function Lots() {
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Lotes Ativos', value: filterCrescimento.filter(l => l.status !== 'Abatido').length },
-              { label: 'Aves em Crescimento', value: filterCrescimento.filter(l => l.status !== 'Abatido').reduce((a, l) => a + (l.avesIds.length || l.qtdAves || 0), 0) },
+              { 
+                label: 'Aves em Crescimento', 
+                value: filterCrescimento.filter(l => l.status !== 'Abatido').reduce((a, l) => a + Math.max(l.qtdAves || 0, l.avesIds?.length || 0), 0) 
+              },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
                 <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
@@ -1184,7 +1276,9 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filterCrescimento.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const qtdA = lote.avesIds.length || lote.qtdAves || 0;
+              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const cadastradasA = lote.avesIds?.length || 0;
+              const avulsasA = Math.max(0, totalA - cadastradasA);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Timer size={100} className="text-green-400" /></div>
@@ -1205,7 +1299,7 @@ export function Lots() {
                     {[
                       { icon: Timer, label: 'Idade', value: `${dias}d` },
                       { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: qtdA },
+                      { icon: Activity, label: 'Aves', value: totalA },
                     ].map(m => (
                       <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                         <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
@@ -1215,15 +1309,39 @@ export function Lots() {
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">Aves Vinculadas ({lote.avesIds.length})</p>
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
+                        Aves no Lote ({totalA})
+                      </p>
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
-                    {lote.avesIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
-                        {lote.avesIds.map(id => { const b = birds.find(x => x.id === id); return b ? (<span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-theme-text-muted border border-theme-border">{b.anilha}{b.nome ? ` (${b.nome})` : ''}</span>) : null; })}
+                    {cadastradasA > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                          {lote.avesIds.map(id => {
+                            const b = birds.find(x => x.id === id);
+                            return b ? (
+                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
+                              </span>
+                            ) : null;
+                          })}
+                          {avulsasA > 0 && (
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                              +{avulsasA} aves não cadastradas
+                            </span>
+                          )}
+                        </div>
+                        {avulsasA > 0 && (
+                          <p className="text-[10px] text-theme-text-muted">
+                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
+                          </p>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">{qtdA > 0 ? `${qtdA} aves registradas (sem vínculo individual)` : 'Nenhuma ave vinculada.'}</p>
+                      <p className="text-[10px] text-theme-text-muted italic">
+                        {totalA > 0 ? `${totalA} aves registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
+                      </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
@@ -1800,7 +1918,7 @@ export function Lots() {
               <p className="text-white font-bold mb-1">Resumo do Lote:</p>
               <p className="text-theme-text-muted">• Baia: <span className="text-white font-bold">{confirmTransfer.lote.baia}</span></p>
               {confirmTransfer.lote.raca && <p className="text-theme-text-muted">• Raça: <span className="text-white">{confirmTransfer.lote.raca}</span></p>}
-              <p className="text-theme-text-muted">• Aves: <span className="text-white">{confirmTransfer.lote.avesIds?.length || confirmTransfer.lote.qtdAves || 0} pintinhos</span></p>
+              <p className="text-theme-text-muted">• Aves: <span className="text-white">{Math.max(confirmTransfer.lote.qtdAves || 0, confirmTransfer.lote.avesIds?.length || 0)} pintinhos</span></p>
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -1874,7 +1992,9 @@ function LotMovementModal({
 
   if (!isOpen || !lote) return null;
 
-  const currentCount = lote.femeasIds?.length || lote.avesIds?.length || lote.qtdFemeas || lote.qtdAves || 0;
+  const currentCount = loteType === 'postura'
+    ? Math.max(lote.qtdFemeas || 0, lote.femeasIds?.length || 0)
+    : Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
 
   const motivosSaida = [
     'Mortalidade / Óbito',
