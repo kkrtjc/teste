@@ -13,6 +13,8 @@ export type Breed = {
   imagem?: string;
   tempoCrescimento?: number;
   pesoMedio?: string;
+  ganhoGramasDia?: number;     // Ganho médio de peso diário em gramas (g/dia)
+  conversaoAlimentar?: number; // Taxa de conversão alimentar (ex: 2.2)
 };
 
 export type Bird = {
@@ -112,6 +114,13 @@ export type EggLot = {
   movimentacoes?: LotMovementRecord[];
 };
 
+export type WeightRecord = {
+  id: string;
+  data: string;           // YYYY-MM-DD
+  pesoMedioG: number;     // peso médio em gramas (ex: 2450)
+  observacao?: string;
+};
+
 export type MeatLot = {
   id: string;
   baia: string;
@@ -122,8 +131,12 @@ export type MeatLot = {
   pesoMeta?: string;           // peso alvo de abate
   status: 'Crescimento' | 'Terminação' | 'Abatido';
   raca?: string;
+  racaId?: string;
   observacao?: string;
   movimentacoes?: LotMovementRecord[];
+  ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
+  consumoRacaoAve?: number;    // Consumo de ração g/ave/dia (ex: 130g)
+  pesagens?: WeightRecord[];   // Registro histórico de pesagens periódicas
 };
 
 export type FarmSettings = {
@@ -209,7 +222,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/mura.jpg',
     totalAves: 0,
     tempoCrescimento: 180,
-    pesoMedio: '3.5 kg'
+    pesoMedio: '3.5 kg',
+    ganhoGramasDia: 25,
+    conversaoAlimentar: 2.8
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567002',
@@ -219,7 +234,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/brahma.jpg',
     totalAves: 0,
     tempoCrescimento: 210,
-    pesoMedio: '4.5 kg'
+    pesoMedio: '4.5 kg',
+    ganhoGramasDia: 35,
+    conversaoAlimentar: 2.5
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567003',
@@ -229,7 +246,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/sedosa.jpg',
     totalAves: 0,
     tempoCrescimento: 150,
-    pesoMedio: '1.2 kg'
+    pesoMedio: '1.2 kg',
+    ganhoGramasDia: 15,
+    conversaoAlimentar: 3.2
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567004',
@@ -239,7 +258,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/caipira.jpg',
     totalAves: 0,
     tempoCrescimento: 120,
-    pesoMedio: '2.8 kg'
+    pesoMedio: '2.8 kg',
+    ganhoGramasDia: 28,
+    conversaoAlimentar: 2.7
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567005',
@@ -249,7 +270,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/gsb.jpg',
     totalAves: 0,
     tempoCrescimento: 240,
-    pesoMedio: '5.5 kg'
+    pesoMedio: '5.5 kg',
+    ganhoGramasDia: 40,
+    conversaoAlimentar: 2.3
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567006',
@@ -259,7 +282,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/indio_gigante.jpg',
     totalAves: 0,
     tempoCrescimento: 210,
-    pesoMedio: '5.0 kg'
+    pesoMedio: '5.0 kg',
+    ganhoGramasDia: 42,
+    conversaoAlimentar: 2.4
   },
   {
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567007',
@@ -269,7 +294,9 @@ export const DEFAULT_BREEDS: Breed[] = [
     imagem: '/breeds/polaco.jpg',
     totalAves: 0,
     tempoCrescimento: 150,
-    pesoMedio: '3.0 kg'
+    pesoMedio: '3.0 kg',
+    ganhoGramasDia: 30,
+    conversaoAlimentar: 2.6
   }
 ];
 
@@ -600,7 +627,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           imagem: b.imagem || seedMatch?.imagem,
           totalAves: b.total_aves || b.totalAves || 0,
           tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || seedMatch?.tempoCrescimento || 0),
-          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || '')
+          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || ''),
+          ganhoGramasDia: b.ganho_gramas_dia !== undefined ? b.ganho_gramas_dia : (localBreed?.ganhoGramasDia || seedMatch?.ganhoGramasDia || undefined),
+          conversaoAlimentar: b.conversao_alimentar !== undefined ? b.conversao_alimentar : (localBreed?.conversaoAlimentar || seedMatch?.conversaoAlimentar || undefined)
         };
       });
 
@@ -867,9 +896,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
           status: l.status || 'Crescimento',
           raca: l.raca || local?.raca || '',
+          racaId: l.raca_id || l.racaId || local?.racaId || undefined,
           observacao: l.observacao || local?.observacao || '',
           pesoMeta: l.peso_meta || l.pesoMeta || local?.pesoMeta || '',
           qtdAves: l.qtd_aves !== undefined ? l.qtd_aves : (l.qtdAves || local?.qtdAves || 0),
+          ganhoGramasDia: l.ganho_gramas_dia !== undefined ? l.ganho_gramas_dia : (l.ganhoGramasDia || local?.ganhoGramasDia || undefined),
+          consumoRacaoAve: l.consumo_racao_ave !== undefined ? l.consumo_racao_ave : (l.consumoRacaoAve || local?.consumoRacaoAve || undefined),
+          pesagens: Array.isArray(l.pesagens) ? l.pesagens : (local?.pesagens || []),
           movimentacoes: finalMovs
         };
       });

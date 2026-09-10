@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  TrendingDown, TrendingUp, History, CheckCircle
+  TrendingDown, TrendingUp, History, CheckCircle, Sparkles
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 
@@ -17,6 +17,35 @@ function calcDays(start: string) {
 }
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('pt-BR'); }
 function normalizeBaia(str: string) { return str.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+function parseWeightG(val: string | number | undefined): number {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return val;
+  const clean = String(val).toLowerCase().replace(',', '.').trim();
+  const match = clean.match(/([\d.]+)/);
+  if (!match) return 0;
+  const num = parseFloat(match[1]);
+  if (isNaN(num)) return 0;
+  if (clean.includes('kg') || (!clean.includes('g') && num < 20)) {
+    return Math.round(num * 1000);
+  }
+  return Math.round(num);
+}
+
+function formatWeightG(grams: number): string {
+  if (!grams || grams <= 0) return '0g';
+  if (grams >= 1000) {
+    return (grams / 1000).toFixed(2).replace('.', ',') + ' kg';
+  }
+  return Math.round(grams) + 'g';
+}
+
+function addDaysToDate(baseDateISO: string, daysToAdd: number): string {
+  if (!baseDateISO) return '';
+  const d = new Date(baseDateISO + 'T12:00:00');
+  d.setDate(d.getDate() + daysToAdd);
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
 
 // Bloqueia letras em campos numéricos (inclusive Android que ignora type=number)
 const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -427,7 +456,7 @@ export function Lots() {
   const location = useLocation();
   const navigate = useNavigate();
   const { 
-    birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
+    birds, editBird, showToast, breeds, addBreed, eggLots, addEggLot, editEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
@@ -470,6 +499,29 @@ export function Lots() {
   const [ePesoInicial, setEPesoInicial] = useState('');
   const [ePesoMeta, setEPesoMeta] = useState('');
   const [eObs, setEObs] = useState('');
+  const [eGanhoGramasDia, setEGanhoGramasDia] = useState('');
+  const [eConsumoRacaoAve, setEConsumoRacaoAve] = useState('');
+
+  // Modal de Cadastro Rápido de Raça (sem sair do formulário de engorda)
+  const [showQuickBreedModal, setShowQuickBreedModal] = useState(false);
+  const [newBreedNome, setNewBreedNome] = useState('');
+  const [newBreedFoco, setNewBreedFoco] = useState('Corte / Engorda');
+  const [newBreedGanho, setNewBreedGanho] = useState('35');
+  const [newBreedConversao, setNewBreedConversao] = useState('2.4');
+  const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('3.5 kg');
+  const [newBreedDesc, setNewBreedDesc] = useState('');
+
+  // Modal de Registro Periódico de Pesagem Manual
+  const [weighModal, setWeighModal] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+  }>({
+    isOpen: false,
+    lote: null,
+  });
+  const [wData, setWData] = useState(todayISO());
+  const [wPeso, setWPeso] = useState('');
+  const [wObs, setWObs] = useState('');
 
   // Pintinhos Lot states
   const [showPintinhos, setShowPintinhos] = useState(false);
@@ -544,7 +596,7 @@ export function Lots() {
     loteType: 'engorda',
   });
 
-  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen;
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || showQuickBreedModal || weighModal.isOpen;
   useEffect(() => {
     if (isAnyModalOpen) {
       document.body.classList.add('modal-open-lock');
@@ -655,6 +707,7 @@ export function Lots() {
     setShowEngorda(false); setEBaia(''); setERaca(''); setEDataInicio(todayISO());
     setEMode('select'); setEAves([]); setEQtd(''); setESearch('');
     setEPesoInicial(''); setEPesoMeta(''); setEObs('');
+    setEGanhoGramasDia(''); setEConsumoRacaoAve('');
   };
 
   const handleSaveEngordaSubmit = (e: React.FormEvent) => {
@@ -677,6 +730,9 @@ export function Lots() {
         status: 'Crescimento',
         raca: eRaca.trim() || undefined,
         observacao: eObs.trim() || undefined,
+        ganhoGramasDia: parseFloat(eGanhoGramasDia) || undefined,
+        consumoRacaoAve: parseFloat(eConsumoRacaoAve) || undefined,
+        pesagens: [],
       });
       resetEngorda();
     };
@@ -691,6 +747,76 @@ export function Lots() {
       isAskingCustom: false,
       pendingSaveFn: doSave,
     });
+  };
+
+  const handleSaveQuickBreed = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBreedNome.trim()) return;
+    const newId = uid();
+    const ganhoNum = parseFloat(newBreedGanho) || undefined;
+    const convNum = parseFloat(newBreedConversao) || undefined;
+    addBreed({
+      id: newId,
+      nome: newBreedNome.trim(),
+      foco: newBreedFoco,
+      descricao: newBreedDesc.trim() || 'Raça cadastrada para lote de engorda.',
+      totalAves: 0,
+      tempoCrescimento: 180,
+      pesoMedio: newBreedPesoMedio.trim() || '3.5 kg',
+      ganhoGramasDia: ganhoNum,
+      conversaoAlimentar: convNum
+    });
+    setERaca(newBreedNome.trim());
+    if (ganhoNum) setEGanhoGramasDia(String(ganhoNum));
+    showToast(`Raça "${newBreedNome.trim()}" cadastrada e vinculada!`, 'success');
+    setShowQuickBreedModal(false);
+    setNewBreedNome('');
+    setNewBreedDesc('');
+  };
+
+  const openWeighModal = (lote: any) => {
+    setWeighModal({ isOpen: true, lote });
+    setWData(todayISO());
+    setWPeso('');
+    setWObs('');
+  };
+
+  const handleSaveWeightRecord = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!weighModal.lote) return;
+    const pesoG = parseWeightG(wPeso);
+    if (pesoG <= 0) {
+      showToast('Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
+      return;
+    }
+    const currentPesagens = weighModal.lote.pesagens || [];
+    const newRecord = {
+      id: uid(),
+      data: wData,
+      pesoMedioG: pesoG,
+      observacao: wObs.trim() || undefined
+    };
+    const updatedPesagens = [...currentPesagens, newRecord].sort((a, b) => a.data.localeCompare(b.data));
+    editMeatLot(weighModal.lote.id, { pesagens: updatedPesagens });
+    setWeighModal(prev => ({
+      ...prev,
+      lote: { ...prev.lote, pesagens: updatedPesagens }
+    }));
+    setWPeso('');
+    setWObs('');
+    showToast('Pesagem registrada com sucesso!', 'success');
+  };
+
+  const handleDeleteWeightRecord = (recordId: string) => {
+    if (!weighModal.lote) return;
+    const currentPesagens = weighModal.lote.pesagens || [];
+    const updated = currentPesagens.filter((p: any) => p.id !== recordId);
+    editMeatLot(weighModal.lote.id, { pesagens: updated });
+    setWeighModal(prev => ({
+      ...prev,
+      lote: { ...prev.lote, pesagens: updated }
+    }));
+    showToast('Registro de pesagem removido.', 'info');
   };
 
   // Pintinhos methods
@@ -1003,41 +1129,221 @@ export function Lots() {
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
               const avulsasA = Math.max(0, totalA - cadastradasA);
+
+              // ── INTELIGÊNCIA DE PESO & ALIMENTAÇÃO (PROTOCOLO DE ELITE) ──
+              const pesoInicialG = parseWeightG(lote.pesoMedioInicial);
+              const pesoMetaG = parseWeightG(lote.pesoMeta);
+              const ganhoConfigurado = lote.ganhoGramasDia || 0;
+              const pesagens = [...(lote.pesagens || [])].sort((a, b) => a.data.localeCompare(b.data));
+
+              let pesoAtualEstimadoG = pesoInicialG;
+              let diasDesdeUltimaPesagem = dias;
+              let ganhoRealObservado: number | null = null;
+              const temPesagemManual = pesagens.length > 0;
+              let ultimaPesagem = temPesagemManual ? pesagens[pesagens.length - 1] : null;
+
+              if (temPesagemManual && ultimaPesagem) {
+                diasDesdeUltimaPesagem = calcDays(ultimaPesagem.data);
+                if (pesagens.length >= 2) {
+                  const penultima = pesagens[pesagens.length - 2];
+                  const diasDiff = calcDays(penultima.data) - diasDesdeUltimaPesagem;
+                  if (diasDiff > 0) {
+                    ganhoRealObservado = Math.round((ultimaPesagem.pesoMedioG - penultima.pesoMedioG) / diasDiff);
+                  }
+                }
+                const ganhoBase = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado || 0);
+                pesoAtualEstimadoG = ultimaPesagem.pesoMedioG + (ganhoBase * diasDesdeUltimaPesagem);
+              } else if (ganhoConfigurado > 0) {
+                pesoAtualEstimadoG = pesoInicialG + (ganhoConfigurado * dias);
+              }
+
+              // Previsão de Abate (em dias)
+              const temDadosAbate = pesoMetaG > 0 && (ganhoConfigurado > 0 || (ganhoRealObservado !== null && ganhoRealObservado > 0));
+              const ganhoReferencia = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado || 0);
+              
+              let diasRestantesAbate = 0;
+              let dataPrevisaoAbate = '';
+              let progressoAbatePct = 0;
+              let metaAtingida = false;
+              let gramasFaltando = 0;
+
+              if (temDadosAbate && ganhoReferencia > 0) {
+                gramasFaltando = Math.max(0, pesoMetaG - pesoAtualEstimadoG);
+                if (gramasFaltando <= 0) {
+                  metaAtingida = true;
+                  progressoAbatePct = 100;
+                } else {
+                  diasRestantesAbate = Math.ceil(gramasFaltando / ganhoReferencia);
+                  dataPrevisaoAbate = addDaysToDate(todayISO(), diasRestantesAbate);
+                  const ganhoNecessarioTotal = Math.max(1, pesoMetaG - pesoInicialG);
+                  const ganhoObtido = Math.max(0, pesoAtualEstimadoG - pesoInicialG);
+                  progressoAbatePct = Math.min(100, Math.round((ganhoObtido / ganhoNecessarioTotal) * 100));
+                }
+              }
+
+              // Consumo de Ração Estimado
+              const consumoAveG = lote.consumoRacaoAve || 0;
+              const temRacao = consumoAveG > 0 && totalA > 0;
+              const racaoDiariaKg = temRacao ? ((consumoAveG * totalA) / 1000) : 0;
+              const racaoAcumuladaKg = temRacao ? ((consumoAveG * totalA * dias) / 1000) : 0;
+
               return (
-                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={100} /></div>
-                  <div className="flex justify-between items-start mb-4">
+                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col space-y-4">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={110} /></div>
+                  
+                  {/* Cabeçalho */}
+                  <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
+                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">
+                        Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}
+                      </span>
                       <h3 className="font-black text-lg text-white">Lote de Engorda</h3>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
-                      <button onClick={() => { if (window.confirm('Deseja realmente apagar este lote de engorda permanentemente?')) removeMeatLot(lote.id); }}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                      <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${meatStatusCls(lote.status)}`}>
+                        {lote.status}
+                      </span>
+                      <button 
+                        onClick={() => { if (window.confirm('Deseja realmente apagar este lote de engorda permanentemente?')) removeMeatLot(lote.id); }}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" 
+                        title="Apagar Lote"
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      { icon: Timer, label: 'Idade', value: `${dias}d` },
-                      { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: totalA },
-                    ].map(m => (
-                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
-                        <p className="text-base font-black text-white truncate">{m.value}</p>
-                      </div>
-                    ))}
+
+                  {/* Grid de 4 Métricas Principais */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Timer size={11} /> Idade
+                      </p>
+                      <p className="text-base font-black text-white">{dias} dias</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Scale size={11} className="text-amber-400" /> Peso Hoje
+                      </p>
+                      <p className="text-base font-black text-white">{formatWeightG(pesoAtualEstimadoG)}</p>
+                      <p className="text-[9px] text-theme-text-muted truncate">
+                        {temPesagemManual ? 'Base pesagem' : (ganhoConfigurado > 0 ? 'Projetado' : 'Inicial')}
+                      </p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <CheckCircle size={11} className="text-emerald-400" /> Meta Abate
+                      </p>
+                      <p className="text-base font-black text-white truncate">
+                        {pesoMetaG > 0 ? formatWeightG(pesoMetaG) : '—'}
+                      </p>
+                      <p className="text-[9px] text-theme-text-muted">Alvo final</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Users size={11} /> Aves
+                      </p>
+                      <p className="text-base font-black text-white">{totalA}</p>
+                      <p className="text-[9px] text-theme-text-muted">{cadastradasA} cad. + {avulsasA} av.</p>
+                    </div>
                   </div>
-                  {lote.pesoMeta && (
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-2.5 mb-4">
-                      <p className="text-[10px] text-orange-400 font-bold">Meta de Abate</p>
-                      <p className="text-sm font-black text-white">{lote.pesoMeta}</p>
+
+                  {/* ⏱️ CARD DE PREVISÃO DE ABATE (PROTOCOLO DE ELITE) */}
+                  {metaAtingida ? (
+                    <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                        <CheckCircle size={18} className="text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-emerald-400">Meta de Abate Atingida! 🎉</p>
+                        <p className="text-[11px] text-theme-text-muted">
+                          Peso médio estimado em <strong>{formatWeightG(pesoAtualEstimadoG)}</strong>. Lote pronto para abate.
+                        </p>
+                      </div>
+                    </div>
+                  ) : temDadosAbate ? (
+                    <div className="p-3.5 bg-gradient-to-br from-amber-500/10 via-theme-base/60 to-orange-500/10 border border-amber-500/30 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-white flex items-center gap-1.5">
+                          <Timer size={14} className="text-amber-400" />
+                          Previsão de Abate:
+                        </span>
+                        <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                          em ~{diasRestantesAbate} dias ({dataPrevisaoAbate})
+                        </span>
+                      </div>
+
+                      {/* Barra de Progresso do Ganho */}
+                      <div className="space-y-1">
+                        <div className="w-full bg-theme-base rounded-full h-2 overflow-hidden border border-theme-border/60">
+                          <div 
+                            className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-500 rounded-full"
+                            style={{ width: `${progressoAbatePct}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-theme-text-muted">
+                          <span>Inicial: {formatWeightG(pesoInicialG)}</span>
+                          <span className="font-bold text-white">{progressoAbatePct}% concluído</span>
+                          <span>Meta: {formatWeightG(pesoMetaG)}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center justify-between text-[10px] text-theme-text-muted border-t border-theme-border/30">
+                        <span>Ganho diário: <strong className="text-emerald-400">+{ganhoReferencia}g/dia</strong> (Ração de Engorda)</span>
+                        <span>Faltam: <strong className="text-amber-300">~{formatWeightG(gramasFaltando)}</strong></span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-theme-surface/40 border border-theme-border/60 rounded-2xl text-[11px] text-theme-text-muted flex items-center gap-2.5">
+                      <AlertCircle size={15} className="text-amber-400 shrink-0" />
+                      <span>
+                        Previsão de abate desabilitada. Para ativar, informe o <strong>peso meta</strong> e selecione uma <strong>raça com taxa de ganho</strong> no lote.
+                      </span>
                     </div>
                   )}
-                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
+
+                  {/* 🌾 CONSUMO ESTIMADO DE RAÇÃO */}
+                  {temRacao && (
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1 mb-0.5">
+                          🌾 Consumo Estimado de Ração (Protocolo de Elite)
+                        </p>
+                        <p className="text-white font-bold">
+                          {racaoDiariaKg.toFixed(1).replace('.', ',')} kg/dia <span className="text-theme-text-muted font-normal">(~{consumoAveG}g por ave/dia)</span>
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-theme-text-muted block">Total consumido</span>
+                        <span className="font-black text-white text-xs bg-theme-base/80 px-2 py-0.5 rounded-lg border border-theme-border/60">
+                          ~{racaoAcumuladaKg.toFixed(1).replace('.', ',')} kg
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ⚖️ BOTÃO DE REGISTRO DE PESAGEM MANUAL */}
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => openWeighModal(lote)}
+                      className="flex-1 py-2 px-3 bg-theme-primary/10 hover:bg-theme-primary/20 border border-theme-primary/30 hover:border-theme-primary/60 rounded-xl text-xs font-bold text-theme-primary flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Scale size={14} />
+                      Registrar Pesagem ({pesagens.length})
+                    </button>
+                    {ultimaPesagem && (
+                      <span className="text-[10px] text-theme-text-muted shrink-0">
+                        Última: <strong className="text-white">{formatWeightG(ultimaPesagem.pesoMedioG)}</strong> ({fmtDate(ultimaPesagem.data)})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Aves no Lote */}
+                  <div className="pt-2 border-t border-theme-border/50">
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase">
                         Aves no Lote ({totalA})
@@ -1045,7 +1351,7 @@ export function Lots() {
                       <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
                     </div>
                     {cadastradasA > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                           {lote.avesIds.map(id => {
                             const b = birds.find(x => x.id === id);
@@ -1057,25 +1363,27 @@ export function Lots() {
                             ) : null;
                           })}
                           {avulsasA > 0 && (
-                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
-                              +{avulsasA} aves não cadastradas
+                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold">
+                              +{avulsasA} não cadastradas
                             </span>
                           )}
                         </div>
                         {avulsasA > 0 && (
                           <p className="text-[10px] text-theme-text-muted">
-                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
+                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
                           </p>
                         )}
                       </div>
                     ) : (
                       <p className="text-[10px] text-theme-text-muted italic">
-                        {totalA > 0 ? `${totalA} aves registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
+                        {totalA > 0 ? `${totalA} aves registradas (aves avulsas / não cadastradas no plantel)` : 'Nenhuma ave vinculada.'}
                       </p>
                     )}
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="pt-3 border-t border-theme-border/50">
+
+                  {/* Movimentações e Status */}
+                  <div className="pt-2 border-t border-theme-border/50">
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
@@ -1517,9 +1825,29 @@ export function Lots() {
                     <input required type="text" value={eBaia} onChange={e => setEBaia(e.target.value)} placeholder="Ex: Baia 08" className={inputCls} />
                   </div>
                   <div className="space-y-1">
-                    <SectionLabel>Raça (opcional)</SectionLabel>
+                    <div className="flex items-center justify-between">
+                      <SectionLabel>Raça (opcional)</SectionLabel>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickBreedModal(true)}
+                        className="text-[10px] text-theme-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        + Nova Raça
+                      </button>
+                    </div>
                     <div className="relative">
-                      <select value={eRaca} onChange={e => setERaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                      <select
+                        value={eRaca}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setERaca(val);
+                          const found = breeds.find(b => b.nome === val);
+                          if (found?.ganhoGramasDia) {
+                            setEGanhoGramasDia(String(found.ganhoGramasDia));
+                          }
+                        }}
+                        className={inputCls + " appearance-none pr-8"}
+                      >
                         <option value="">-- Selecionar --</option>
                         {breeds.map(br => <option key={br.id} value={br.nome}>{br.nome}</option>)}
                       </select>
@@ -1527,6 +1855,37 @@ export function Lots() {
                     </div>
                   </div>
                 </div>
+
+                {eRaca ? (() => {
+                  const br = breeds.find(b => b.nome === eRaca);
+                  if (br?.ganhoGramasDia) {
+                    return (
+                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
+                        <Sparkles size={12} className="shrink-0" />
+                        <span>Taxa de ganho da raça: ~{br.ganhoGramasDia}g/dia {br.conversaoAlimentar ? `• Conversão: ${br.conversaoAlimentar}` : ''}</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex items-center justify-between text-[10px] text-amber-400 bg-amber-500/10 px-2.5 py-1.5 rounded-xl border border-amber-500/20">
+                      <span>Raça sem taxa de ganho cadastrada.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewBreedNome(eRaca);
+                          setShowQuickBreedModal(true);
+                        }}
+                        className="font-bold underline text-amber-300 ml-2 cursor-pointer"
+                      >
+                        Configurar agora
+                      </button>
+                    </div>
+                  );
+                })() : (
+                  <p className="text-[10px] text-theme-text-muted italic">
+                    💡 Se a raça não for informada ou não tiver taxa de ganho, a previsão de dias até o abate ficará desabilitada por falta de dados.
+                  </p>
+                )}
 
                 {/* 📍 GESTÃO DE FÊMEAS E MACHOS DETECTADOS NA MESMA BAIA */}
                 <BaiaBirdsManagementCard
@@ -1546,12 +1905,64 @@ export function Lots() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Peso Médio Inicial</SectionLabel>
-                    <input type="text" required placeholder="Ex: 350g" value={ePesoInicial} onChange={e => setEPesoInicial(e.target.value)} className={inputCls} />
+                    <input type="text" required placeholder="Ex: 350g ou 1.2kg" value={ePesoInicial} onChange={e => setEPesoInicial(e.target.value)} className={inputCls} />
                   </div>
                   <div className="space-y-1">
                     <SectionLabel>Meta de Abate</SectionLabel>
-                    <input type="text" placeholder="Ex: 2.5kg" value={ePesoMeta} onChange={e => setEPesoMeta(e.target.value)} className={inputCls} />
+                    <input type="text" placeholder="Ex: 2.5kg ou 2500g" value={ePesoMeta} onChange={e => setEPesoMeta(e.target.value)} className={inputCls} />
                   </div>
+                </div>
+
+                {/* 🌾 NUTRIÇÃO & GANHO DE PESO (PROTOCOLO DE ELITE) */}
+                <div className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-3.5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-theme-primary" />
+                      Nutrição & Ganho Estimado (Protocolo de Elite)
+                    </span>
+                    <span className="text-[10px] font-bold text-theme-primary bg-theme-primary/10 px-2 py-0.5 rounded-full border border-theme-primary/20">
+                      Previsão de Abate
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <SectionLabel>Ganho de Peso Médio (g/dia)</SectionLabel>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        placeholder="Ex: 35 (g/dia)"
+                        value={eGanhoGramasDia}
+                        onChange={e => setEGanhoGramasDia(sanitizeNumeric(e.target.value))}
+                        className={inputCls}
+                      />
+                      <p className="text-[9px] text-theme-text-muted">Calcula os dias até atingir o peso meta.</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <SectionLabel>Consumo Ração (g/ave/dia)</SectionLabel>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        placeholder="Ex: 130 (g/dia)"
+                        value={eConsumoRacaoAve}
+                        onChange={e => setEConsumoRacaoAve(sanitizeNumeric(e.target.value))}
+                        className={inputCls}
+                      />
+                      <p className="text-[9px] text-theme-text-muted">Estima o gasto de ração diário do lote.</p>
+                    </div>
+                  </div>
+
+                  {(!eGanhoGramasDia || !ePesoMeta) && (
+                    <div className="text-[10px] text-theme-text-muted bg-theme-surface/50 p-2 rounded-xl border border-theme-border/40 flex items-center gap-2">
+                      <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                      <span>Sem ganho diário ou peso meta, a previsão do dia de abate fica desabilitada por falta de dados (o lote funciona normalmente).</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1919,6 +2330,291 @@ export function Lots() {
                 className="flex-1 py-3 bg-theme-primary text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
               >
                 Sim, Transferir
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── MODAL CADASTRO RÁPIDO DE RAÇA ── */}
+      {showQuickBreedModal && createPortal(
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
+          onClick={() => setShowQuickBreedModal(false)}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <h3 className="font-black text-lg text-white flex items-center gap-2">
+                <Sparkles className="text-theme-primary" size={18} />
+                Cadastrar Nova Raça
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setShowQuickBreedModal(false)} 
+                className="text-theme-text-muted hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickBreed} className="p-5 overflow-y-auto space-y-4">
+              <div className="space-y-1">
+                <SectionLabel>Nome da Raça *</SectionLabel>
+                <input
+                  required
+                  type="text"
+                  placeholder="Ex: Cobb 500, Caipirão, Gigante Negro"
+                  value={newBreedNome}
+                  onChange={e => setNewBreedNome(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <SectionLabel>Foco da Raça</SectionLabel>
+                  <select
+                    value={newBreedFoco}
+                    onChange={e => setNewBreedFoco(e.target.value)}
+                    className={inputCls + " appearance-none"}
+                  >
+                    <option value="Corte / Engorda">Corte / Engorda</option>
+                    <option value="Misto (Carne e Ovos)">Misto</option>
+                    <option value="Postura">Postura</option>
+                    <option value="Ornamental">Ornamental</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <SectionLabel>Peso Médio Adulto</SectionLabel>
+                  <input
+                    type="text"
+                    placeholder="Ex: 3.5 kg"
+                    value={newBreedPesoMedio}
+                    onChange={e => setNewBreedPesoMedio(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-theme-base/60 border border-theme-border/60 rounded-xl p-3.5 space-y-3">
+                <p className="text-[10px] font-bold text-theme-primary uppercase tracking-wider">
+                  Desempenho & Conversão Alimentar
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Ganho Médio (g/dia)</SectionLabel>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="Ex: 35"
+                      value={newBreedGanho}
+                      onChange={e => setNewBreedGanho(sanitizeNumeric(e.target.value))}
+                      className={inputCls}
+                    />
+                    <p className="text-[9px] text-theme-text-muted">Ganho de peso/dia esperado.</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <SectionLabel>Conversão Alimentar</SectionLabel>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="Ex: 2.3"
+                      value={newBreedConversao}
+                      onChange={e => setNewBreedConversao(sanitizeNumeric(e.target.value))}
+                      className={inputCls}
+                    />
+                    <p className="text-[9px] text-theme-text-muted">kg ração / kg peso ganho.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <SectionLabel>Descrição (opcional)</SectionLabel>
+                <textarea
+                  rows={2}
+                  placeholder="Características da raça..."
+                  value={newBreedDesc}
+                  onChange={e => setNewBreedDesc(e.target.value)}
+                  className={inputCls + " resize-none"}
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickBreedModal(false)}
+                  className="flex-1 py-2.5 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newBreedNome.trim()}
+                  className="flex-1 py-2.5 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                >
+                  Salvar e Vincular
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── MODAL REGISTRO DE PESAGEM MANUAL ── */}
+      {weighModal.isOpen && weighModal.lote && createPortal(
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
+          onClick={() => setWeighModal({ isOpen: false, lote: null })}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
+              <div>
+                <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
+                  Baia {weighModal.lote.baia}{weighModal.lote.raca ? ` · ${weighModal.lote.raca}` : ''}
+                </span>
+                <h3 className="font-black text-lg text-white flex items-center gap-2">
+                  <Scale className="text-theme-primary" size={18} />
+                  Acompanhamento de Pesagem
+                </h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setWeighModal({ isOpen: false, lote: null })} 
+                className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-5 flex-1">
+              {/* Formulário de Nova Pesagem */}
+              <form onSubmit={handleSaveWeightRecord} className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-black text-white flex items-center gap-1.5">
+                  <Plus size={14} className="text-theme-primary" />
+                  Nova Aferição de Peso
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Data da Pesagem</SectionLabel>
+                    <input
+                      required
+                      type="date"
+                      value={wData}
+                      onChange={e => setWData(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <SectionLabel>Peso Médio Aferido *</SectionLabel>
+                    <input
+                      required
+                      type="text"
+                      placeholder="Ex: 2.1kg ou 2100g"
+                      value={wPeso}
+                      onChange={e => setWPeso(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <SectionLabel>Observações (opcional)</SectionLabel>
+                  <input
+                    type="text"
+                    placeholder="Ex: Amostragem de 10 aves na balança"
+                    value={wObs}
+                    onChange={e => setWObs(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5"
+                >
+                  <Check size={14} /> Salvar Registro de Peso
+                </button>
+              </form>
+
+              {/* Histórico de Pesagens Anteriores */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-white flex items-center gap-1.5">
+                    <History size={14} className="text-theme-primary" />
+                    Histórico de Pesagens ({weighModal.lote.pesagens?.length || 0})
+                  </p>
+                  <span className="text-[10px] text-theme-text-muted">
+                    Inicial: <strong>{weighModal.lote.pesoMedioInicial}</strong>
+                  </span>
+                </div>
+
+                {(!weighModal.lote.pesagens || weighModal.lote.pesagens.length === 0) ? (
+                  <div className="text-center p-6 bg-theme-base/30 rounded-xl border border-dashed border-theme-border/60 text-theme-text-muted text-xs">
+                    Nenhuma pesagem manual registrada ainda. Registre acima para acompanhar o ganho real do lote.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                    {[...weighModal.lote.pesagens]
+                      .sort((a, b) => b.data.localeCompare(a.data))
+                      .map((p, idx, arr) => {
+                        const nextOldest = arr[idx + 1];
+                        const diff = nextOldest ? p.pesoMedioG - nextOldest.pesoMedioG : null;
+                        return (
+                          <div key={p.id} className="p-3 bg-theme-base/80 border border-theme-border/60 rounded-xl flex items-center justify-between text-xs">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white">{fmtDate(p.data)}</span>
+                                <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                  {formatWeightG(p.pesoMedioG)}
+                                </span>
+                                {diff !== null && (
+                                  <span className={`text-[10px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {diff >= 0 ? `+${formatWeightG(diff)}` : `-${formatWeightG(Math.abs(diff))}`}
+                                  </span>
+                                )}
+                              </div>
+                              {p.observacao && (
+                                <p className="text-[10px] text-theme-text-muted mt-0.5 italic">{p.observacao}</p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteWeightRecord(p.id)}
+                              className="p-1.5 text-theme-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                              title="Remover pesagem"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-theme-border flex justify-end shrink-0 bg-theme-surface/50">
+              <button
+                type="button"
+                onClick={() => setWeighModal({ isOpen: false, lote: null })}
+                className="px-5 py-2.5 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all cursor-pointer"
+              >
+                Fechar
               </button>
             </div>
           </div>
