@@ -218,7 +218,7 @@ export function Birds() {
   const [breedSearch, setBreedSearch] = useState('');
   const [birdSearch, setBirdSearch] = useState('');
   const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
-  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Crescimento'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda'>('Todos');
   
   // Form states for Breed
   const [newBreedName, setNewBreedName] = useState('');
@@ -260,8 +260,8 @@ export function Birds() {
         if (stateObj.filter === 'Macho' || stateObj.filter === 'Fêmea') {
           setSexFilter(stateObj.filter);
           setStatusFilter('Todos');
-        } else if (stateObj.filter === 'Crescimento') {
-          setStatusFilter('Crescimento');
+        } else if (['Crescimento', 'Reprodutor', 'Matriz', 'Adulto', 'Engorda'].includes(stateObj.filter)) {
+          setStatusFilter(stateObj.filter);
           setSexFilter('Todos');
         } else if (stateObj.filter === 'Total') {
           setSexFilter('Todos');
@@ -378,8 +378,8 @@ export function Birds() {
     }
     
     // Filtrar por status
-    if (statusFilter === 'Crescimento') {
-      list = list.filter(b => b.status === 'Crescimento');
+    if (statusFilter !== 'Todos') {
+      list = list.filter(b => b.status === statusFilter);
     } else {
       // Exibe todas as aves ativas do plantel (esconde apenas Vendidos e Falecidos)
       list = list.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu');
@@ -522,6 +522,39 @@ export function Birds() {
                 className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
               />
             </div>
+          </div>
+
+          {/* Quick Filter Chips (Status & Sex) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
+            {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Engorda'] as const).map(st => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all ${
+                  statusFilter === st
+                    ? 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
+                    : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
+                }`}
+              >
+                {st === 'Todos' ? 'Todos os Status' : st === 'Reprodutor' ? 'Reprodutores' : st === 'Matriz' ? 'Matrizes' : st === 'Adulto' ? 'Adultos' : st}
+              </button>
+            ))}
+
+            <div className="h-4 w-px bg-theme-border/60 shrink-0 mx-1" />
+
+            {(['Todos', 'Macho', 'Fêmea'] as const).map(sx => (
+              <button
+                key={sx}
+                onClick={() => setSexFilter(sx)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all ${
+                  sexFilter === sx
+                    ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
+                    : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
+                }`}
+              >
+                {sx === 'Todos' ? 'Todos os Sexos' : sx === 'Macho' ? '🐓 Machos' : '🐔 Fêmeas'}
+              </button>
+            ))}
           </div>
 
           {/* Active Filters Bar */}

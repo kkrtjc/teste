@@ -38,7 +38,7 @@ interface LayoutProps {
 }
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
-  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup } = useAppContext();
+  const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup, showToast } = useAppContext();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
   const { isLocalMode, triggerWebhookPayment, isAdmin } = useAuth();
@@ -893,9 +893,10 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                 const { error } = await triggerWebhookPayment(upgradePlan);
                 setUpgradeLoading(false);
                 if (!error) {
+                  showToast('Assinatura liberada com sucesso!', 'success');
                   setIsUpgradeModalOpen(false);
                 } else {
-                  alert('Erro ao acionar simulador de Webhook.');
+                  showToast('Erro ao acionar simulador de Webhook.', 'error');
                 }
               }}
               disabled={upgradeLoading}

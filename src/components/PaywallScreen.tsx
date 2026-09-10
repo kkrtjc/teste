@@ -8,7 +8,7 @@ import {
 
 export function PaywallScreen() {
   const { signOut, cpf, triggerWebhookPayment, linkCpfToUser } = useAuth();
-  const { farmSettings } = useAppContext();
+  const { farmSettings, showToast } = useAppContext();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copied, setCopied] = useState(false);
 
@@ -194,12 +194,14 @@ export function PaywallScreen() {
                 if (cleanCpf && cleanCpf.length === 11) {
                   const { error: linkErr } = await linkCpfToUser(cleanCpf);
                   if (linkErr) {
-                    alert(`Atenção ao vincular CPF: ${linkErr.message}`);
+                    showToast(`Atenção ao vincular CPF: ${linkErr.message}`, 'warning');
                   }
                 }
                 const { error } = await triggerWebhookPayment(selectedPlan, paymentCpf || cpf);
                 if (error) {
-                  alert('Erro ao enviar notificação de Webhook.');
+                  showToast('Erro ao enviar notificação de liberação.', 'error');
+                } else {
+                  showToast('Solicitação de liberação enviada com sucesso!', 'success');
                 }
               }}
               className="w-full py-2.5 rounded-xl font-extrabold flex items-center justify-center gap-1.5 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-md cursor-pointer"

@@ -7,9 +7,11 @@ import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
-  AlertTriangle, ShoppingCart, Sparkles
+  AlertTriangle, ShoppingCart, Sparkles, Activity
 } from 'lucide-react';
 import { syncDailyEggReminder } from '../lib/pushNotifications';
+import { ConfirmDialog } from '../components/modals/ConfirmDialog';
+import { LotMovementModal } from '../components/modals/LotMovementModal';
 
 // helpers
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -739,7 +741,12 @@ function LotCard({
   onEditRecord,
   onDeleteRecord,
   onSendToIncubation,
-  onSellFromStock
+  onSellFromStock,
+  onToggleStatus,
+  onDeleteLot,
+  onOpenMovement,
+  onRequestDeleteRecord,
+  isExpandedInitial = false,
 }: {
   lot: EggLot;
   birds: ReturnType<typeof useAppContext>['birds'];
@@ -748,8 +755,13 @@ function LotCard({
   onDeleteRecord: (lot: EggLot, recordId: string) => void;
   onSendToIncubation: (lot: EggLot, stock: number) => void;
   onSellFromStock: (lot: EggLot, stock: number) => void;
+  onToggleStatus?: (lot: EggLot) => void;
+  onDeleteLot?: (lot: EggLot) => void;
+  onOpenMovement?: (lot: EggLot) => void;
+  onRequestDeleteRecord?: (lot: EggLot, recordId: string, date: string) => void;
+  isExpandedInitial?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(isExpandedInitial);
   const records = lot.registros ?? [];
 
   const total = records.reduce((s, r) => s + r.coletados, 0);
@@ -798,11 +810,43 @@ function LotCard({
           <Egg size={18} className="text-amber-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-black text-white text-sm">Baia {lot.baia}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAtivo ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-              {lot.status}
-            </span>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-black text-white text-sm">Baia {lot.baia}</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAtivo ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                {lot.status}
+              </span>
+            </div>
+
+            {/* Ações Rápidas de Gestão do Lote */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onToggleStatus && (
+                <button
+                  type="button"
+                  onClick={() => onToggleStatus(lot)}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all active:scale-95 flex items-center gap-1 cursor-pointer ${
+                    isAtivo
+                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                  }`}
+                  title={isAtivo ? 'Encerrar lote de postura' : 'Reativar lote'}
+                >
+                  <Check size={11} />
+                  <span>{isAtivo ? 'Encerrar' : 'Reativar'}</span>
+                </button>
+              )}
+
+              {onDeleteLot && (
+                <button
+                  type="button"
+                  onClick={() => onDeleteLot(lot)}
+                  className="text-theme-text-muted hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
+                  title="Excluir este lote de postura"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
           </div>
           <p className="text-xs text-theme-text-muted mt-0.5 truncate">
             <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}
@@ -889,6 +933,18 @@ function LotCard({
           </>
         )}
 
+        {onOpenMovement && (
+          <button
+            type="button"
+            onClick={() => onOpenMovement(lot)}
+            className="px-2.5 py-2 rounded-xl border border-theme-border/70 bg-theme-surface hover:bg-theme-surface-hover text-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95 cursor-pointer"
+            title="Registrar entradas, saídas e baixas de aves deste lote"
+          >
+            <Activity size={13} />
+            <span>Baixas (+/-)</span>
+          </button>
+        )}
+
         <button onClick={() => setExpanded(v => !v)} className="px-2.5 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
           <BarChart2 size={13} />
           <span>Análise</span>
@@ -952,19 +1008,23 @@ function LotCard({
 
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       <button
+                        type="button"
                         onClick={() => onEditRecord(lot, r)}
-                        className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors"
+                        className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors cursor-pointer"
                         title="Editar lançamento"
                       >
                         <Edit2 size={13} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => {
-                          if (confirm(`Deseja realmente excluir o registro do dia ${formatDate(r.data)}?`)) {
+                          if (onRequestDeleteRecord) {
+                            onRequestDeleteRecord(lot, r.id, r.data);
+                          } else {
                             onDeleteRecord(lot, r.id);
                           }
                         }}
-                        className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                        className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
                         title="Excluir lançamento"
                       >
                         <Trash2 size={13} />
@@ -985,13 +1045,18 @@ function LotCard({
 // Componente Principal: Eggs
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
-  const { eggLots, addEggLot, editEggLot, birds, addIncubationLot } = useAppContext();
+  const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, addIncubationLot, showToast } = useAppContext();
   const location = useLocation();
 
   const [registerTarget, setRegisterTarget] = useState<EggLot | null>(null);
   const [editingRecord, setEditingRecord] = useState<EggDailyRecord | null>(null);
   const [isCreateLotModalOpen, setIsCreateLotModalOpen] = useState(false);
   const [period, setPeriod] = useState<7 | 30 | 999>(30);
+
+  // Estados para exclusão com ConfirmDialog e modal de movimentações
+  const [deleteLotConfirm, setDeleteLotConfirm] = useState<EggLot | null>(null);
+  const [deleteRecordConfirm, setDeleteRecordConfirm] = useState<{ lot: EggLot; recordId: string; date: string } | null>(null);
+  const [movementModal, setMovementModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
 
   // Modais de Destino dos Ovos
   const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
@@ -1071,6 +1136,27 @@ export function Eggs() {
   const handleDeleteRecord = (lot: EggLot, recordId: string) => {
     const updatedRegistros = (lot.registros || []).filter(r => r.id !== recordId);
     editEggLot(lot.id, { registros: updatedRegistros });
+  };
+
+  const handleToggleLotStatus = (lot: EggLot) => {
+    const nextStatus = lot.status === 'Ativo' ? 'Encerrado' : 'Ativo';
+    editEggLot(lot.id, { status: nextStatus });
+    showToast(`Lote Baia ${lot.baia} marcado como ${nextStatus}!`, nextStatus === 'Ativo' ? 'success' : 'info');
+  };
+
+  const handleExecuteDeleteLot = () => {
+    if (!deleteLotConfirm) return;
+    removeEggLot(deleteLotConfirm.id);
+    showToast(`Lote Baia ${deleteLotConfirm.baia} excluído com sucesso!`, 'info');
+    setDeleteLotConfirm(null);
+  };
+
+  const handleExecuteDeleteRecord = () => {
+    if (!deleteRecordConfirm) return;
+    const { lot, recordId } = deleteRecordConfirm;
+    handleDeleteRecord(lot, recordId);
+    showToast('Registro diário excluído com sucesso!', 'info');
+    setDeleteRecordConfirm(null);
   };
 
   // Confirmação de envio para incubação / choco
@@ -1201,6 +1287,10 @@ export function Eggs() {
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
+              onToggleStatus={handleToggleLotStatus}
+              onDeleteLot={l => setDeleteLotConfirm(l)}
+              onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
+              onRequestDeleteRecord={(l, recId, dt) => setDeleteRecordConfirm({ lot: l, recordId: recId, date: dt })}
             />
           ))}
         </div>
@@ -1223,6 +1313,10 @@ export function Eggs() {
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
+              onToggleStatus={handleToggleLotStatus}
+              onDeleteLot={l => setDeleteLotConfirm(l)}
+              onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
+              onRequestDeleteRecord={(l, recId, dt) => setDeleteRecordConfirm({ lot: l, recordId: recId, date: dt })}
             />
           ))}
         </div>
@@ -1265,6 +1359,43 @@ export function Eggs() {
           onSave={addEggLot}
         />
       )}
+
+      {/* Modal de Movimentações & Baixas (+/-) de Fêmeas */}
+      {movementModal.isOpen && movementModal.lote && (
+        <LotMovementModal
+          isOpen={movementModal.isOpen}
+          onClose={() => setMovementModal({ isOpen: false, lote: null })}
+          lote={movementModal.lote}
+          loteType="postura"
+          birds={birds}
+          editBird={editBird}
+          editEggLot={editEggLot}
+          editMeatLot={editMeatLot}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Confirmação de Exclusão do Lote de Postura */}
+      <ConfirmDialog
+        isOpen={!!deleteLotConfirm}
+        title="Excluir Lote de Postura"
+        message={`Deseja realmente excluir o Lote da Baia ${deleteLotConfirm?.baia || ''}? Todo o histórico de produção diária deste lote será apagado.`}
+        variant="danger"
+        confirmText="Sim, excluir lote"
+        onConfirm={handleExecuteDeleteLot}
+        onCancel={() => setDeleteLotConfirm(null)}
+      />
+
+      {/* Confirmação de Exclusão de Registro Diário */}
+      <ConfirmDialog
+        isOpen={!!deleteRecordConfirm}
+        title="Excluir Lançamento Diário"
+        message={`Deseja realmente excluir o registro de ovos do dia ${deleteRecordConfirm ? formatDate(deleteRecordConfirm.date) : ''}?`}
+        variant="danger"
+        confirmText="Sim, excluir"
+        onConfirm={handleExecuteDeleteRecord}
+        onCancel={() => setDeleteRecordConfirm(null)}
+      />
     </div>
   );
 }

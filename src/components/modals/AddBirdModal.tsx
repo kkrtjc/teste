@@ -293,7 +293,7 @@ export function AddBirdModal() {
     if (files && files.length > 0) {
       const remainingSlots = 3 - previewImages.length;
       if (remainingSlots <= 0) {
-        alert('Você já atingiu o limite máximo de 3 fotos por ave.');
+        showToast('Você já atingiu o limite máximo de 3 fotos por ave.', 'warning');
         return;
       }
 
@@ -389,7 +389,7 @@ export function AddBirdModal() {
       }
     } catch (err) {
       console.error("Erro ao salvar ave:", err);
-      alert("Ocorreu um erro ao salvar a ave. Por favor, tente novamente.");
+      showToast('Ocorreu um erro ao salvar a ave. Por favor, tente novamente.', 'error');
     }
   };
 

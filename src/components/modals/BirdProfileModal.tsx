@@ -113,7 +113,7 @@ function PedigreeTreeNode({
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   // ── States para modal interativo de vínculo direto na árvore ──
@@ -619,7 +619,7 @@ export function BirdProfileModal() {
                             onSelect={openBirdProfile} 
                             onLinkClick={() => {
                               if (!fatherBird) {
-                                alert('⚠️ Vincule primeiro o Pai da ave para conectar os Avós Paternos!');
+                                showToast('Vincule primeiro o Pai da ave para conectar os Avós Paternos!', 'warning');
                                 setLinkingTarget({ targetBirdId: bird.id, role: 'pai', roleLabel: 'Pai', genderRequired: 'Macho' });
                               } else {
                                 setLinkingTarget({ targetBirdId: fatherBird.id, role: 'avo_paterno', roleLabel: `Avô Paterno (Pai de ${fatherBird.anilha})`, genderRequired: 'Macho' });
@@ -636,7 +636,7 @@ export function BirdProfileModal() {
                             onSelect={openBirdProfile} 
                             onLinkClick={() => {
                               if (!fatherBird) {
-                                alert('⚠️ Vincule primeiro o Pai da ave para conectar os Avós Paternos!');
+                                showToast('Vincule primeiro o Pai da ave para conectar os Avós Paternos!', 'warning');
                                 setLinkingTarget({ targetBirdId: bird.id, role: 'pai', roleLabel: 'Pai', genderRequired: 'Macho' });
                               } else {
                                 setLinkingTarget({ targetBirdId: fatherBird.id, role: 'avo_paterna', roleLabel: `Avó Paterna (Mãe de ${fatherBird.anilha})`, genderRequired: 'Fêmea' });
@@ -653,7 +653,7 @@ export function BirdProfileModal() {
                             onSelect={openBirdProfile} 
                             onLinkClick={() => {
                               if (!motherBird) {
-                                alert('⚠️ Vincule primeiro a Mãe da ave para conectar os Avós Maternos!');
+                                showToast('Vincule primeiro a Mãe da ave para conectar os Avós Maternos!', 'warning');
                                 setLinkingTarget({ targetBirdId: bird.id, role: 'mae', roleLabel: 'Mãe', genderRequired: 'Fêmea' });
                               } else {
                                 setLinkingTarget({ targetBirdId: motherBird.id, role: 'avo_materno', roleLabel: `Avô Materno (Pai de ${motherBird.anilha})`, genderRequired: 'Macho' });
@@ -670,7 +670,7 @@ export function BirdProfileModal() {
                             onSelect={openBirdProfile} 
                             onLinkClick={() => {
                               if (!motherBird) {
-                                alert('⚠️ Vincule primeiro a Mãe da ave para conectar os Avós Maternos!');
+                                showToast('Vincule primeiro a Mãe da ave para conectar os Avós Maternos!', 'warning');
                                 setLinkingTarget({ targetBirdId: bird.id, role: 'mae', roleLabel: 'Mãe', genderRequired: 'Fêmea' });
                               } else {
                                 setLinkingTarget({ targetBirdId: motherBird.id, role: 'avo_materna', roleLabel: `Avó Materna (Mãe de ${motherBird.anilha})`, genderRequired: 'Fêmea' });

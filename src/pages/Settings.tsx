@@ -119,7 +119,7 @@ export function Settings() {
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
     coupleEggs, incubationLots,
-    importBackup, openTutorial
+    importBackup, openTutorial, showToast
   } = useAppContext();
   const { signOut, isLocalMode, cpf, user, trialInfo, triggerWebhookPayment, isAdmin } = useAuth();
 
@@ -654,10 +654,10 @@ export function Settings() {
                   onClick={async () => {
                     const { error } = await triggerWebhookPayment(selectedPlan, cpf);
                     if (!error) {
-                      alert('Assinatura ativada com sucesso! Seu criatório está com acesso total renovado.');
+                      showToast('Assinatura ativada com sucesso! Seu criatório está com acesso total renovado.', 'success');
                       setIsPaymentModalOpen(false);
                     } else {
-                      alert('Erro ao enviar Notificação de Pagamento.');
+                      showToast('Erro ao enviar Notificação de Pagamento.', 'error');
                     }
                   }}
                   className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-lg shadow-amber-500/20"
