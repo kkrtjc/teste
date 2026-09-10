@@ -195,3 +195,16 @@ body.modal-open-lock {
   50% { transform: translateX(0%); }
   100% { transform: translateX(100%); }
 }
+
+/* Barra de progresso regressiva para Toasts */
+@keyframes toast-shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Shimmer fluido para Skeletons e placeholders */
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}

@@ -4,10 +4,12 @@ import {
   Bird, Baby, Sparkles, Heart, Award, Layers 
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots } = useAppContext();
+  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots, isReady } = useAppContext();
   const navigate = useNavigate();
+  const { triggerLight } = useHaptics();
 
   const stats = useMemo(() => {
     let total = 0;
@@ -79,91 +81,105 @@ export function Dashboard() {
       </div>
 
       {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
-        {/* Total Aves Card */}
-        <div 
-          onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Total' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{stats.totalAves}</span>
-            <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
-              <Bird size={16} />
+      {!isReady ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-theme-surface/70 border border-theme-border/40 flex flex-col justify-between h-[100px] animate-pulse">
+              <div className="flex justify-between items-start">
+                <div className="w-10 h-7 bg-white/10 rounded-lg" />
+                <div className="w-7 h-7 bg-white/5 rounded-lg" />
+              </div>
+              <div className="w-20 h-3 bg-white/10 rounded" />
             </div>
-          </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Aves</p>
+          ))}
         </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
+          {/* Total Aves Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Total' } }); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{stats.totalAves}</span>
+              <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
+                <Bird size={16} />
+              </div>
+            </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Aves</p>
+          </div>
 
-        {/* Raças Card */}
-        <div 
-          onClick={() => navigate('/birds', { state: { tab: 'racas' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{breeds.length}</span>
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-              <Award size={16} />
+          {/* Raças Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'racas' } }); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{breeds.length}</span>
+              <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+                <Award size={16} />
+              </div>
             </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Raças Cadastradas</p>
           </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Raças Cadastradas</p>
-        </div>
 
-        {/* Machos Card */}
-        <div 
-          onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Macho' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{stats.totalMachos}</span>
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
-              <Sparkles size={16} />
+          {/* Machos Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Macho' } }); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{stats.totalMachos}</span>
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
+                <Sparkles size={16} />
+              </div>
             </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Machos</p>
           </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Machos</p>
-        </div>
 
-        {/* Fêmeas Card */}
-        <div 
-          onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Fêmea' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{stats.totalFemeas}</span>
-            <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
-              <Heart size={16} />
+          {/* Fêmeas Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Fêmea' } }); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{stats.totalFemeas}</span>
+              <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
+                <Heart size={16} />
+              </div>
             </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Fêmeas</p>
           </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Fêmeas</p>
-        </div>
 
-        {/* Total de Pintinhos Card */}
-        <div 
-          onClick={() => navigate('/birds', { state: { tab: 'aves', filter: 'Crescimento' } })}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{stats.totalPintinhos}</span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
-              <Baby size={16} />
+          {/* Total de Pintinhos Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Crescimento' } }); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{stats.totalPintinhos}</span>
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                <Baby size={16} />
+              </div>
             </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Pintinhos</p>
           </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Pintinhos</p>
-        </div>
 
-        {/* Lotes Cadastrados Card */}
-        <div 
-          onClick={() => navigate('/lots')}
-          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-        >
-          <div className="flex items-start justify-between">
-            <span className="text-2xl font-black text-white">{stats.totalLotes}</span>
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
-              <Layers size={16} />
+          {/* Lotes Cadastrados Card */}
+          <div 
+            onClick={() => { triggerLight(); navigate('/lots'); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-2xl font-black text-white">{stats.totalLotes}</span>
+              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+                <Layers size={16} />
+              </div>
             </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Lotes Cadastrados</p>
           </div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Lotes Cadastrados</p>
         </div>
-      </div>
+      )}
 
     </div>
   );

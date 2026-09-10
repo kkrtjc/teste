@@ -16,6 +16,7 @@ import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import localforage from 'localforage';
+import { useHaptics } from '../hooks/useHaptics';
 
 export type AllowedCpf = {
   cpf: string;
@@ -39,6 +40,7 @@ interface LayoutProps {
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup } = useAppContext();
   const navigate = useNavigate();
+  const { triggerLight } = useHaptics();
   const { isLocalMode, triggerWebhookPayment, isAdmin } = useAuth();
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -526,6 +528,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={triggerLight}
                 id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
                 className={({ isActive }) =>
                   `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl active:scale-95 touch-manipulation ${

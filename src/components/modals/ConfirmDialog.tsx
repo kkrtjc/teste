@@ -1,5 +1,6 @@
-import { createPortal } from 'react-dom';
+﻿import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
+import { useHaptics } from '../../hooks/useHaptics';
 
 export interface ConfirmDialogProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export function ConfirmDialog({
   onCancel,
   isLoading = false,
 }: ConfirmDialogProps) {
+  const { triggerLight, triggerHeavy, triggerWarning, triggerMedium } = useHaptics();
+
   if (!isOpen) return null;
 
   const actualVariant = confirmVariant || variant;
@@ -56,10 +59,26 @@ export function ConfirmDialog({
 
   const { iconBg, Icon, confirmBtn } = variantStyles;
 
+  const handleConfirm = () => {
+    if (actualVariant === 'danger') {
+      triggerHeavy();
+    } else if (actualVariant === 'warning') {
+      triggerWarning();
+    } else {
+      triggerMedium();
+    }
+    onConfirm();
+  };
+
+  const handleCancel = () => {
+    triggerLight();
+    onCancel();
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none animate-fade-in"
-      onClick={onCancel}
+      onClick={handleCancel}
     >
       <div
         className="bg-theme-surface border border-theme-border/80 w-full max-w-sm sm:max-w-md rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-scale-up relative overflow-hidden"
@@ -82,7 +101,7 @@ export function ConfirmDialog({
 
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             className="text-theme-text-muted hover:text-white transition-colors p-1 rounded-lg"
           >
             <X size={18} />
@@ -93,7 +112,7 @@ export function ConfirmDialog({
           <button
             type="button"
             disabled={isLoading}
-            onClick={onCancel}
+            onClick={handleCancel}
             className="flex-1 py-2.5 px-3 bg-theme-base hover:bg-theme-surface-hover border border-theme-border rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer disabled:opacity-50"
           >
             {cancelText}
@@ -101,7 +120,7 @@ export function ConfirmDialog({
           <button
             type="button"
             disabled={isLoading}
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all active:scale-95 cursor-pointer shadow-lg disabled:opacity-50 flex items-center justify-center gap-1.5 ${confirmBtn}`}
           >
             {actualConfirmText}
