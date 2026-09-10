@@ -4,9 +4,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  TrendingDown, TrendingUp, History, CheckCircle, Sparkles
+  CheckCircle, Sparkles
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { ConfirmDialog } from '../components/modals/ConfirmDialog';
+import { QuickBreedModal } from '../components/modals/QuickBreedModal';
+import { WeighingModal } from '../components/modals/WeighingModal';
+import { LotMovementModal } from '../components/modals/LotMovementModal';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -456,7 +460,7 @@ export function Lots() {
   const location = useLocation();
   const navigate = useNavigate();
   const { 
-    birds, editBird, showToast, breeds, addBreed, eggLots, addEggLot, editEggLot,
+    birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
@@ -504,12 +508,6 @@ export function Lots() {
 
   // Modal de Cadastro Rápido de Raça (sem sair do formulário de engorda)
   const [showQuickBreedModal, setShowQuickBreedModal] = useState(false);
-  const [newBreedNome, setNewBreedNome] = useState('');
-  const [newBreedFoco, setNewBreedFoco] = useState('Corte / Engorda');
-  const [newBreedGanho, setNewBreedGanho] = useState('35');
-  const [newBreedConversao, setNewBreedConversao] = useState('2.4');
-  const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('3.5 kg');
-  const [newBreedDesc, setNewBreedDesc] = useState('');
 
   // Modal de Registro Periódico de Pesagem Manual
   const [weighModal, setWeighModal] = useState<{
@@ -519,9 +517,9 @@ export function Lots() {
     isOpen: false,
     lote: null,
   });
-  const [wData, setWData] = useState(todayISO());
-  const [wPeso, setWPeso] = useState('');
-  const [wObs, setWObs] = useState('');
+
+  // Confirmação profissional de exclusão de lote
+  const [deleteLotConfirm, setDeleteLotConfirm] = useState<{ id: string; title: string; message: string } | null>(null);
 
   // Pintinhos Lot states
   const [showPintinhos, setShowPintinhos] = useState(false);
@@ -749,74 +747,8 @@ export function Lots() {
     });
   };
 
-  const handleSaveQuickBreed = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBreedNome.trim()) return;
-    const newId = uid();
-    const ganhoNum = parseFloat(newBreedGanho) || undefined;
-    const convNum = parseFloat(newBreedConversao) || undefined;
-    addBreed({
-      id: newId,
-      nome: newBreedNome.trim(),
-      foco: newBreedFoco,
-      descricao: newBreedDesc.trim() || 'Raça cadastrada para lote de engorda.',
-      totalAves: 0,
-      tempoCrescimento: 180,
-      pesoMedio: newBreedPesoMedio.trim() || '3.5 kg',
-      ganhoGramasDia: ganhoNum,
-      conversaoAlimentar: convNum
-    });
-    setERaca(newBreedNome.trim());
-    if (ganhoNum) setEGanhoGramasDia(String(ganhoNum));
-    showToast(`Raça "${newBreedNome.trim()}" cadastrada e vinculada!`, 'success');
-    setShowQuickBreedModal(false);
-    setNewBreedNome('');
-    setNewBreedDesc('');
-  };
-
   const openWeighModal = (lote: any) => {
     setWeighModal({ isOpen: true, lote });
-    setWData(todayISO());
-    setWPeso('');
-    setWObs('');
-  };
-
-  const handleSaveWeightRecord = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!weighModal.lote) return;
-    const pesoG = parseWeightG(wPeso);
-    if (pesoG <= 0) {
-      showToast('Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
-      return;
-    }
-    const currentPesagens = weighModal.lote.pesagens || [];
-    const newRecord = {
-      id: uid(),
-      data: wData,
-      pesoMedioG: pesoG,
-      observacao: wObs.trim() || undefined
-    };
-    const updatedPesagens = [...currentPesagens, newRecord].sort((a, b) => a.data.localeCompare(b.data));
-    editMeatLot(weighModal.lote.id, { pesagens: updatedPesagens });
-    setWeighModal(prev => ({
-      ...prev,
-      lote: { ...prev.lote, pesagens: updatedPesagens }
-    }));
-    setWPeso('');
-    setWObs('');
-    showToast('Pesagem registrada com sucesso!', 'success');
-  };
-
-  const handleDeleteWeightRecord = (recordId: string) => {
-    if (!weighModal.lote) return;
-    const currentPesagens = weighModal.lote.pesagens || [];
-    const updated = currentPesagens.filter((p: any) => p.id !== recordId);
-    editMeatLot(weighModal.lote.id, { pesagens: updated });
-    setWeighModal(prev => ({
-      ...prev,
-      lote: { ...prev.lote, pesagens: updated }
-    }));
-    showToast('Registro de pesagem removido.', 'info');
   };
 
   // Pintinhos methods
@@ -1031,17 +963,37 @@ export function Lots() {
                     <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
                   </div>
                   {/* Métricas */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      { icon: Timer, label: 'Idade do Lote', value: `${dias}d` },
-                      { icon: Users, label: 'Fêmeas', value: totalF },
-                      { icon: Egg, label: 'Meta Ovos/dia', value: lote.expectativaDiaria || 0 },
-                    ].map(m => (
-                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
-                        <p className="text-base font-black text-white truncate">{m.value}</p>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Timer size={11} /> Idade
+                      </p>
+                      <p className="text-base font-black text-white">{dias} dias</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Users size={11} className="text-theme-primary" /> Fêmeas
+                      </p>
+                      <p className="text-base font-black text-white">{totalF}</p>
+                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasF} cad. + {avulsasF} av.</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Egg size={11} className="text-amber-400" /> Meta Diária
+                      </p>
+                      <p className="text-base font-black text-white truncate">{lote.expectativaDiaria || 0} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
+                      <p className="text-[9px] text-theme-text-muted">Produção/dia</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Activity size={11} className="text-emerald-400" /> Status
+                      </p>
+                      <p className="text-base font-black text-emerald-400 truncate">{lote.status}</p>
+                      <p className="text-[9px] text-theme-text-muted">Postura ativa</p>
+                    </div>
                   </div>
                   {/* Aves no lote */}
                   <div className="pt-3 border-t border-theme-border/50 mb-4 flex-1">
@@ -1204,8 +1156,12 @@ export function Lots() {
                         {lote.status}
                       </span>
                       <button 
-                        onClick={() => { if (window.confirm('Deseja realmente apagar este lote de engorda permanentemente?')) removeMeatLot(lote.id); }}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" 
+                        onClick={() => setDeleteLotConfirm({
+                          id: lote.id,
+                          title: `Apagar Lote de Engorda (Baia ${lote.baia})?`,
+                          message: 'Deseja realmente apagar este lote de engorda permanentemente? Todas as aferições e previsões vinculadas serão removidas.'
+                        })}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all cursor-pointer" 
                         title="Apagar Lote"
                       >
                         <Trash2 size={13} />
@@ -1454,23 +1410,50 @@ export function Lots() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
-                      <button onClick={() => { if (window.confirm('Deseja realmente apagar este lote de pintinhos permanentemente?')) removeMeatLot(lote.id); }}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                      <button 
+                        onClick={() => setDeleteLotConfirm({
+                          id: lote.id,
+                          title: `Apagar Lote de Pintinhos (Baia ${lote.baia})?`,
+                          message: 'Deseja realmente apagar este lote de pintinhos permanentemente?'
+                        })}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all cursor-pointer" 
+                        title="Apagar Lote"
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      { icon: Timer, label: 'Idade', value: `${dias}d` },
-                      { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: totalA },
-                    ].map(m => (
-                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
-                        <p className="text-base font-black text-white truncate">{m.value}</p>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Timer size={11} /> Idade
+                      </p>
+                      <p className="text-base font-black text-white">{dias} dias</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Scale size={11} className="text-amber-400" /> Peso Inicial
+                      </p>
+                      <p className="text-base font-black text-white truncate">{lote.pesoMedioInicial || '—'}</p>
+                      <p className="text-[9px] text-theme-text-muted">Gramas/unid.</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Activity size={11} className="text-yellow-400" /> Pintinhos
+                      </p>
+                      <p className="text-base font-black text-white">{totalA}</p>
+                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasA} cad. + {avulsasA} av.</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Baby size={11} className="text-emerald-400" /> Fase
+                      </p>
+                      <p className="text-base font-black text-emerald-400 truncate">Inicial</p>
+                      <p className="text-[9px] text-theme-text-muted">Até 30 dias</p>
+                    </div>
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
@@ -1581,23 +1564,50 @@ export function Lots() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
-                      <button onClick={() => { if (window.confirm('Deseja realmente apagar este lote de crescimento permanentemente?')) removeMeatLot(lote.id); }}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all" title="Apagar Lote">
+                      <button 
+                        onClick={() => setDeleteLotConfirm({
+                          id: lote.id,
+                          title: `Apagar Lote de Crescimento (Baia ${lote.baia})?`,
+                          message: 'Deseja realmente apagar este lote de crescimento permanentemente?'
+                        })}
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all cursor-pointer" 
+                        title="Apagar Lote"
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                      { icon: Timer, label: 'Idade', value: `${dias}d` },
-                      { icon: Scale, label: 'Peso Inicial', value: lote.pesoMedioInicial },
-                      { icon: Activity, label: 'Aves', value: totalA },
-                    ].map(m => (
-                      <div key={m.label} className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                        <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1"><m.icon size={11} />{m.label}</p>
-                        <p className="text-base font-black text-white truncate">{m.value}</p>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Timer size={11} /> Idade
+                      </p>
+                      <p className="text-base font-black text-white">{dias} dias</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Scale size={11} className="text-amber-400" /> Peso Inicial
+                      </p>
+                      <p className="text-base font-black text-white truncate">{lote.pesoMedioInicial || '—'}</p>
+                      <p className="text-[9px] text-theme-text-muted">Entrada</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Users size={11} /> Aves
+                      </p>
+                      <p className="text-base font-black text-white">{totalA}</p>
+                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasA} cad. + {avulsasA} av.</p>
+                    </div>
+
+                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
+                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
+                        <Activity size={11} className="text-theme-primary" /> Destino
+                      </p>
+                      <p className="text-base font-black text-theme-primary truncate">Plantel / Reprod.</p>
+                      <p className="text-[9px] text-theme-text-muted">Desenvolvimento</p>
+                    </div>
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
                     <div className="flex justify-between items-center mb-2">
@@ -1871,10 +1881,7 @@ export function Lots() {
                       <span>Raça sem taxa de ganho cadastrada.</span>
                       <button
                         type="button"
-                        onClick={() => {
-                          setNewBreedNome(eRaca);
-                          setShowQuickBreedModal(true);
-                        }}
+                        onClick={() => setShowQuickBreedModal(true)}
                         className="font-bold underline text-amber-300 ml-2 cursor-pointer"
                       >
                         Configurar agora
@@ -2338,289 +2345,23 @@ export function Lots() {
       )}
 
       {/* ── MODAL CADASTRO RÁPIDO DE RAÇA ── */}
-      {showQuickBreedModal && createPortal(
-        <div 
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
-          onClick={() => setShowQuickBreedModal(false)}
-        >
-          <div 
-            className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
-              <h3 className="font-black text-lg text-white flex items-center gap-2">
-                <Sparkles className="text-theme-primary" size={18} />
-                Cadastrar Nova Raça
-              </h3>
-              <button 
-                type="button" 
-                onClick={() => setShowQuickBreedModal(false)} 
-                className="text-theme-text-muted hover:text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveQuickBreed} className="p-5 overflow-y-auto space-y-4">
-              <div className="space-y-1">
-                <SectionLabel>Nome da Raça *</SectionLabel>
-                <input
-                  required
-                  type="text"
-                  placeholder="Ex: Cobb 500, Caipirão, Gigante Negro"
-                  value={newBreedNome}
-                  onChange={e => setNewBreedNome(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <SectionLabel>Foco da Raça</SectionLabel>
-                  <select
-                    value={newBreedFoco}
-                    onChange={e => setNewBreedFoco(e.target.value)}
-                    className={inputCls + " appearance-none"}
-                  >
-                    <option value="Corte / Engorda">Corte / Engorda</option>
-                    <option value="Misto (Carne e Ovos)">Misto</option>
-                    <option value="Postura">Postura</option>
-                    <option value="Ornamental">Ornamental</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <SectionLabel>Peso Médio Adulto</SectionLabel>
-                  <input
-                    type="text"
-                    placeholder="Ex: 3.5 kg"
-                    value={newBreedPesoMedio}
-                    onChange={e => setNewBreedPesoMedio(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-theme-base/60 border border-theme-border/60 rounded-xl p-3.5 space-y-3">
-                <p className="text-[10px] font-bold text-theme-primary uppercase tracking-wider">
-                  Desempenho & Conversão Alimentar
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <SectionLabel>Ganho Médio (g/dia)</SectionLabel>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Ex: 35"
-                      value={newBreedGanho}
-                      onChange={e => setNewBreedGanho(sanitizeNumeric(e.target.value))}
-                      className={inputCls}
-                    />
-                    <p className="text-[9px] text-theme-text-muted">Ganho de peso/dia esperado.</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <SectionLabel>Conversão Alimentar</SectionLabel>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ex: 2.3"
-                      value={newBreedConversao}
-                      onChange={e => setNewBreedConversao(sanitizeNumeric(e.target.value))}
-                      className={inputCls}
-                    />
-                    <p className="text-[9px] text-theme-text-muted">kg ração / kg peso ganho.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <SectionLabel>Descrição (opcional)</SectionLabel>
-                <textarea
-                  rows={2}
-                  placeholder="Características da raça..."
-                  value={newBreedDesc}
-                  onChange={e => setNewBreedDesc(e.target.value)}
-                  className={inputCls + " resize-none"}
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowQuickBreedModal(false)}
-                  className="flex-1 py-2.5 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newBreedNome.trim()}
-                  className="flex-1 py-2.5 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg shadow-amber-500/20"
-                >
-                  Salvar e Vincular
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      <QuickBreedModal
+        isOpen={showQuickBreedModal}
+        initialBreedName={eRaca}
+        onClose={() => setShowQuickBreedModal(false)}
+        onBreedSaved={(newBreed) => {
+          setERaca(newBreed.nome);
+          if (newBreed.ganhoGramasDia) setEGanhoGramasDia(String(newBreed.ganhoGramasDia));
+          if (newBreed.conversaoAlimentar) setEConsumoRacaoAve(String(newBreed.conversaoAlimentar));
+        }}
+      />
 
       {/* ── MODAL REGISTRO DE PESAGEM MANUAL ── */}
-      {weighModal.isOpen && weighModal.lote && createPortal(
-        <div 
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
-          onClick={() => setWeighModal({ isOpen: false, lote: null })}
-        >
-          <div 
-            className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
-              <div>
-                <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
-                  Baia {weighModal.lote.baia}{weighModal.lote.raca ? ` · ${weighModal.lote.raca}` : ''}
-                </span>
-                <h3 className="font-black text-lg text-white flex items-center gap-2">
-                  <Scale className="text-theme-primary" size={18} />
-                  Acompanhamento de Pesagem
-                </h3>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setWeighModal({ isOpen: false, lote: null })} 
-                className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-5 overflow-y-auto space-y-5 flex-1">
-              {/* Formulário de Nova Pesagem */}
-              <form onSubmit={handleSaveWeightRecord} className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-black text-white flex items-center gap-1.5">
-                  <Plus size={14} className="text-theme-primary" />
-                  Nova Aferição de Peso
-                </p>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <SectionLabel>Data da Pesagem</SectionLabel>
-                    <input
-                      required
-                      type="date"
-                      value={wData}
-                      onChange={e => setWData(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <SectionLabel>Peso Médio Aferido *</SectionLabel>
-                    <input
-                      required
-                      type="text"
-                      placeholder="Ex: 2.1kg ou 2100g"
-                      value={wPeso}
-                      onChange={e => setWPeso(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <SectionLabel>Observações (opcional)</SectionLabel>
-                  <input
-                    type="text"
-                    placeholder="Ex: Amostragem de 10 aves na balança"
-                    value={wObs}
-                    onChange={e => setWObs(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5"
-                >
-                  <Check size={14} /> Salvar Registro de Peso
-                </button>
-              </form>
-
-              {/* Histórico de Pesagens Anteriores */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-white flex items-center gap-1.5">
-                    <History size={14} className="text-theme-primary" />
-                    Histórico de Pesagens ({weighModal.lote.pesagens?.length || 0})
-                  </p>
-                  <span className="text-[10px] text-theme-text-muted">
-                    Inicial: <strong>{weighModal.lote.pesoMedioInicial}</strong>
-                  </span>
-                </div>
-
-                {(!weighModal.lote.pesagens || weighModal.lote.pesagens.length === 0) ? (
-                  <div className="text-center p-6 bg-theme-base/30 rounded-xl border border-dashed border-theme-border/60 text-theme-text-muted text-xs">
-                    Nenhuma pesagem manual registrada ainda. Registre acima para acompanhar o ganho real do lote.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                    {[...weighModal.lote.pesagens]
-                      .sort((a, b) => b.data.localeCompare(a.data))
-                      .map((p, idx, arr) => {
-                        const nextOldest = arr[idx + 1];
-                        const diff = nextOldest ? p.pesoMedioG - nextOldest.pesoMedioG : null;
-                        return (
-                          <div key={p.id} className="p-3 bg-theme-base/80 border border-theme-border/60 rounded-xl flex items-center justify-between text-xs">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-white">{fmtDate(p.data)}</span>
-                                <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/20">
-                                  {formatWeightG(p.pesoMedioG)}
-                                </span>
-                                {diff !== null && (
-                                  <span className={`text-[10px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {diff >= 0 ? `+${formatWeightG(diff)}` : `-${formatWeightG(Math.abs(diff))}`}
-                                  </span>
-                                )}
-                              </div>
-                              {p.observacao && (
-                                <p className="text-[10px] text-theme-text-muted mt-0.5 italic">{p.observacao}</p>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteWeightRecord(p.id)}
-                              className="p-1.5 text-theme-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
-                              title="Remover pesagem"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="p-4 border-t border-theme-border flex justify-end shrink-0 bg-theme-surface/50">
-              <button
-                type="button"
-                onClick={() => setWeighModal({ isOpen: false, lote: null })}
-                className="px-5 py-2.5 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all cursor-pointer"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <WeighingModal
+        isOpen={weighModal.isOpen}
+        lote={weighModal.lote}
+        onClose={() => setWeighModal({ isOpen: false, lote: null })}
+      />
 
       {/* ── MODAL DE MOVIMENTAÇÕES & BAIXAS DE AVES DO LOTE ── */}
       <LotMovementModal
@@ -2634,518 +2375,23 @@ export function Lots() {
         editMeatLot={editMeatLot}
         showToast={showToast}
       />
+
+      {/* ── CONFIRMAÇÃO DE EXCLUSÃO DE LOTE (SEM WINDOW.CONFIRM) ── */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteLotConfirm)}
+        title={deleteLotConfirm?.title || 'Apagar Lote'}
+        message={deleteLotConfirm?.message || ''}
+        confirmLabel="Apagar Permanentemente"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (deleteLotConfirm?.id) {
+            removeMeatLot(deleteLotConfirm.id);
+            showToast('Lote excluído com sucesso!', 'info');
+          }
+          setDeleteLotConfirm(null);
+        }}
+        onCancel={() => setDeleteLotConfirm(null)}
+      />
     </div>
-  );
-}
-
-function LotMovementModal({
-  isOpen,
-  onClose,
-  lote,
-  loteType,
-  birds,
-  editBird,
-  editEggLot,
-  editMeatLot,
-  showToast
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  lote: any;
-  loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
-  birds: any[];
-  editBird: (id: string, updated: any) => void;
-  editEggLot: (id: string, updated: any) => void;
-  editMeatLot: (id: string, updated: any) => void;
-  showToast: (msg: string, type?: 'success' | 'info' | 'warning') => void;
-}) {
-  const [activeSubTab, setActiveSubTab] = useState<'novo' | 'historico'>('novo');
-  const [tipo, setTipo] = useState<'saida' | 'entrada'>('saida');
-  const [isRegistered, setIsRegistered] = useState<'yes' | 'no'>('yes');
-  const [selectedBirdIds, setSelectedBirdIds] = useState<string[]>([]);
-  const [birdSearch, setBirdSearch] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [motivo, setMotivo] = useState('Mortalidade / Óbito');
-  const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
-  const [data, setData] = useState(todayISO());
-  const [observacao, setObservacao] = useState('');
-
-  if (!isOpen || !lote) return null;
-
-  const currentCount = loteType === 'postura'
-    ? Math.max(lote.qtdFemeas || 0, lote.femeasIds?.length || 0)
-    : Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
-
-  const motivosSaida = [
-    'Mortalidade / Óbito',
-    'Abate',
-    'Venda',
-    'Transferência de Baia',
-    'Ajuste de Inventário',
-    'Outro'
-  ];
-
-  const motivosEntrada = [
-    'Introdução / Nova Ave',
-    'Nascimento / Eclosão',
-    'Retorno de Baia',
-    'Ajuste de Inventário',
-    'Outro'
-  ];
-
-  const motivosDisponiveis = tipo === 'saida' ? motivosSaida : motivosEntrada;
-
-  const handleTipoChange = (newTipo: 'saida' | 'entrada') => {
-    setTipo(newTipo);
-    setMotivo(newTipo === 'saida' ? 'Mortalidade / Óbito' : 'Introdução / Nova Ave');
-    setMotivoPersonalizado('');
-    if (newTipo === 'entrada') {
-      setIsRegistered('yes');
-      setSelectedBirdIds([]);
-    }
-  };
-
-  const availableBirds = birds.filter(b => {
-    if (b.status === 'Vendido' || b.status === 'Faleceu') return false;
-    if (loteType === 'postura' && b.sexo !== 'Fêmea') return false;
-    const existingIds = lote.femeasIds || lote.avesIds || [];
-    if (existingIds.includes(b.id)) return false;
-    return true;
-  });
-
-  const handleToggleBird = (id: string) => {
-    setSelectedBirdIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAllBirds = (ids: string[]) => {
-    if (ids.every(id => selectedBirdIds.includes(id))) {
-      setSelectedBirdIds(prev => prev.filter(id => !ids.includes(id)));
-    } else {
-      setSelectedBirdIds(prev => Array.from(new Set([...prev, ...ids])));
-    }
-  };
-
-  const isAddingRegistered = tipo === 'entrada' && isRegistered === 'yes';
-
-  const handleSaveMovement = (e: React.FormEvent) => {
-    e.preventDefault();
-    let qtyNum = 0;
-
-    if (isAddingRegistered) {
-      if (selectedBirdIds.length === 0) {
-        showToast('Por favor, selecione ao menos uma ave da lista para adicionar.', 'warning');
-        return;
-      }
-      qtyNum = selectedBirdIds.length;
-    } else {
-      qtyNum = parseInt(quantidade);
-      if (!qtyNum || qtyNum <= 0) {
-        showToast('Por favor, informe uma quantidade válida maior que 0.', 'warning');
-        return;
-      }
-    }
-
-    const finalMotivo = motivo === 'Outro' ? (motivoPersonalizado.trim() || 'Outro') : motivo;
-
-    const newRecord: any = {
-      id: uid(),
-      tipo,
-      quantidade: qtyNum,
-      motivo: finalMotivo,
-      data: data || todayISO(),
-      observacao: observacao.trim() || undefined
-    };
-
-    if (isAddingRegistered) {
-      newRecord.avesIds = selectedBirdIds;
-    }
-
-    const updatedMovimentacoes = [newRecord, ...(lote.movimentacoes || [])];
-
-    let newTotal = currentCount;
-    if (tipo === 'entrada') {
-      newTotal = currentCount + qtyNum;
-    } else {
-      newTotal = Math.max(0, currentCount - qtyNum);
-    }
-
-    // Se adicionou aves registradas, atualiza a baia de cada uma das aves no sistema
-    if (isAddingRegistered && selectedBirdIds.length > 0) {
-      selectedBirdIds.forEach(birdId => {
-        editBird(birdId, { baia: lote.baia });
-      });
-    }
-
-    if (loteType === 'postura') {
-      const updatedFemeas = isAddingRegistered
-        ? Array.from(new Set([...(lote.femeasIds || []), ...selectedBirdIds]))
-        : (lote.femeasIds || []);
-
-      editEggLot(lote.id, {
-        qtdFemeas: newTotal,
-        ...(isAddingRegistered ? { femeasIds: updatedFemeas } : {}),
-        movimentacoes: updatedMovimentacoes
-      });
-    } else {
-      const updatedAves = isAddingRegistered
-        ? Array.from(new Set([...(lote.avesIds || []), ...selectedBirdIds]))
-        : (lote.avesIds || []);
-
-      editMeatLot(lote.id, {
-        qtdAves: newTotal,
-        ...(isAddingRegistered ? { avesIds: updatedAves } : {}),
-        movimentacoes: updatedMovimentacoes
-      });
-    }
-
-    showToast(
-      tipo === 'saida'
-        ? `Baixa de ${qtyNum} ave(s) registrada com sucesso (-${qtyNum})`
-        : `Entrada de ${qtyNum} ave(s) ${isAddingRegistered ? 'cadastrada(s)' : ''} registrada com sucesso (+${qtyNum})`,
-      'success'
-    );
-
-    setQuantidade('');
-    setSelectedBirdIds([]);
-    setObservacao('');
-    setMotivoPersonalizado('');
-    setActiveSubTab('historico');
-  };
-
-  const handleDeleteMovement = (movId: string) => {
-    if (!window.confirm('Deseja remover esta movimentação do histórico?')) return;
-
-    const targetMov = lote.movimentacoes?.find((m: any) => m.id === movId);
-    if (!targetMov) return;
-
-    const updatedMovimentacoes = (lote.movimentacoes || []).filter((m: any) => m.id !== movId);
-
-    let newTotal = currentCount;
-    if (targetMov.tipo === 'entrada') {
-      newTotal = Math.max(0, currentCount - targetMov.quantidade);
-    } else {
-      newTotal = currentCount + targetMov.quantidade;
-    }
-
-    if (loteType === 'postura') {
-      editEggLot(lote.id, {
-        qtdFemeas: newTotal,
-        movimentacoes: updatedMovimentacoes
-      });
-    } else {
-      editMeatLot(lote.id, {
-        qtdAves: newTotal,
-        movimentacoes: updatedMovimentacoes
-      });
-    }
-
-    showToast('Movimentação removida e saldo atualizado!', 'info');
-  };
-
-  const lotTitleMap = {
-    postura: 'Lote de Postura',
-    engorda: 'Lote de Engorda',
-    pintinhos: 'Lote de Pintinhos',
-    crescimento: 'Lote de Crescimento'
-  };
-
-  const effectiveQty = isAddingRegistered ? selectedBirdIds.length : (parseInt(quantidade) || 0);
-
-  return createPortal(
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up my-auto max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-theme-border pb-4">
-          <div>
-            <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
-              Baia {lote.baia} · {lotTitleMap[loteType]}
-            </span>
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <Activity size={18} className="text-theme-primary" />
-              Ajuste & Baixas de Aves
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full text-theme-text-muted hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Info Card current count */}
-        <div className="bg-theme-base border border-theme-border rounded-2xl p-3.5 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-theme-text-muted uppercase">Quantidade Atual no Lote</p>
-            <p className="text-2xl font-black text-white">{currentCount} <span className="text-xs font-bold text-theme-text-muted">aves</span></p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('novo')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'novo' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
-            >
-              <Plus size={13} /> Nova Movimentação
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('historico')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'historico' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
-            >
-              <History size={13} /> Histórico ({lote.movimentacoes?.length || 0})
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-          {activeSubTab === 'novo' ? (
-            <form onSubmit={handleSaveMovement} className="space-y-4">
-              {/* Toggle Tipo */}
-              <div>
-                <SectionLabel>Tipo de Movimentação</SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleTipoChange('saida')}
-                    className={`py-3 px-4 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all ${
-                      tipo === 'saida'
-                        ? 'bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/30'
-                        : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
-                    }`}
-                  >
-                    <TrendingDown size={16} /> Baixa / Saída (-)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTipoChange('entrada')}
-                    className={`py-3 px-4 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all ${
-                      tipo === 'entrada'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/30'
-                        : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
-                    }`}
-                  >
-                    <TrendingUp size={16} /> Entrada / Adição (+)
-                  </button>
-                </div>
-              </div>
-
-              {/* Se for Entrada, Pergunta se as aves estão cadastradas */}
-              {tipo === 'entrada' && (
-                <div className="bg-theme-base/60 border border-theme-border rounded-xl p-3 space-y-2">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <CheckCircle size={14} className="text-theme-primary" />
-                    As aves sendo adicionadas já estão cadastradas no sistema?
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsRegistered('yes')}
-                      className={`py-2 px-3 rounded-lg border text-xs font-extrabold transition-all ${
-                        isRegistered === 'yes'
-                          ? 'bg-theme-primary text-black border-theme-primary'
-                          : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      Sim (Selecionar da Lista)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsRegistered('no')}
-                      className={`py-2 px-3 rounded-lg border text-xs font-extrabold transition-all ${
-                        isRegistered === 'no'
-                          ? 'bg-theme-primary text-black border-theme-primary'
-                          : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      Não (Informar Quantidade)
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Se Entrada & Cadastrada: Exibe Selecionador de Aves */}
-              {isAddingRegistered ? (
-                <div className="space-y-2">
-                  <SectionLabel>Selecionar Aves Cadastradas ({selectedBirdIds.length} selecionada(s))</SectionLabel>
-                  <BirdPicker
-                    birds={availableBirds}
-                    selected={selectedBirdIds}
-                    onToggle={handleToggleBird}
-                    onSelectAll={handleSelectAllBirds}
-                    search={birdSearch}
-                    onSearch={setBirdSearch}
-                    emptyMsg="Nenhuma ave disponível no sistema para vincular a este lote."
-                  />
-                  <div>
-                    <SectionLabel>Data da Ocorrência</SectionLabel>
-                    <input
-                      type="date"
-                      value={data}
-                      onChange={e => setData(e.target.value)}
-                      className={inputCls}
-                      required
-                    />
-                  </div>
-                </div>
-              ) : (
-                /* Quantidade & Data Manual */
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <SectionLabel>Quantidade de Aves</SectionLabel>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Ex: 3"
-                      value={quantidade}
-                      onKeyDown={onlyNumericKeyDown}
-                      onChange={e => setQuantidade(sanitizeNumeric(e.target.value))}
-                      className={inputCls}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <SectionLabel>Data da Ocorrência</SectionLabel>
-                    <input
-                      type="date"
-                      value={data}
-                      onChange={e => setData(e.target.value)}
-                      className={inputCls}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Motivo */}
-              <div>
-                <SectionLabel>Motivo da Movimentação</SectionLabel>
-                <select
-                  value={motivo}
-                  onChange={e => setMotivo(e.target.value)}
-                  className={inputCls}
-                >
-                  {motivosDisponiveis.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              {motivo === 'Outro' && (
-                <div>
-                  <SectionLabel>Especifique o Motivo</SectionLabel>
-                  <input
-                    type="text"
-                    placeholder="Descreva o motivo..."
-                    value={motivoPersonalizado}
-                    onChange={e => setMotivoPersonalizado(e.target.value)}
-                    className={inputCls}
-                    required
-                  />
-                </div>
-              )}
-
-              {/* Observações */}
-              <div>
-                <SectionLabel>Observações Adicionais (Opcional)</SectionLabel>
-                <textarea
-                  rows={2}
-                  placeholder="Ex: 2 morreram de frio e 1 foi separada por machucado..."
-                  value={observacao}
-                  onChange={e => setObservacao(e.target.value)}
-                  className={inputCls + " resize-none"}
-                />
-              </div>
-
-              {/* Preview de Resultado */}
-              {effectiveQty > 0 && (
-                <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
-                  tipo === 'saida' ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                }`}>
-                  <span>Saldo estimado do lote após registrar:</span>
-                  <span className="text-sm font-black">
-                    {currentCount} {tipo === 'saida' ? '-' : '+'} {effectiveQty} = {
-                      tipo === 'saida' ? Math.max(0, currentCount - effectiveQty) : currentCount + effectiveQty
-                    } aves
-                  </span>
-                </div>
-              )}
-
-              {/* Submit */}
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-3 bg-theme-base border border-theme-border rounded-xl text-xs font-bold text-theme-text-muted hover:text-white transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${
-                    tipo === 'saida' ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-emerald-500 text-black hover:bg-emerald-400'
-                  }`}
-                >
-                  {tipo === 'saida' ? 'Confirmar Baixa' : 'Confirmar Entrada'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* Histórico */
-            <div className="space-y-3">
-              <SectionLabel>Histórico de Entradas e Baixas</SectionLabel>
-              {(!lote.movimentacoes || lote.movimentacoes.length === 0) ? (
-                <div className="text-center p-8 bg-theme-base rounded-2xl border border-dashed border-theme-border text-theme-text-muted">
-                  <History size={32} className="mx-auto mb-2 opacity-40" />
-                  <p className="font-bold text-xs text-white">Nenhuma movimentação registrada</p>
-                  <p className="text-[11px]">As baixas e entradas de aves neste lote aparecerão aqui.</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {lote.movimentacoes.map((mov: any) => (
-                    <div
-                      key={mov.id}
-                      className="bg-theme-base border border-theme-border/60 rounded-2xl p-3.5 flex items-start justify-between gap-3 hover:border-theme-border transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                          mov.tipo === 'saida' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        }`}>
-                          {mov.tipo === 'saida' ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-black ${mov.tipo === 'saida' ? 'text-red-400' : 'text-emerald-400'}`}>
-                              {mov.tipo === 'saida' ? `-${mov.quantidade} ave(s)` : `+${mov.quantidade} ave(s)`}
-                            </span>
-                            <span className="text-[10px] text-theme-text-muted">· {fmtDate(mov.data)}</span>
-                          </div>
-                          <p className="text-xs font-bold text-white mt-0.5">{mov.motivo}</p>
-                          {mov.observacao && (
-                            <p className="text-[11px] text-theme-text-muted mt-1 italic">Obs: {mov.observacao}</p>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMovement(mov.id)}
-                        className="text-theme-text-muted hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                        title="Remover este registro"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
   );
 }

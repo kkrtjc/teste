@@ -11,6 +11,7 @@ import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal';
+import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 
 function calcTimeLeft(expiresAt: string | null) {
   if (!expiresAt) return null;
@@ -135,6 +136,8 @@ export function Settings() {
   const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [copiedPix, setCopiedPix] = useState(false);
+  const [confirmSignOutOpen, setConfirmSignOutOpen] = useState(false);
+  const [backupToImport, setBackupToImport] = useState<File | null>(null);
 
   const handleCopyPix = () => {
     navigator.clipboard.writeText('mura.manager.pay@gmail.com');
@@ -145,12 +148,21 @@ export function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sincroniza estado quando farmSettings mudar
+  const lastSettingsRef = useRef({ ...farmSettings, userEmail: user?.email });
   useEffect(() => {
-    setName(farmSettings.name);
-    setEmail(farmSettings.email || user?.email || '');
-    setPhone(farmSettings.phone);
-    setPreviewImage(farmSettings.photo);
+    const currentEmail = farmSettings.email || user?.email || '';
+    if (
+      lastSettingsRef.current.name !== farmSettings.name ||
+      lastSettingsRef.current.email !== currentEmail ||
+      lastSettingsRef.current.phone !== farmSettings.phone ||
+      lastSettingsRef.current.photo !== farmSettings.photo
+    ) {
+      lastSettingsRef.current = { ...farmSettings, email: currentEmail, userEmail: user?.email };
+      setName(farmSettings.name);
+      setEmail(currentEmail);
+      setPhone(farmSettings.phone);
+      setPreviewImage(farmSettings.photo);
+    }
   }, [farmSettings, user]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,14 +221,14 @@ export function Settings() {
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setBackupToImport(file);
+    e.target.value = '';
+  };
 
-    const confirmImport = window.confirm(
-      "ATENÇÃO: A importação substituirá todos os dados locais e sincronizará com sua conta na nuvem.\n\nDeseja restaurar as informações deste arquivo de backup?"
-    );
-    if (!confirmImport) {
-      e.target.value = '';
-      return;
-    }
+  const executeBackupImport = () => {
+    if (!backupToImport) return;
+    const file = backupToImport;
+    setBackupToImport(null);
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -237,15 +249,12 @@ export function Settings() {
         setImportStatus('error');
         setImportMessage(err.message || 'Erro ao ler arquivo de backup.');
         setTimeout(() => setImportStatus('idle'), 6000);
-      } finally {
-        e.target.value = '';
       }
     };
     reader.onerror = () => {
       setImportStatus('error');
       setImportMessage('Não foi possível ler o arquivo selecionado.');
       setTimeout(() => setImportStatus('idle'), 6000);
-      e.target.value = '';
     };
     reader.readAsText(file);
   };
@@ -263,9 +272,7 @@ export function Settings() {
   };
 
   const handleConfirmSignOut = () => {
-    if (window.confirm("Deseja realmente sair da sua conta? Seus dados continuarão salvos com segurança na nuvem.")) {
-      signOut();
-    }
+    setConfirmSignOutOpen(true);
   };
 
   return (
@@ -689,6 +696,31 @@ export function Settings() {
       <PWAInstallGuideModal
         isOpen={isPwaGuideOpen}
         onClose={() => setIsPwaGuideOpen(false)}
+      />
+
+      {/* Confirmação de Saída de Conta */}
+      <ConfirmDialog
+        isOpen={confirmSignOutOpen}
+        title="Sair da Conta?"
+        message="Deseja realmente sair da sua conta? Seus dados continuarão salvos com segurança na nuvem."
+        confirmLabel="Sair da Conta"
+        confirmVariant="danger"
+        onConfirm={() => {
+          setConfirmSignOutOpen(false);
+          signOut();
+        }}
+        onCancel={() => setConfirmSignOutOpen(false)}
+      />
+
+      {/* Confirmação de Restauração de Backup */}
+      <ConfirmDialog
+        isOpen={Boolean(backupToImport)}
+        title="Restaurar Backup?"
+        message="ATENÇÃO: A importação substituirá todos os dados locais e sincronizará com sua conta na nuvem. Deseja restaurar as informações deste arquivo?"
+        confirmLabel="Restaurar Dados"
+        confirmVariant="warning"
+        onConfirm={executeBackupImport}
+        onCancel={() => setBackupToImport(null)}
       />
 
     </div>

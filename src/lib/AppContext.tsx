@@ -1216,7 +1216,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             descricao: breed.descricao,
             imagem: breed.imagem,
             tempo_crescimento: breed.tempoCrescimento || 0,
-            peso_medio: breed.pesoMedio || ''
+            peso_medio: breed.pesoMedio || '',
+            ganho_gramas_dia: breed.ganhoGramasDia || null,
+            conversao_alimentar: breed.conversaoAlimentar || null
           })
           .then(({ error }) => { if (error) console.error('Erro Supabase addBreed:', error); });
       }
@@ -1237,6 +1239,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedBreed.imagem !== undefined) dbUpdate.imagem = updatedBreed.imagem;
         if (updatedBreed.tempoCrescimento !== undefined) dbUpdate.tempo_crescimento = updatedBreed.tempoCrescimento;
         if (updatedBreed.pesoMedio !== undefined) dbUpdate.peso_medio = updatedBreed.pesoMedio;
+        if (updatedBreed.ganhoGramasDia !== undefined) dbUpdate.ganho_gramas_dia = updatedBreed.ganhoGramasDia;
+        if (updatedBreed.conversaoAlimentar !== undefined) dbUpdate.conversao_alimentar = updatedBreed.conversaoAlimentar;
 
         supabase!
           .from('breeds')
@@ -1616,7 +1620,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const dbUpdate: any = {};
         if (updatedLot.coupleId !== undefined) dbUpdate.couple_id = updatedLot.coupleId;
         if (updatedLot.numeroLote !== undefined) dbUpdate.numero_lote = updatedLot.numeroLote;
-        if (updatedLot.coupleId !== undefined) dbUpdate.couple_id = updatedLot.coupleId;
         if (updatedLot.quantidadeOvos !== undefined) dbUpdate.quantidade_ovos = updatedLot.quantidadeOvos;
         if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
         if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;

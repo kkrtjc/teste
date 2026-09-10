@@ -11,6 +11,7 @@ import { BirdProfileModal } from './modals/BirdProfileModal';
 import { OnboardingTour } from './modals/OnboardingTour';
 import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
 import { PWAInstallGuideModal } from './modals/PWAInstallGuideModal';
+import { ConfirmDialog } from './modals/ConfirmDialog';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -67,6 +68,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const [modalLoading, setModalLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [revokeCpfConfirm, setRevokeCpfConfirm] = useState<string | null>(null);
 
   // Estados para gerenciamento de atalho de PWA (Instalação rápida)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -238,11 +240,14 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     }
   };
 
-  const handleRemoveCpf = async (cpfToRemove: string) => {
-    const formattedCpf = formatCPF(cpfToRemove);
-    if (!window.confirm(`Tem certeza que deseja revogar o acesso do CPF ${formattedCpf}?`)) {
-      return;
-    }
+  const handleRemoveCpf = (cpfToRemove: string) => {
+    setRevokeCpfConfirm(cpfToRemove);
+  };
+
+  const executeRemoveCpf = async () => {
+    if (!revokeCpfConfirm) return;
+    const cpfToRemove = revokeCpfConfirm;
+    setRevokeCpfConfirm(null);
 
     setActionLoading(true);
     setModalError('');
@@ -262,7 +267,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       }
     } catch (err: any) {
       console.error(err);
-      setModalError('Erro ao remover CPF.');
+      setModalError(err.message || 'Erro ao remover CPF.');
     } finally {
       setActionLoading(false);
     }
@@ -904,6 +909,17 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       <PWAInstallGuideModal
         isOpen={isPwaGuideOpen}
         onClose={() => setIsPwaGuideOpen(false)}
+      />
+
+      {/* Confirmação de Revogação de Acesso */}
+      <ConfirmDialog
+        isOpen={Boolean(revokeCpfConfirm)}
+        title="Revogar Acesso do Cliente?"
+        message={`Tem certeza que deseja revogar o acesso do CPF ${revokeCpfConfirm ? formatCPF(revokeCpfConfirm) : ''}? O cliente perderá o acesso à plataforma imediatamente.`}
+        confirmLabel="Revogar Acesso"
+        confirmVariant="danger"
+        onConfirm={executeRemoveCpf}
+        onCancel={() => setRevokeCpfConfirm(null)}
       />
     </div>
   );

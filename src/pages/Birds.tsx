@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Edit2, Camera, Search, X, ChevronRight, Trash2 } from 'lucide-react';
 import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
+import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 
 const BreedItemCard = memo(function BreedItemCard({
   breed,
@@ -227,6 +228,7 @@ export function Birds() {
   const [newBreedTempoCrescimento, setNewBreedTempoCrescimento] = useState(0);
   const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('');
   const [showAdvancedBreed, setShowAdvancedBreed] = useState(false);
+  const [deleteBreedConfirm, setDeleteBreedConfirm] = useState<{ id: string; nome: string; message: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -608,11 +610,9 @@ export function Birds() {
                     onDelete={(id, nome) => {
                       const avesVinculadas = birds.filter(b => b.raca === nome && b.status !== 'Vendido' && b.status !== 'Faleceu').length;
                       const aviso = avesVinculadas > 0
-                        ? `Existem ${avesVinculadas} ave(s) vinculada(s) a esta raça. Elas ficarão sem raça definida.\n\nDeseja realmente apagar a raça "${nome}" permanentemente?`
+                        ? `Existem ${avesVinculadas} ave(s) vinculada(s) a esta raça. Elas ficarão sem raça definida. Deseja realmente apagar a raça "${nome}" permanentemente?`
                         : `Deseja realmente apagar a raça "${nome}" permanentemente?`;
-                      if (window.confirm(aviso)) {
-                        removeBreed(id);
-                      }
+                      setDeleteBreedConfirm({ id, nome, message: aviso });
                     }}
                   />
                 ))}
@@ -763,6 +763,22 @@ export function Birds() {
         </div>,
         document.body
       )}
+
+      {/* Confirmação de exclusão de raça */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteBreedConfirm)}
+        title={`Apagar Raça "${deleteBreedConfirm?.nome || ''}"?`}
+        message={deleteBreedConfirm?.message || ''}
+        confirmLabel="Apagar Raça"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (deleteBreedConfirm) {
+            removeBreed(deleteBreedConfirm.id);
+          }
+          setDeleteBreedConfirm(null);
+        }}
+        onCancel={() => setDeleteBreedConfirm(null)}
+      />
 
     </div>
   );
