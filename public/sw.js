@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mura-manager-v6';
+const CACHE_NAME = 'mura-manager-v7';
 const ASSETS = [
   '/',
   '/index.html',
@@ -28,38 +28,78 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// ── Estratégia de Rede: Network First para páginas/scripts e Cache First para estáticos ──
+// ── Estratégia de Rede de Alta Performance para Conexão Rural/Lenta e Offline ──
 self.addEventListener('fetch', (e) => {
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('chrome-extension')) return;
+  const url = e.request.url;
+  if (url.includes('supabase.co') || url.includes('chrome-extension')) return;
 
-  // Network First para HTML e scripts: garante sempre o bundle mais atualizado no celular
-  if (e.request.mode === 'navigate' || e.request.destination === 'script' || e.request.destination === 'document') {
+  // 1. Assets imutáveis compilados (/assets/*): Cache First instantâneo (~0ms)
+  if (url.includes('/assets/')) {
     e.respondWith(
-      fetch(e.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
+      caches.match(e.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(e.request).then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const copy = networkRes.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
           }
-          return networkResponse;
-        })
-        .catch(() => caches.match(e.request))
+          return networkRes;
+        });
+      })
     );
     return;
   }
 
-  // Cache First com fallback para rede para imagens, ícones e fontes
+  // 2. Navegação (HTML / document): Timeout de 1500ms com fallback imediato para cache offline
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      new Promise((resolve) => {
+        let didResolve = false;
+        const timer = setTimeout(() => {
+          if (!didResolve) {
+            caches.match(e.request).then((cached) => {
+              if (cached) {
+                didResolve = true;
+                resolve(cached);
+              }
+            });
+          }
+        }, 1500);
+
+        fetch(e.request)
+          .then((networkResponse) => {
+            clearTimeout(timer);
+            if (networkResponse && networkResponse.status === 200) {
+              const copy = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+            }
+            if (!didResolve) {
+              didResolve = true;
+              resolve(networkResponse);
+            }
+          })
+          .catch(() => {
+            clearTimeout(timer);
+            caches.match(e.request).then((cached) => {
+              resolve(cached || caches.match('/index.html'));
+            });
+          });
+      })
+    );
+    return;
+  }
+
+  // 3. Demais recursos estáticos (ícones, manifest): Cache First com revalidação
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(e.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(e.request);
+      const fetchPromise = fetch(e.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
+        }
+        return networkResponse;
+      }).catch(() => null);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

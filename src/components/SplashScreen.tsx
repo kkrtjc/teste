@@ -12,12 +12,12 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
 
   useEffect(() => {
     if (!isLoading) {
-      // Inicia a animação de saída (scale down + fade out)
+      // Inicia a animação de saída suave e rápida (scale down + fade out)
       setIsFadingOut(true);
       const timer = setTimeout(() => {
         setShouldRender(false);
         if (onFinish) onFinish();
-      }, 650); // Duração sincronizada da animação (650ms)
+      }, 350); // Duração sincronizada da animação (350ms)
       return () => clearTimeout(timer);
     } else {
       setShouldRender(true);
@@ -25,11 +25,23 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
     }
   }, [isLoading, onFinish]);
 
+  // Blindagem de segurança: nunca trava o usuário na splash por mais de 3 segundos
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setIsFadingOut(true);
+      setTimeout(() => {
+        setShouldRender(false);
+        if (onFinish) onFinish();
+      }, 350);
+    }, 3000);
+    return () => clearTimeout(safetyTimer);
+  }, [onFinish]);
+
   if (!shouldRender) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070709] transition-all duration-700 ease-out select-none pointer-events-none ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070709] transition-all duration-350 ease-out select-none pointer-events-none ${
         isFadingOut ? 'opacity-0 scale-105 backdrop-blur-none' : 'opacity-100 scale-100'
       }`}
     >
