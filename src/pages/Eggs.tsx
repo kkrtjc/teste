@@ -121,8 +121,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [qtdFemeas, setQtdFemeas] = useState('');
   const [expectativaDiaria, setExpectativaDiaria] = useState('');
   const [raca, setRaca] = useState('');
-  const [precoVendaPadrao, setPrecoVendaPadrao] = useState('10.00');
-  const [custoProdPadrao, setCustoProdPadrao] = useState('0.40');
+  const [precoVendaPadrao, setPrecoVendaPadrao] = useState('');
+  const [custoProdPadrao, setCustoProdPadrao] = useState('');
   const [observacao, setObservacao] = useState('');
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -137,13 +137,6 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const availableFemeas = useMemo(() => {
     return birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu');
   }, [birds]);
-
-  const handleFemeasChange = (num: number) => {
-    if (num > 0) {
-      const recExp = Math.max(1, Math.round(num * 0.8));
-      setExpectativaDiaria(String(recExp));
-    }
-  };
 
   const handleSave = () => {
     if (!baia.trim()) {
@@ -160,7 +153,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       return;
     }
 
-    const exp = parseInt(expectativaDiaria) || Math.max(1, Math.round(countFemeas * 0.8));
+    const exp = expectativaDiaria.trim() ? (parseInt(expectativaDiaria) || 0) : 0;
 
     const newLot: EggLot = {
       id: uid(),
@@ -171,8 +164,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       dataInicio: todayISO(),
       status: 'Ativo',
       raca: raca || undefined,
-      precoVendaPadrao: parseFloat(precoVendaPadrao) || 10.0,
-      custoProdPadrao: parseFloat(custoProdPadrao) || 0.40,
+      precoVendaPadrao: precoVendaPadrao.trim() ? (parseFloat(precoVendaPadrao) || undefined) : undefined,
+      custoProdPadrao: custoProdPadrao.trim() ? (parseFloat(custoProdPadrao) || undefined) : undefined,
       observacao: observacao.trim() || undefined,
       registros: []
     };
@@ -239,11 +232,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
               inputMode="numeric"
               placeholder="Ex: 30"
               value={qtdFemeas}
-              onChange={e => {
-                const val = e.target.value;
-                setQtdFemeas(val);
-                handleFemeasChange(selectedFemeas.length + (parseInt(val) || 0));
-              }}
+              onChange={e => setQtdFemeas(e.target.value)}
               onKeyDown={onlyNumericKeyDown}
               className={inputCls}
             />
@@ -262,30 +251,30 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
           </div>
 
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Expectativa Diária (Ovos/dia)</label>
-              <span className="text-[9px] text-amber-400 font-bold">Recomendado: 80%</span>
-            </div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Expectativa Diária (Opcional)</label>
             <input
               type="number"
               min="1"
               inputMode="numeric"
-              placeholder="Ex: 4"
+              placeholder="Ex: 20 (ovos/dia)"
               value={expectativaDiaria}
               onChange={e => setExpectativaDiaria(e.target.value)}
               onKeyDown={onlyNumericKeyDown}
               className={inputCls}
             />
+            <p className="text-[10px] text-theme-text-muted">
+              Necessário para calcular a taxa de eficiência de postura nos relatórios.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço Padrão / Dúzia (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" placeholder="10.00" value={precoVendaPadrao} onChange={e => setPrecoVendaPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" step="0.01" inputMode="decimal" placeholder="Ex: 10.00 (Opcional)" value={precoVendaPadrao} onChange={e => setPrecoVendaPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo Padrão / Ovo (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" placeholder="0.40" value={custoProdPadrao} onChange={e => setCustoProdPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" step="0.01" inputMode="decimal" placeholder="Ex: 0.40 (Opcional)" value={custoProdPadrao} onChange={e => setCustoProdPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
           </div>
 
@@ -302,10 +291,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
                       key={f.id}
                       onClick={() => {
                         setSelectedFemeas(prev => {
-                          const next = isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
-                          const totalCalc = next.length + (parseInt(qtdFemeas) || 0);
-                          handleFemeasChange(totalCalc);
-                          return next;
+                          return isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
                         });
                       }}
                       className="py-1.5 px-2 flex items-center justify-between cursor-pointer hover:bg-theme-base/50 rounded-lg transition-colors"
@@ -456,7 +442,7 @@ function SellFromStockModal({
   onConfirm: (count: number, pricePerDozen: number) => void;
 }) {
   const [quantity, setQuantity] = useState(String(availableStock));
-  const [pricePerDozen, setPricePerDozen] = useState(String(lot.precoVendaPadrao || 6.0));
+  const [pricePerDozen, setPricePerDozen] = useState(lot.precoVendaPadrao !== undefined ? String(lot.precoVendaPadrao) : '');
   const [error, setError] = useState('');
 
   const qtyNum = parseInt(quantity) || 0;
@@ -580,8 +566,8 @@ function RegisterDaySheet({
     coletados: editingRecord ? String(editingRecord.coletados) : '',
     vendidos: editingRecord ? String(editingRecord.vendidos) : '0',
     perdidos: editingRecord ? String(editingRecord.perdidos) : '0',
-    precoVenda: editingRecord ? String(editingRecord.precoVenda) : String(lot.precoVendaPadrao ?? 6),
-    custoProd: editingRecord ? String(editingRecord.custoProd) : String(lot.custoProdPadrao ?? 0.30),
+    precoVenda: editingRecord ? String(editingRecord.precoVenda) : (lot.precoVendaPadrao !== undefined ? String(lot.precoVendaPadrao) : ''),
+    custoProd: editingRecord ? String(editingRecord.custoProd) : (lot.custoProdPadrao !== undefined ? String(lot.custoProdPadrao) : ''),
     observacao: editingRecord?.observacao || ''
   });
 
@@ -705,11 +691,11 @@ function RegisterDaySheet({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço / Dúzia (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={form.precoVenda} onChange={set('precoVenda')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 10.00" value={form.precoVenda} onChange={set('precoVenda')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo / Ovo (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={form.custoProd} onChange={set('custoProd')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 0.40" value={form.custoProd} onChange={set('custoProd')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
           </div>
 
@@ -849,7 +835,7 @@ function LotCard({
             </div>
           </div>
           <p className="text-xs text-theme-text-muted mt-0.5 truncate">
-            <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; Exp. {lot.expectativaDiaria}/dia &bull; Desde {formatDate(lot.dataInicio)}
+            <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; {lot.expectativaDiaria > 0 ? `Exp. ${lot.expectativaDiaria}/dia` : 'Exp. não definida'} &bull; Desde {formatDate(lot.dataInicio)}
           </p>
           {femeaNomes ? (
             <p className="text-[10px] text-theme-text-muted/80 mt-0.5 truncate">
@@ -896,10 +882,22 @@ function LotCard({
 
       <div className="px-4 py-2 border-t border-theme-border flex items-center gap-3">
         <span className="text-[10px] text-theme-text-muted font-bold whitespace-nowrap">Eficiência de Postura</span>
-        <div className="flex-1 h-1.5 rounded-full bg-theme-base overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${efBar >= 80 ? 'bg-green-400' : efBar >= 50 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${efBar}%` }} />
-        </div>
-        <span className={`text-[10px] font-black ${efBar >= 80 ? 'text-green-400' : efBar >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{eficiencia.toFixed(0)}%</span>
+        {lot.expectativaDiaria <= 0 ? (
+          <span className="text-[10px] text-amber-400 font-medium italic">
+            Defina a expectativa diária para calcular a taxa real
+          </span>
+        ) : records.length === 0 ? (
+          <span className="text-[10px] text-theme-text-muted font-medium italic">
+            Nenhuma coleta registrada ainda
+          </span>
+        ) : (
+          <>
+            <div className="flex-1 h-1.5 rounded-full bg-theme-base overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${efBar >= 80 ? 'bg-green-400' : efBar >= 50 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${efBar}%` }} />
+            </div>
+            <span className={`text-[10px] font-black ${efBar >= 80 ? 'text-green-400' : efBar >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{eficiencia.toFixed(0)}%</span>
+          </>
+        )}
       </div>
 
       {/* Ações Rápidas do Lote */}

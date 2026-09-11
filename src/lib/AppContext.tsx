@@ -130,7 +130,7 @@ export type MeatLot = {
   avesIds: string[];
   qtdAves?: number;            // quantidade manual (quando não se vincula aves individuais)
   dataInicio: string;
-  pesoMedioInicial: string;
+  pesoMedioInicial?: string;
   pesoMeta?: string;           // peso alvo de abate
   status: 'Crescimento' | 'Terminação' | 'Abatido';
   raca?: string;

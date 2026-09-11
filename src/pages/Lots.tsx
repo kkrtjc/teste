@@ -487,8 +487,8 @@ export function Lots() {
   const [pQtd, setPQtd] = useState('');
   const [pSearch, setPSearch] = useState('');
   const [pExpectativa, setPExpectativa] = useState('');
-  const [pPreco, setPPreco] = useState('10.00');
-  const [pCusto, setPCusto] = useState('0.40');
+  const [pPreco, setPPreco] = useState('');
+  const [pCusto, setPCusto] = useState('');
   const [pObs, setPObs] = useState('');
 
   // Engorda Lot states
@@ -624,7 +624,7 @@ export function Lots() {
       avesIds: lote.avesIds || [],
       qtdAves: lote.qtdAves || 0,
       dataInicio: lote.dataInicio,
-      pesoMedioInicial: lote.pesoMedioInicial || '0',
+      pesoMedioInicial: lote.pesoMedioInicial || undefined,
       pesoMeta: lote.pesoMeta,
       status: 'Crescimento',
       raca: lote.raca,
@@ -639,21 +639,17 @@ export function Lots() {
   const handleFemaleToggle = (id: string) => {
     const next = pFemeas.includes(id) ? pFemeas.filter(x=>x!==id) : [...pFemeas, id];
     setPFemeas(next);
-    const totalCount = next.length + (parseInt(pQtd) || 0);
-    setPExpectativa(String(Math.round(totalCount * 0.85)));
   };
   const handleFemaleSelectAll = (ids: string[]) => {
     const allSel = ids.every(id=>pFemeas.includes(id));
     const next = allSel ? pFemeas.filter(id=>!ids.includes(id)) : Array.from(new Set([...pFemeas,...ids]));
     setPFemeas(next);
-    const totalCount = next.length + (parseInt(pQtd) || 0);
-    setPExpectativa(String(Math.round(totalCount * 0.85)));
   };
 
   const resetPostura = () => {
     setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
     setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
-    setPExpectativa(''); setPPreco('10.00'); setPCusto('0.40'); setPObs('');
+    setPExpectativa(''); setPPreco(''); setPCusto(''); setPObs('');
   };
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
@@ -670,12 +666,12 @@ export function Lots() {
         baia: pBaia.trim(),
         femeasIds: pFemeas,
         qtdFemeas: finalTotal,
-        expectativaDiaria: parseInt(pExpectativa) || Math.round(finalTotal * 0.85),
+        expectativaDiaria: pExpectativa.trim() ? (parseInt(pExpectativa) || 0) : 0,
         dataInicio: pDataInicio,
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
-        precoVendaPadrao: parseFloat(pPreco) || 10.0,
-        custoProdPadrao: parseFloat(pCusto) || 0.40,
+        precoVendaPadrao: pPreco.trim() ? (parseFloat(pPreco) || undefined) : undefined,
+        custoProdPadrao: pCusto.trim() ? (parseFloat(pCusto) || undefined) : undefined,
         observacao: pObs.trim() || undefined,
       });
       resetPostura();
@@ -723,13 +719,13 @@ export function Lots() {
         avesIds: eAves,
         qtdAves: finalTotal,
         dataInicio: eDataInicio,
-        pesoMedioInicial: ePesoInicial.trim() || '0',
+        pesoMedioInicial: ePesoInicial.trim() || undefined,
         pesoMeta: ePesoMeta.trim() || undefined,
         status: 'Crescimento',
         raca: eRaca.trim() || undefined,
         observacao: eObs.trim() || undefined,
-        ganhoGramasDia: parseFloat(eGanhoGramasDia) || 35,
-        consumoRacaoAve: parseFloat(eConsumoRacaoAve) || undefined,
+        ganhoGramasDia: eGanhoGramasDia.trim() ? (parseFloat(eGanhoGramasDia) || undefined) : undefined,
+        consumoRacaoAve: eConsumoRacaoAve.trim() ? (parseFloat(eConsumoRacaoAve) || undefined) : undefined,
         pesagens: [],
       });
       resetEngorda();
@@ -778,7 +774,7 @@ export function Lots() {
         avesIds: piAves,
         qtdAves: finalTotal,
         dataInicio: piDataInicio,
-        pesoMedioInicial: piPesoInicial.trim() || '0',
+        pesoMedioInicial: piPesoInicial.trim() || undefined,
         status: 'Crescimento',
         raca: piRaca.trim() || undefined,
         observacao: piObs.trim() || undefined,
@@ -825,7 +821,7 @@ export function Lots() {
         avesIds: crAves,
         qtdAves: finalTotal,
         dataInicio: crDataInicio,
-        pesoMedioInicial: crPesoInicial.trim() || '0',
+        pesoMedioInicial: crPesoInicial.trim() || undefined,
         status: 'Crescimento',
         raca: crRaca.trim() || undefined,
         observacao: crObs.trim() || undefined,
@@ -983,8 +979,17 @@ export function Lots() {
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
                         <Egg size={11} className="text-amber-400" /> Meta Diária
                       </p>
-                      <p className="text-base font-black text-white truncate">{lote.expectativaDiaria || 0} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
-                      <p className="text-[9px] text-theme-text-muted">Produção/dia</p>
+                      {lote.expectativaDiaria && lote.expectativaDiaria > 0 ? (
+                        <>
+                          <p className="text-base font-black text-white truncate">{lote.expectativaDiaria} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
+                          <p className="text-[9px] text-theme-text-muted">Produção/dia</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-bold text-theme-text-muted">Não definida</p>
+                          <p className="text-[9px] text-theme-text-muted">Informe nas configs</p>
+                        </>
+                      )}
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1082,13 +1087,14 @@ export function Lots() {
               const cadastradasA = lote.avesIds?.length || 0;
               const avulsasA = Math.max(0, totalA - cadastradasA);
 
-              // ── INTELIGÊNCIA DE PESO & ALIMENTAÇÃO (PROTOCOLO DE ELITE) ──
+              // ── INTELIGÊNCIA DE PESO & ALIMENTAÇÃO (DADOS REAIS, SEM INVENÇÃO) ──
               const pesoInicialG = parseWeightG(lote.pesoMedioInicial);
               const pesoMetaG = parseWeightG(lote.pesoMeta);
-              const ganhoConfigurado = lote.ganhoGramasDia || 0;
+              const ganhoConfigurado = (lote.ganhoGramasDia && lote.ganhoGramasDia > 0) ? lote.ganhoGramasDia : 0;
               const pesagens = [...(lote.pesagens || [])].sort((a, b) => a.data.localeCompare(b.data));
 
-              let pesoAtualEstimadoG = pesoInicialG;
+              let pesoAtualEstimadoG: number | null = null;
+              let pesoOrigemLabel = '';
               let diasDesdeUltimaPesagem = dias;
               let ganhoRealObservado: number | null = null;
               const temPesagemManual = pesagens.length > 0;
@@ -1103,23 +1109,47 @@ export function Lots() {
                     ganhoRealObservado = Math.round((ultimaPesagem.pesoMedioG - penultima.pesoMedioG) / diasDiff);
                   }
                 }
-                const ganhoBase = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado || 0);
-                pesoAtualEstimadoG = ultimaPesagem.pesoMedioG + (ganhoBase * diasDesdeUltimaPesagem);
-              } else if (ganhoConfigurado > 0) {
-                pesoAtualEstimadoG = pesoInicialG + (ganhoConfigurado * dias);
+                const ganhoBase = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado && ganhoRealObservado > 0 ? ganhoRealObservado : 0);
+                if (ganhoBase > 0) {
+                  pesoAtualEstimadoG = ultimaPesagem.pesoMedioG + (ganhoBase * diasDesdeUltimaPesagem);
+                  pesoOrigemLabel = ganhoRealObservado && ganhoConfigurado <= 0 ? 'Pesagem + ganho real' : 'Pesagem + ganho raça';
+                } else {
+                  pesoAtualEstimadoG = ultimaPesagem.pesoMedioG;
+                  pesoOrigemLabel = 'Última pesagem real';
+                }
+              } else if (pesoInicialG > 0) {
+                if (ganhoConfigurado > 0) {
+                  pesoAtualEstimadoG = pesoInicialG + (ganhoConfigurado * dias);
+                  pesoOrigemLabel = 'Projetado (ganho diário)';
+                } else {
+                  pesoAtualEstimadoG = pesoInicialG;
+                  pesoOrigemLabel = 'Peso inicial (sem taxa diária)';
+                }
+              } else {
+                pesoAtualEstimadoG = null;
+                pesoOrigemLabel = 'Não informado';
               }
 
-              // Previsão de Abate (em dias)
-              const temDadosAbate = pesoMetaG > 0 && (ganhoConfigurado > 0 || (ganhoRealObservado !== null && ganhoRealObservado > 0));
-              const ganhoReferencia = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado || 0);
-              
+              // Previsão de Abate (em dias) — Somente com dados reais suficientes!
+              const ganhoReferencia = ganhoConfigurado > 0 ? ganhoConfigurado : (ganhoRealObservado !== null && ganhoRealObservado > 0 ? ganhoRealObservado : 0);
+              const temBasePeso = pesoAtualEstimadoG !== null && pesoAtualEstimadoG > 0;
+              const temMeta = pesoMetaG > 0;
+              const temTaxa = ganhoReferencia > 0;
+              const temDadosAbate = temMeta && temBasePeso && temTaxa;
+
+              // Identificar com precisão o que falta para o cálculo
+              const dadosFaltantesAbate: string[] = [];
+              if (!temMeta) dadosFaltantesAbate.push('Meta de Abate (peso alvo final)');
+              if (!temBasePeso) dadosFaltantesAbate.push('Peso Inicial (ou registro de pesagem)');
+              if (!temTaxa) dadosFaltantesAbate.push('Taxa de Ganho Diário g/dia (ou 2 pesagens para medir o ganho real)');
+
               let diasRestantesAbate = 0;
               let dataPrevisaoAbate = '';
               let progressoAbatePct = 0;
               let metaAtingida = false;
               let gramasFaltando = 0;
 
-              if (temDadosAbate && ganhoReferencia > 0) {
+              if (temDadosAbate && pesoAtualEstimadoG !== null) {
                 gramasFaltando = Math.max(0, pesoMetaG - pesoAtualEstimadoG);
                 if (gramasFaltando <= 0) {
                   metaAtingida = true;
@@ -1182,9 +1212,11 @@ export function Lots() {
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
                         <Scale size={11} className="text-amber-400" /> Peso Hoje
                       </p>
-                      <p className="text-base font-black text-white">{formatWeightG(pesoAtualEstimadoG)}</p>
+                      <p className="text-base font-black text-white">
+                        {pesoAtualEstimadoG !== null && pesoAtualEstimadoG > 0 ? formatWeightG(pesoAtualEstimadoG) : '—'}
+                      </p>
                       <p className="text-[9px] text-theme-text-muted truncate">
-                        {temPesagemManual ? 'Base pesagem' : (ganhoConfigurado > 0 ? 'Projetado' : 'Inicial')}
+                        {pesoAtualEstimadoG !== null && pesoAtualEstimadoG > 0 ? pesoOrigemLabel : 'Informe peso inicial/pesar'}
                       </p>
                     </div>
 
@@ -1195,7 +1227,7 @@ export function Lots() {
                       <p className="text-base font-black text-white truncate">
                         {pesoMetaG > 0 ? formatWeightG(pesoMetaG) : '—'}
                       </p>
-                      <p className="text-[9px] text-theme-text-muted">Alvo final</p>
+                      <p className="text-[9px] text-theme-text-muted">{pesoMetaG > 0 ? 'Alvo final' : 'Não definida'}</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1207,8 +1239,8 @@ export function Lots() {
                     </div>
                   </div>
 
-                  {/* ⏱️ CARD DE PREVISÃO DE ABATE (PROTOCOLO DE ELITE) */}
-                  {metaAtingida ? (
+                  {/* ⏱️ CARD DE PREVISÃO DE ABATE */}
+                  {metaAtingida && pesoAtualEstimadoG !== null ? (
                     <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
                         <CheckCircle size={18} className="text-emerald-400" />
@@ -1220,7 +1252,7 @@ export function Lots() {
                         </p>
                       </div>
                     </div>
-                  ) : temDadosAbate ? (
+                  ) : temDadosAbate && pesoAtualEstimadoG !== null ? (
                     <div className="p-3.5 bg-gradient-to-br from-amber-500/10 via-theme-base/60 to-orange-500/10 border border-amber-500/30 rounded-2xl space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-white flex items-center gap-1.5">
@@ -1248,25 +1280,35 @@ export function Lots() {
                       </div>
 
                       <div className="pt-1 flex items-center justify-between text-[10px] text-theme-text-muted border-t border-theme-border/30">
-                        <span>Ganho diário: <strong className="text-emerald-400">+{ganhoReferencia}g/dia</strong> (Ração de Engorda)</span>
+                        <span>Ganho diário: <strong className="text-emerald-400">+{ganhoReferencia}g/dia</strong></span>
                         <span>Faltam: <strong className="text-amber-300">~{formatWeightG(gramasFaltando)}</strong></span>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 bg-theme-surface/40 border border-theme-border/60 rounded-2xl text-[11px] text-theme-text-muted flex items-center gap-2.5">
-                      <AlertCircle size={15} className="text-amber-400 shrink-0" />
-                      <span>
-                        Previsão de abate desabilitada. Para ativar, informe o <strong>peso meta</strong> e selecione uma <strong>raça com taxa de ganho</strong> no lote.
-                      </span>
+                    <div className="p-3.5 bg-theme-surface/50 border border-theme-border/80 rounded-2xl space-y-1.5">
+                      <div className="flex items-center gap-2 text-amber-400 text-xs font-black">
+                        <AlertCircle size={15} className="shrink-0" />
+                        <span>Previsão de Abate Indisponível</span>
+                      </div>
+                      <p className="text-[11px] text-theme-text-muted leading-relaxed">
+                        Para o sistema calcular a previsão real até o abate, é necessário informar:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {dadosFaltantesAbate.map(item => (
+                          <span key={item} className="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg font-medium">
+                            • {item}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {/* 🌾 CONSUMO ESTIMADO DE RAÇÃO */}
-                  {temRacao && (
+                  {temRacao ? (
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between gap-3 text-xs">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1 mb-0.5">
-                          🌾 Consumo Estimado de Ração (Protocolo de Elite)
+                          🌾 Consumo Estimado de Ração
                         </p>
                         <p className="text-white font-bold">
                           {racaoDiariaKg.toFixed(1).replace('.', ',')} kg/dia <span className="text-theme-text-muted font-normal">(~{consumoAveG}g por ave/dia)</span>
@@ -1278,6 +1320,11 @@ export function Lots() {
                           ~{racaoAcumuladaKg.toFixed(1).replace('.', ',')} kg
                         </span>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-theme-base/30 border border-theme-border/50 rounded-xl text-[10px] text-theme-text-muted flex items-center gap-2">
+                      <Info size={13} className="text-blue-400 shrink-0" />
+                      <span>Consumo de ração não estimado. Informe o <strong>consumo da ração (g/ave/dia)</strong> no lote para ver a projeção.</span>
                     </div>
                   )}
 
@@ -1748,8 +1795,6 @@ export function Lots() {
                         onChange={e => {
                           const v = sanitizeNumeric(e.target.value);
                           setPQtd(v);
-                          const total = pFemeas.length + (parseInt(v) || 0);
-                          setPExpectativa(String(Math.round(total * 0.85)));
                         }}
                         className={inputCls + " text-2xl font-black text-center py-3"} />
                     </div>
@@ -1765,31 +1810,37 @@ export function Lots() {
                 </div>
 
                 <div className="space-y-1">
-                  <SectionLabel>Expectativa de Ovos por Dia</SectionLabel>
+                  <SectionLabel>Expectativa de Ovos por Dia (Opcional)</SectionLabel>
                   <div className="relative">
-                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onKeyDown={onlyNumericKeyDown} onChange={e => setPExpectativa(sanitizeNumeric(e.target.value))} placeholder="Auto-calculado (85% da qtd)" className={inputCls} />
+                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onKeyDown={onlyNumericKeyDown} onChange={e => setPExpectativa(sanitizeNumeric(e.target.value))} placeholder="Ex: 25 (ovos/dia)" className={inputCls} />
                   </div>
-                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1"><Info size={10} />Calculado em 85% do total de fêmeas. Pode ser ajustado livremente.</p>
+                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1">
+                    <Info size={10} />
+                    Necessário para calcular a taxa de eficiência de postura nos relatórios.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <SectionLabel>Preços Padrão para aba Ovos</SectionLabel>
+                  <SectionLabel>Preços Padrão para aba Ovos (Opcional)</SectionLabel>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className={labelCls}>Preço/Dúzia (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="10.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e => setPPreco(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 10.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e => setPPreco(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Custo/Ovo (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.40" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e => setPCusto(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 0.40" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e => setPCusto(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
                       </div>
                     </div>
                   </div>
+                  <p className="text-[10px] text-theme-text-muted">
+                    Se não informados, o faturamento e margens serão calculados a partir dos preços das vendas reais.
+                  </p>
                 </div>
 
                 <div className="space-y-1">
