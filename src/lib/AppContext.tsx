@@ -487,8 +487,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('*').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('*').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -861,10 +861,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // A nuvem é a fonte de verdade - substituímos tudo que estava no local
       const finalBirds = mappedBirds.filter(b => !deletedBirdIds.has(b.id));
       setBirds(finalBirds);
-      await localforage.setItem(getStorageKey('birds'), finalBirds);
-      if (isAdmin) {
-        await localforage.setItem('@mura-manager:admin:birds', finalBirds);
-        await localforage.setItem('@mura-manager:birds', finalBirds);
+      try {
+        await localforage.setItem(getStorageKey('birds'), finalBirds);
+        if (isAdmin) {
+          await localforage.setItem('@mura-manager:admin:birds', finalBirds);
+          await localforage.setItem('@mura-manager:birds', finalBirds);
+        }
+      } catch (storageErr) {
+        console.warn('[Sync] Falha no storage local de aves (não-bloqueante):', storageErr);
       }
 
 
@@ -1198,7 +1202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Sincroniza em segundo plano com a nuvem sem travar a interface
       if (isSupabaseConfigured) {
         processSyncQueue().catch(() => {});
-        syncWithSupabaseBackground().catch(err => {
+        syncWithSupabaseBackground(true).catch(err => {
           console.error('Erro na sincronização inicial em segundo plano:', err);
         });
       }

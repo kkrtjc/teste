@@ -22,8 +22,7 @@ const BreedItemCard = memo(function BreedItemCard({
   return (
     <div 
       onClick={() => onSelect(breed.nome)}
-      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation content-visibility-auto"
-      style={{ containIntrinsicSize: '1px 220px' }}
+      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
     >
       {/* Image block 1:1 */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
@@ -113,8 +112,7 @@ const BirdItemCard = memo(function BirdItemCard({
   return (
     <div
       onClick={() => onSelect(bird.id)}
-      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation content-visibility-auto"
-      style={{ containIntrinsicSize: '1px 240px' }}
+      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
     >
       {/* Bloco da Foto 1:1 Quadrada Grande igual a de Raças */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
@@ -443,9 +441,15 @@ export function Birds() {
     
     // Ordenar em ordem crescente de anilha (natural sorting: 1, 2, 10, A-1, A-2, etc.)
     return [...list].sort((a, b) => {
+      if (!a) return 1;
+      if (!b) return -1;
       const anilhaA = (a.anilha || '').toString().trim();
       const anilhaB = (b.anilha || '').toString().trim();
-      return anilhaA.localeCompare(anilhaB, undefined, { numeric: true, sensitivity: 'base' });
+      try {
+        return anilhaA.localeCompare(anilhaB, 'pt-BR', { numeric: true, sensitivity: 'base' });
+      } catch {
+        return anilhaA.localeCompare(anilhaB);
+      }
     });
   }, [birds, activeBreed, sexFilter, statusFilter]);
 
