@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import localforage from 'localforage';
@@ -448,9 +448,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [user, isCurrentUserAdmin, getStorageKey, getDeletedBirdIds]);
 
+  const isSyncingRef = useRef(false);
+  const lastSyncTimeRef = useRef(0);
+  const realtimeDebounceTimerRef = useRef<any>(null);
+
   // Função principal de sincronização com o Supabase com mesclagem defensiva de dados
-  const syncWithSupabaseBackground = useCallback(async () => {
+  const syncWithSupabaseBackground = useCallback(async (force = false) => {
     if (!isSupabaseConfigured || !user) return;
+    const now = Date.now();
+    if (isSyncingRef.current) return;
+    if (!force && now - lastSyncTimeRef.current < 15000) return;
+
+    isSyncingRef.current = true;
+    lastSyncTimeRef.current = now;
     try {
       const isAdmin = isCurrentUserAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
       const targetUserId = isAdmin ? ADMIN_CANONICAL_ID : user.id;
@@ -1118,6 +1128,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (syncError) {
       console.error("Erro crítico na sincronização em background, fazendo fallback offline:", syncError);
       await loadFromLocalForage();
+    } finally {
+      isSyncingRef.current = false;
     }
   }, [user, loadFromLocalForage]);
 
@@ -1187,26 +1199,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Canal Realtime do Supabase: sincronização instantânea entre múltiplos dispositivos (PC, celular)
+    // Canal Realtime do Supabase com proteção rígida contra loops de sincronização
     const channel = supabase!
       .channel('public:realtime-sync')
       .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        console.log('[Realtime] Alteração detectada no banco da nuvem. Sincronizando tela...');
-        syncWithSupabaseBackground();
+        if (isSyncingRef.current) return;
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          if (!isSyncingRef.current) {
+            syncWithSupabaseBackground();
+          }
+        }, 15000);
       })
       .subscribe();
 
-    // Timer de checagem em segundo plano a cada 30 segundos
+    // Timer de checagem em segundo plano a cada 60 segundos
     const syncInterval = setInterval(() => {
-      if (navigator.onLine) {
+      if (navigator.onLine && !isSyncingRef.current) {
         syncWithSupabaseBackground();
       }
-    }, 30000);
+    }, 60000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('focus', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
       clearInterval(syncInterval);
       supabase!.removeChannel(channel);
     };
