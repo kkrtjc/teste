@@ -218,7 +218,7 @@ export function Birds() {
   const [breedSearch, setBreedSearch] = useState('');
   const [birdSearch, setBirdSearch] = useState('');
   const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
-  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda' | 'Vendido' | 'Faleceu'>('Todos');
   
   // Form states for Breed
   const [newBreedName, setNewBreedName] = useState('');
@@ -526,17 +526,21 @@ export function Birds() {
 
           {/* Quick Filter Chips (Status & Sex) */}
           <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
-            {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Engorda'] as const).map(st => (
+            {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Engorda', 'Vendido', 'Faleceu'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all ${
                   statusFilter === st
-                    ? 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
+                    ? st === 'Vendido'
+                      ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
+                      : st === 'Faleceu'
+                      ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
+                      : 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
                     : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
                 }`}
               >
-                {st === 'Todos' ? 'Todos os Status' : st === 'Reprodutor' ? 'Reprodutores' : st === 'Matriz' ? 'Matrizes' : st === 'Adulto' ? 'Adultos' : st}
+                {st === 'Todos' ? 'Todos os Status' : st === 'Reprodutor' ? 'Reprodutores' : st === 'Matriz' ? 'Matrizes' : st === 'Adulto' ? 'Adultos' : st === 'Vendido' ? '🏷️ Vendidos' : st === 'Faleceu' ? '✝️ Baixas' : st}
               </button>
             ))}
 

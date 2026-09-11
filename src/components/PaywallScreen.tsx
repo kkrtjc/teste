@@ -190,18 +190,23 @@ export function PaywallScreen() {
             <button 
               type="button"
               onClick={async () => {
-                const cleanCpf = paymentCpf.replace(/\D/g, '');
-                if (cleanCpf && cleanCpf.length === 11) {
-                  const { error: linkErr } = await linkCpfToUser(cleanCpf);
-                  if (linkErr) {
-                    showToast(`Atenção ao vincular CPF: ${linkErr.message}`, 'warning');
-                  }
+                const cleanCpf = paymentCpf.replace(/\D/g, '') || (cpf ? cpf.replace(/\D/g, '') : '');
+                if (!cleanCpf || cleanCpf.length !== 11) {
+                  showToast('Por favor, digite os 11 dígitos do seu CPF para vincular à sua conta e liberar o acesso.', 'warning');
+                  return;
                 }
-                const { error } = await triggerWebhookPayment(selectedPlan, paymentCpf || cpf);
+
+                const { error: linkErr } = await linkCpfToUser(cleanCpf);
+                if (linkErr) {
+                  showToast(`Erro ao vincular CPF: ${linkErr.message}`, 'error');
+                  return;
+                }
+
+                const { error } = await triggerWebhookPayment(selectedPlan, cleanCpf);
                 if (error) {
                   showToast('Erro ao enviar notificação de liberação.', 'error');
                 } else {
-                  showToast('Solicitação de liberação enviada com sucesso!', 'success');
+                  showToast('Solicitação de liberação enviada com sucesso! Seu CPF foi vinculado à sua conta.', 'success');
                 }
               }}
               className="w-full py-2.5 rounded-xl font-extrabold flex items-center justify-center gap-1.5 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-md cursor-pointer"

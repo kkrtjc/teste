@@ -81,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     remainingDays: 0,
     expiresAt: null
   });
+  const [linkedCpf, setLinkedCpf] = useState<string>(() => {
+    try { return localStorage.getItem('@mura-manager:user-cpf') || ''; } catch { return ''; }
+  });
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [loading, setLoading] = useState(() => {
     try {
@@ -99,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isUserAdmin(userEmail) || isUserAdmin(cleanCpf)) {
       setIsExpired(false);
       setTrialInfo({ isTrial: false, remainingDays: 9999, expiresAt: null });
+      setLinkedCpf(ADMIN_CPF);
+      try { localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF); } catch {}
       return;
     }
 
@@ -161,6 +166,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rawExpiresAt = initialExpires;
         } else {
           rawExpiresAt = data?.expires_at ?? storedExpiresAt;
+          if (data?.cpf) {
+            const raw = data.cpf.replace(/\D/g, '');
+            if (raw.length === 11) {
+              setLinkedCpf(raw);
+              try { localStorage.setItem('@mura-manager:user-cpf', raw); } catch {}
+            }
+          }
         }
       }
 
@@ -389,6 +401,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!error && data?.session) {
             setSession(data.session);
             setUser(data.user);
+            setLinkedCpf(ADMIN_CPF);
+            try {
+              localStorage.setItem('@mura-manager:cached-user', JSON.stringify(data.user));
+              localStorage.setItem('@mura-manager:cached-session', JSON.stringify(data.session));
+              localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+            } catch {}
             await validateUserAccess(data.user);
             return { error: null };
           }
@@ -397,6 +415,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!signUpError && signUpData?.session) {
             setSession(signUpData.session);
             setUser(signUpData.user);
+            setLinkedCpf(ADMIN_CPF);
+            try {
+              localStorage.setItem('@mura-manager:cached-user', JSON.stringify(signUpData.user));
+              localStorage.setItem('@mura-manager:cached-session', JSON.stringify(signUpData.session));
+              localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+            } catch {}
             await validateUserAccess(signUpData.user);
             return { error: null };
           }
@@ -599,6 +623,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: { message: 'Nenhum usuário logado para vincular o CPF.' } };
     }
 
+    if (cleanCpf === ADMIN_CPF && emailToUse !== ADMIN_EMAIL) {
+      return { error: { message: 'Este CPF é de uso exclusivo da administração.' } };
+    }
+
     try {
       if (isSupabaseConfigured) {
         // Verifica se o CPF já pertence a outro usuário com email diferente
@@ -610,7 +638,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (existing) {
-          return { error: { message: 'Este CPF já está associado a outra conta.' } };
+          return { error: { message: 'Este CPF já está associado a outra conta do Mura Manager.' } };
         }
 
         // Atualiza a tabela allowed_cpfs com o CPF do usuário
@@ -631,6 +659,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         const localList = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
+        const existingLocal = localList.find(item => item.cpf === cleanCpf && item.email?.toLowerCase() !== emailToUse);
+        if (existingLocal) {
+          return { error: { message: 'Este CPF já está associado a outra conta.' } };
+        }
         const idx = localList.findIndex(item => item.email?.toLowerCase() === emailToUse);
         if (idx >= 0) {
           localList[idx].cpf = cleanCpf;
@@ -640,6 +672,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localList);
       }
 
+      setLinkedCpf(cleanCpf);
+      try { localStorage.setItem('@mura-manager:user-cpf', cleanCpf); } catch {}
       return { error: null };
     } catch (err: any) {
       return { error: err };
@@ -648,15 +682,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      await localforage.removeItem('@mura-manager:local-session');
       localStorage.removeItem('@mura-manager:cached-user');
       localStorage.removeItem('@mura-manager:cached-session');
-    } catch {}
-
-    if (!isSupabaseConfigured) {
-      await localforage.removeItem('@mura-manager:local-session');
-      setUser(null);
-      setSession(null);
-      return;
+    } catch (err) {
+      console.error('Erro ao limpar cache local de sessão:', err);
     }
 
     await supabase!.auth.signOut();
@@ -665,8 +695,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const getCpf = () => {
-    if (!user || !user.email) return '';
-    return user.email.split('@')[0];
+    if (linkedCpf) return linkedCpf;
+    try {
+      const stored = localStorage.getItem('@mura-manager:user-cpf');
+      if (stored) return stored;
+    } catch {}
+    if (user?.email && user.email.includes('@mura.com')) {
+      return user.email.split('@')[0].replace(/\D/g, '');
+    }
+    return '';
   };
 
   const activateSubscription = async (plan: 'monthly' | 'yearly') => {

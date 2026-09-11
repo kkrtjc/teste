@@ -2,9 +2,10 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback } 
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import localforage from 'localforage';
-import { useAuth } from './AuthContext';
+import { useAuth, ADMIN_CPF, isUserAdmin } from './AuthContext';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
+import { enqueueMutation, processSyncQueue } from './syncQueue';
 
 export type Breed = {
   id: string;
@@ -406,6 +407,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
               await localforage.setItem(userKey, currentBreeds);
             }
             (item.setter as any)(currentBreeds);
+          } else if (item.suffix === 'birds') {
+            let currentBirdsList: Bird[] = Array.isArray(data) ? [...data] : [];
+            const seenIds = new Set(currentBirdsList.map((b: any) => b.id));
+            const seenAnilhas = new Set(currentBirdsList.map((b: any) => (b.anilha || '').toLowerCase().trim()).filter(Boolean));
+
+            try {
+              const allKeys = await localforage.keys();
+              const birdKeys = allKeys.filter(k => (k.endsWith(':birds') || k.endsWith('birds')) && k !== userKey);
+              for (const bKey of birdKeys) {
+                const extraBirds = (await localforage.getItem<any[]>(bKey)) || [];
+                if (Array.isArray(extraBirds)) {
+                  for (const eb of extraBirds) {
+                    if (!eb || !eb.id) continue;
+                    const anilhaClean = (eb.anilha || '').toLowerCase().trim();
+                    if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
+                      seenIds.add(eb.id);
+                      if (anilhaClean) seenAnilhas.add(anilhaClean);
+                      currentBirdsList.push(eb);
+                    }
+                  }
+                }
+              }
+            } catch (kErr) {
+              console.warn('Erro ao verificar chaves adicionais de aves:', kErr);
+            }
+            await localforage.setItem(userKey, currentBirdsList);
+            (item.setter as any)(currentBirdsList);
+          } else if (item.suffix === 'egglots' || item.suffix === 'meatlots' || item.suffix === 'couples') {
+            let currentList: any[] = Array.isArray(data) ? [...data] : [];
+            const seenIds = new Set(currentList.map((x: any) => x.id));
+            try {
+              const allKeys = await localforage.keys();
+              const extraKeys = allKeys.filter(k => k.endsWith(`:${item.suffix}`) && k !== userKey);
+              for (const eKey of extraKeys) {
+                const extraItems = (await localforage.getItem<any[]>(eKey)) || [];
+                if (Array.isArray(extraItems)) {
+                  for (const xi of extraItems) {
+                    if (xi && xi.id && !seenIds.has(xi.id)) {
+                      seenIds.add(xi.id);
+                      currentList.push(xi);
+                    }
+                  }
+                }
+              }
+            } catch {}
+            await localforage.setItem(userKey, currentList);
+            (item.setter as any)(currentList);
           } else {
             (item.setter as any)(data);
           }
@@ -423,6 +471,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const syncWithSupabaseBackground = useCallback(async () => {
     if (!isSupabaseConfigured || !user) return;
     try {
+      const isAdmin = isUserAdmin(user.email);
       const [
         resBreeds,
         resBirds,
@@ -434,7 +483,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resIncubationLots
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', user.id).order('nome', { ascending: true }),
-        supabase!.from('birds').select('*').eq('user_id', user.id).order('anilha', { ascending: true }),
+        isAdmin
+          ? supabase!.from('birds').select('*').in('user_id', [user.id, `admin-${ADMIN_CPF}`, 'admin']).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('*').eq('user_id', user.id).order('anilha', { ascending: true }),
         supabase!.from('couples').select('*').eq('user_id', user.id),
         supabase!.from('egg_lots').select('*').eq('user_id', user.id),
         supabase!.from('meat_lots').select('*').eq('user_id', user.id),
@@ -445,6 +496,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       let sbBreeds = resBreeds.data || [];
       let sbBirds = resBirds.data || [];
+      if (isAdmin && sbBirds.some((b: any) => b.user_id !== user.id)) {
+        const toAdopt = sbBirds.filter((b: any) => b.user_id !== user.id).map((b: any) => b.id);
+        if (toAdopt.length > 0) {
+          supabase!.from('birds').update({ user_id: user.id }).in('id', toAdopt).then(() => {});
+        }
+      }
       let sbCouples = resCouples.data || [];
       let sbEggLots = resEggLots.data || [];
       let sbMeatLots = resMeatLots.data || [];
@@ -1072,6 +1129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Sincroniza em segundo plano com a nuvem sem travar a interface
       if (isSupabaseConfigured) {
+        processSyncQueue().catch(() => {});
         syncWithSupabaseBackground().catch(err => {
           console.error('Erro na sincronização inicial em segundo plano:', err);
         });
@@ -1086,13 +1144,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured || !user) return;
 
     const handleOnline = () => {
-      console.log('[Rede] Conexão restaurada. Disparando sincronização com a nuvem...');
+      console.log('[Rede] Conexão restaurada. Disparando fila offline e sincronização com a nuvem...');
+      processSyncQueue().catch(() => {});
       syncWithSupabaseBackground();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[Foco App] Aplicativo visível. Sincronizando com a nuvem...');
+        console.log('[Foco App] Aplicativo visível. Disparando fila offline e sincronizando...');
+        processSyncQueue().catch(() => {});
         syncWithSupabaseBackground();
       }
     };
@@ -1294,31 +1354,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        const payload = {
+          id: bird.id,
+          user_id: user.id,
+          anilha: bird.anilha,
+          nome: bird.nome || null,
+          sexo: bird.sexo,
+          raca: bird.raca,
+          baia: bird.baia || 'ND',
+          status: bird.status,
+          imagem: bird.imagens?.[0] || bird.imagem || null,
+          vacinas: bird.vacinas || null,
+          origem: bird.origem || 'Criatório',
+          casal_id: bird.casalId || null,
+          pai_id: bird.paiId || null,
+          mae_id: bird.maeId || null,
+          is_pai_externo: !!bird.isPaiExterno,
+          is_mae_externo: !!bird.isMaeExterno,
+          data_nascimento: bird.dataNascimento || null,
+          peso: bird.peso || null,
+          imagens: bird.imagens || [],
+          observacoes: bird.observacoes || ''
+        };
         supabase!
           .from('birds')
-          .insert({
-            id: bird.id,
-            user_id: user.id,
-            anilha: bird.anilha,
-            nome: bird.nome || null,
-            sexo: bird.sexo,
-            raca: bird.raca,
-            baia: bird.baia || 'ND',
-            status: bird.status,
-            imagem: bird.imagens?.[0] || bird.imagem || null,
-            vacinas: bird.vacinas || null,
-            origem: bird.origem || 'Criatório',
-            casal_id: bird.casalId || null,
-            pai_id: bird.paiId || null,
-            mae_id: bird.maeId || null,
-            is_pai_externo: !!bird.isPaiExterno,
-            is_mae_externo: !!bird.isMaeExterno,
-            data_nascimento: bird.dataNascimento || null,
-            peso: bird.peso || null,
-            imagens: bird.imagens || [],
-            observacoes: bird.observacoes || ''
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addBird:', error); });
+          .insert(payload)
+          .then(
+            ({ error }) => {
+              if (error) {
+                console.warn('Erro Supabase addBird, enfileirando offline:', error);
+                enqueueMutation('birds', 'insert', payload);
+              }
+            },
+            () => {
+              enqueueMutation('birds', 'insert', payload);
+            }
+          );
       }
       return next;
     });
@@ -1363,7 +1434,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('birds')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editBird:', error); });
+          .then(
+            ({ error }) => {
+              if (error) {
+                console.warn('Erro Supabase editBird, enfileirando offline:', error);
+                enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
+              }
+            },
+            () => {
+              enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
+            }
+          );
       }
       return next;
     });
@@ -1379,7 +1460,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('birds')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase removeBird:', error); });
+          .then(
+            ({ error }) => {
+              if (error) {
+                enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
+              }
+            },
+            () => {
+              enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
+            }
+          );
       }
       return next;
     });

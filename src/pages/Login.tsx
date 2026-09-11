@@ -232,11 +232,24 @@ export function Login() {
     setRegError('');
     setRegLoading(true);
 
-    const days = 7;
-    const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
-    const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-
     try {
+      if (isSupabaseConfigured) {
+        const { data: existingUser } = await supabase!
+          .from('allowed_cpfs')
+          .select('email')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (existingUser) {
+          setRegError('Este e-mail já possui cadastro no Mura Manager. Faça login com sua senha.');
+          setRegLoading(false);
+          return;
+        }
+      }
+
+      const days = 7;
+      const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+      const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
       const clientPayload = {
         cpf: tempCpf,
         email: cleanEmail,
