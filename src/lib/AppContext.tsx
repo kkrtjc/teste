@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback, u
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import localforage from 'localforage';
-import { useAuth, ADMIN_CPF, isUserAdmin, ADMIN_CANONICAL_ID } from './AuthContext';
+import { useAuth, isUserAdmin, ADMIN_CANONICAL_ID } from './AuthContext';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
@@ -464,14 +464,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const isAdmin = isCurrentUserAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
       const targetUserId = isAdmin ? ADMIN_CANONICAL_ID : user.id;
-      const adminUserIds = [
+
+      // Validação estrita de formato UUID (PostgreSQL rejeita com erro 22P02 se não for UUID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const candidateAdminIds = [
         ADMIN_CANONICAL_ID,
         user.id,
-        `admin-${ADMIN_CPF}`,
-        'admin',
         '99591207-6ed9-4260-8bdb-1a507b67f9af',
         '5f321f02-a40c-48c4-81be-87e8f835d981'
       ];
+      const adminUserIds = Array.from(new Set(candidateAdminIds)).filter(id => typeof id === 'string' && uuidRegex.test(id));
 
       const [
         resBreeds,
@@ -505,6 +507,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : supabase!.from('incubation_lots').select('*').eq('user_id', targetUserId)
       ]);
 
+      if (resBirds.error) {
+        console.error('[Sync] Erro Supabase ao buscar aves:', resBirds.error);
+      }
+
       const deletedBirdIds = getDeletedBirdIds();
 
       // Expulsa imediatamente aves deletadas que possam ter vindo do Supabase
@@ -514,9 +520,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       let sbBreeds = resBreeds.data || [];
-      let sbBirds = (resBirds.data || []).filter((b: any) => !deletedBirdIds.has(b.id));
-      if (isAdmin && sbBirds.some((b: any) => b.user_id !== ADMIN_CANONICAL_ID)) {
-        const toAdopt = sbBirds.filter((b: any) => b.user_id !== ADMIN_CANONICAL_ID).map((b: any) => b.id);
+      const sbBirdsFromCloud = (!resBirds.error && resBirds.data)
+        ? resBirds.data.filter((b: any) => !deletedBirdIds.has(b.id))
+        : null;
+
+      if (isAdmin && sbBirdsFromCloud && sbBirdsFromCloud.some((b: any) => b.user_id !== ADMIN_CANONICAL_ID)) {
+        const toAdopt = sbBirdsFromCloud.filter((b: any) => b.user_id !== ADMIN_CANONICAL_ID).map((b: any) => b.id);
         if (toAdopt.length > 0) {
           supabase!.from('birds').update({ user_id: ADMIN_CANONICAL_ID }).in('id', toAdopt).then(() => {});
         }
@@ -559,9 +568,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localIncubationLots = (incubationLots && incubationLots.length > 0) ? incubationLots : (rawLocalIncubationLots || []);
 
       // ── SYNC AVES: Cloud-first. A nuvem é a fonte de verdade. ──
-      // Só envia aves locais para a nuvem se elas foram criadas NESTA sessão
-      // (identificadas por terem sido salvas com a flag synced=false ou se não existem na nuvem
-      //  E o ID delas é um timestamp recente - criadas após o último sync bem-sucedido)
+      let sbBirds: any[] = sbBirdsFromCloud !== null ? sbBirdsFromCloud : localBirds;
+      if (sbBirdsFromCloud === null) {
+        console.warn('[Sync] Supabase inacessível no momento, preservando dados locais de aves.');
+      }
+
       const lastSuccessfulSyncTime = lastSyncTimeRef.current - 30000; // 30s antes do sync atual
       const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
       
