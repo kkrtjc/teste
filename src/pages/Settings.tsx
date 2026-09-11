@@ -330,7 +330,7 @@ export function Settings() {
                 <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400 text-black">Acesso Vitalício</span>
               </div>
               <p className="text-xs text-theme-text-muted leading-relaxed max-w-xl">
-                Sua conta <strong className="text-white font-mono">{user?.email || 'galosmurabrasill@gmail.com'}</strong> está ativada como Administrador Principal. Você tem acesso ilimitado para cadastrar novos criadores, autorizar CPFs e gerenciar assinaturas.
+                Sua conta <strong className="text-white font-mono">{isAdmin ? 'galosmurabrasill@gmail.com' : (user?.email || 'galosmurabrasill@gmail.com')}</strong> está ativada como Administrador Principal (CPF: 144.777.516-30). Você tem acesso ilimitado para cadastrar novos criadores, autorizar CPFs e gerenciar assinaturas.
               </p>
             </div>
             <button
@@ -578,7 +578,14 @@ export function Settings() {
       <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="text-xs text-theme-text-muted">
           <span className="font-bold text-white block">Sessão Conectada:</span>
-          {user?.email || (cpf ? `CPF: ${cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}` : 'Usuário Ativo')}
+          {isAdmin ? (
+            <div>
+              <p className="font-semibold text-amber-400">galosmurabrasill@gmail.com (Administrador Principal)</p>
+              <p className="text-[11px] text-theme-text-muted">CPF: 144.777.516-30</p>
+            </div>
+          ) : (
+            user?.email || (cpf ? `CPF: ${cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}` : 'Usuário Ativo')
+          )}
         </div>
 
         <button

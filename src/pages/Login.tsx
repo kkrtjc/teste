@@ -4,7 +4,7 @@ import {
   TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint,
   KeyRound, ArrowLeft, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth, isUserAdmin } from '../lib/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import muraLogo from '../assets/mura_logo.jpg';
@@ -228,6 +228,11 @@ export function Login() {
     if (!regNome.trim()) { setRegError('Informe seu nome completo.'); return; }
     if (!cleanEmail || !cleanEmail.includes('@')) { setRegError('Informe um e-mail válido.'); return; }
     if (regSenha.length < 6) { setRegError('A senha deve ter no mínimo 6 caracteres.'); return; }
+
+    if (isUserAdmin(cleanEmail)) {
+      setRegError('Este e-mail é a conta do Administrador Principal. Acesse usando o formulário de login acima.');
+      return;
+    }
 
     setRegError('');
     setRegLoading(true);

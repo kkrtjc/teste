@@ -304,7 +304,22 @@ export const DEFAULT_BREEDS: Breed[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, cpf, isAdmin: isAuthAdmin } = useAuth();
+  const isCurrentUserAdmin = Boolean(
+    isAuthAdmin ||
+    (user && isUserAdmin(user.email)) ||
+    (user && isUserAdmin(user.id)) ||
+    isUserAdmin(cpf)
+  );
+
+  const getStorageKey = useCallback((keyName: string) => {
+    if (isCurrentUserAdmin) {
+      return `@mura-manager:admin:${keyName}`;
+    }
+    if (!user) return `@mura-manager:guest:${keyName}`;
+    return `@mura-manager:${user.id}:${keyName}`;
+  }, [user, isCurrentUserAdmin]);
+
   const [isReady, setIsReady] = useState(false);
 
   const [breeds, setBreeds] = useState<Breed[]>([]);
@@ -322,12 +337,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     phone: ''
   });
 
-  const getStorageKey = (keyName: string) => {
-    if (!user) return `@mura-manager:guest:${keyName}`;
-    return `@mura-manager:${user.id}:${keyName}`;
-  };
-
-  // Helper para carregar o cache offline em 0ms
+  // Helper para carregar o cache offline em 0ms com recuperação universal de dados
   const loadFromLocalForage = useCallback(async () => {
     if (!user) return;
     const storageItems = [
@@ -353,119 +363,145 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const userKey = getStorageKey(item.suffix);
         let data: any = await localforage.getItem(userKey);
 
+        if (isCurrentUserAdmin && !data) {
+          data = await localforage.getItem(`@mura-manager:admin:${item.suffix}`);
+        }
         if (!data) {
           const legacyKey = `@mura-manager:${item.suffix}`;
-          const legacyData = await localforage.getItem(legacyKey);
-          if (legacyData) {
-            data = legacyData;
-            await localforage.setItem(userKey, data);
-            await localforage.removeItem(legacyKey);
-          } else {
-            const oldData = localStorage.getItem(legacyKey);
-            if (oldData) {
-              data = JSON.parse(oldData);
-              await localforage.setItem(userKey, data);
-              localStorage.removeItem(legacyKey);
+          data = await localforage.getItem(legacyKey);
+        }
+
+        // ── 1. AVES: RESGATE TOTAL DE TODAS AS CHAVES POSSÍVEIS ──
+        if (item.suffix === 'birds') {
+          let currentBirdsList: Bird[] = Array.isArray(data) ? [...data] : [];
+          const seenIds = new Set(currentBirdsList.map((b: any) => b.id));
+          const seenAnilhas = new Set(currentBirdsList.map((b: any) => (b.anilha || '').toLowerCase().trim()).filter(Boolean));
+
+          try {
+            const allKeys = await localforage.keys();
+            const birdKeys = allKeys.filter(k => k.includes('birds'));
+            for (const bKey of birdKeys) {
+              const extraBirds = (await localforage.getItem<any[]>(bKey)) || [];
+              if (Array.isArray(extraBirds)) {
+                for (const eb of extraBirds) {
+                  if (!eb || !eb.id) continue;
+                  const anilhaClean = (eb.anilha || '').toLowerCase().trim();
+                  if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
+                    seenIds.add(eb.id);
+                    if (anilhaClean) seenAnilhas.add(anilhaClean);
+                    currentBirdsList.push(eb);
+                  }
+                }
+              }
             }
+
+            for (let i = 0; i < localStorage.length; i++) {
+              const lsKey = localStorage.key(i);
+              if (lsKey && lsKey.includes('birds')) {
+                const raw = localStorage.getItem(lsKey);
+                if (raw) {
+                  try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                      for (const eb of parsed) {
+                        if (!eb || !eb.id) continue;
+                        const anilhaClean = (eb.anilha || '').toLowerCase().trim();
+                        if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
+                          seenIds.add(eb.id);
+                          if (anilhaClean) seenAnilhas.add(anilhaClean);
+                          currentBirdsList.push(eb);
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+              }
+            }
+          } catch (kErr) {
+            console.warn('Erro ao verificar chaves adicionais de aves:', kErr);
           }
+
+          await localforage.setItem(userKey, currentBirdsList);
+          if (isCurrentUserAdmin) {
+            await localforage.setItem('@mura-manager:admin:birds', currentBirdsList);
+            await localforage.setItem('@mura-manager:birds', currentBirdsList);
+          }
+          setBirds(currentBirdsList);
+          return;
+        }
+
+        // ── 2. LOTES DE OVOS, LOTES DE ENGORDA, CASAIS, INCUBAÇÃO ──
+        if (item.suffix === 'egglots' || item.suffix === 'meatlots' || item.suffix === 'couples' || item.suffix === 'couple-eggs' || item.suffix === 'incubation-lots') {
+          let currentList: any[] = Array.isArray(data) ? [...data] : [];
+          const seenIds = new Set(currentList.map((x: any) => x.id));
+          try {
+            const allKeys = await localforage.keys();
+            const extraKeys = allKeys.filter(k => k.includes(item.suffix));
+            for (const eKey of extraKeys) {
+              const extraItems = (await localforage.getItem<any[]>(eKey)) || [];
+              if (Array.isArray(extraItems)) {
+                for (const xi of extraItems) {
+                  if (xi && xi.id && !seenIds.has(xi.id)) {
+                    seenIds.add(xi.id);
+                    currentList.push(xi);
+                  }
+                }
+              }
+            }
+          } catch {}
+
+          await localforage.setItem(userKey, currentList);
+          if (isCurrentUserAdmin) {
+            await localforage.setItem(`@mura-manager:admin:${item.suffix}`, currentList);
+            await localforage.setItem(`@mura-manager:${item.suffix}`, currentList);
+          }
+          (item.setter as any)(currentList);
+          return;
+        }
+
+        // ── 3. RAÇAS ──
+        if (item.suffix === 'breeds') {
+          let currentBreeds = Array.isArray(data) ? (data as Breed[]) : [];
+          try {
+            const allKeys = await localforage.keys();
+            const extraKeys = allKeys.filter(k => k.includes('breeds'));
+            const seenNames = new Set(currentBreeds.map(b => (b.nome || '').trim().toLowerCase()));
+            for (const eKey of extraKeys) {
+              const extraItems = (await localforage.getItem<any[]>(eKey)) || [];
+              if (Array.isArray(extraItems)) {
+                for (const b of extraItems) {
+                  const n = (b.nome || '').trim().toLowerCase();
+                  if (n && !seenNames.has(n)) {
+                    seenNames.add(n);
+                    currentBreeds.push(b);
+                  }
+                }
+              }
+            }
+          } catch {}
+
+          const missingLocal = DEFAULT_BREEDS.filter(
+            db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
+          );
+          if (missingLocal.length > 0) {
+            currentBreeds = [...currentBreeds, ...missingLocal];
+          }
+          await localforage.setItem(userKey, currentBreeds);
+          if (isCurrentUserAdmin) {
+            await localforage.setItem('@mura-manager:admin:breeds', currentBreeds);
+          }
+          setBreeds(currentBreeds);
+          return;
         }
 
         if (data) {
-          if (item.suffix === 'breeds') {
-            let currentBreeds = data as Breed[];
-            
-            let uniqueLocalBreeds: Breed[] = [];
-            const seenLocalNames = new Set<string>();
-            for (const b of currentBreeds) {
-              const nameLower = (b.nome || '').trim().toLowerCase();
-              if (!seenLocalNames.has(nameLower)) {
-                seenLocalNames.add(nameLower);
-                uniqueLocalBreeds.push(b);
-              }
-            }
-            currentBreeds = uniqueLocalBreeds;
-
-            const missingLocal = DEFAULT_BREEDS.filter(
-              db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
-            );
-            currentBreeds = currentBreeds.map(b => {
-              const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === b.nome.toLowerCase());
-              if (seedMatch) {
-                return {
-                  ...b,
-                  foco: b.foco || seedMatch.foco,
-                  descricao: b.descricao || seedMatch.descricao,
-                  imagem: b.imagem || seedMatch.imagem,
-                  tempoCrescimento: b.tempoCrescimento || seedMatch.tempoCrescimento,
-                  pesoMedio: b.pesoMedio || seedMatch.pesoMedio
-                };
-              }
-              return b;
-            });
-            if (missingLocal.length > 0) {
-              currentBreeds = [...currentBreeds, ...missingLocal];
-              await localforage.setItem(userKey, currentBreeds);
-            }
-            (item.setter as any)(currentBreeds);
-          } else if (item.suffix === 'birds') {
-            let currentBirdsList: Bird[] = Array.isArray(data) ? [...data] : [];
-            const seenIds = new Set(currentBirdsList.map((b: any) => b.id));
-            const seenAnilhas = new Set(currentBirdsList.map((b: any) => (b.anilha || '').toLowerCase().trim()).filter(Boolean));
-
-            try {
-              const allKeys = await localforage.keys();
-              const birdKeys = allKeys.filter(k => (k.endsWith(':birds') || k.endsWith('birds')) && k !== userKey);
-              for (const bKey of birdKeys) {
-                const extraBirds = (await localforage.getItem<any[]>(bKey)) || [];
-                if (Array.isArray(extraBirds)) {
-                  for (const eb of extraBirds) {
-                    if (!eb || !eb.id) continue;
-                    const anilhaClean = (eb.anilha || '').toLowerCase().trim();
-                    if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
-                      seenIds.add(eb.id);
-                      if (anilhaClean) seenAnilhas.add(anilhaClean);
-                      currentBirdsList.push(eb);
-                    }
-                  }
-                }
-              }
-            } catch (kErr) {
-              console.warn('Erro ao verificar chaves adicionais de aves:', kErr);
-            }
-            await localforage.setItem(userKey, currentBirdsList);
-            (item.setter as any)(currentBirdsList);
-          } else if (item.suffix === 'egglots' || item.suffix === 'meatlots' || item.suffix === 'couples') {
-            let currentList: any[] = Array.isArray(data) ? [...data] : [];
-            const seenIds = new Set(currentList.map((x: any) => x.id));
-            try {
-              const allKeys = await localforage.keys();
-              const extraKeys = allKeys.filter(k => k.endsWith(`:${item.suffix}`) && k !== userKey);
-              for (const eKey of extraKeys) {
-                const extraItems = (await localforage.getItem<any[]>(eKey)) || [];
-                if (Array.isArray(extraItems)) {
-                  for (const xi of extraItems) {
-                    if (xi && xi.id && !seenIds.has(xi.id)) {
-                      seenIds.add(xi.id);
-                      currentList.push(xi);
-                    }
-                  }
-                }
-              }
-            } catch {}
-            await localforage.setItem(userKey, currentList);
-            (item.setter as any)(currentList);
-          } else {
-            (item.setter as any)(data);
-          }
-        } else if (item.suffix === 'breeds') {
-          (item.setter as any)(DEFAULT_BREEDS);
-          await localforage.setItem(userKey, DEFAULT_BREEDS);
+          (item.setter as any)(data);
         }
       } catch (error) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
     }));
-  }, [user]);
+  }, [user, isCurrentUserAdmin, getStorageKey]);
 
   // Função principal de sincronização com o Supabase com mesclagem defensiva de dados
   const syncWithSupabaseBackground = useCallback(async () => {
@@ -484,7 +520,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', user.id).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('*').in('user_id', [user.id, `admin-${ADMIN_CPF}`, 'admin']).order('anilha', { ascending: true })
+          ? supabase!.from('birds').select('*').in('user_id', [user.id, `admin-${ADMIN_CPF}`, 'admin', '99591207-6ed9-4260-8bdb-1a507b67f9af', '5f321f02-a40c-48c4-81be-87e8f835d981']).order('anilha', { ascending: true })
           : supabase!.from('birds').select('*').eq('user_id', user.id).order('anilha', { ascending: true }),
         supabase!.from('couples').select('*').eq('user_id', user.id),
         supabase!.from('egg_lots').select('*').eq('user_id', user.id),
@@ -509,16 +545,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbCoupleEggs = resCoupleEggs.data || [];
       let sbIncubationLots = resIncubationLots.data || [];
 
-      // Carrega dados locais para verificação defensiva de itens pendentes de sincronização
+      // Carrega dados locais defensivamente combinando memória e storage
       const [
-        localBreeds,
-        localBirds,
-        localCouples,
-        localEggLots,
-        localMeatLots,
-        localSettings,
-        localCoupleEggs,
-        localIncubationLots
+        rawLocalBreeds,
+        rawLocalBirds,
+        rawLocalCouples,
+        rawLocalEggLots,
+        rawLocalMeatLots,
+        rawLocalSettings,
+        rawLocalCoupleEggs,
+        rawLocalIncubationLots
       ]: any = await Promise.all([
         localforage.getItem(getStorageKey('breeds')),
         localforage.getItem(getStorageKey('birds')),
@@ -529,6 +565,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         localforage.getItem(getStorageKey('couple-eggs')),
         localforage.getItem(getStorageKey('incubation-lots'))
       ]);
+
+      const localBirds = (birds && birds.length > 0) ? birds : (rawLocalBirds || []);
+      const localBreeds = (breeds && breeds.length > 0) ? breeds : (rawLocalBreeds || []);
+      const localCouples = (couples && couples.length > 0) ? couples : (rawLocalCouples || []);
+      const localEggLots = (eggLots && eggLots.length > 0) ? eggLots : (rawLocalEggLots || []);
+      const localMeatLots = (meatLots && meatLots.length > 0) ? meatLots : (rawLocalMeatLots || []);
+      const localSettings = rawLocalSettings;
+      const localCoupleEggs = (coupleEggs && coupleEggs.length > 0) ? coupleEggs : (rawLocalCoupleEggs || []);
+      const localIncubationLots = (incubationLots && incubationLots.length > 0) ? incubationLots : (rawLocalIncubationLots || []);
 
       const isSbEmpty = sbBreeds.length === 0 && sbBirds.length === 0;
       const hasLocalData = (localBreeds && localBreeds.length > 0) || (localBirds && localBirds.length > 0);
@@ -814,6 +859,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setBirds(mappedBirds);
       await localforage.setItem(getStorageKey('birds'), mappedBirds);
+      if (isAdmin) {
+        await localforage.setItem('@mura-manager:admin:birds', mappedBirds);
+        await localforage.setItem('@mura-manager:birds', mappedBirds);
+      }
 
       // ── CASAIS: Mapeamento e preservação de não sincronizados ──
       const mappedCouples = sbCouples.map((c: any) => {
