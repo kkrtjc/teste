@@ -558,11 +558,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localCoupleEggs = (coupleEggs && coupleEggs.length > 0) ? coupleEggs : (rawLocalCoupleEggs || []);
       const localIncubationLots = (incubationLots && incubationLots.length > 0) ? incubationLots : (rawLocalIncubationLots || []);
 
-      // Sincronização defensiva imediata de entidades locais ausentes na nuvem
+      // ── SYNC AVES: Cloud-first. A nuvem é a fonte de verdade. ──
+      // Só envia aves locais para a nuvem se elas foram criadas NESTA sessão
+      // (identificadas por terem sido salvas com a flag synced=false ou se não existem na nuvem
+      //  E o ID delas é um timestamp recente - criadas após o último sync bem-sucedido)
+      const lastSuccessfulSyncTime = lastSyncTimeRef.current - 30000; // 30s antes do sync atual
+      const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
+      
       if (sbBirds.length === 0 && localBirds.length > 0) {
-        console.log(`[Sync Defensivo] Enviando ${localBirds.length} aves locais para o Supabase...`);
-        try {
-          const birdsToInsert = localBirds.map((b: any) => ({
+        // A nuvem está vazia mas temos aves locais - APENAS envia se parece que são aves novas
+        // Se a nuvem retornou 0 por erro de rede, NÃO sobrescrevemos - o erro será capturado acima
+        console.log(`[Sync] Nuvem retornou 0 aves. Verificando se aves locais são genuinamente novas...`);
+        // Só envia aves que foram criadas recentemente (ID numérico > lastSuccessfulSyncTime ou UUID)
+        const genuinelyNewBirds = localBirds.filter((b: any) => {
+          if (!b || !b.id) return false;
+          if (deletedBirdIds.has(b.id)) return false;
+          // UUID = provavelmente nova
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(b.id)) return true;
+          // ID numérico recente (criado após o último sync)
+          const numId = parseInt(b.id, 10);
+          if (!isNaN(numId) && numId > lastSuccessfulSyncTime) return true;
+          return false;
+        });
+        if (genuinelyNewBirds.length > 0) {
+          console.log(`[Sync] Enviando ${genuinelyNewBirds.length} aves novas para o Supabase...`);
+          const birdsToInsert = genuinelyNewBirds.map((b: any) => ({
             id: b.id,
             user_id: targetUserId,
             anilha: b.anilha,
@@ -584,21 +604,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             imagens: b.imagens || [],
             observacoes: b.observacoes || ''
           }));
-          
-          // Envia em lotes de 2 para nunca estourar o limite de payload HTTP (fotos base64)
           for (let i = 0; i < birdsToInsert.length; i += 2) {
             const chunk = birdsToInsert.slice(i, i + 2);
-            const { error: chunkErr } = await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
-            if (chunkErr && (chunkErr.code === '42501' || chunkErr.message?.includes('policy'))) {
-              const retryChunk = chunk.map((c: any) => ({ ...c, id: `mura-${c.id}` }));
-              try {
-                await supabase!.from('birds').upsert(retryChunk, { onConflict: 'id' });
-              } catch {}
-            }
+            try {
+              await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
+            } catch {}
           }
           sbBirds = birdsToInsert;
-        } catch (mErr) {
-          console.error('Erro ao subir aves para o Supabase:', mErr);
+        } else {
+          // Nenhuma ave nova local - a nuvem simplesmente não tem aves ainda
+          sbBirds = [];
         }
       }
 
@@ -738,9 +753,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await localforage.setItem('@mura-manager:breeds', uniqueBreeds);
       }
 
-      // ── AVES: Mapeamento e preservação de não sincronizados ──
-      const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
+      // ── AVES: Mapeia aves da nuvem (fonte de verdade) ──
       const mappedBirds: Bird[] = sbBirds.map((b: any) => {
+        // Preserva fotos que possam existir só no cache local (base64 não armazenado na nuvem)
         const localBird = (localBirds || []).find((x: any) => x.id === b.id);
         let birdImagens = b.imagens || localBird?.imagens || [];
         
@@ -758,7 +773,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           raca: b.raca || '',
           baia: b.baia || 'ND',
           status: b.status || 'Reprodutor',
-          imagem: b.imagem,
+          imagem: b.imagem || (birdImagens[0] ?? undefined),
           imagens: birdImagens,
           vacinas: b.vacinas,
           origem: b.origem,
@@ -774,9 +789,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => lb && lb.id && !sbBirdIds.has(lb.id) && !deletedBirdIds.has(lb.id));
+      // Aves criadas offline (existem local mas ainda não foram sincronizadas com a nuvem)
+      // APENAS incluímos aves com IDs recentes (criadas após o último sync) - NÃO aves antigas
+      const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => {
+        if (!lb || !lb.id) return false;
+        if (sbBirdIds.has(lb.id)) return false;  // Já está na nuvem
+        if (deletedBirdIds.has(lb.id)) return false;  // Foi deletada
+        // Só inclui aves com UUID (criadas pela versão atual do app) 
+        // ou com ID numérico recente (criadas offline após o último sync)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(lb.id);
+        if (isUUID) return true;
+        const numId = parseInt(lb.id, 10);
+        if (!isNaN(numId) && numId > lastSuccessfulSyncTime) return true;
+        // IDs numéricos antigos (de antes do sistema de sync) são ignorados
+        // Eles podem ser de outro user_id e causariam RLS errors
+        return false;
+      });
+      
       if (unsyncedLocalBirds.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBirds.length} ave(s) local(is).`);
+        console.log(`[Sync] Enviando ${unsyncedLocalBirds.length} ave(s) offline para o Supabase...`);
         mappedBirds.push(...unsyncedLocalBirds);
 
         if (isSupabaseConfigured && user) {
@@ -803,17 +834,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             observacoes: b.observacoes || ''
           }));
           
-          // Envia em lotes pequenos de 2 aves para nunca estourar o limite de payload HTTP (fotos)
+          // Envia em lotes de 2 para não estourar o limite de payload HTTP (fotos base64)
           for (let i = 0; i < birdsToPush.length; i += 2) {
             const chunk = birdsToPush.slice(i, i + 2);
             try {
-              const { error: chunkErr } = await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
-              if (chunkErr && (chunkErr.code === '42501' || chunkErr.message?.includes('policy'))) {
-                const retryChunk = chunk.map((c: any) => ({ ...c, id: `mura-${c.id}` }));
-                try {
-                  await supabase!.from('birds').upsert(retryChunk, { onConflict: 'id' });
-                } catch {}
-              }
+              await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
             } catch (chunkErr) {
               console.warn('Erro ao subir lote de aves pendentes:', chunkErr);
             }
@@ -821,58 +846,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // BLINDAGEM DEFENSIVA ABSOLUTA:
-      // Se a nuvem retornou 0 aves e temos aves salvas localmente válidas
-      if (sbBirds.length === 0 && localBirds.length > 0) {
-        console.log(`[Sync Defensivo] Supabase retornou 0 aves. Preservando ${localBirds.length} ave(s) locais.`);
-        setBirds(localBirds);
-        await localforage.setItem(getStorageKey('birds'), localBirds);
-        if (isAdmin) {
-          await localforage.setItem('@mura-manager:admin:birds', localBirds);
-          await localforage.setItem('@mura-manager:birds', localBirds);
-        }
-      } else if (mappedBirds.length > 0) {
-        setBirds(mappedBirds);
-        await localforage.setItem(getStorageKey('birds'), mappedBirds);
-        if (isAdmin) {
-          await localforage.setItem('@mura-manager:admin:birds', mappedBirds);
-          await localforage.setItem('@mura-manager:birds', mappedBirds);
-        }
-      } else {
-        // Se ambos mappedBirds e sbBirds são vazios, verifica se há backup de emergência que não foi deletado
-        try {
-          const emergencyRaw = localStorage.getItem('@mura-manager:emergency-birds-backup');
-          if (emergencyRaw) {
-            const emergencyBirds = JSON.parse(emergencyRaw);
-            if (Array.isArray(emergencyBirds) && emergencyBirds.length > 0) {
-              const validEmergencyBirds = emergencyBirds.filter((b: any) => b && b.id && !deletedBirdIds.has(b.id));
-              if (validEmergencyBirds.length > 0) {
-                console.log(`[Sync Defensivo] Restaurando ${validEmergencyBirds.length} ave(s) válidas do backup de emergência.`);
-                setBirds(validEmergencyBirds);
-                await localforage.setItem(getStorageKey('birds'), validEmergencyBirds);
-                if (isAdmin) {
-                  await localforage.setItem('@mura-manager:admin:birds', validEmergencyBirds);
-                  await localforage.setItem('@mura-manager:birds', validEmergencyBirds);
-                }
-              } else {
-                setBirds([]);
-                await localforage.setItem(getStorageKey('birds'), []);
-                if (isAdmin) {
-                  await localforage.setItem('@mura-manager:admin:birds', []);
-                  await localforage.setItem('@mura-manager:birds', []);
-                }
-              }
-            }
-          } else {
-            setBirds([]);
-            await localforage.setItem(getStorageKey('birds'), []);
-            if (isAdmin) {
-              await localforage.setItem('@mura-manager:admin:birds', []);
-              await localforage.setItem('@mura-manager:birds', []);
-            }
-          }
-        } catch {}
+      // Salva aves da nuvem no cache local para offline
+      // A nuvem é a fonte de verdade - substituímos tudo que estava no local
+      const finalBirds = mappedBirds.filter(b => !deletedBirdIds.has(b.id));
+      setBirds(finalBirds);
+      await localforage.setItem(getStorageKey('birds'), finalBirds);
+      if (isAdmin) {
+        await localforage.setItem('@mura-manager:admin:birds', finalBirds);
+        await localforage.setItem('@mura-manager:birds', finalBirds);
       }
+
 
       // ── CASAIS: Mapeamento e preservação de não sincronizados ──
       const mappedCouples = sbCouples.map((c: any) => {
