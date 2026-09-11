@@ -382,13 +382,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         suffix: 'breeds',
         setter: (d: any) => {
           let currentBreeds = Array.isArray(d) ? (d as Breed[]) : [];
-          const missingLocal = DEFAULT_BREEDS.filter(
-            db => !currentBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
-          );
-          if (missingLocal.length > 0) {
-            currentBreeds = [...currentBreeds, ...missingLocal];
+          const seen = new Set<string>();
+          const deduped: Breed[] = [];
+          for (const b of currentBreeds) {
+            const key = (b.nome || '').trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              deduped.push(b);
+            }
           }
-          setBreeds(currentBreeds);
+          for (const db of DEFAULT_BREEDS) {
+            const key = db.nome.trim().toLowerCase();
+            if (!seen.has(key)) {
+              seen.add(key);
+              deduped.push(db);
+            }
+          }
+          setBreeds(deduped);
         }
       },
       {
@@ -634,85 +644,78 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // ── RAÇAS: Mapeamento e preservação de não sincronizados ──
-      let uniqueSbBreeds: any[] = [];
-      const seenNames = new Set<string>();
+      // ── RAÇAS: Mapeamento e preservação com DEDUPLICAÇÃO RIGOROSA POR NOME ──
+      const seenBreedNames = new Set<string>();
+      let uniqueBreeds: Breed[] = [];
+
+      // 1. Processa raças que vieram do Supabase
       for (const b of sbBreeds) {
         const nameLower = (b.nome || '').trim().toLowerCase();
-        if (!seenNames.has(nameLower)) {
-          seenNames.add(nameLower);
-          uniqueSbBreeds.push(b);
-        } else if (isSupabaseConfigured && user) {
-          supabase!.from('breeds').delete().eq('id', b.id).then(() => {});
+        if (nameLower && !seenBreedNames.has(nameLower)) {
+          seenBreedNames.add(nameLower);
+          const localBreed = (localBreeds || []).find((x: any) => (x.nome || '').trim().toLowerCase() === nameLower);
+          const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === nameLower);
+          uniqueBreeds.push({
+            id: b.id,
+            nome: b.nome || '',
+            foco: b.foco || seedMatch?.foco || '',
+            descricao: b.descricao || seedMatch?.descricao || '',
+            imagem: b.imagem || seedMatch?.imagem,
+            totalAves: b.total_aves || b.totalAves || 0,
+            tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || seedMatch?.tempoCrescimento || 0),
+            pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || ''),
+            ganhoGramasDia: b.ganho_gramas_dia !== undefined ? b.ganho_gramas_dia : (localBreed?.ganhoGramasDia || seedMatch?.ganhoGramasDia || undefined),
+            conversaoAlimentar: b.conversao_alimentar !== undefined ? b.conversao_alimentar : (localBreed?.conversaoAlimentar || seedMatch?.conversaoAlimentar || undefined)
+          });
         }
       }
 
-      let mappedBreeds: Breed[] = uniqueSbBreeds.map((b: any) => {
-        const localBreed = (localBreeds || []).find((x: any) => x.id === b.id);
-        const nameLower = (b.nome || '').toLowerCase();
-        const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === nameLower);
-        return {
+      // 2. Processa raças locais que não existem no Supabase
+      const unsyncedBreedsToPush: Breed[] = [];
+      for (const lb of (localBreeds || [])) {
+        if (!lb || !lb.nome) continue;
+        const nameLower = lb.nome.trim().toLowerCase();
+        if (!seenBreedNames.has(nameLower)) {
+          seenBreedNames.add(nameLower);
+          uniqueBreeds.push(lb);
+          unsyncedBreedsToPush.push(lb);
+        }
+      }
+
+      // 3. Adiciona raças padrão do sistema caso alguma falte
+      const missingDefaultToPush: Breed[] = [];
+      for (const db of DEFAULT_BREEDS) {
+        const nameLower = db.nome.trim().toLowerCase();
+        if (!seenBreedNames.has(nameLower)) {
+          seenBreedNames.add(nameLower);
+          uniqueBreeds.push(db);
+          missingDefaultToPush.push(db);
+        }
+      }
+
+      // 4. Se houver raças a subir para o Supabase, faz upsert
+      if (isSupabaseConfigured && user) {
+        const breedsToUpsert = [...unsyncedBreedsToPush, ...missingDefaultToPush].map(b => ({
           id: b.id,
-          nome: b.nome || '',
-          foco: b.foco || seedMatch?.foco || '',
-          descricao: b.descricao || seedMatch?.descricao || '',
-          imagem: b.imagem || seedMatch?.imagem,
-          totalAves: b.total_aves || b.totalAves || 0,
-          tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || seedMatch?.tempoCrescimento || 0),
-          pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || ''),
-          ganhoGramasDia: b.ganho_gramas_dia !== undefined ? b.ganho_gramas_dia : (localBreed?.ganhoGramasDia || seedMatch?.ganhoGramasDia || undefined),
-          conversaoAlimentar: b.conversao_alimentar !== undefined ? b.conversao_alimentar : (localBreed?.conversaoAlimentar || seedMatch?.conversaoAlimentar || undefined)
-        };
-      });
-
-      const missingBreeds = DEFAULT_BREEDS.filter(
-        db => !mappedBreeds.some(mb => mb.nome.toLowerCase() === db.nome.toLowerCase())
-      );
-
-      if (missingBreeds.length > 0) {
-        mappedBreeds = [...mappedBreeds, ...missingBreeds];
-        if (isSupabaseConfigured && user) {
-          const breedsToUpsert = missingBreeds.map(b => ({
-            id: b.id,
-            user_id: targetUserId,
-            nome: b.nome,
-            foco: b.foco,
-            descricao: b.descricao,
-            imagem: b.imagem,
-            tempo_crescimento: b.tempoCrescimento,
-            peso_medio: b.pesoMedio
-          }));
-          supabase!.from('breeds').upsert(breedsToUpsert, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao semear raças iniciais:', error);
-          });
+          user_id: targetUserId,
+          nome: b.nome,
+          foco: b.foco,
+          descricao: b.descricao,
+          imagem: b.imagem,
+          tempo_crescimento: b.tempoCrescimento || 0,
+          peso_medio: b.pesoMedio || ''
+        }));
+        if (breedsToUpsert.length > 0) {
+          supabase!.from('breeds').upsert(breedsToUpsert, { onConflict: 'id' }).then(() => {}, () => {});
         }
       }
 
-      // Preservação de raças locais não sincronizadas
-      const sbBreedIds = new Set<string>(uniqueSbBreeds.map((b: any) => b.id));
-      const unsyncedLocalBreeds = (localBreeds || []).filter((lb: any) => lb && lb.id && !sbBreedIds.has(lb.id));
-      if (unsyncedLocalBreeds.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalBreeds.length} raça(s) local(is).`);
-        mappedBreeds.push(...unsyncedLocalBreeds);
-        if (isSupabaseConfigured && user) {
-          const breedsToPush = unsyncedLocalBreeds.map((b: any) => ({
-            id: b.id,
-            user_id: targetUserId,
-            nome: b.nome,
-            foco: b.foco,
-            descricao: b.descricao,
-            imagem: b.imagem,
-            tempo_crescimento: b.tempoCrescimento || 0,
-            peso_medio: b.pesoMedio || ''
-          }));
-          supabase!.from('breeds').upsert(breedsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir raças pendentes:', error);
-          });
-        }
+      setBreeds(uniqueBreeds);
+      await localforage.setItem(getStorageKey('breeds'), uniqueBreeds);
+      if (isAdmin) {
+        await localforage.setItem('@mura-manager:admin:breeds', uniqueBreeds);
+        await localforage.setItem('@mura-manager:breeds', uniqueBreeds);
       }
-
-      setBreeds(mappedBreeds);
-      await localforage.setItem(getStorageKey('breeds'), mappedBreeds);
 
       // ── AVES: Mapeamento e preservação de não sincronizados ──
       const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
