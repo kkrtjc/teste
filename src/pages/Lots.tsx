@@ -487,8 +487,8 @@ export function Lots() {
   const [pQtd, setPQtd] = useState('');
   const [pSearch, setPSearch] = useState('');
   const [pExpectativa, setPExpectativa] = useState('');
-  const [pPreco, setPPreco] = useState('6.00');
-  const [pCusto, setPCusto] = useState('0.30');
+  const [pPreco, setPPreco] = useState('10.00');
+  const [pCusto, setPCusto] = useState('0.40');
   const [pObs, setPObs] = useState('');
 
   // Engorda Lot states
@@ -653,7 +653,7 @@ export function Lots() {
   const resetPostura = () => {
     setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
     setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
-    setPExpectativa(''); setPPreco('6.00'); setPCusto('0.30'); setPObs('');
+    setPExpectativa(''); setPPreco('10.00'); setPCusto('0.40'); setPObs('');
   };
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
@@ -674,8 +674,8 @@ export function Lots() {
         dataInicio: pDataInicio,
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
-        precoVendaPadrao: parseFloat(pPreco) || 6,
-        custoProdPadrao: parseFloat(pCusto) || 0.30,
+        precoVendaPadrao: parseFloat(pPreco) || 10.0,
+        custoProdPadrao: parseFloat(pCusto) || 0.40,
         observacao: pObs.trim() || undefined,
       });
       resetPostura();
@@ -728,7 +728,7 @@ export function Lots() {
         status: 'Crescimento',
         raca: eRaca.trim() || undefined,
         observacao: eObs.trim() || undefined,
-        ganhoGramasDia: parseFloat(eGanhoGramasDia) || undefined,
+        ganhoGramasDia: parseFloat(eGanhoGramasDia) || 35,
         consumoRacaoAve: parseFloat(eConsumoRacaoAve) || undefined,
         pesagens: [],
       });
@@ -1779,14 +1779,14 @@ export function Lots() {
                       <label className={labelCls}>Preço/Dúzia (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="6.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e => setPPreco(sanitizeNumeric(e.target.value))} className={inputCls + " pl-8"} />
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="10.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e => setPPreco(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className={labelCls}>Custo/Ovo (R$)</label>
                       <div className="relative">
                         <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.30" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e => setPCusto(sanitizeNumeric(e.target.value))} className={inputCls + " pl-8"} />
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.40" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e => setPCusto(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
                       </div>
                     </div>
                   </div>
@@ -1852,8 +1852,16 @@ export function Lots() {
                           const val = e.target.value;
                           setERaca(val);
                           const found = breeds.find(b => b.nome === val);
-                          if (found?.ganhoGramasDia) {
-                            setEGanhoGramasDia(String(found.ganhoGramasDia));
+                          if (found) {
+                            if (found.ganhoGramasDia) {
+                              setEGanhoGramasDia(String(found.ganhoGramasDia));
+                            }
+                            if (found.pesoMedio && !ePesoMeta) {
+                              setEPesoMeta(found.pesoMedio);
+                            }
+                            if (found.ganhoGramasDia && found.conversaoAlimentar) {
+                              setEConsumoRacaoAve(String(Math.round(found.ganhoGramasDia * found.conversaoAlimentar)));
+                            }
                           }
                         }}
                         className={inputCls + " appearance-none pr-8"}
@@ -1913,10 +1921,50 @@ export function Lots() {
                   <div className="space-y-1">
                     <SectionLabel>Peso Médio Inicial</SectionLabel>
                     <input type="text" required placeholder="Ex: 350g ou 1.2kg" value={ePesoInicial} onChange={e => setEPesoInicial(e.target.value)} className={inputCls} />
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {[
+                        { label: '40g (Pintinho)', val: '40g' },
+                        { label: '500g (Jovem)', val: '500g' },
+                        { label: '1.2kg (Recria)', val: '1.2kg' }
+                      ].map(p => (
+                        <button
+                          key={p.val}
+                          type="button"
+                          onClick={() => setEPesoInicial(p.val)}
+                          className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                            ePesoInicial === p.val
+                              ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
+                              : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <SectionLabel>Meta de Abate</SectionLabel>
                     <input type="text" placeholder="Ex: 2.5kg ou 2500g" value={ePesoMeta} onChange={e => setEPesoMeta(e.target.value)} className={inputCls} />
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {[
+                        { label: '2.5 kg', val: '2.5 kg' },
+                        { label: '3.0 kg', val: '3.0 kg' },
+                        { label: '3.5 kg', val: '3.5 kg' }
+                      ].map(p => (
+                        <button
+                          key={p.val}
+                          type="button"
+                          onClick={() => setEPesoMeta(p.val)}
+                          className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                            ePesoMeta === p.val
+                              ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
+                              : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -2352,7 +2400,10 @@ export function Lots() {
         onBreedSaved={(newBreed) => {
           setERaca(newBreed.nome);
           if (newBreed.ganhoGramasDia) setEGanhoGramasDia(String(newBreed.ganhoGramasDia));
-          if (newBreed.conversaoAlimentar) setEConsumoRacaoAve(String(newBreed.conversaoAlimentar));
+          if (newBreed.pesoMedio && !ePesoMeta) setEPesoMeta(newBreed.pesoMedio);
+          if (newBreed.ganhoGramasDia && newBreed.conversaoAlimentar) {
+            setEConsumoRacaoAve(String(Math.round(newBreed.ganhoGramasDia * newBreed.conversaoAlimentar)));
+          }
         }}
       />
 

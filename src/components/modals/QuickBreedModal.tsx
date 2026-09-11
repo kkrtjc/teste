@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X } from 'lucide-react';
 import { useAppContext, type Breed } from '../../lib/AppContext';
@@ -20,10 +20,35 @@ export function QuickBreedModal({
 
   const [nome, setNome] = useState(initialBreedName);
   const [foco, setFoco] = useState('Corte / Engorda');
-  const [ganho, setGanho] = useState('35');
-  const [conversao, setConversao] = useState('2.4');
-  const [pesoMedio, setPesoMedio] = useState('3.5 kg');
+  const [ganho, setGanho] = useState('40');
+  const [conversao, setConversao] = useState('2.2');
+  const [pesoMedio, setPesoMedio] = useState('3.2 kg');
   const [descricao, setDescricao] = useState('');
+
+  const handleFocoChange = (newFoco: string) => {
+    setFoco(newFoco);
+    if (newFoco.includes('Corte')) {
+      setGanho('40');
+      setConversao('2.2');
+      setPesoMedio('3.2 kg');
+    } else if (newFoco.includes('Postura')) {
+      setGanho('20');
+      setConversao('2.8');
+      setPesoMedio('2.0 kg');
+    } else if (newFoco.includes('Misto')) {
+      setGanho('30');
+      setConversao('2.5');
+      setPesoMedio('2.8 kg');
+    } else if (newFoco.includes('Combate')) {
+      setGanho('18');
+      setConversao('3.0');
+      setPesoMedio('2.5 kg');
+    } else if (newFoco.includes('Ornamental')) {
+      setGanho('15');
+      setConversao('3.2');
+      setPesoMedio('1.5 kg');
+    }
+  };
 
   useEffect(() => {
     if (initialBreedName) setNome(initialBreedName);
@@ -103,12 +128,13 @@ export function QuickBreedModal({
               <label className={labelCls}>Foco da Raça</label>
               <select
                 value={foco}
-                onChange={e => setFoco(e.target.value)}
+                onChange={e => handleFocoChange(e.target.value)}
                 className={inputCls + " appearance-none"}
               >
-                <option value="Corte / Engorda">Corte / Engorda</option>
-                <option value="Misto (Carne e Ovos)">Misto</option>
-                <option value="Postura">Postura</option>
+                <option value="Corte / Engorda">Corte (Carne)</option>
+                <option value="Postura">Postura (Ovos)</option>
+                <option value="Misto (Carne e Ovos)">Misto (Carne e Ovos)</option>
+                <option value="Combate / Esporte">Combate / Esporte</option>
                 <option value="Ornamental">Ornamental</option>
               </select>
             </div>

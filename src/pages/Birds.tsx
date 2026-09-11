@@ -225,10 +225,42 @@ export function Birds() {
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
   const [newBreedDesc, setNewBreedDesc] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [newBreedTempoCrescimento, setNewBreedTempoCrescimento] = useState(0);
-  const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('');
+  const [newBreedTempoCrescimento, setNewBreedTempoCrescimento] = useState(120);
+  const [newBreedPesoMedio, setNewBreedPesoMedio] = useState('2.8 kg');
+  const [newBreedGanhoGramasDia, setNewBreedGanhoGramasDia] = useState('30');
+  const [newBreedConversaoAlimentar, setNewBreedConversaoAlimentar] = useState('2.5');
   const [showAdvancedBreed, setShowAdvancedBreed] = useState(false);
   const [deleteBreedConfirm, setDeleteBreedConfirm] = useState<{ id: string; nome: string; message: string } | null>(null);
+
+  const applyFocusDefaults = (focus: string) => {
+    setNewBreedFocus(focus);
+    if (focus.includes('Corte')) {
+      setNewBreedTempoCrescimento(90);
+      setNewBreedPesoMedio('3.2 kg');
+      setNewBreedGanhoGramasDia('40');
+      setNewBreedConversaoAlimentar('2.2');
+    } else if (focus.includes('Postura')) {
+      setNewBreedTempoCrescimento(150);
+      setNewBreedPesoMedio('2.0 kg');
+      setNewBreedGanhoGramasDia('20');
+      setNewBreedConversaoAlimentar('2.8');
+    } else if (focus.includes('Misto')) {
+      setNewBreedTempoCrescimento(120);
+      setNewBreedPesoMedio('2.8 kg');
+      setNewBreedGanhoGramasDia('30');
+      setNewBreedConversaoAlimentar('2.5');
+    } else if (focus.includes('Combate')) {
+      setNewBreedTempoCrescimento(240);
+      setNewBreedPesoMedio('2.5 kg');
+      setNewBreedGanhoGramasDia('18');
+      setNewBreedConversaoAlimentar('3.0');
+    } else if (focus.includes('Ornamental')) {
+      setNewBreedTempoCrescimento(180);
+      setNewBreedPesoMedio('1.5 kg');
+      setNewBreedGanhoGramasDia('15');
+      setNewBreedConversaoAlimentar('3.2');
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -306,15 +338,15 @@ export function Birds() {
         setPreviewImage(breed.imagem || null);
         setNewBreedTempoCrescimento(breed.tempoCrescimento || 0);
         setNewBreedPesoMedio(breed.pesoMedio || '');
+        setNewBreedGanhoGramasDia(breed.ganhoGramasDia !== undefined ? String(breed.ganhoGramasDia) : '');
+        setNewBreedConversaoAlimentar(breed.conversaoAlimentar !== undefined ? String(breed.conversaoAlimentar) : '');
       }
     } else {
       setBreedToEditId(null);
       setNewBreedName('');
-      setNewBreedFocus('Misto (Carne e Ovos)');
+      applyFocusDefaults('Misto (Carne e Ovos)');
       setNewBreedDesc('');
       setPreviewImage(null);
-      setNewBreedTempoCrescimento(0);
-      setNewBreedPesoMedio('');
     }
     setShowAdvancedBreed(false);
     setShowNewBreedModal(true);
@@ -322,6 +354,9 @@ export function Birds() {
 
   const handleSaveBreed = () => {
     if (!newBreedName.trim()) return;
+
+    const ganho = newBreedGanhoGramasDia ? parseFloat(newBreedGanhoGramasDia) : undefined;
+    const conv = newBreedConversaoAlimentar ? parseFloat(newBreedConversaoAlimentar) : undefined;
 
     if (breedToEditId) {
       const oldBreed = breeds.find(b => b.id === breedToEditId);
@@ -331,7 +366,9 @@ export function Birds() {
         foco: newBreedFocus,
         imagem: previewImage || undefined,
         tempoCrescimento: newBreedTempoCrescimento,
-        pesoMedio: newBreedPesoMedio
+        pesoMedio: newBreedPesoMedio,
+        ganhoGramasDia: ganho,
+        conversaoAlimentar: conv
       });
       // Atualiza o nome da raça em todas as aves vinculadas ao nome antigo
       if (oldBreed && oldBreed.nome !== newBreedName) {
@@ -352,7 +389,9 @@ export function Birds() {
         totalAves: 0,
         imagem: previewImage || undefined,
         tempoCrescimento: newBreedTempoCrescimento,
-        pesoMedio: newBreedPesoMedio
+        pesoMedio: newBreedPesoMedio,
+        ganhoGramasDia: ganho,
+        conversaoAlimentar: conv
       });
       showToast("Raça salva com sucesso!", "success");
     }
@@ -726,7 +765,7 @@ export function Birds() {
                     <button
                       key={opt.label}
                       type="button"
-                      onClick={() => setNewBreedFocus(opt.label)}
+                      onClick={() => applyFocusDefaults(opt.label)}
                       className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all ${
                         newBreedFocus === opt.label
                           ? 'border-theme-primary bg-theme-primary/10 text-white'
@@ -747,7 +786,7 @@ export function Birds() {
                   onClick={() => setShowAdvancedBreed(v => !v)}
                   className="w-full flex items-center justify-between px-4 py-3.5 bg-theme-base hover:bg-white/5 transition-colors"
                 >
-                  <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Detalhes Técnicos</span>
+                  <span className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Detalhes Técnicos & Desempenho</span>
                   <ChevronRight size={14} className={`text-theme-text-muted transition-transform duration-200 ${showAdvancedBreed ? 'rotate-90' : ''}`} />
                 </button>
                 {showAdvancedBreed && (
@@ -761,7 +800,7 @@ export function Birds() {
                           value={newBreedTempoCrescimento}
                           onChange={(e) => setNewBreedTempoCrescimento(parseInt(e.target.value) || 0)}
                           className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                          placeholder="Ex: 150"
+                          placeholder="Ex: 120"
                         />
                       </div>
                       <div className="space-y-1">
@@ -771,10 +810,40 @@ export function Birds() {
                           value={newBreedPesoMedio}
                           onChange={(e) => setNewBreedPesoMedio(e.target.value)}
                           className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
-                          placeholder="Ex: 4.5 kg"
+                          placeholder="Ex: 2.8 kg"
                         />
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-theme-text-muted uppercase">Ganho Médio (g/dia)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          value={newBreedGanhoGramasDia}
+                          onChange={(e) => setNewBreedGanhoGramasDia(e.target.value.replace(/[^0-9.]/g, ''))}
+                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                          placeholder="Ex: 30"
+                        />
+                        <p className="text-[9px] text-theme-text-muted">Projeção diária em lotes</p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-theme-text-muted uppercase">Conversão Alimentar</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          value={newBreedConversaoAlimentar}
+                          onChange={(e) => setNewBreedConversaoAlimentar(e.target.value.replace(/[^0-9.]/g, ''))}
+                          className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                          placeholder="Ex: 2.5"
+                        />
+                        <p className="text-[9px] text-theme-text-muted">kg ração / kg ave</p>
+                      </div>
+                    </div>
+
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-theme-text-muted uppercase">Descrição / Características</label>
                       <textarea

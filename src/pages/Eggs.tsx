@@ -121,8 +121,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [qtdFemeas, setQtdFemeas] = useState('');
   const [expectativaDiaria, setExpectativaDiaria] = useState('');
   const [raca, setRaca] = useState('');
-  const [precoVendaPadrao, setPrecoVendaPadrao] = useState('6.00');
-  const [custoProdPadrao, setCustoProdPadrao] = useState('0.30');
+  const [precoVendaPadrao, setPrecoVendaPadrao] = useState('10.00');
+  const [custoProdPadrao, setCustoProdPadrao] = useState('0.40');
   const [observacao, setObservacao] = useState('');
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -171,8 +171,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       dataInicio: todayISO(),
       status: 'Ativo',
       raca: raca || undefined,
-      precoVendaPadrao: parseFloat(precoVendaPadrao) || 6.0,
-      custoProdPadrao: parseFloat(custoProdPadrao) || 0.30,
+      precoVendaPadrao: parseFloat(precoVendaPadrao) || 10.0,
+      custoProdPadrao: parseFloat(custoProdPadrao) || 0.40,
       observacao: observacao.trim() || undefined,
       registros: []
     };
@@ -281,11 +281,11 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço Padrão / Dúzia (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" value={precoVendaPadrao} onChange={e => setPrecoVendaPadrao(e.target.value)} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" step="0.01" inputMode="decimal" placeholder="10.00" value={precoVendaPadrao} onChange={e => setPrecoVendaPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo Padrão / Ovo (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" value={custoProdPadrao} onChange={e => setCustoProdPadrao(e.target.value)} onKeyDown={onlyNumericKeyDown} className={inputCls} />
+              <input type="number" step="0.01" inputMode="decimal" placeholder="0.40" value={custoProdPadrao} onChange={e => setCustoProdPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
           </div>
 

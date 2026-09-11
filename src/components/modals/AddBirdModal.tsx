@@ -4,6 +4,7 @@ import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangl
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 import { calculateExactAge } from '../../lib/utils';
+import { QuickBreedModal } from './QuickBreedModal';
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 function StepDots({ total, current }: { total: number; current: number }) {
@@ -203,6 +204,7 @@ export function AddBirdModal() {
   // ── Duplicate / Overlap state ──
   const [detailBird, setDetailBird] = useState<typeof birds[number] | null>(null);
   const [showBaiaDetail, setShowBaiaDetail] = useState(false);
+  const [showQuickBreedModal, setShowQuickBreedModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -472,12 +474,22 @@ export function AddBirdModal() {
 
         {/* Raça */}
         <div className="space-y-1">
-          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Raça / Genética *</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Raça / Genética *</label>
+            <button
+              type="button"
+              onClick={() => setShowQuickBreedModal(true)}
+              className="text-[11px] text-theme-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+            >
+              + Nova Raça
+            </button>
+          </div>
           <select
             value={raca}
             onChange={e => setRaca(e.target.value)}
             className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors appearance-none"
           >
+            <option value="">-- Selecionar Raça --</option>
             {breeds.map(b => (
               <option key={b.id} value={b.nome}>{b.nome}</option>
             ))}
@@ -520,7 +532,10 @@ export function AddBirdModal() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setSexo('Macho')}
+              onClick={() => {
+                setSexo('Macho');
+                if (status === 'Matriz' || !status) setStatus('Reprodutor');
+              }}
               className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
                 sexo === 'Macho'
                   ? 'border-blue-500 bg-blue-500/10 text-white font-bold'
@@ -531,7 +546,10 @@ export function AddBirdModal() {
             </button>
             <button
               type="button"
-              onClick={() => setSexo('Fêmea')}
+              onClick={() => {
+                setSexo('Fêmea');
+                if (status === 'Reprodutor' || !status) setStatus('Matriz');
+              }}
               className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all font-bold text-sm ${
                 sexo === 'Fêmea'
                   ? 'border-pink-500 bg-pink-500/10 text-white font-bold'
@@ -541,6 +559,29 @@ export function AddBirdModal() {
               <span>🐔</span> Fêmea
             </button>
           </div>
+        </div>
+
+        {/* Data de Nascimento / Idade */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+              Data de Nascimento / Idade
+            </label>
+            <span className="text-[10px] text-theme-primary font-bold bg-theme-primary/10 px-2 py-0.5 rounded-full border border-theme-primary/20">
+              Cálculo de idade & relatórios
+            </span>
+          </div>
+          <input
+            type="date"
+            value={dataNasc}
+            onChange={e => setDataNasc(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]"
+          />
+          {dataNasc && (
+            <p className="text-xs text-theme-primary font-bold mt-1">
+              Idade calculada: {calculateExactAge(dataNasc)}
+            </p>
+          )}
         </div>
 
         {/* Foto */}
@@ -735,22 +776,20 @@ export function AddBirdModal() {
         )}
 
         {/* Idade picker */}
-        {nascidaAqui !== null && (
-          <div className="space-y-1 pt-2">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Idade (Data de Nascimento)</label>
-            <input
-              type="date"
-              value={dataNasc}
-              onChange={e => setDataNasc(e.target.value)}
-              className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]"
-            />
-            {dataNasc && (
-              <p className="text-xs text-theme-primary font-bold mt-1">
-                Idade calculada: {calculateExactAge(dataNasc)}
-              </p>
-            )}
-          </div>
-        )}
+        <div className="space-y-1 pt-2">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Idade (Data de Nascimento)</label>
+          <input
+            type="date"
+            value={dataNasc}
+            onChange={e => setDataNasc(e.target.value)}
+            className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none [color-scheme:dark]"
+          />
+          {dataNasc && (
+            <p className="text-xs text-theme-primary font-bold mt-1">
+              Idade calculada: {calculateExactAge(dataNasc)}
+            </p>
+          )}
+        </div>
       </div>
     );
 
@@ -938,6 +977,11 @@ export function AddBirdModal() {
           )}
         </div>
       </div>
+      <QuickBreedModal
+        isOpen={showQuickBreedModal}
+        onClose={() => setShowQuickBreedModal(false)}
+        onBreedSaved={(newBreed) => setRaca(newBreed.nome)}
+      />
     </div>,
     document.body
   );
