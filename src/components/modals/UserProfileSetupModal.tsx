@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, Mail, Camera, Check, Sparkles, Building2, Phone, X } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth, isUserAdmin, ADMIN_EMAIL } from '../../lib/AuthContext';
 
 export function UserProfileSetupModal({
   isOpen,
@@ -16,8 +16,9 @@ export function UserProfileSetupModal({
   const { farmSettings, setFarmSettings } = useAppContext();
   
   let authUser: any = null;
+  let auth: any = null;
   try {
-    const auth = useAuth();
+    auth = useAuth();
     authUser = auth?.user;
   } catch {
     authUser = null;
@@ -33,15 +34,18 @@ export function UserProfileSetupModal({
   // Pre-fill email automatically from auth context, localStorage, or fallback
   useEffect(() => {
     if (isOpen) {
-      const savedEmail = localStorage.getItem('mura_user_email') ||
-                         localStorage.getItem('@mura-manager:user_email') ||
-                         authUser?.email ||
-                         '';
+      let savedEmail = localStorage.getItem('mura_user_email') ||
+                       localStorage.getItem('@mura-manager:user_email') ||
+                       authUser?.email ||
+                       '';
+      if (isUserAdmin(savedEmail) || isUserAdmin(authUser?.email) || auth?.isAdmin) {
+        savedEmail = ADMIN_EMAIL;
+      }
       setEmail(savedEmail);
       if (farmSettings?.name) setNomeCriatorio(farmSettings.name);
       if (farmSettings?.phone) setTelefone(farmSettings.phone);
     }
-  }, [isOpen, authUser, farmSettings]);
+  }, [isOpen, authUser, farmSettings, auth]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

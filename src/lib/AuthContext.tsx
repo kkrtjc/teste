@@ -6,7 +6,9 @@ import localforage from 'localforage';
 
 export const ADMIN_CPF = '14477751630';
 export const ADMIN_EMAIL = 'galosmurabrasill@gmail.com';
-export const ADMIN_CANONICAL_ID = 'admin-14477751630';
+export const ADMIN_CANONICAL_ID = '99bc6faa-12c7-42f7-852b-d359918ddbc7';
+export const ADMIN_AUTH_EMAIL = `${ADMIN_CPF}@mura.com`;
+export const ADMIN_AUTH_PASS = 'mura2026';
 export const ADMIN_EMAILS = [
   'galosmurabrasill@gmail.com',
   `${ADMIN_CPF}@mura.com`,
@@ -19,7 +21,12 @@ export const ADMIN_EMAILS = [
 export function isUserAdmin(emailOrCpf?: string | null): boolean {
   if (!emailOrCpf) return false;
   const clean = emailOrCpf.trim().toLowerCase();
-  if (clean === ADMIN_CANONICAL_ID || clean === 'admin') return true;
+  if (
+    clean === ADMIN_CANONICAL_ID ||
+    clean === 'admin' ||
+    clean === 'admin-14477751630' ||
+    clean === '99bc6faa-12c7-42f7-852b-d359918ddbc7'
+  ) return true;
   const cleanCpf = clean.split('@')[0].replace(/\D/g, '');
   if (cleanCpf === ADMIN_CPF) return true;
   return ADMIN_EMAILS.some(e => e.toLowerCase() === clean);
@@ -31,11 +38,13 @@ export function sanitizeAdminUser(u: any): any {
   if (!isAdm) return u;
   return {
     ...u,
+    id: ADMIN_CANONICAL_ID,
     email: ADMIN_EMAIL,
     user_metadata: {
       ...(u.user_metadata || {}),
       email: ADMIN_EMAIL,
-      cpf: ADMIN_CPF
+      cpf: ADMIN_CPF,
+      full_name: u.user_metadata?.full_name || 'Administrador Principal'
     }
   };
 }
@@ -277,15 +286,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 1500);
 
     // 1. Pega a sessão salva e libera o app instantaneamente
-    supabase!.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        const u = sanitizeAdminUser(session.user);
+    supabase!.auth.getSession().then(async ({ data: { session } }) => {
+      let activeSession = session;
+      let activeUser = session?.user;
+
+      // Auto-recuperação do Admin: se a sessão não estiver ativa mas o cache indicar admin
+      const cachedCpf = localStorage.getItem('@mura-manager:user-cpf');
+      const cachedUserRaw = localStorage.getItem('@mura-manager:cached-user');
+      let isCachedAdmin = cachedCpf === ADMIN_CPF;
+      if (!isCachedAdmin && cachedUserRaw) {
+        try {
+          const cu = JSON.parse(cachedUserRaw);
+          if (isUserAdmin(cu.email) || isUserAdmin(cu.id)) isCachedAdmin = true;
+        } catch {}
+      }
+
+      if (!activeSession && isCachedAdmin) {
+        try {
+          const { data, error } = await supabase!.auth.signInWithPassword({
+            email: ADMIN_AUTH_EMAIL,
+            password: ADMIN_AUTH_PASS
+          });
+          if (!error && data?.session) {
+            activeSession = data.session;
+            activeUser = data.user;
+          }
+        } catch {}
+      }
+
+      if (activeSession && activeUser) {
+        const u = sanitizeAdminUser(activeUser);
+        setSession(activeSession);
         setUser(u);
+        setLinkedCpf(ADMIN_CPF);
         try {
           localStorage.setItem('@mura-manager:cached-user', JSON.stringify(u));
-          if (session.access_token) {
-            localStorage.setItem('@mura-manager:cached-session', JSON.stringify(session));
+          if (activeSession.access_token) {
+            localStorage.setItem('@mura-manager:cached-session', JSON.stringify(activeSession));
+          }
+          if (isUserAdmin(u.email)) {
+            localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
           }
         } catch {}
         // Validação em segundo plano sem travar o carregamento da tela
@@ -416,21 +456,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ══════════════════════════════════════════════════════
     if (isAdmin) {
       if (isSupabaseConfigured) {
-        const candidateEmails = [ADMIN_EMAIL, `${ADMIN_CPF}@mura.com`, `${ADMIN_CPF}@worker`];
-        const passwordsToTry = Array.from(new Set([passwordInput, 'mura2026'].filter(Boolean))) as string[];
+        const candidateLogins = [
+          { email: ADMIN_AUTH_EMAIL, password: ADMIN_AUTH_PASS },
+          { email: ADMIN_EMAIL, password: passwordInput || ADMIN_AUTH_PASS },
+          { email: `${ADMIN_CPF}@mura.com`, password: passwordInput || ADMIN_AUTH_PASS },
+        ];
 
         let loggedData: any = null;
-        for (const emailTry of candidateEmails) {
-          for (const passTry of passwordsToTry) {
-            try {
-              const { data, error } = await supabase!.auth.signInWithPassword({ email: emailTry, password: passTry });
-              if (!error && data?.session) {
-                loggedData = data;
-                break;
-              }
-            } catch {}
-          }
-          if (loggedData) break;
+        for (const cred of candidateLogins) {
+          try {
+            const { data, error } = await supabase!.auth.signInWithPassword({
+              email: cred.email,
+              password: cred.password
+            });
+            if (!error && data?.session) {
+              loggedData = data;
+              break;
+            }
+          } catch {}
         }
 
         if (loggedData?.session) {
