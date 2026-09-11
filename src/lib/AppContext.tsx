@@ -6,6 +6,7 @@ import { useAuth, ADMIN_CPF, isUserAdmin } from './AuthContext';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
+import { deepScanAllStorage } from './dataRecovery';
 
 export type Breed = {
   id: string;
@@ -203,6 +204,9 @@ type AppContextType = {
   // Toast Notifications
   showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 
+  // Recuperação Profunda de Aves e Armazenamento
+  recoverAllBirds: () => Promise<{ count: number; birds: Bird[]; report: string }>;
+
   // Onboarding & Profile Setup Optional Helpers
   isTourOpen?: boolean;
   isProfileSetupOpen?: boolean;
@@ -371,56 +375,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           data = await localforage.getItem(legacyKey);
         }
 
-        // ── 1. AVES: RESGATE TOTAL DE TODAS AS CHAVES POSSÍVEIS ──
+        // ── 1. AVES: RESGATE TOTAL E PROFUNDO DE TODAS AS CHAVES E BANCOS ──
         if (item.suffix === 'birds') {
-          let currentBirdsList: Bird[] = Array.isArray(data) ? [...data] : [];
-          const seenIds = new Set(currentBirdsList.map((b: any) => b.id));
-          const seenAnilhas = new Set(currentBirdsList.map((b: any) => (b.anilha || '').toLowerCase().trim()).filter(Boolean));
-
-          try {
-            const allKeys = await localforage.keys();
-            const birdKeys = allKeys.filter(k => k.includes('birds'));
-            for (const bKey of birdKeys) {
-              const extraBirds = (await localforage.getItem<any[]>(bKey)) || [];
-              if (Array.isArray(extraBirds)) {
-                for (const eb of extraBirds) {
-                  if (!eb || !eb.id) continue;
-                  const anilhaClean = (eb.anilha || '').toLowerCase().trim();
-                  if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
-                    seenIds.add(eb.id);
-                    if (anilhaClean) seenAnilhas.add(anilhaClean);
-                    currentBirdsList.push(eb);
-                  }
-                }
-              }
-            }
-
-            for (let i = 0; i < localStorage.length; i++) {
-              const lsKey = localStorage.key(i);
-              if (lsKey && lsKey.includes('birds')) {
-                const raw = localStorage.getItem(lsKey);
-                if (raw) {
-                  try {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) {
-                      for (const eb of parsed) {
-                        if (!eb || !eb.id) continue;
-                        const anilhaClean = (eb.anilha || '').toLowerCase().trim();
-                        if (!seenIds.has(eb.id) && (!anilhaClean || !seenAnilhas.has(anilhaClean))) {
-                          seenIds.add(eb.id);
-                          if (anilhaClean) seenAnilhas.add(anilhaClean);
-                          currentBirdsList.push(eb);
-                        }
-                      }
-                    }
-                  } catch {}
-                }
-              }
-            }
-          } catch (kErr) {
-            console.warn('Erro ao verificar chaves adicionais de aves:', kErr);
+          // Varredura profunda imediata que vasculha todos os bancos IndexedDB e LocalStorage
+          const recoveryResult = await deepScanAllStorage(user?.id);
+          let currentBirdsList: Bird[] = recoveryResult.birds;
+          if (currentBirdsList.length === 0 && Array.isArray(data) && data.length > 0) {
+            currentBirdsList = data;
           }
-
           await localforage.setItem(userKey, currentBirdsList);
           if (isCurrentUserAdmin) {
             await localforage.setItem('@mura-manager:admin:birds', currentBirdsList);
@@ -857,11 +819,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setBirds(mappedBirds);
-      await localforage.setItem(getStorageKey('birds'), mappedBirds);
-      if (isAdmin) {
-        await localforage.setItem('@mura-manager:admin:birds', mappedBirds);
-        await localforage.setItem('@mura-manager:birds', mappedBirds);
+      // BLINDAGEM DEFENSIVA ABSOLUTA:
+      // Se a nuvem retornou 0 aves e temos aves salvas localmente, NUNCA sobreescrevemos com lista vazia!
+      if (sbBirds.length === 0 && localBirds.length > 0) {
+        console.log(`[Sync Defensivo] Supabase retornou 0 aves. Preservando ${localBirds.length} ave(s) locais.`);
+        setBirds(localBirds);
+        await localforage.setItem(getStorageKey('birds'), localBirds);
+        if (isAdmin) {
+          await localforage.setItem('@mura-manager:admin:birds', localBirds);
+          await localforage.setItem('@mura-manager:birds', localBirds);
+        }
+      } else if (mappedBirds.length > 0) {
+        setBirds(mappedBirds);
+        await localforage.setItem(getStorageKey('birds'), mappedBirds);
+        if (isAdmin) {
+          await localforage.setItem('@mura-manager:admin:birds', mappedBirds);
+          await localforage.setItem('@mura-manager:birds', mappedBirds);
+        }
+      } else {
+        // Se ambos mappedBirds e sbBirds são vazios, verifica se há backup de emergência no localStorage
+        try {
+          const emergencyRaw = localStorage.getItem('@mura-manager:emergency-birds-backup');
+          if (emergencyRaw) {
+            const emergencyBirds = JSON.parse(emergencyRaw);
+            if (Array.isArray(emergencyBirds) && emergencyBirds.length > 0) {
+              console.log(`[Sync Defensivo] Restaurando ${emergencyBirds.length} ave(s) do backup de emergência.`);
+              setBirds(emergencyBirds);
+              await localforage.setItem(getStorageKey('birds'), emergencyBirds);
+              if (isAdmin) {
+                await localforage.setItem('@mura-manager:admin:birds', emergencyBirds);
+                await localforage.setItem('@mura-manager:birds', emergencyBirds);
+              }
+            }
+          }
+        } catch {}
       }
 
       // ── CASAIS: Mapeamento e preservação de não sincronizados ──
@@ -2210,6 +2201,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('@mura-manager:hasSetupProfile_v1', 'true');
   };
 
+  const recoverAllBirds = useCallback(async () => {
+    const res = await deepScanAllStorage(user?.id);
+    if (res.birds.length > 0) {
+      setBirds(res.birds);
+      await localforage.setItem(getStorageKey('birds'), res.birds);
+      if (isCurrentUserAdmin) {
+        await localforage.setItem('@mura-manager:admin:birds', res.birds);
+        await localforage.setItem('@mura-manager:birds', res.birds);
+      }
+      showToast(`${res.birds.length} ave(s) recuperada(s) com sucesso!`, 'success');
+    } else {
+      showToast('Nenhuma ave encontrada no armazenamento local deste dispositivo.', 'info');
+    }
+    return res;
+  }, [user, isCurrentUserAdmin, getStorageKey, showToast]);
+
   const contextValue = useMemo(() => ({
     isReady,
     breeds, addBreed, editBreed, removeBreed,
@@ -2226,13 +2233,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     activeBreed, setActiveBreed,
     incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
     showToast,
+    recoverAllBirds,
     isTourOpen, isProfileSetupOpen,
     startTour, closeTour, finishTour,
     openProfileSetup, closeProfileSetup, finishProfileSetup
   }), [
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots, showToast, isTourOpen, isProfileSetupOpen
+    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen
   ]);
 
   return (

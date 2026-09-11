@@ -119,7 +119,7 @@ export function Settings() {
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
     coupleEggs, incubationLots,
-    importBackup, openTutorial, showToast
+    importBackup, openTutorial, showToast, recoverAllBirds
   } = useAppContext();
   const { signOut, isLocalMode, cpf, user, trialInfo, triggerWebhookPayment, isAdmin } = useAuth();
 
@@ -130,6 +130,29 @@ export function Settings() {
   const [isSaved, setIsSaved] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryReport, setRecoveryReport] = useState<string | null>(null);
+
+  const handleDeepRecovery = async () => {
+    setIsRecovering(true);
+    try {
+      const res = await recoverAllBirds();
+      setRecoveryReport(res.report);
+      if (res.count > 0) {
+        setImportStatus('success');
+        setImportMessage(`Varredura concluída! ${res.count} aves foram recuperadas e consolidadas no seu dispositivo.`);
+        showToast(`${res.count} aves recuperadas com sucesso!`, 'success');
+      } else {
+        setImportStatus('idle');
+        showToast('Varredura concluída. Nenhuma ave identificada.', 'info');
+      }
+    } catch (err: any) {
+      setImportStatus('error');
+      setImportMessage('Erro ao executar varredura profunda: ' + (err.message || 'Falha'));
+    } finally {
+      setIsRecovering(false);
+    }
+  };
 
   // Estado para Modal de Pagamento Antecipado da Assinatura
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -552,6 +575,42 @@ export function Settings() {
             accept=".json"
             className="hidden"
           />
+        </div>
+
+        {/* Botão de Resgate Profundo de Aves */}
+        <div className="pt-3 border-t border-theme-border/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <div>
+              <h4 className="text-xs font-black text-amber-400">Varredura de Emergência de Aves</h4>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Vasculha todos os bancos IndexedDB e memórias locais deste celular para resgatar aves cadastradas anteriormente.
+              </p>
+            </div>
+            <button
+              onClick={handleDeepRecovery}
+              disabled={isRecovering}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
+            >
+              {isRecovering ? 'Executando Varredura...' : '🔍 Escanear & Restaurar Aves'}
+            </button>
+          </div>
+
+          {recoveryReport && (
+            <div className="mt-3 p-3 bg-black/50 border border-theme-border/50 rounded-xl">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-mono text-theme-text-muted">Relatório da Varredura:</span>
+                <button
+                  onClick={() => setRecoveryReport(null)}
+                  className="text-[10px] text-theme-text-muted hover:text-white"
+                >
+                  Fechar
+                </button>
+              </div>
+              <pre className="text-[10px] font-mono text-amber-200/90 whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
+                {recoveryReport}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
 

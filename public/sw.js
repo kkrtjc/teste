@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mura-manager-v3';
+const CACHE_NAME = 'mura-manager-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -28,15 +28,32 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// ── Estratégia Cache First com Fallback para Rede ─────────────────────────
+// ── Estratégia de Rede: Network First para páginas/scripts e Cache First para estáticos ──
 self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('supabase.co') || e.request.url.includes('chrome-extension')) return;
 
+  // Network First para HTML e scripts: garante sempre o bundle mais atualizado no celular
+  if (e.request.mode === 'navigate' || e.request.destination === 'script' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache First com fallback para rede para imagens, ícones e fontes
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
         fetch(e.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
+          if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
           }
         }).catch(() => {});

@@ -191,10 +191,27 @@ export function Birds() {
   const { 
     breeds, addBreed, editBreed, removeBreed,
     birds, editBird, openAddBirdModal, openBirdProfile, 
-    activeBreed, setActiveBreed, showToast 
+    activeBreed, setActiveBreed, showToast, recoverAllBirds
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<'aves' | 'racas'>('aves');
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const handleRecoverBirds = async () => {
+    setIsRecovering(true);
+    try {
+      const res = await recoverAllBirds();
+      if (res.count > 0) {
+        showToast(`🎉 ${res.count} aves recuperadas com sucesso!`, 'success');
+      } else {
+        alert('Varredura Concluída: Nenhuma ave encontrada nos bancos locais deste dispositivo.\n\nSe você cadastrou as aves em outro aparelho ou limpou os dados do navegador, importe um arquivo de backup em Configurações.');
+      }
+    } catch (err: any) {
+      showToast('Erro ao recuperar aves: ' + (err.message || 'Falha na varredura'), 'error');
+    } finally {
+      setIsRecovering(false);
+    }
+  };
 
   // Sincroniza aba selecionada via URL query ou state de navegação
   useEffect(() => {
@@ -504,6 +521,17 @@ export function Birds() {
             </div>
           )}
 
+          {activeTab === 'aves' && (
+            <button
+              onClick={handleRecoverBirds}
+              disabled={isRecovering}
+              className="px-2.5 py-1.5 bg-theme-surface hover:bg-white/5 border border-theme-border/60 text-theme-text-muted hover:text-amber-400 rounded-full transition-all text-[10px] sm:text-xs font-bold flex items-center gap-1 shrink-0 active:scale-95 disabled:opacity-50"
+              title="Restaurar aves do armazenamento local"
+            >
+              🔄 {isRecovering ? 'Restaurando...' : 'Restaurar Aves'}
+            </button>
+          )}
+
           {activeTab === 'aves' ? (
             <button 
               onClick={() => openAddBirdModal(activeBreed)} 
@@ -549,6 +577,28 @@ export function Birds() {
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
         <div className="space-y-3">
+          {/* Banner de Recuperação se houver 0 aves */}
+          {birds.length === 0 && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-lg">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">🐓</span>
+                <div>
+                  <h4 className="text-sm font-black text-amber-400">Cadastrou aves e elas sumiram da tela?</h4>
+                  <p className="text-xs text-amber-100/80 leading-relaxed mt-0.5">
+                    Se você cadastrou suas aves anteriormente neste celular ou computador, clique no botão para fazer uma varredura profunda no armazenamento local e recuperá-las imediatamente.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRecoverBirds}
+                disabled={isRecovering}
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-lg transition-all shrink-0 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                {isRecovering ? 'Varrendo celular...' : '🔄 Restaurar Minhas Aves'}
+              </button>
+            </div>
+          )}
+
           {/* Search Row */}
           <div className="w-full shrink-0">
             <div className="relative">
