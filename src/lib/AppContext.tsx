@@ -584,7 +584,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             imagens: b.imagens || [],
             observacoes: b.observacoes || ''
           }));
-          await supabase!.from('birds').upsert(birdsToInsert, { onConflict: 'id' });
+          
+          // Envia em lotes de 2 para nunca estourar o limite de payload HTTP (fotos base64)
+          for (let i = 0; i < birdsToInsert.length; i += 2) {
+            const chunk = birdsToInsert.slice(i, i + 2);
+            const { error: chunkErr } = await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
+            if (chunkErr && (chunkErr.code === '42501' || chunkErr.message?.includes('policy'))) {
+              const retryChunk = chunk.map((c: any) => ({ ...c, id: `mura-${c.id}` }));
+              try {
+                await supabase!.from('birds').upsert(retryChunk, { onConflict: 'id' });
+              } catch {}
+            }
+          }
           sbBirds = birdsToInsert;
         } catch (mErr) {
           console.error('Erro ao subir aves para o Supabase:', mErr);
@@ -792,9 +803,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
             observacoes: b.observacoes || ''
           }));
           
-          supabase!.from('birds').upsert(birdsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir aves pendentes:', error);
-          });
+          // Envia em lotes pequenos de 2 aves para nunca estourar o limite de payload HTTP (fotos)
+          for (let i = 0; i < birdsToPush.length; i += 2) {
+            const chunk = birdsToPush.slice(i, i + 2);
+            try {
+              const { error: chunkErr } = await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
+              if (chunkErr && (chunkErr.code === '42501' || chunkErr.message?.includes('policy'))) {
+                const retryChunk = chunk.map((c: any) => ({ ...c, id: `mura-${c.id}` }));
+                try {
+                  await supabase!.from('birds').upsert(retryChunk, { onConflict: 'id' });
+                } catch {}
+              }
+            } catch (chunkErr) {
+              console.warn('Erro ao subir lote de aves pendentes:', chunkErr);
+            }
+          }
         }
       }
 
@@ -1107,7 +1130,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await localforage.setItem(getStorageKey('incubation-lots'), mappedIncubationLots);
 
       // ── CONFIGURAÇÕES DA FAZENDA ──
-      if (sbSettings) {
+      const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
+      const hasLocalProfile = localSettings && (Boolean(localSettings.name) || Boolean(localSettings.photo) || Boolean(localSettings.phone));
+
+      if (hasSbProfile) {
         const settingsData = {
           name: sbSettings.name || localSettings?.name || '',
           photo: sbSettings.photo || localSettings?.photo || '',
@@ -1116,13 +1142,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
         setFarmSettings(settingsData);
         await localforage.setItem(getStorageKey('settings'), settingsData);
-      } else if (localSettings && (localSettings.name || localSettings.photo || localSettings.email || localSettings.phone)) {
+        if (isAdmin) {
+          await localforage.setItem('@mura-manager:settings', settingsData);
+        }
+      } else if (hasLocalProfile) {
         setFarmSettings(localSettings);
-        await supabase!.from('profiles').upsert({ id: user.id, ...localSettings });
+        if (isSupabaseConfigured) {
+          await supabase!.from('profiles').upsert({
+            id: targetUserId,
+            name: localSettings.name || '',
+            photo: localSettings.photo || '',
+            email: localSettings.email || '',
+            phone: localSettings.phone || ''
+          });
+        }
       } else {
         const defaultSettings = { name: '', photo: '', email: '', phone: '' };
         setFarmSettings(defaultSettings);
-        await supabase!.from('profiles').upsert({ id: user.id, ...defaultSettings });
         await localforage.setItem(getStorageKey('settings'), defaultSettings);
       }
     } catch (syncError) {
@@ -2021,11 +2057,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setFarmSettings(prev => {
       const next = { ...prev, ...settings };
       localforage.setItem(getStorageKey('settings'), next).catch(err => console.error(err));
+      if (isCurrentUserAdmin) {
+        localforage.setItem('@mura-manager:settings', next).catch(err => console.error(err));
+      }
       
       if (isSupabaseConfigured && user) {
+        const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
         supabase!
           .from('profiles')
-          .upsert({ id: user.id, name: next.name, photo: next.photo, email: next.email, phone: next.phone })
+          .upsert({ id: targetUserId, name: next.name, photo: next.photo, email: next.email, phone: next.phone })
           .then(({ error }) => { if (error) console.error('Erro Supabase updateFarmSettings:', error); });
       }
       return next;
