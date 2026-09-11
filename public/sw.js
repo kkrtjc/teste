@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mura-manager-v7';
+const CACHE_NAME = 'mura-manager-v8';
 const ASSETS = [
   '/',
   '/index.html',
