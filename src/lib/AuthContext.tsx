@@ -68,8 +68,6 @@ type AuthContextType = {
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
   signIn: (identifier: string, password?: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
-  signInWithApple: () => Promise<{ error: any }>;
   sendPasswordReset: (identifier: string) => Promise<{ error: any; email?: string }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
   linkCpfToUser: (cpfInput: string) => Promise<{ error: any }>;
@@ -378,68 +376,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimeout);
     };
   }, []);
-
-  const signInWithGoogle = async () => {
-    if (!isSupabaseConfigured) {
-      const mockEmail = `usuario.google.${Math.floor(Math.random() * 1000)}@gmail.com`;
-      const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-      const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-      const clientPayload = {
-        cpf: tempCpf,
-        nome: 'Usuário Google',
-        email: mockEmail,
-        expires_at: trialExpiresAt
-      };
-      const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-      list.push(clientPayload);
-      await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
-      const mockSession = {
-        session: { access_token: `google-mock-${Date.now()}` },
-        user: { id: `google-${tempCpf}`, email: mockEmail, user_metadata: { full_name: 'Usuário Google' } }
-      };
-      await localforage.setItem('@mura-manager:local-session', mockSession);
-      setUser(mockSession.user);
-      setSession(mockSession.session);
-      return { error: null };
-    }
-
-    const { error } = await supabase!.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    });
-    return { error };
-  };
-
-  const signInWithApple = async () => {
-    if (!isSupabaseConfigured) {
-      const mockEmail = `usuario.apple.${Math.floor(Math.random() * 1000)}@apple.com`;
-      const trialExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString();
-      const tempCpf = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-      const clientPayload = {
-        cpf: tempCpf,
-        nome: 'Usuário Apple',
-        email: mockEmail,
-        expires_at: trialExpiresAt
-      };
-      const list = await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs') || [];
-      list.push(clientPayload);
-      await localforage.setItem('@mura-manager:local-allowed-cpfs', list);
-      const mockSession = {
-        session: { access_token: `apple-mock-${Date.now()}` },
-        user: { id: `apple-${tempCpf}`, email: mockEmail, user_metadata: { full_name: 'Usuário Apple' } }
-      };
-      await localforage.setItem('@mura-manager:local-session', mockSession);
-      setUser(mockSession.user);
-      setSession(mockSession.session);
-      return { error: null };
-    }
-
-    const { error } = await supabase!.auth.signInWithOAuth({
-      provider: 'apple',
-      options: { redirectTo: window.location.origin }
-    });
-    return { error };
-  };
 
   const signIn = async (identifier: string, passwordInput?: string) => {
     const isEmail = identifier.includes('@');
@@ -1038,8 +974,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isPasswordRecovery,
       setIsPasswordRecovery,
       signIn,
-      signInWithGoogle,
-      signInWithApple,
       sendPasswordReset,
       updatePassword,
       linkCpfToUser,

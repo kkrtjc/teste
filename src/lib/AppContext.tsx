@@ -2157,16 +2157,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const closeTour = () => {
     setIsTourOpen(false);
     localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v1') !== 'true') {
-      setIsProfileSetupOpen(true);
-    }
   };
   const finishTour = () => {
     setIsTourOpen(false);
     localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-    if (localStorage.getItem('@mura-manager:hasSetupProfile_v1') !== 'true') {
-      setIsProfileSetupOpen(true);
-    }
   };
 
   const { triggerSuccess, triggerWarning, triggerError, triggerLight } = useHaptics();
