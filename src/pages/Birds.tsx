@@ -553,22 +553,15 @@ export function Birds() {
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
         <div className="space-y-3">
-          {/* Botão de Destaque no Celular (Mobile First) */}
-          <div className="sm:hidden">
+          {/* Botão no Início da Aba (Compacto e Proporcional) */}
+          <div className="sm:hidden flex items-center">
             <button
               type="button"
               onClick={() => openAddBirdModal(activeBreed)}
-              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-theme-primary via-amber-400 to-theme-primary text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-between shadow-lg shadow-theme-primary/25 active:scale-[0.98] transition-all border border-amber-300/40 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all border border-amber-300/40 cursor-pointer"
             >
-              <span className="flex items-center gap-2.5">
-                <span className="w-7 h-7 rounded-xl bg-slate-950/15 flex items-center justify-center text-slate-950">
-                  <Plus size={16} strokeWidth={3} />
-                </span>
-                <span className="text-xs font-black tracking-wide">Cadastrar Nova Ave</span>
-              </span>
-              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-950/15 text-slate-950">
-                + Adicionar
-              </span>
+              <Plus size={15} strokeWidth={3} />
+              <span>Cadastrar Ave</span>
             </button>
           </div>
 
@@ -688,17 +681,6 @@ export function Birds() {
             )}
           </div>
 
-          {/* Botão Flutuante (FAB) no Celular para Acesso Rápido */}
-          <button
-            type="button"
-            onClick={() => openAddBirdModal(activeBreed)}
-            className="sm:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-theme-primary to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-2xl shadow-theme-primary/40 border border-amber-300/40 active:scale-95 transition-all cursor-pointer"
-            style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
-            aria-label="Cadastrar Nova Ave"
-          >
-            <Plus size={18} strokeWidth={3} />
-            <span>Nova Ave</span>
-          </button>
         </div>
       )}
 
