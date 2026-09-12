@@ -815,9 +815,9 @@ export function Settings() {
         message="Deseja realmente sair da sua conta? Seus dados continuarão salvos com segurança na nuvem."
         confirmLabel="Sair da Conta"
         confirmVariant="danger"
-        onConfirm={() => {
+        onConfirm={async () => {
           setConfirmSignOutOpen(false);
-          signOut();
+          await signOut();
         }}
         onCancel={() => setConfirmSignOutOpen(false)}
       />

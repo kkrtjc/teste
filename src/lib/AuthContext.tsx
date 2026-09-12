@@ -285,45 +285,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 1. Pega a sessão salva e libera o app instantaneamente
     supabase!.auth.getSession().then(async ({ data: { session } }) => {
-      let activeSession = session;
-      let activeUser = session?.user;
-
-      // Auto-recuperação do Admin: se a sessão não estiver ativa mas o cache indicar admin
-      const cachedCpf = localStorage.getItem('@mura-manager:user-cpf');
-      const cachedUserRaw = localStorage.getItem('@mura-manager:cached-user');
-      let isCachedAdmin = cachedCpf === ADMIN_CPF;
-      if (!isCachedAdmin && cachedUserRaw) {
-        try {
-          const cu = JSON.parse(cachedUserRaw);
-          if (isUserAdmin(cu.email) || isUserAdmin(cu.id)) isCachedAdmin = true;
-        } catch {}
-      }
-
-      if (!activeSession && isCachedAdmin) {
-        try {
-          const { data, error } = await supabase!.auth.signInWithPassword({
-            email: ADMIN_AUTH_EMAIL,
-            password: ADMIN_AUTH_PASS
-          });
-          if (!error && data?.session) {
-            activeSession = data.session;
-            activeUser = data.user;
-          }
-        } catch {}
-      }
+      const activeSession = session;
+      const activeUser = session?.user;
 
       if (activeSession && activeUser) {
         const u = sanitizeAdminUser(activeUser);
         setSession(activeSession);
         setUser(u);
-        setLinkedCpf(ADMIN_CPF);
+        if (isUserAdmin(u.email) || isUserAdmin(u.id)) {
+          setLinkedCpf(ADMIN_CPF);
+          try {
+            localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+          } catch {}
+        }
         try {
           localStorage.setItem('@mura-manager:cached-user', JSON.stringify(u));
           if (activeSession.access_token) {
             localStorage.setItem('@mura-manager:cached-session', JSON.stringify(activeSession));
-          }
-          if (isUserAdmin(u.email)) {
-            localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
           }
         } catch {}
         // Validação em segundo plano sem travar o carregamento da tela
@@ -331,9 +309,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
         setSession(null);
+        setLinkedCpf('');
         try {
           localStorage.removeItem('@mura-manager:cached-user');
           localStorage.removeItem('@mura-manager:cached-session');
+          localStorage.removeItem('@mura-manager:user-cpf');
         } catch {}
       }
       setLoading(false);
@@ -349,6 +329,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (_event === 'PASSWORD_RECOVERY') {
         setIsPasswordRecovery(true);
       }
+      if (_event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setSession(null);
+        setLinkedCpf('');
+        try {
+          localStorage.removeItem('@mura-manager:cached-user');
+          localStorage.removeItem('@mura-manager:cached-session');
+          localStorage.removeItem('@mura-manager:user-cpf');
+        } catch {}
+        setLoading(false);
+        return;
+      }
       setSession(session);
       if (session?.user) {
         const u = sanitizeAdminUser(session.user);
@@ -358,15 +350,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (session.access_token) {
             localStorage.setItem('@mura-manager:cached-session', JSON.stringify(session));
           }
+          if (isUserAdmin(u.email) || isUserAdmin(u.id)) {
+            localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+            setLinkedCpf(ADMIN_CPF);
+          }
         } catch {}
         validateUserAccess(u);
-      } else {
-        setUser(null);
-        setSession(null);
-        try {
-          localStorage.removeItem('@mura-manager:cached-user');
-          localStorage.removeItem('@mura-manager:cached-session');
-        } catch {}
       }
       setLoading(false);
     });
@@ -691,13 +680,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await localforage.removeItem('@mura-manager:local-session');
       localStorage.removeItem('@mura-manager:cached-user');
       localStorage.removeItem('@mura-manager:cached-session');
+      localStorage.removeItem('@mura-manager:user-cpf');
+      sessionStorage.clear();
     } catch (err) {
       console.error('Erro ao limpar cache local de sessão:', err);
     }
 
-    await supabase!.auth.signOut();
+    try {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error('Erro ao deslogar do Supabase:', err);
+    }
+
     setUser(null);
     setSession(null);
+    setLinkedCpf('');
   };
 
   const getCpf = () => {
