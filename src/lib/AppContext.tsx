@@ -372,6 +372,76 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [getDeletedBirdIds]);
 
+  // ── Rastreamento de Aves Criadas Offline (evita re-upload indevido de aves excluídas em outros aparelhos) ──
+  const getOfflinePendingBirdIds = useCallback(async (): Promise<Set<string>> => {
+    try {
+      const arr = await localforage.getItem<string[]>('@mura-manager:offline-pending-birds');
+      if (arr && Array.isArray(arr)) return new Set(arr);
+    } catch {}
+    return new Set();
+  }, []);
+
+  const markPendingOfflineBird = useCallback(async (id: string) => {
+    try {
+      const set = await getOfflinePendingBirdIds();
+      set.add(id);
+      await localforage.setItem('@mura-manager:offline-pending-birds', Array.from(set));
+    } catch {}
+  }, [getOfflinePendingBirdIds]);
+
+  const clearPendingOfflineBird = useCallback(async (id: string) => {
+    try {
+      const set = await getOfflinePendingBirdIds();
+      if (set.has(id)) {
+        set.delete(id);
+        await localforage.setItem('@mura-manager:offline-pending-birds', Array.from(set));
+      }
+    } catch {}
+  }, [getOfflinePendingBirdIds]);
+
+  // ── Rastreamento de Exclusões Pendentes Offline ──
+  const getPendingDeleteBirdIds = useCallback(async (): Promise<Set<string>> => {
+    try {
+      const arr = await localforage.getItem<string[]>('@mura-manager:pending-delete-birds');
+      if (arr && Array.isArray(arr)) return new Set(arr);
+    } catch {}
+    return new Set();
+  }, []);
+
+  const markPendingDeleteBird = useCallback(async (id: string) => {
+    try {
+      const set = await getPendingDeleteBirdIds();
+      set.add(id);
+      await localforage.setItem('@mura-manager:pending-delete-birds', Array.from(set));
+    } catch {}
+  }, [getPendingDeleteBirdIds]);
+
+  const clearPendingDeleteBird = useCallback(async (id: string) => {
+    try {
+      const set = await getPendingDeleteBirdIds();
+      if (set.has(id)) {
+        set.delete(id);
+        await localforage.setItem('@mura-manager:pending-delete-birds', Array.from(set));
+      }
+    } catch {}
+  }, [getPendingDeleteBirdIds]);
+
+  // Canal Realtime Broadcast para sincronização ultrarrápida (<100ms) entre dispositivos conectados
+  const realtimeBroadcastChannelRef = useRef<any>(null);
+  const triggerRemoteSync = useCallback((entity: string = 'birds') => {
+    try {
+      if (realtimeBroadcastChannelRef.current) {
+        realtimeBroadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'mura_sync',
+          payload: { entity, timestamp: Date.now() }
+        });
+      }
+    } catch (e) {
+      console.warn('[Sync Broadcast] Falha ao enviar broadcast de alteração:', e);
+    }
+  }, []);
+
   // Helper ultrarrápido (~0ms) para carregar o cache offline em paralelo no primeiro render
   const loadFromLocalForage = useCallback(async () => {
     if (!user) return;
@@ -457,7 +527,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured || !user) return;
     const now = Date.now();
     if (isSyncingRef.current) return;
-    if (!force && now - lastSyncTimeRef.current < 15000) return;
+    if (!force && now - lastSyncTimeRef.current < 2500) return;
 
     isSyncingRef.current = true;
     lastSyncTimeRef.current = now;
@@ -487,8 +557,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,imagens,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,imagens,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -511,17 +581,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('[Sync] Erro Supabase ao buscar aves:', resBirds.error);
       }
 
-      const deletedBirdIds = getDeletedBirdIds();
-
-      // Expulsa imediatamente aves deletadas que possam ter vindo do Supabase
-      const zombieBirdsFromCloud = (resBirds.data || []).filter((b: any) => deletedBirdIds.has(b.id)).map((b: any) => b.id);
-      if (zombieBirdsFromCloud.length > 0 && isSupabaseConfigured) {
-        supabase!.from('birds').delete().in('id', zombieBirdsFromCloud).then(() => {});
+      // 1. Processa deleções pendentes no Supabase
+      const pendingDeleteIds = await getPendingDeleteBirdIds();
+      if (pendingDeleteIds.size > 0 && isSupabaseConfigured) {
+        const toDeleteArr = Array.from(pendingDeleteIds);
+        console.log(`[Sync] Executando exclusão pendente de ${toDeleteArr.length} aves no Supabase...`);
+        const { error: delErr } = await supabase!.from('birds').delete().in('id', toDeleteArr);
+        if (!delErr) {
+          for (const dId of toDeleteArr) {
+            await clearPendingDeleteBird(dId);
+          }
+        }
       }
 
       let sbBreeds = resBreeds.data || [];
+      const currentDeletedIds = await getPendingDeleteBirdIds();
       const sbBirdsFromCloud = (!resBirds.error && resBirds.data)
-        ? resBirds.data.filter((b: any) => !deletedBirdIds.has(b.id))
+        ? resBirds.data.filter((b: any) => 
+            !currentDeletedIds.has(b.id) &&
+            (b.anilha?.trim() || b.nome?.trim()) &&
+            !b.id.startsWith('inc-demo')
+          )
         : null;
 
       if (isAdmin && sbBirdsFromCloud && sbBirdsFromCloud.some((b: any) => b.user_id !== ADMIN_CANONICAL_ID)) {
@@ -558,7 +638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         localforage.getItem(getStorageKey('incubation-lots'))
       ]);
 
-      const localBirds = ((birds && birds.length > 0) ? birds : (rawLocalBirds || [])).filter((b: any) => b && b.id && !deletedBirdIds.has(b.id));
+      const localBirds = ((birds && birds.length > 0) ? birds : (rawLocalBirds || [])).filter((b: any) => b && b.id);
       const localBreeds = (breeds && breeds.length > 0) ? breeds : (rawLocalBreeds || []);
       const localCouples = (couples && couples.length > 0) ? couples : (rawLocalCouples || []);
       const localEggLots = (eggLots && eggLots.length > 0) ? eggLots : (rawLocalEggLots || []);
@@ -566,52 +646,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localSettings = rawLocalSettings;
       const localCoupleEggs = (coupleEggs && coupleEggs.length > 0) ? coupleEggs : (rawLocalCoupleEggs || []);
       const localIncubationLots = (incubationLots && incubationLots.length > 0) ? incubationLots : (rawLocalIncubationLots || []);
-
-      // ── SYNC AVES: Cloud-first. A nuvem é a fonte de verdade. ──
-      let sbBirds: any[] = sbBirdsFromCloud !== null ? sbBirdsFromCloud : localBirds;
-      if (sbBirdsFromCloud === null) {
-        console.warn('[Sync] Supabase inacessível no momento, preservando dados locais de aves.');
-      }
-
-      const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
-      
-      if (sbBirds.length === 0 && localBirds.length > 0) {
-        // A nuvem está vazia mas temos aves locais - preserva TODAS que não foram deletadas
-        console.log(`[Sync] Nuvem retornou 0 aves. Preservando ${localBirds.length} aves locais e sincronizando com Supabase...`);
-        const birdsToInsert = localBirds.map((b: any) => ({
-          id: b.id,
-          user_id: targetUserId,
-          anilha: b.anilha,
-          nome: b.nome || null,
-          sexo: b.sexo,
-          raca: b.raca,
-          baia: b.baia || 'ND',
-          status: b.status,
-          imagem: b.imagens?.[0] || b.imagem || null,
-          vacinas: b.vacinas || null,
-          origem: b.origem || 'Criatório',
-          casal_id: b.casalId || null,
-          pai_id: b.paiId || null,
-          mae_id: b.maeId || null,
-          is_pai_externo: !!b.isPaiExterno,
-          is_mae_externo: !!b.isMaeExterno,
-          data_nascimento: b.dataNascimento || null,
-          peso: b.peso || null,
-          imagens: b.imagens || [],
-          observacoes: b.observacoes || ''
-        }));
-        if (isSupabaseConfigured && user) {
-          for (let i = 0; i < birdsToInsert.length; i += 5) {
-            const chunk = birdsToInsert.slice(i, i + 5);
-            try {
-              await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
-            } catch (err) {
-              console.warn('[Sync] Falha ao upsert aves no Supabase:', err);
-            }
-          }
-        }
-        sbBirds = localBirds;
-      }
 
       if (sbEggLots.length === 0 && localEggLots.length > 0) {
         console.log(`[Sync Defensivo] Enviando ${localEggLots.length} lotes de postura locais para o Supabase...`);
@@ -749,94 +783,99 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await localforage.setItem('@mura-manager:breeds', uniqueBreeds);
       }
 
-      // ── AVES: Mapeia aves da nuvem (fonte de verdade) ──
-      const mappedBirds: Bird[] = sbBirds.map((b: any) => {
-        // Preserva fotos que possam existir só no cache local (base64 não armazenado na nuvem)
-        const localBird = (localBirds || []).find((x: any) => x.id === b.id);
-        let birdImagens = b.imagens || localBird?.imagens || [];
-        
-        if (birdImagens.length === 0 && b.imagem) {
-          birdImagens = [b.imagem];
-        } else if (b.imagem && birdImagens[0] !== b.imagem) {
-          birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
-        }
+      // ── AVES: Sincronização Cloud-Authoritative & Prevenção Rigorosa de Fantasmas ──
+      const offlinePendingIds = await getOfflinePendingBirdIds();
 
-        return {
-          id: b.id,
-          anilha: b.anilha || '',
-          nome: b.nome || '',
-          sexo: b.sexo || 'Macho',
-          raca: b.raca || '',
-          baia: b.baia || 'ND',
-          status: b.status || 'Reprodutor',
-          imagem: b.imagem || (birdImagens[0] ?? undefined),
-          imagens: birdImagens,
-          vacinas: b.vacinas,
-          origem: b.origem,
-          casalId: b.casal_id || b.casalId,
-          paiId: b.pai_id || b.paiId,
-          maeId: b.mae_id || b.maeId,
-          isPaiExterno: b.is_pai_externo !== undefined ? b.is_pai_externo : b.isPaiExterno,
-          isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
-          dataNascimento: b.data_nascimento || b.dataNascimento,
-          peso: b.peso,
-          dataBaixa: localBird?.dataBaixa,
-          observacoes: b.observacoes || localBird?.observacoes || ''
-        };
-      });
-
-      // Aves existentes localmente que ainda não foram enviadas ao Supabase
-      // Preserva SEMPRE: uma vez salvas, só somem se forem explicitamente deletadas
-      const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => {
-        if (!lb || !lb.id) return false;
-        if (sbBirdIds.has(lb.id)) return false;  // Já está na nuvem
-        if (deletedBirdIds.has(lb.id)) return false;  // Foi deletada pelo usuário
-        return true;
-      });
-      
-      if (unsyncedLocalBirds.length > 0) {
-        console.log(`[Sync] Enviando ${unsyncedLocalBirds.length} ave(s) offline para o Supabase...`);
-        mappedBirds.push(...unsyncedLocalBirds);
-
-        if (isSupabaseConfigured && user) {
-          const birdsToPush = unsyncedLocalBirds.map((b: any) => ({
+      // Sobe para o Supabase apenas aves criadas localmente offline que ainda aguardam sincronização
+      if (offlinePendingIds.size > 0 && isSupabaseConfigured && user) {
+        const birdsToPush = (localBirds || []).filter((b: any) => b && b.id && offlinePendingIds.has(b.id));
+        if (birdsToPush.length > 0) {
+          console.log(`[Sync] Enviando ${birdsToPush.length} ave(s) criadas offline para o Supabase...`);
+          const payloads = birdsToPush.map((b: any) => ({
             id: b.id,
             user_id: targetUserId,
             anilha: b.anilha,
-            nome: b.nome,
+            nome: b.nome || null,
             sexo: b.sexo,
             raca: b.raca,
-            baia: b.baia,
+            baia: b.baia || 'ND',
             status: b.status,
-            imagem: b.imagens?.[0] || b.imagem,
-            vacinas: b.vacinas,
-            origem: b.origem,
-            casal_id: b.casalId,
-            pai_id: b.paiId,
-            mae_id: b.maeId,
-            is_pai_externo: b.isPaiExterno,
-            is_mae_externo: b.isMaeExterno,
-            data_nascimento: b.dataNascimento,
-            peso: b.peso,
+            imagem: b.imagens?.[0] || b.imagem || null,
+            vacinas: b.vacinas || null,
+            origem: b.origem || 'Criatório',
+            casal_id: b.casalId || null,
+            pai_id: b.paiId || null,
+            mae_id: b.maeId || null,
+            is_pai_externo: !!b.isPaiExterno,
+            is_mae_externo: !!b.isMaeExterno,
+            data_nascimento: b.dataNascimento || null,
+            peso: b.peso || null,
             imagens: b.imagens || [],
             observacoes: b.observacoes || ''
           }));
-          
-          // Envia em lotes de 2 para não estourar o limite de payload HTTP (fotos base64)
-          for (let i = 0; i < birdsToPush.length; i += 2) {
-            const chunk = birdsToPush.slice(i, i + 2);
+          for (let i = 0; i < payloads.length; i += 5) {
+            const chunk = payloads.slice(i, i + 5);
             try {
-              await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
+              const { error: upErr } = await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
+              if (!upErr) {
+                for (const b of chunk) {
+                  await clearPendingOfflineBird(b.id);
+                }
+              }
             } catch (chunkErr) {
-              console.warn('Erro ao subir lote de aves pendentes:', chunkErr);
+              console.warn('[Sync] Erro ao subir lote de aves offline:', chunkErr);
             }
           }
         }
       }
 
-      // Salva aves da nuvem no cache local para offline
-      // A nuvem é a fonte de verdade - substituímos tudo que estava no local
-      const finalBirds = mappedBirds.filter(b => !deletedBirdIds.has(b.id));
+      let finalBirds: Bird[] = [];
+      if (sbBirdsFromCloud !== null) {
+        // A nuvem respondeu com sucesso: é a autoridade central absoluta
+        const cloudMapped: Bird[] = sbBirdsFromCloud.map((b: any) => {
+          const localBird = (localBirds || []).find((x: any) => x.id === b.id);
+          let birdImagens = b.imagens || localBird?.imagens || [];
+          if (birdImagens.length === 0 && b.imagem) {
+            birdImagens = [b.imagem];
+          } else if (b.imagem && birdImagens[0] !== b.imagem) {
+            birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
+          }
+
+          return {
+            id: b.id,
+            anilha: b.anilha || '',
+            nome: b.nome || '',
+            sexo: b.sexo || 'Macho',
+            raca: b.raca || '',
+            baia: b.baia || 'ND',
+            status: b.status || 'Adulto',
+            imagem: b.imagem || (birdImagens[0] ?? undefined),
+            imagens: birdImagens,
+            vacinas: b.vacinas,
+            origem: b.origem,
+            casalId: b.casal_id || b.casalId,
+            paiId: b.pai_id || b.paiId,
+            maeId: b.mae_id || b.maeId,
+            isPaiExterno: b.is_pai_externo !== undefined ? b.is_pai_externo : b.isPaiExterno,
+            isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
+            dataNascimento: b.data_nascimento || b.dataNascimento,
+            peso: b.peso,
+            dataBaixa: localBird?.dataBaixa,
+            observacoes: b.observacoes || localBird?.observacoes || ''
+          };
+        });
+
+        // Adiciona apenas aves locais que foram criadas offline e ainda não chegaram à nuvem
+        const unconfirmedOffline = (localBirds || []).filter((b: any) =>
+          b && b.id && offlinePendingIds.has(b.id) && !sbBirdsFromCloud.some((cb: any) => cb.id === b.id)
+        );
+
+        finalBirds = [...cloudMapped, ...unconfirmedOffline];
+      } else {
+        // Nuvem inacessível no momento: preserva dados em cache local
+        finalBirds = localBirds;
+      }
+
       setBirds(finalBirds);
       try {
         await localforage.setItem(getStorageKey('birds'), finalBirds);
@@ -1195,14 +1234,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const handleOnline = () => {
       console.log('[Rede] Conexão restaurada. Disparando fila offline e sincronização com a nuvem...');
       processSyncQueue().catch(() => {});
-      syncWithSupabaseBackground();
+      syncWithSupabaseBackground(true);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[Foco App] Aplicativo visível. Disparando fila offline e sincronizando...');
+        console.log('[Foco App] Aplicativo visível. Disparando sincronização imediata...');
         processSyncQueue().catch(() => {});
-        syncWithSupabaseBackground();
+        syncWithSupabaseBackground(true);
       }
     };
 
@@ -1210,26 +1249,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Canal Realtime do Supabase com proteção rígida contra loops de sincronização
+    // Canal Realtime do Supabase: escuta mudanças nas tabelas e broadcast instantâneo entre abas/aparelhos
     const channel = supabase!
-      .channel('public:realtime-sync')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        if (isSyncingRef.current) return;
+      .channel('mura-sync-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'birds' }, () => {
         if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
         realtimeDebounceTimerRef.current = setTimeout(() => {
-          if (!isSyncingRef.current) {
-            syncWithSupabaseBackground();
-          }
-        }, 15000);
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'breeds' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'couples' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'egg_lots' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meat_lots' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incubation_lots' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('broadcast', { event: 'mura_sync' }, (payload) => {
+        console.log('[Realtime Broadcast] Notificação instantânea de sincronização recebida:', payload);
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 300);
       })
       .subscribe();
 
-    // Timer de checagem em segundo plano a cada 60 segundos
+    realtimeBroadcastChannelRef.current = channel;
+
+    // Timer de checagem periódica em segundo plano a cada 30 segundos
     const syncInterval = setInterval(() => {
       if (navigator.onLine && !isSyncingRef.current) {
-        syncWithSupabaseBackground();
+        syncWithSupabaseBackground(true);
       }
-    }, 60000);
+    }, 30000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -1238,6 +1313,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
       clearInterval(syncInterval);
       supabase!.removeChannel(channel);
+      realtimeBroadcastChannelRef.current = null;
     };
   }, [user, syncWithSupabaseBackground]);
 
@@ -1348,7 +1424,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ganho_gramas_dia: breed.ganhoGramasDia || null,
             conversao_alimentar: breed.conversaoAlimentar || null
           })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addBreed:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase addBreed:', error);
+            else triggerRemoteSync('breeds');
+          });
       }
       return next;
     });
@@ -1374,7 +1453,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('breeds')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editBreed:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase editBreed:', error);
+            else triggerRemoteSync('breeds');
+          });
       }
       return next;
     });
@@ -1391,8 +1473,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('breeds')
           .delete()
           .eq('id', id)
-          .eq('user_id', user.id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase removeBreed:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase removeBreed:', error);
+            else triggerRemoteSync('breeds');
+          });
       }
       return next;
     });
@@ -1416,6 +1500,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addBird = (bird: Bird) => {
     clearDeletedBirdId(bird.id);
+    markPendingOfflineBird(bird.id);
     setBirds(prev => {
       const next = [...prev, bird];
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
@@ -1450,16 +1535,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
         supabase!
           .from('birds')
-          .insert(payload)
+          .upsert(payload, { onConflict: 'id' })
           .then(
             ({ error }) => {
               if (error) {
                 console.warn('Erro Supabase addBird, enfileirando offline:', error);
-                enqueueMutation('birds', 'insert', payload);
+                enqueueMutation('birds', 'upsert', payload);
+              } else {
+                clearPendingOfflineBird(bird.id);
+                triggerRemoteSync('birds');
               }
             },
             () => {
-              enqueueMutation('birds', 'insert', payload);
+              enqueueMutation('birds', 'upsert', payload);
             }
           );
       }
@@ -1489,22 +1577,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       
       if (isSupabaseConfigured && user) {
-        const dbUpdate: any = { ...updatedBird };
-        if (updatedBird.casalId !== undefined) { dbUpdate.casal_id = updatedBird.casalId || null; delete dbUpdate.casalId; }
-        if (updatedBird.paiId !== undefined) { dbUpdate.pai_id = updatedBird.paiId || null; delete dbUpdate.paiId; }
-        if (updatedBird.maeId !== undefined) { dbUpdate.mae_id = updatedBird.maeId || null; delete dbUpdate.maeId; }
-        if (updatedBird.isPaiExterno !== undefined) { dbUpdate.is_pai_externo = !!updatedBird.isPaiExterno; delete dbUpdate.isPaiExterno; }
-        if (updatedBird.isMaeExterno !== undefined) { dbUpdate.is_mae_externo = !!updatedBird.isMaeExterno; delete dbUpdate.isMaeExterno; }
-        if (updatedBird.dataNascimento !== undefined) { dbUpdate.data_nascimento = updatedBird.dataNascimento || null; delete dbUpdate.dataNascimento; }
-        if (updatedBird.peso !== undefined) { dbUpdate.peso = updatedBird.peso || null; }
+        const dbUpdate: any = {};
+        if (updatedBird.anilha !== undefined) dbUpdate.anilha = updatedBird.anilha;
+        if (updatedBird.nome !== undefined) dbUpdate.nome = updatedBird.nome || null;
+        if (updatedBird.sexo !== undefined) dbUpdate.sexo = updatedBird.sexo;
+        if (updatedBird.raca !== undefined) dbUpdate.raca = updatedBird.raca;
+        if (updatedBird.baia !== undefined) dbUpdate.baia = updatedBird.baia || 'ND';
+        if (updatedBird.status !== undefined) dbUpdate.status = updatedBird.status;
+        if (updatedBird.vacinas !== undefined) dbUpdate.vacinas = updatedBird.vacinas || null;
+        if (updatedBird.origem !== undefined) dbUpdate.origem = updatedBird.origem || 'Criatório';
+        if (updatedBird.casalId !== undefined) dbUpdate.casal_id = updatedBird.casalId || null;
+        if (updatedBird.paiId !== undefined) dbUpdate.pai_id = updatedBird.paiId || null;
+        if (updatedBird.maeId !== undefined) dbUpdate.mae_id = updatedBird.maeId || null;
+        if (updatedBird.isPaiExterno !== undefined) dbUpdate.is_pai_externo = !!updatedBird.isPaiExterno;
+        if (updatedBird.isMaeExterno !== undefined) dbUpdate.is_mae_externo = !!updatedBird.isMaeExterno;
+        if (updatedBird.dataNascimento !== undefined) dbUpdate.data_nascimento = updatedBird.dataNascimento || null;
+        if (updatedBird.peso !== undefined) dbUpdate.peso = updatedBird.peso || null;
+        if (updatedBird.observacoes !== undefined) dbUpdate.observacoes = updatedBird.observacoes || '';
         if (updatedBird.imagens !== undefined) {
           dbUpdate.imagem = updatedBird.imagens?.[0] || null;
           dbUpdate.imagens = updatedBird.imagens;
+        } else if (updatedBird.imagem !== undefined) {
+          dbUpdate.imagem = updatedBird.imagem || null;
         }
-        if (updatedBird.observacoes !== undefined) {
-          dbUpdate.observacoes = updatedBird.observacoes;
-        }
-        delete dbUpdate.dataBaixa;
 
         supabase!
           .from('birds')
@@ -1515,6 +1610,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (error) {
                 console.warn('Erro Supabase editBird, enfileirando offline:', error);
                 enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
+              } else {
+                triggerRemoteSync('birds');
               }
             },
             () => {
@@ -1527,8 +1624,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const removeBird = (id: string) => {
-    // 1. Grava no túmulo persistente de IDs deletados
+    // 1. Grava no túmulo persistente de IDs deletados e fila pendente
     recordDeletedBirdId(id);
+    markPendingDeleteBird(id);
+    clearPendingOfflineBird(id);
 
     // 2. Remove da lista primária e dos espelhos de storage
     setBirds(prev => {
@@ -1560,6 +1659,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => {
               if (error) {
                 enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDeleteBird(id);
+                triggerRemoteSync('birds');
               }
             },
             () => {
@@ -1626,7 +1728,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             data_inicio: couple.dataInicio,
             status: couple.status
           })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addCouple:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase addCouple:', error);
+            else triggerRemoteSync('couples');
+          });
       }
       return next;
     });
@@ -1650,7 +1755,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couples')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editCouple:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase editCouple:', error);
+            else triggerRemoteSync('couples');
+          });
       }
       return next;
     });
@@ -1666,7 +1774,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couples')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase removeCouple:', error); });
+          .then(({ error }) => { 
+            if (error) console.error('Erro Supabase removeCouple:', error);
+            else triggerRemoteSync('couples');
+          });
       }
       return next;
     });

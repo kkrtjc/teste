@@ -73,10 +73,12 @@ export async function processSyncQueue(): Promise<{ processed: number; remaining
       try {
         let result: any = null;
 
-        if (item.action === 'insert') {
-          result = await supabase.from(item.table).insert(item.payload);
-        } else if (item.action === 'upsert') {
-          result = await supabase.from(item.table).upsert(item.payload);
+        if (item.action === 'insert' || item.action === 'upsert') {
+          if (item.payload && item.payload.id) {
+            result = await supabase.from(item.table).upsert(item.payload, { onConflict: 'id' });
+          } else {
+            result = await supabase.from(item.table).insert(item.payload);
+          }
         } else if (item.action === 'update' && item.filter) {
           result = await supabase.from(item.table).update(item.payload).eq(item.filter.column, item.filter.value);
         } else if (item.action === 'delete' && item.filter) {

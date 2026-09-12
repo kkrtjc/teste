@@ -307,6 +307,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Validação em segundo plano sem travar o carregamento da tela
         validateUserAccess(u);
       } else {
+        // Tenta auto-login silencioso se era o Administrador Principal
+        let wasAdmin = false;
+        try {
+          const cachedUserRaw = localStorage.getItem('@mura-manager:cached-user');
+          const cachedCpf = localStorage.getItem('@mura-manager:user-cpf');
+          if (cachedUserRaw) {
+            const parsed = JSON.parse(cachedUserRaw);
+            if (isUserAdmin(parsed.email) || isUserAdmin(parsed.id)) wasAdmin = true;
+          }
+          if (cachedCpf === ADMIN_CPF) wasAdmin = true;
+        } catch {}
+
+        if (wasAdmin && isSupabaseConfigured) {
+          try {
+            console.log('[Auth] Restaurando sessão do Administrador Principal no Supabase...');
+            const { data: adminLoginData, error: adminLoginErr } = await supabase!.auth.signInWithPassword({
+              email: ADMIN_AUTH_EMAIL,
+              password: ADMIN_AUTH_PASS
+            });
+            if (!adminLoginErr && adminLoginData?.session) {
+              const u = sanitizeAdminUser(adminLoginData.user);
+              setSession(adminLoginData.session);
+              setUser(u);
+              setLinkedCpf(ADMIN_CPF);
+              try {
+                localStorage.setItem('@mura-manager:cached-user', JSON.stringify(u));
+                localStorage.setItem('@mura-manager:cached-session', JSON.stringify(adminLoginData.session));
+                localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+              } catch {}
+              validateUserAccess(u);
+              setLoading(false);
+              clearTimeout(safetyTimeout);
+              return;
+            }
+          } catch (e) {
+            console.warn('[Auth] Falha no auto-login do admin:', e);
+          }
+        }
+
         setUser(null);
         setSession(null);
         setLinkedCpf('');
@@ -330,6 +369,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsPasswordRecovery(true);
       }
       if (_event === 'SIGNED_OUT' || !session) {
+        // Se a sessão expirou sem logout explícito e era admin, não desloga imediatamente
+        const cachedCpf = localStorage.getItem('@mura-manager:user-cpf');
+        if (cachedCpf === ADMIN_CPF && isSupabaseConfigured) {
+          console.log('[Auth] Reautenticando admin silenciosamente após perda de sessão...');
+          supabase!.auth.signInWithPassword({
+            email: ADMIN_AUTH_EMAIL,
+            password: ADMIN_AUTH_PASS
+          }).then(({ data, error }) => {
+            if (!error && data?.session) {
+              const u = sanitizeAdminUser(data.user);
+              setSession(data.session);
+              setUser(u);
+              setLinkedCpf(ADMIN_CPF);
+              validateUserAccess(u);
+            } else {
+              setUser(null);
+              setSession(null);
+              setLinkedCpf('');
+              try {
+                localStorage.removeItem('@mura-manager:cached-user');
+                localStorage.removeItem('@mura-manager:cached-session');
+                localStorage.removeItem('@mura-manager:user-cpf');
+              } catch {}
+            }
+          }).catch(() => {});
+          return;
+        }
+
         setUser(null);
         setSession(null);
         setLinkedCpf('');

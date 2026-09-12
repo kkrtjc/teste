@@ -301,9 +301,9 @@ export function AddBirdModal() {
 
       const filesToUpload = Array.from(files).slice(0, remainingSlots);
 
-      // Comprime todas as imagens em paralelo para não travar a UI em celulares antigos
+      // Comprime imagens com dimensão otimizada para sincronização rápida em redes móveis (3G/4G)
       const results = await Promise.allSettled(
-        filesToUpload.map(file => compressImage(file, 1200, 1200, 0.82))
+        filesToUpload.map(file => compressImage(file, 800, 800, 0.72))
       );
       const compressed: string[] = results
         .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
