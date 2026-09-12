@@ -573,59 +573,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.warn('[Sync] Supabase inacessível no momento, preservando dados locais de aves.');
       }
 
-      const lastSuccessfulSyncTime = lastSyncTimeRef.current - 30000; // 30s antes do sync atual
       const sbBirdIds = new Set<string>(sbBirds.map((b: any) => b.id));
       
       if (sbBirds.length === 0 && localBirds.length > 0) {
-        // A nuvem está vazia mas temos aves locais - APENAS envia se parece que são aves novas
-        // Se a nuvem retornou 0 por erro de rede, NÃO sobrescrevemos - o erro será capturado acima
-        console.log(`[Sync] Nuvem retornou 0 aves. Verificando se aves locais são genuinamente novas...`);
-        // Só envia aves que foram criadas recentemente (ID numérico > lastSuccessfulSyncTime ou UUID)
-        const genuinelyNewBirds = localBirds.filter((b: any) => {
-          if (!b || !b.id) return false;
-          if (deletedBirdIds.has(b.id)) return false;
-          // UUID = provavelmente nova
-          if (/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(b.id)) return true;
-          // ID numérico recente (criado após o último sync)
-          const numId = parseInt(b.id, 10);
-          if (!isNaN(numId) && numId > lastSuccessfulSyncTime) return true;
-          return false;
-        });
-        if (genuinelyNewBirds.length > 0) {
-          console.log(`[Sync] Enviando ${genuinelyNewBirds.length} aves novas para o Supabase...`);
-          const birdsToInsert = genuinelyNewBirds.map((b: any) => ({
-            id: b.id,
-            user_id: targetUserId,
-            anilha: b.anilha,
-            nome: b.nome || null,
-            sexo: b.sexo,
-            raca: b.raca,
-            baia: b.baia || 'ND',
-            status: b.status,
-            imagem: b.imagens?.[0] || b.imagem || null,
-            vacinas: b.vacinas || null,
-            origem: b.origem || 'Criatório',
-            casal_id: b.casalId || null,
-            pai_id: b.paiId || null,
-            mae_id: b.maeId || null,
-            is_pai_externo: !!b.isPaiExterno,
-            is_mae_externo: !!b.isMaeExterno,
-            data_nascimento: b.dataNascimento || null,
-            peso: b.peso || null,
-            imagens: b.imagens || [],
-            observacoes: b.observacoes || ''
-          }));
-          for (let i = 0; i < birdsToInsert.length; i += 2) {
-            const chunk = birdsToInsert.slice(i, i + 2);
+        // A nuvem está vazia mas temos aves locais - preserva TODAS que não foram deletadas
+        console.log(`[Sync] Nuvem retornou 0 aves. Preservando ${localBirds.length} aves locais e sincronizando com Supabase...`);
+        const birdsToInsert = localBirds.map((b: any) => ({
+          id: b.id,
+          user_id: targetUserId,
+          anilha: b.anilha,
+          nome: b.nome || null,
+          sexo: b.sexo,
+          raca: b.raca,
+          baia: b.baia || 'ND',
+          status: b.status,
+          imagem: b.imagens?.[0] || b.imagem || null,
+          vacinas: b.vacinas || null,
+          origem: b.origem || 'Criatório',
+          casal_id: b.casalId || null,
+          pai_id: b.paiId || null,
+          mae_id: b.maeId || null,
+          is_pai_externo: !!b.isPaiExterno,
+          is_mae_externo: !!b.isMaeExterno,
+          data_nascimento: b.dataNascimento || null,
+          peso: b.peso || null,
+          imagens: b.imagens || [],
+          observacoes: b.observacoes || ''
+        }));
+        if (isSupabaseConfigured && user) {
+          for (let i = 0; i < birdsToInsert.length; i += 5) {
+            const chunk = birdsToInsert.slice(i, i + 5);
             try {
               await supabase!.from('birds').upsert(chunk, { onConflict: 'id' });
-            } catch {}
+            } catch (err) {
+              console.warn('[Sync] Falha ao upsert aves no Supabase:', err);
+            }
           }
-          sbBirds = birdsToInsert;
-        } else {
-          // Nenhuma ave nova local - a nuvem simplesmente não tem aves ainda
-          sbBirds = [];
         }
+        sbBirds = localBirds;
       }
 
       if (sbEggLots.length === 0 && localEggLots.length > 0) {
@@ -800,21 +785,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // Aves criadas offline (existem local mas ainda não foram sincronizadas com a nuvem)
-      // APENAS incluímos aves com IDs recentes (criadas após o último sync) - NÃO aves antigas
+      // Aves existentes localmente que ainda não foram enviadas ao Supabase
+      // Preserva SEMPRE: uma vez salvas, só somem se forem explicitamente deletadas
       const unsyncedLocalBirds = (localBirds || []).filter((lb: any) => {
         if (!lb || !lb.id) return false;
         if (sbBirdIds.has(lb.id)) return false;  // Já está na nuvem
-        if (deletedBirdIds.has(lb.id)) return false;  // Foi deletada
-        // Só inclui aves com UUID (criadas pela versão atual do app) 
-        // ou com ID numérico recente (criadas offline após o último sync)
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(lb.id);
-        if (isUUID) return true;
-        const numId = parseInt(lb.id, 10);
-        if (!isNaN(numId) && numId > lastSuccessfulSyncTime) return true;
-        // IDs numéricos antigos (de antes do sistema de sync) são ignorados
-        // Eles podem ser de outro user_id e causariam RLS errors
-        return false;
+        if (deletedBirdIds.has(lb.id)) return false;  // Foi deletada pelo usuário
+        return true;
       });
       
       if (unsyncedLocalBirds.length > 0) {

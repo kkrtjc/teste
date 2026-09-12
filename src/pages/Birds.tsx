@@ -189,27 +189,10 @@ export function Birds() {
   const { 
     breeds, addBreed, editBreed, removeBreed,
     birds, editBird, openAddBirdModal, openBirdProfile, 
-    activeBreed, setActiveBreed, showToast, recoverAllBirds
+    activeBreed, setActiveBreed, showToast
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<'aves' | 'racas'>('aves');
-  const [isRecovering, setIsRecovering] = useState(false);
-
-  const handleRecoverBirds = async () => {
-    setIsRecovering(true);
-    try {
-      const res = await recoverAllBirds();
-      if (res.count > 0) {
-        showToast(`🎉 ${res.count} aves recuperadas com sucesso!`, 'success');
-      } else {
-        alert('Varredura Concluída: Nenhuma ave encontrada nos bancos locais deste dispositivo.\n\nSe você cadastrou as aves em outro aparelho ou limpou os dados do navegador, importe um arquivo de backup em Configurações.');
-      }
-    } catch (err: any) {
-      showToast('Erro ao recuperar aves: ' + (err.message || 'Falha na varredura'), 'error');
-    } finally {
-      setIsRecovering(false);
-    }
-  };
 
   // Sincroniza aba selecionada via URL query ou state de navegação
   useEffect(() => {
@@ -525,30 +508,19 @@ export function Birds() {
             </div>
           )}
 
-          {activeTab === 'aves' && (
-            <button
-              onClick={handleRecoverBirds}
-              disabled={isRecovering}
-              className="px-2.5 py-1.5 bg-theme-surface hover:bg-white/5 border border-theme-border/60 text-theme-text-muted hover:text-amber-400 rounded-full transition-all text-[10px] sm:text-xs font-bold flex items-center gap-1 shrink-0 active:scale-95 disabled:opacity-50"
-              title="Restaurar aves do armazenamento local"
-            >
-              🔄 {isRecovering ? 'Restaurando...' : 'Restaurar Aves'}
-            </button>
-          )}
-
           {activeTab === 'aves' ? (
             <button 
               onClick={() => openAddBirdModal(activeBreed)} 
-              className="btn-primary !px-3 !py-1.5 !text-[10px] sm:!text-xs flex items-center gap-1 shrink-0"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
-              <Plus size={12} /> Cadastrar Ave
+              <Plus size={14} strokeWidth={3} /> Cadastrar Ave
             </button>
           ) : (
             <button 
               onClick={() => openBreedModal()} 
-              className="btn-primary !px-3 !py-1.5 !text-[10px] sm:!text-xs flex items-center gap-1 shrink-0"
+              className="btn-primary !px-3.5 !py-1.5 !text-xs flex items-center gap-1.5 shrink-0"
             >
-              <Plus size={12} /> Cadastrar Raça
+              <Plus size={14} strokeWidth={3} /> Cadastrar Raça
             </button>
           )}
         </div>
@@ -581,27 +553,24 @@ export function Birds() {
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
         <div className="space-y-3">
-          {/* Banner de Recuperação se houver 0 aves */}
-          {birds.length === 0 && (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in shadow-lg">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0">🐓</span>
-                <div>
-                  <h4 className="text-sm font-black text-amber-400">Cadastrou aves e elas sumiram da tela?</h4>
-                  <p className="text-xs text-amber-100/80 leading-relaxed mt-0.5">
-                    Se você cadastrou suas aves anteriormente neste celular ou computador, clique no botão para fazer uma varredura profunda no armazenamento local e recuperá-las imediatamente.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleRecoverBirds}
-                disabled={isRecovering}
-                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-lg transition-all shrink-0 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap"
-              >
-                {isRecovering ? 'Varrendo celular...' : '🔄 Restaurar Minhas Aves'}
-              </button>
-            </div>
-          )}
+          {/* Botão de Destaque no Celular (Mobile First) */}
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => openAddBirdModal(activeBreed)}
+              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-theme-primary via-amber-400 to-theme-primary text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-between shadow-lg shadow-theme-primary/25 active:scale-[0.98] transition-all border border-amber-300/40 cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <span className="w-7 h-7 rounded-xl bg-slate-950/15 flex items-center justify-center text-slate-950">
+                  <Plus size={16} strokeWidth={3} />
+                </span>
+                <span className="text-xs font-black tracking-wide">Cadastrar Nova Ave</span>
+              </span>
+              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-950/15 text-slate-950">
+                + Adicionar
+              </span>
+            </button>
+          </div>
 
           {/* Search Row */}
           <div className="w-full shrink-0">
@@ -688,10 +657,27 @@ export function Birds() {
           {/* Birds Grid */}
           <div className="w-full">
             {filteredBirds.length === 0 ? (
-              <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
-                {birdSearch || activeBreed
-                  ? 'Nenhuma ave encontrada correspondente aos filtros.'
-                  : 'Nenhuma ave cadastrada no plantel.'}
+              <div className="text-center p-8 sm:p-12 bg-theme-surface border border-theme-border/60 border-dashed rounded-3xl text-theme-text-muted flex flex-col items-center justify-center gap-3 animate-fade-in">
+                <span className="text-4xl">🐓</span>
+                <div className="max-w-xs space-y-1">
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight">
+                    {birdSearch || activeBreed ? 'Nenhuma ave encontrada' : 'Nenhuma ave cadastrada ainda'}
+                  </h4>
+                  <p className="text-xs text-theme-text-muted">
+                    {birdSearch || activeBreed 
+                      ? 'Tente remover o filtro de busca ou raça selecionada.' 
+                      : 'Cadastre suas primeiras aves para acompanhar linhagens, vacinas e pesagens.'}
+                  </p>
+                </div>
+                {(!birdSearch && !activeBreed) && (
+                  <button
+                    type="button"
+                    onClick={() => openAddBirdModal()}
+                    className="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-theme-primary/20 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={16} strokeWidth={3} /> Cadastrar Primeira Ave
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
@@ -701,6 +687,18 @@ export function Birds() {
               </div>
             )}
           </div>
+
+          {/* Botão Flutuante (FAB) no Celular para Acesso Rápido */}
+          <button
+            type="button"
+            onClick={() => openAddBirdModal(activeBreed)}
+            className="sm:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-theme-primary to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-2xl shadow-theme-primary/40 border border-amber-300/40 active:scale-95 transition-all cursor-pointer"
+            style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            aria-label="Cadastrar Nova Ave"
+          >
+            <Plus size={18} strokeWidth={3} />
+            <span>Nova Ave</span>
+          </button>
         </div>
       )}
 
