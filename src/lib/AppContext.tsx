@@ -342,7 +342,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   // ── Gestão de Tombstones para Exclusão Permanente (evita ressurreição de aves deletadas) ──
+  // Lê sincronamente do localStorage (apenas como fallback rápido no render inicial)
   const getDeletedBirdIds = useCallback((): Set<string> => {
+    try {
+      const raw = localStorage.getItem('@mura-manager:deleted-bird-ids');
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  }, []);
+
+  // Versão assíncrona: lê do IndexedDB (fonte primária) com fallback para localStorage
+  const getDeletedBirdIdsAsync = useCallback(async (): Promise<Set<string>> => {
+    try {
+      const fromIDB = await localforage.getItem<string[]>('@mura-manager:deleted-bird-ids');
+      if (fromIDB && Array.isArray(fromIDB) && fromIDB.length > 0) {
+        // Sincroniza de volta pro localStorage para que o getter síncrono fique atualizado
+        try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(fromIDB)); } catch {}
+        return new Set(fromIDB);
+      }
+    } catch {}
+    // Fallback: lê do localStorage
     try {
       const raw = localStorage.getItem('@mura-manager:deleted-bird-ids');
       if (raw) return new Set(JSON.parse(raw));
@@ -355,8 +374,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const set = getDeletedBirdIds();
       set.add(id);
       const arr = Array.from(set).slice(-1000);
-      localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr));
+      // IndexedDB é a fonte primária (iOS não limpa automaticamente)
       localforage.setItem('@mura-manager:deleted-bird-ids', arr).catch(() => {});
+      // localStorage como backup síncrono imediato
+      try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr)); } catch {}
     } catch {}
   }, [getDeletedBirdIds]);
 
@@ -366,8 +387,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (set.has(id)) {
         set.delete(id);
         const arr = Array.from(set);
-        localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr));
         localforage.setItem('@mura-manager:deleted-bird-ids', arr).catch(() => {});
+        try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr)); } catch {}
       }
     } catch {}
   }, [getDeletedBirdIds]);
@@ -442,10 +463,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Helper ultrarrápido (~0ms) para carregar o cache offline em paralelo no primeiro render
+  // Helper para carregar o cache offline (usado como fallback quando offline)
   const loadFromLocalForage = useCallback(async () => {
     if (!user) return;
-    const deletedBirdIds = getDeletedBirdIds();
+    // Usa o getter assíncrono para ler tombstones do IndexedDB (fonte primária no iOS)
+    const deletedBirdIds = await getDeletedBirdIdsAsync();
 
     const storageItems = [
       {
@@ -516,7 +538,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
     }));
-  }, [user, isCurrentUserAdmin, getStorageKey, getDeletedBirdIds]);
+  }, [user, isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync]);
 
   const isSyncingRef = useRef(false);
   const lastSyncTimeRef = useRef(0);
@@ -595,10 +617,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       let sbBreeds = resBreeds.data || [];
+      // Carrega tombstones do IndexedDB (fonte primária) + pendingDelete para filtragem dupla
       const currentDeletedIds = await getPendingDeleteBirdIds();
+      const allTombstones = await getDeletedBirdIdsAsync();
+      // Une os dois conjuntos: pendentes de delete + tombstones históricos
+      const allDeletedIds = new Set([...currentDeletedIds, ...allTombstones]);
       const sbBirdsFromCloud = (!resBirds.error && resBirds.data)
-        ? resBirds.data.filter((b: any) => 
-            !currentDeletedIds.has(b.id) &&
+        ? resBirds.data.filter((b: any) =>
+            !allDeletedIds.has(b.id) &&
             (b.anilha?.trim() || b.nome?.trim()) &&
             !b.id.startsWith('inc-demo')
           )
@@ -866,8 +892,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
         // Adiciona apenas aves locais que foram criadas offline e ainda não chegaram à nuvem
+        // e que NÃO estão nos tombstones (evita aves deletadas offline ressurgirem)
         const unconfirmedOffline = (localBirds || []).filter((b: any) =>
-          b && b.id && offlinePendingIds.has(b.id) && !sbBirdsFromCloud.some((cb: any) => cb.id === b.id)
+          b && b.id &&
+          offlinePendingIds.has(b.id) &&
+          !allDeletedIds.has(b.id) &&
+          !sbBirdsFromCloud.some((cb: any) => cb.id === b.id)
         );
 
         finalBirds = [...cloudMapped, ...unconfirmedOffline];
@@ -1211,16 +1241,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Carrega dados offline locais primeiro (instantâneo ~0ms)
-      await loadFromLocalForage();
-      setIsReady(true);
-
-      // Sincroniza em segundo plano com a nuvem sem travar a interface
-      if (isSupabaseConfigured) {
+      if (isSupabaseConfigured && navigator.onLine) {
+        // ── CLOUD-FIRST: tem internet → busca da nuvem primeiro ──
+        // Processa a fila de mutações offline pendentes antes de sincronizar
         processSyncQueue().catch(() => {});
-        syncWithSupabaseBackground(true).catch(err => {
-          console.error('Erro na sincronização inicial em segundo plano:', err);
-        });
+        try {
+          // syncWithSupabaseBackground já atualiza state e salva no cache local
+          await syncWithSupabaseBackground(true);
+        } catch (err) {
+          console.warn('[LoadData] Falha na sync cloud-first, usando cache local como fallback:', err);
+          await loadFromLocalForage();
+        }
+        setIsReady(true);
+      } else {
+        // ── OFFLINE-FIRST: sem internet → carrega do cache local imediatamente ──
+        await loadFromLocalForage();
+        setIsReady(true);
+        // Quando voltar a conexão, sincroniza automaticamente via handleOnline listener
       }
     }
 
