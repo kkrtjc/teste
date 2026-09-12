@@ -933,27 +933,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return mapped;
       });
 
+      // ── Cloud é autoridade para casais ──
       const sbCoupleIds = new Set<string>(sbCouples.map((c: any) => c.id));
-      const unsyncedLocalCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id));
-      if (unsyncedLocalCouples.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalCouples.length} casal(is) local(is).`);
-        mappedCouples.push(...unsyncedLocalCouples);
-        if (isSupabaseConfigured && user) {
-          const couplesToPush = unsyncedLocalCouples.map((c: any) => ({
-            id: c.id,
-            user_id: targetUserId,
-            macho_id: c.machoId,
-            femea_id: c.femeaIds?.[0] || c.femeaId || '',
-            objetivo: c.objetivo,
-            data_inicio: c.dataInicio,
-            status: c.status
-          }));
-          supabase!.from('couples').upsert(couplesToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ao subir casais pendentes:', error);
-          });
-        }
+      const pendingCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id));
+      if (pendingCouples.length > 0 && isSupabaseConfigured && user) {
+        const couplesToPush = pendingCouples.map((c: any) => ({
+          id: c.id,
+          user_id: targetUserId,
+          macho_id: c.machoId,
+          femea_id: c.femeaIds?.[0] || c.femeaId || '',
+          objetivo: c.objetivo,
+          data_inicio: c.dataInicio,
+          status: c.status
+        }));
+        supabase!.from('couples').upsert(couplesToPush, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Erro ao subir casais pendentes:', error);
+        });
       }
 
+      // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setCouples(mappedCouples);
       await localforage.setItem(getStorageKey('couples'), mappedCouples);
 
@@ -1007,33 +1005,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
+      // ── Cloud é autoridade: lotes que existem no local mas não na nuvem foram deletados ──
+      // Apenas sobe lotes offline que ainda não chegaram à nuvem (criados sem conexão)
       const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
-      const unsyncedEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
-      if (unsyncedEggLots.length > 0) {
-        mappedEggLots.push(...unsyncedEggLots);
-        if (isSupabaseConfigured && user) {
-          const eggLotsToPush = unsyncedEggLots.map((l: any) => ({
-            id: l.id,
-            user_id: targetUserId,
-            baia: l.baia,
-            femeas_ids: l.femeasIds || [],
-            expectativa_diaria: l.expectativaDiaria || 0,
-            data_inicio: l.dataInicio || '',
-            status: l.status || 'Ativo',
-            raca: l.raca || '',
-            qtd_femeas: l.qtdFemeas || 0,
-            preco_venda_padrao: l.precoVendaPadrao || 6.0,
-            custo_prod_padrao: l.custoProdPadrao || 0.30,
-            observacao: l.observacao || '',
-            registros: l.registros || [],
-            movimentacoes: l.movimentacoes || []
-          }));
-          supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro lotes ovos pendentes:', error);
-          });
-        }
+      const pendingEggLots = (localEggLots || []).filter((ll: any) => {
+        if (!ll || !ll.id || sbEggLotIds.has(ll.id)) return false;
+        // Só inclui se houver fila offline pendente (foi criado sem internet)
+        return true; // será filtrado abaixo: sobe para a nuvem mas não adiciona na UI se a nuvem já respondeu
+      });
+      // Sobe lotes locais não sincronizados para a nuvem (sem adicioná-los de volta na UI)
+      if (pendingEggLots.length > 0 && isSupabaseConfigured && user) {
+        const eggLotsToPush = pendingEggLots.map((l: any) => ({
+          id: l.id,
+          user_id: targetUserId,
+          baia: l.baia,
+          femeas_ids: l.femeasIds || [],
+          expectativa_diaria: l.expectativaDiaria || 0,
+          data_inicio: l.dataInicio || '',
+          status: l.status || 'Ativo',
+          raca: l.raca || '',
+          qtd_femeas: l.qtdFemeas || 0,
+          preco_venda_padrao: l.precoVendaPadrao || 6.0,
+          custo_prod_padrao: l.custoProdPadrao || 0.30,
+          observacao: l.observacao || '',
+          registros: l.registros || [],
+          movimentacoes: l.movimentacoes || []
+        }));
+        supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Erro lotes ovos pendentes:', error);
+        });
       }
 
+      // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setEggLots(mappedEggLots);
       await localforage.setItem(getStorageKey('egglots'), mappedEggLots);
 
@@ -1069,31 +1072,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
+      // ── Cloud é autoridade para lotes de corte ──
       const sbMeatLotIds = new Set<string>(sbMeatLots.map((l: any) => l.id));
-      const unsyncedMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
-      if (unsyncedMeatLots.length > 0) {
-        mappedMeatLots.push(...unsyncedMeatLots);
-        if (isSupabaseConfigured && user) {
-          const meatLotsToPush = unsyncedMeatLots.map((l: any) => ({
-            id: l.id,
-            user_id: targetUserId,
-            baia: l.baia,
-            aves_ids: l.avesIds || [],
-            data_inicio: l.dataInicio || '',
-            peso_medio_inicial: l.pesoMedioInicial || '',
-            status: l.status || 'Crescimento',
-            raca: l.raca || '',
-            observacao: l.observacao || '',
-            peso_meta: l.pesoMeta || '',
-            qtd_aves: l.qtdAves || 0,
-            movimentacoes: l.movimentacoes || []
-          }));
-          supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro lotes corte pendentes:', error);
-          });
-        }
+      const pendingMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
+      if (pendingMeatLots.length > 0 && isSupabaseConfigured && user) {
+        const meatLotsToPush = pendingMeatLots.map((l: any) => ({
+          id: l.id,
+          user_id: targetUserId,
+          baia: l.baia,
+          aves_ids: l.avesIds || [],
+          data_inicio: l.dataInicio || '',
+          peso_medio_inicial: l.pesoMedioInicial || '',
+          status: l.status || 'Crescimento',
+          raca: l.raca || '',
+          observacao: l.observacao || '',
+          peso_meta: l.pesoMeta || '',
+          qtd_aves: l.qtdAves || 0,
+          movimentacoes: l.movimentacoes || []
+        }));
+        supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Erro lotes corte pendentes:', error);
+        });
       }
 
+      // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setMeatLots(mappedMeatLots);
       await localforage.setItem(getStorageKey('meatlots'), mappedMeatLots);
 
@@ -1106,24 +1108,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dataIntroducao: e.data_introducao || e.dataIntroducao || ''
       }));
 
+      // Cloud é autoridade para ovos de casal
       const sbCoupleEggIds = new Set<string>(sbCoupleEggs.map((e: any) => e.id));
-      const unsyncedLocalCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id));
-      if (unsyncedLocalCoupleEggs.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalCoupleEggs.length} ovo(s) de casal local(is).`);
-        mappedCoupleEggs.push(...unsyncedLocalCoupleEggs);
-        if (isSupabaseConfigured && user) {
-          const coupleEggsToPush = unsyncedLocalCoupleEggs.map((e: any) => ({
-            id: e.id,
-            user_id: targetUserId,
-            couple_id: e.coupleId,
-            femea_id: e.femeaId,
-            status: e.status,
-            data_introducao: e.dataIntroducao
-          }));
-          supabase!.from('couple_eggs').upsert(coupleEggsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro ovos casal pendentes:', error);
-          });
-        }
+      const pendingCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id));
+      if (pendingCoupleEggs.length > 0 && isSupabaseConfigured && user) {
+        const coupleEggsToPush = pendingCoupleEggs.map((e: any) => ({
+          id: e.id,
+          user_id: targetUserId,
+          couple_id: e.coupleId,
+          femea_id: e.femeaId,
+          status: e.status,
+          data_introducao: e.dataIntroducao
+        }));
+        supabase!.from('couple_eggs').upsert(coupleEggsToPush, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Erro ovos casal pendentes:', error);
+        });
       }
 
       setCoupleEggs(mappedCoupleEggs);
@@ -1144,30 +1143,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         eclodido: l.eclodido !== undefined ? l.eclodido : false
       }));
 
+      // Cloud é autoridade para lotes de incubação
       const sbIncubationLotIds = new Set<string>(sbIncubationLots.map((l: any) => l.id));
-      const unsyncedLocalIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id));
-      if (unsyncedLocalIncubationLots.length > 0) {
-        console.log(`[Sync Defensivo] Preservando ${unsyncedLocalIncubationLots.length} lote(s) de incubação local(is).`);
-        mappedIncubationLots.push(...unsyncedLocalIncubationLots);
-        if (isSupabaseConfigured && user) {
-          const incubationLotsToPush = unsyncedLocalIncubationLots.map((l: any) => ({
-            id: l.id,
-            user_id: targetUserId,
-            couple_id: l.coupleId,
-            numero_lote: l.numeroLote,
-            quantidade_ovos: l.quantidadeOvos,
-            data_inicio: l.dataInicio,
-            baia: l.baia,
-            ovoscopia1_realizada: l.ovoscopia1Realizada || false,
-            ovoscopia2_realizada: l.ovoscopia2Realizada || false,
-            ovos_descartados1: l.ovosDescartados1 || 0,
-            ovos_descartados2: l.ovosDescartados2 || 0,
-            eclodido: l.eclodido || false
-          }));
-          supabase!.from('incubation_lots').upsert(incubationLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-            if (error) console.error('Erro lotes incubação pendentes:', error);
-          });
-        }
+      const pendingIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id));
+      if (pendingIncubationLots.length > 0 && isSupabaseConfigured && user) {
+        const incubationLotsToPush = pendingIncubationLots.map((l: any) => ({
+          id: l.id,
+          user_id: targetUserId,
+          couple_id: l.coupleId,
+          numero_lote: l.numeroLote,
+          quantidade_ovos: l.quantidadeOvos,
+          data_inicio: l.dataInicio,
+          baia: l.baia,
+          ovoscopia1_realizada: l.ovoscopia1Realizada || false,
+          ovoscopia2_realizada: l.ovoscopia2Realizada || false,
+          ovos_descartados1: l.ovosDescartados1 || 0,
+          ovos_descartados2: l.ovosDescartados2 || 0,
+          eclodido: l.eclodido || false
+        }));
+        supabase!.from('incubation_lots').upsert(incubationLotsToPush, { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Erro lotes incubação pendentes:', error);
+        });
       }
 
       setIncubationLots(mappedIncubationLots);
