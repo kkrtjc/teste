@@ -22,7 +22,7 @@ export function PaywallScreen() {
   };
 
   const getWhatsappLink = () => {
-    const planText = selectedPlan === 'monthly' ? 'Mensal (R$ 19,90/mês)' : 'Anual Promocional (R$ 199,90/ano)';
+    const planText = selectedPlan === 'monthly' ? 'Mensal (R$ 39,90/mês)' : 'Anual Promocional com 25% OFF (R$ 359,10/ano)';
     const userIdent = paymentCpf ? `CPF: ${paymentCpf}` : `Usuário: ${cpf}`;
     const text = encodeURIComponent(
       `Olá! Realizei o pagamento do plano ${planText} para o Mura Manager (${userIdent}). Segue em anexo o comprovante para liberação.`
@@ -90,12 +90,12 @@ export function PaywallScreen() {
 
             <div className="mt-3">
               <div className="flex items-baseline gap-1">
-                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 49,90</span>
-                <span className="text-lg sm:text-xl font-black text-white">R$ 19,90</span>
+                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 59,90</span>
+                <span className="text-lg sm:text-xl font-black text-white">R$ 39,90</span>
                 <span className="text-[9px] text-theme-text-muted">/mês</span>
               </div>
               <span className="inline-block mt-1 text-[9px] font-black text-theme-primary bg-theme-primary/10 px-1.5 py-0.5 rounded border border-theme-primary/20">
-                Economia de 60%
+                Economia de R$ 20,00
               </span>
             </div>
           </div>
@@ -110,7 +110,7 @@ export function PaywallScreen() {
             }`}
           >
             <div className="absolute top-0 right-0 bg-amber-400 text-black text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-bl-lg shadow-sm">
-              Mais Vendido
+              25% OFF
             </div>
 
             <div>
@@ -127,12 +127,12 @@ export function PaywallScreen() {
 
             <div className="mt-3">
               <div className="flex items-baseline gap-1">
-                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 399,90</span>
-                <span className="text-lg sm:text-xl font-black text-amber-400">R$ 199,90</span>
+                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 478,80</span>
+                <span className="text-lg sm:text-xl font-black text-amber-400">R$ 359,10</span>
                 <span className="text-[9px] text-theme-text-muted">/ano</span>
               </div>
               <span className="inline-block mt-1 text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                Super Promocional
+                25% OFF (R$ 29,92/mês)
               </span>
             </div>
           </div>

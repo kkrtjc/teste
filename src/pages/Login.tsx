@@ -604,70 +604,86 @@ export function Login() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* MENSAL */}
-            <div className="rounded-2xl p-7 flex flex-col gap-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Mensal</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 49,90</span>
+                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 59,90</span>
                   <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
-                  <span className="text-5xl font-black text-white tracking-tighter leading-none">19</span>
+                  <span className="text-5xl font-black text-white tracking-tighter leading-none">39</span>
                   <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,90</span>
                   <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/mês</span>
                 </div>
-                <p className="text-[10px] mt-1 flex items-center gap-1 font-bold text-theme-primary">
-                  <Sparkles size={9} /> Economia de 60% no lançamento
+                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-theme-primary">
+                  <Sparkles size={9} /> Economia de R$ 20,00 no plano mensal
                 </p>
               </div>
-              <ul className="space-y-2.5">
-                {['Aves e lotes ilimitados','Árvore genealógica','Sincronização em nuvem','Backup automático','Suporte prioritário'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
+
+              <ul className="space-y-3">
+                {[
+                  'Cadastre mais de 12 mil aves e até 3 fotos por ave',
+                  'Controle de lotes de engorda, postura e crescimento',
+                  'Alertas personalizados: vacina, ração e ovos',
+                  'Gere e compartilhe até 5 fichas técnicas completas de aves ou lotes',
+                  'Backup automático e sincronização em nuvem',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
                       <Check size={9} style={{ color: '#f59e0b' }} />
                     </div>
-                    {item}
+                    <span className="leading-snug">{item}</span>
                   </li>
                 ))}
               </ul>
+
               <button
                 onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform"
-                style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform mt-2"
+                style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.05)' }}
               >
                 Criar Conta
               </button>
             </div>
 
             {/* ANUAL */}
-            <div className="rounded-2xl p-7 flex flex-col gap-6 relative overflow-hidden" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 50px rgba(245,158,11,0.06)' }}>
+            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 relative overflow-hidden" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 50px rgba(245,158,11,0.06)' }}>
               <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black" style={{ background: '#f59e0b' }}>
-                Melhor Valor
+                25% de Desconto • Melhor Valor
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(245,158,11,0.7)' }}>Anual</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 399,90</span>
+                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 478,80</span>
                   <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
-                  <span className="text-5xl font-black text-theme-primary tracking-tighter leading-none">199</span>
-                  <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,90</span>
+                  <span className="text-5xl font-black text-theme-primary tracking-tighter leading-none">359</span>
+                  <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,10</span>
                   <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/ano</span>
                 </div>
-                <p className="text-[10px] mt-1 flex items-center gap-1 font-bold text-emerald-400">
-                  <Sparkles size={9} /> Super desconto promocional de lançamento
+                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-emerald-400">
+                  <Sparkles size={9} /> Equivale a R$ 29,92/mês — economize R$ 119,70 no ano
                 </p>
               </div>
-              <ul className="space-y-2.5">
-                {['Tudo do plano mensal','Acesso imediato de 7 dias grátis','Acesso antecipado a novos recursos','Notificações inteligentes','Relatório anual de desempenho'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)' }}>
+
+              <ul className="space-y-3">
+                {[
+                  'Cadastre mais de 20 mil aves e até 10 fotos por ave',
+                  'Lotes ilimitados de engorda, postura e crescimento',
+                  'Gere e compartilhe fichas técnicas completas ilimitadas',
+                  'Alertas personalizados: vacina, ração e ovos',
+                  'Tudo do plano mensal incluso + Suporte prioritário VIP',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(245,158,11,0.22)', border: '1px solid rgba(245,158,11,0.45)' }}>
                       <Check size={9} style={{ color: '#f59e0b' }} />
                     </div>
-                    {item}
+                    <span className="leading-snug">{item}</span>
                   </li>
                 ))}
               </ul>
+
               <button
                 onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform"
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform mt-2"
                 style={{ background: '#f59e0b', boxShadow: '0 0 24px rgba(245,158,11,0.25)' }}
               >
                 Ativar 7 Dias Grátis

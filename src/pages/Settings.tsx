@@ -730,7 +730,7 @@ export function Settings() {
                 }`}
               >
                 <p className="font-bold text-xs text-white">Plano Mensal</p>
-                <p className="text-lg font-black text-amber-400 mt-1">R$ 19,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
+                <p className="text-lg font-black text-amber-400 mt-1">R$ 39,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
               </div>
 
               <div 
@@ -739,9 +739,9 @@ export function Settings() {
                   selectedPlan === 'yearly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
                 }`}
               >
-                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">Promo</span>
+                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">25% OFF</span>
                 <p className="font-bold text-xs text-white">Plano Anual</p>
-                <p className="text-lg font-black text-emerald-400 mt-1">R$ 199,90<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
+                <p className="text-lg font-black text-emerald-400 mt-1">R$ 359,10<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
               </div>
             </div>
 

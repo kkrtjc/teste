@@ -199,12 +199,12 @@ export function TrialPopupModal({
             <div className="grid grid-cols-2 gap-2 pt-0.5">
               <div className="bg-black/30 border border-white/[0.06] rounded-xl p-2.5 text-center">
                 <p className="text-[9px] text-theme-text-muted font-bold uppercase">Mensal</p>
-                <p className="text-base font-black text-white mt-0.5">R$ 19,90</p>
+                <p className="text-base font-black text-white mt-0.5">R$ 39,90</p>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-center relative overflow-hidden">
-                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg">MELHOR</span>
+                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg">25% OFF</span>
                 <p className="text-[9px] text-amber-400 font-bold uppercase">Anual</p>
-                <p className="text-base font-black text-amber-400 mt-0.5">R$ 199,90</p>
+                <p className="text-base font-black text-amber-400 mt-0.5">R$ 359,10</p>
               </div>
             </div>
           </div>
