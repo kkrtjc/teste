@@ -34,10 +34,12 @@ function calcTimeLeft(expiresAt: string | null) {
 function TrialCountdownTimer({ 
   trialInfo, 
   onOpenPaymentModal,
+  onSelectPlan,
   isAdmin 
 }: { 
   trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
   onOpenPaymentModal: () => void;
+  onSelectPlan?: (plan: 'monthly' | 'yearly') => void;
   isAdmin?: boolean;
 }) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(() => calcTimeLeft(trialInfo.expiresAt));
@@ -109,6 +111,26 @@ function TrialCountdownTimer({
         <span>Antecipar Pagamento / Renovar Assinatura</span>
         <ChevronRight size={14} className="text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
       </button>
+
+      {/* 🔗 Links diretos para os planos mensais e anuais */}
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-theme-text-muted mt-0.5">
+        <span>Conheça os planos:</span>
+        <button
+          type="button"
+          onClick={() => onSelectPlan ? onSelectPlan('yearly') : onOpenPaymentModal()}
+          className="font-black text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
+        >
+          Plano Anual (25% OFF)
+        </button>
+        <span>ou</span>
+        <button
+          type="button"
+          onClick={() => onSelectPlan ? onSelectPlan('monthly') : onOpenPaymentModal()}
+          className="font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
+        >
+          Plano Mensal
+        </button>
+      </div>
     </div>
   );
 }
@@ -368,6 +390,10 @@ export function Settings() {
             <TrialCountdownTimer 
               trialInfo={trialInfo} 
               onOpenPaymentModal={() => setIsPaymentModalOpen(true)} 
+              onSelectPlan={(plan) => {
+                setSelectedPlan(plan);
+                setIsPaymentModalOpen(true);
+              }}
               isAdmin={isAdmin}
             />
 
@@ -726,23 +752,77 @@ export function Settings() {
               <div 
                 onClick={() => setSelectedPlan('monthly')}
                 className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                  selectedPlan === 'monthly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                  selectedPlan === 'monthly' ? 'border-amber-500 bg-amber-500/15 shadow-lg shadow-amber-500/10' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
                 }`}
               >
                 <p className="font-bold text-xs text-white">Plano Mensal</p>
                 <p className="text-lg font-black text-amber-400 mt-1">R$ 39,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
+                <p className="text-[10px] text-theme-text-muted mt-1">Ideal para começar</p>
               </div>
 
               <div 
                 onClick={() => setSelectedPlan('yearly')}
                 className={`p-3.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
-                  selectedPlan === 'yearly' ? 'border-amber-500 bg-amber-500/10' : 'border-theme-border bg-theme-base/40'
+                  selectedPlan === 'yearly' ? 'border-emerald-500 bg-emerald-500/15 shadow-lg shadow-emerald-500/10' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
                 }`}
               >
-                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">25% OFF</span>
+                <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">25% OFF</span>
                 <p className="font-bold text-xs text-white">Plano Anual</p>
                 <p className="text-lg font-black text-emerald-400 mt-1">R$ 359,10<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
+                <p className="text-[10px] text-emerald-400/90 font-medium mt-1">Economia de R$ 119,70</p>
               </div>
+            </div>
+
+            {/* Benefícios do Plano Escolhido */}
+            <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs animate-fade-in">
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                {selectedPlan === 'yearly' ? '⭐ Vantagens Exclusivas do Plano Anual (25% OFF):' : '📋 Recursos Inclusos no Plano Mensal:'}
+              </p>
+              <ul className="space-y-1.5 text-theme-text-muted text-[11px]">
+                {selectedPlan === 'yearly' ? (
+                  <>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>Todas as funcionalidades do plano mensal inclusas</span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>Cadastre até <strong className="text-amber-400 font-black">10 fotos</strong> por ave e mais de <strong className="text-amber-400 font-black">20.000 aves</strong></span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>Lotes de engorda, postura e linhagens <strong className="text-emerald-400 font-black">ilimitados</strong></span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>Fichas técnicas completas com pedigree <strong className="text-emerald-400 font-black">ilimitadas</strong></span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                      <span>Economia garantida de <strong className="text-emerald-400 font-black">25% (R$ 119,70/ano)</strong></span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                      <span>Cadastre mais de <strong className="text-amber-400 font-bold">12.000 aves</strong> e até <strong className="text-amber-400 font-bold">3 fotos</strong> por ave</span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                      <span>Controle completo de lotes de engorda, postura e crescimento</span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                      <span>Alertas personalizados (vacinas, ração e ovos)</span>
+                    </li>
+                    <li className="flex items-center gap-1.5 text-white font-medium">
+                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                      <span>Gere e compartilhe até <strong className="text-amber-400 font-bold">5 fichas técnicas completas</strong></span>
+                    </li>
+                  </>
+                )}
+              </ul>
             </div>
 
             {/* Pix Key */}
