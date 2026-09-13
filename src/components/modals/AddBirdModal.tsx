@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye } from 'lucide-react';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 import { calculateExactAge } from '../../lib/utils';
@@ -54,7 +54,7 @@ function BirdDetailOverlay({
             <Eye size={14} className="text-theme-primary" />
             Detalhes da Ave
           </p>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/15 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -99,7 +99,14 @@ function BirdDetailOverlay({
           {bird.dataNascimento && (
             <div className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
               <p className="text-[10px] text-theme-text-muted uppercase font-bold">Idade</p>
-              <p className="text-xs font-bold text-white">{calculateExactAge(bird.dataNascimento)}</p>
+              <p className="text-xs font-bold text-theme-primary">{calculateExactAge(bird.dataNascimento)}</p>
+            </div>
+          )}
+
+          {bird.observacoes && (
+            <div className="bg-theme-base rounded-xl px-3 py-2 border border-theme-border/50">
+              <p className="text-[10px] text-theme-text-muted uppercase font-bold">Observações</p>
+              <p className="text-xs text-white line-clamp-2">{bird.observacoes}</p>
             </div>
           )}
         </div>
@@ -190,6 +197,8 @@ export function AddBirdModal() {
   const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null);
   const [paiId, setPaiId] = useState('');
   const [maeId, setMaeId] = useState('');
+  const [filtroPai, setFiltroPai] = useState('');
+  const [filtroMae, setFiltroMae] = useState('');
   const [paiExterno, setPaiExterno] = useState('');
   const [maeExterno, setMaeExterno] = useState('');
   const [descricaoOrigem, setDescricaoOrigem] = useState('');
@@ -421,6 +430,12 @@ export function AddBirdModal() {
       }))
   ];
 
+  const filteredMachoOptions = useMemo(() => {
+    if (!filtroPai.trim()) return machoOptions;
+    const q = filtroPai.trim().toLowerCase();
+    return machoOptions.filter(o => !o.value || o.label.toLowerCase().includes(q) || o.value === paiId);
+  }, [machoOptions, filtroPai, paiId]);
+
   const femeaOptions = [
     { label: 'Desconhecida / Não informada', value: '' },
     ...birds
@@ -430,6 +445,12 @@ export function AddBirdModal() {
         value: b.id
       }))
   ];
+
+  const filteredFemeaOptions = useMemo(() => {
+    if (!filtroMae.trim()) return femeaOptions;
+    const q = filtroMae.trim().toLowerCase();
+    return femeaOptions.filter(o => !o.value || o.label.toLowerCase().includes(q) || o.value === maeId);
+  }, [femeaOptions, filtroMae, maeId]);
 
   const canNext = step === 0
     ? !!anilha && !!raca
@@ -721,28 +742,102 @@ export function AddBirdModal() {
           </div>
         </div>
 
-        {/* Nascido Aqui: dropdowns for father and mother */}
+        {/* Nascido Aqui: dropdowns com busca rápida para pai e mãe */}
         {nascidaAqui === true && (
           <div className="space-y-4 animate-fade-in p-4 bg-theme-surface/50 border border-theme-border rounded-2xl">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Pai (Reprodutores Cadastrados)</label>
+            {/* Seletor do Pai com busca rápida */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+                  Pai (Reprodutor Cadastrado)
+                </label>
+                {paiId && (
+                  <button
+                    type="button"
+                    onClick={() => { setPaiId(''); setFiltroPai(''); }}
+                    className="text-[10px] text-red-400 hover:underline font-bold cursor-pointer"
+                  >
+                    Desmarcar
+                  </button>
+                )}
+              </div>
+
+              {/* Barra de busca rápida para filtrar opções */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar reprodutor por anilha ou nome..."
+                  value={filtroPai}
+                  onChange={e => setFiltroPai(e.target.value)}
+                  className="w-full bg-theme-base/60 border border-theme-border/60 text-white pl-8 pr-7 py-1.5 rounded-xl text-xs focus:border-theme-primary outline-none placeholder-theme-text-muted/60 shadow-inner"
+                />
+                {filtroPai && (
+                  <button
+                    type="button"
+                    onClick={() => setFiltroPai('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
+                    title="Limpar filtro"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
               <select
                 value={paiId}
                 onChange={e => { setPaiId(e.target.value); setPaiExterno(''); }}
                 className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
               >
-                {machoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {filteredMachoOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">Mãe (Matrizes Cadastradas)</label>
+            {/* Seletor da Mãe com busca rápida */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+                  Mãe (Matriz Cadastrada)
+                </label>
+                {maeId && (
+                  <button
+                    type="button"
+                    onClick={() => { setMaeId(''); setFiltroMae(''); }}
+                    className="text-[10px] text-red-400 hover:underline font-bold cursor-pointer"
+                  >
+                    Desmarcar
+                  </button>
+                )}
+              </div>
+
+              {/* Barra de busca rápida para filtrar opções */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar matriz por anilha ou nome..."
+                  value={filtroMae}
+                  onChange={e => setFiltroMae(e.target.value)}
+                  className="w-full bg-theme-base/60 border border-theme-border/60 text-white pl-8 pr-7 py-1.5 rounded-xl text-xs focus:border-theme-primary outline-none placeholder-theme-text-muted/60 shadow-inner"
+                />
+                {filtroMae && (
+                  <button
+                    type="button"
+                    onClick={() => setFiltroMae('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
+                    title="Limpar filtro"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+
               <select
                 value={maeId}
                 onChange={e => { setMaeId(e.target.value); setMaeExterno(''); }}
                 className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
               >
-                {femeaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {filteredFemeaOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>

@@ -215,6 +215,17 @@ export function Birds() {
   const [breedToEditId, setBreedToEditId] = useState<string | null>(null);
   const [breedSearch, setBreedSearch] = useState('');
   const [birdSearch, setBirdSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const PAGE_SIZE = 30;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(birdSearch);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [birdSearch]);
+
   const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda' | 'Vendido' | 'Faleceu'>('Todos');
   
@@ -437,13 +448,23 @@ export function Birds() {
   }, [birds, activeBreed, sexFilter, statusFilter]);
 
   const filteredBirds = useMemo(() => {
-    const query = birdSearch.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     return currentBirds.filter(b =>
       (b.anilha || '').toLowerCase().includes(query) ||
       (b.nome || '').toLowerCase().includes(query) ||
       (b.baia || '').toLowerCase().includes(query)
     );
-  }, [currentBirds, birdSearch]);
+  }, [currentBirds, debouncedSearch]);
+
+  // Reseta a paginação ao mudar os filtros ou busca
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [debouncedSearch, activeBreed, sexFilter, statusFilter]);
+
+  // Lista fatiada para renderização ultra-rápida no celular
+  const visibleBirds = useMemo(() => {
+    return filteredBirds.slice(0, visibleCount);
+  }, [filteredBirds, visibleCount]);
 
   useEffect(() => {
     if (showNewBreedModal) {
@@ -574,8 +595,18 @@ export function Birds() {
                 placeholder="Pesquisar por anilha, nome ou baia..."
                 value={birdSearch}
                 onChange={e => setBirdSearch(e.target.value)}
-                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-4 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-9 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
               />
+              {birdSearch && (
+                <button
+                  type="button"
+                  onClick={() => setBirdSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
+                  title="Limpar pesquisa"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -673,11 +704,29 @@ export function Birds() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                {filteredBirds.map(bird => (
-                  <BirdItemCard key={bird.id} bird={bird} onSelect={openBirdProfile} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {visibleBirds.map(bird => (
+                    <BirdItemCard key={bird.id} bird={bird} onSelect={openBirdProfile} />
+                  ))}
+                </div>
+
+                {filteredBirds.length > visibleCount && (
+                  <div className="flex flex-col items-center justify-center mt-6 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                      className="px-6 py-2.5 rounded-xl bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/60 hover:border-theme-primary/50 text-white font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center gap-2 cursor-pointer"
+                    >
+                      <Plus size={14} className="text-theme-primary" />
+                      <span>Carregar mais aves ({visibleBirds.length} de {filteredBirds.length})</span>
+                    </button>
+                    <span className="text-[10px] text-theme-text-muted">
+                      Mostrando as primeiras {visibleBirds.length} aves de {filteredBirds.length}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

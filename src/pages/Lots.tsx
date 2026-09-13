@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -574,6 +574,33 @@ export function Lots() {
   const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
   const filterCrescimento = meatLots.filter(l => l.id.startsWith('growth-'));
 
+  // ── Filtro de Status dos Lotes (Ativos / Encerrados / Todos) ──
+  const [lotStatusFilter, setLotStatusFilter] = useState<'ativos' | 'encerrados' | 'todos'>('ativos');
+
+  const displayedEggLots = useMemo(() => {
+    if (lotStatusFilter === 'ativos') return eggLots.filter(l => l.status !== 'Encerrado');
+    if (lotStatusFilter === 'encerrados') return eggLots.filter(l => l.status === 'Encerrado');
+    return eggLots;
+  }, [eggLots, lotStatusFilter]);
+
+  const displayedEngorda = useMemo(() => {
+    if (lotStatusFilter === 'ativos') return filterEngorda.filter(l => l.status !== 'Abatido');
+    if (lotStatusFilter === 'encerrados') return filterEngorda.filter(l => l.status === 'Abatido');
+    return filterEngorda;
+  }, [filterEngorda, lotStatusFilter]);
+
+  const displayedPintinhos = useMemo(() => {
+    if (lotStatusFilter === 'ativos') return filterPintinhos.filter(l => l.status !== 'Abatido');
+    if (lotStatusFilter === 'encerrados') return filterPintinhos.filter(l => l.status === 'Abatido');
+    return filterPintinhos;
+  }, [filterPintinhos, lotStatusFilter]);
+
+  const displayedCrescimento = useMemo(() => {
+    if (lotStatusFilter === 'ativos') return filterCrescimento.filter(l => l.status !== 'Abatido');
+    if (lotStatusFilter === 'encerrados') return filterCrescimento.filter(l => l.status === 'Abatido');
+    return filterCrescimento;
+  }, [filterCrescimento, lotStatusFilter]);
+
   const [confirmTransfer, setConfirmTransfer] = useState<{
     isOpen: boolean;
     lote: any | null;
@@ -921,6 +948,25 @@ export function Lots() {
         ))}
       </div>
 
+      {/* ── Sub-filtro de Status dos Lotes (Ativos / Encerrados / Todos) ── */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider shrink-0">Filtrar:</span>
+        {(['ativos', 'encerrados', 'todos'] as const).map(st => (
+          <button
+            key={st}
+            type="button"
+            onClick={() => setLotStatusFilter(st)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+              lotStatusFilter === st
+                ? 'bg-theme-primary text-black font-black shadow-md'
+                : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-white border border-theme-border/50'
+            }`}
+          >
+            {st === 'ativos' ? '🟢 Em Produção / Ativos' : st === 'encerrados' ? '📦 Histórico / Encerrados' : '📋 Todos os Lotes'}
+          </button>
+        ))}
+      </div>
+
       {/* TAB CONTENT: POSTURA */}
       {activeTab === 'postura' && (
         <div className="flex-1 flex flex-col space-y-6">
@@ -942,7 +988,7 @@ export function Lots() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {eggLots.map(lote => {
+            {displayedEggLots.map(lote => {
               const dias = calcDays(lote.dataInicio);
               const totalF = Math.max(lote.qtdFemeas || 0, lote.femeasIds?.length || 0);
               const cadastradasF = lote.femeasIds?.length || 0;
@@ -1051,11 +1097,19 @@ export function Lots() {
                 </div>
               );
             })}
-            {eggLots.length === 0 && (
+            {displayedEggLots.length === 0 && (
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
                 <Egg size={40} className="mx-auto mb-3 opacity-50 text-theme-primary" />
-                <p className="font-bold text-white mb-1">Nenhum lote de postura cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar galinhas em postura e meta de ovos.</p>
+                <p className="font-bold text-white mb-1">
+                  {eggLots.length === 0 
+                    ? 'Nenhum lote de postura cadastrado' 
+                    : `Nenhum lote de postura com status "${lotStatusFilter === 'ativos' ? 'Em Produção / Ativo' : lotStatusFilter === 'encerrados' ? 'Encerrado' : 'selecionado'}"`}
+                </p>
+                <p className="text-sm">
+                  {eggLots.length === 0 
+                    ? 'Cadastre um lote para gerenciar galinhas em postura e meta de ovos.'
+                    : 'Alterne o filtro acima para ver outros lotes.'}
+                </p>
               </div>
             )}
           </div>
@@ -1081,7 +1135,7 @@ export function Lots() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {filterEngorda.map(lote => {
+            {displayedEngorda.map(lote => {
               const dias = calcDays(lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
@@ -1412,11 +1466,19 @@ export function Lots() {
                 </div>
               );
             })}
-            {filterEngorda.length === 0 && (
+            {displayedEngorda.length === 0 && (
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
                 <Beef size={40} className="mx-auto mb-3 opacity-50" />
-                <p className="font-bold text-white mb-1">Nenhum lote de engorda cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar crescimento e abate.</p>
+                <p className="font-bold text-white mb-1">
+                  {filterEngorda.length === 0 
+                    ? 'Nenhum lote de engorda cadastrado' 
+                    : `Nenhum lote de engorda com status "${lotStatusFilter === 'ativos' ? 'Ativo' : lotStatusFilter === 'encerrados' ? 'Abatido' : 'selecionado'}"`}
+                </p>
+                <p className="text-sm">
+                  {filterEngorda.length === 0 
+                    ? 'Cadastre um lote para gerenciar crescimento e abate.' 
+                    : 'Alterne o filtro acima para ver outros lotes.'}
+                </p>
               </div>
             )}
           </div>
@@ -1442,7 +1504,7 @@ export function Lots() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {filterPintinhos.map(lote => {
+            {displayedPintinhos.map(lote => {
               const dias = calcDays(lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
@@ -1566,11 +1628,19 @@ export function Lots() {
                 </div>
               );
             })}
-            {filterPintinhos.length === 0 && (
+            {displayedPintinhos.length === 0 && (
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
                 <Baby size={40} className="mx-auto mb-3 opacity-50 text-yellow-400" />
-                <p className="font-bold text-white mb-1">Nenhum lote de pintinhos cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar o nascimento e primeiros dias dos pintinhos.</p>
+                <p className="font-bold text-white mb-1">
+                  {filterPintinhos.length === 0 
+                    ? 'Nenhum lote de pintinhos cadastrado' 
+                    : `Nenhum lote de pintinhos com status "${lotStatusFilter === 'ativos' ? 'Ativo' : lotStatusFilter === 'encerrados' ? 'Encerrado / Transferido' : 'selecionado'}"`}
+                </p>
+                <p className="text-sm">
+                  {filterPintinhos.length === 0 
+                    ? 'Cadastre um lote para gerenciar o nascimento e primeiros dias dos pintinhos.' 
+                    : 'Alterne o filtro acima para ver outros lotes.'}
+                </p>
               </div>
             )}
           </div>
@@ -1596,7 +1666,7 @@ export function Lots() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {filterCrescimento.map(lote => {
+            {displayedCrescimento.map(lote => {
               const dias = calcDays(lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
@@ -1717,11 +1787,19 @@ export function Lots() {
                 </div>
               );
             })}
-            {filterCrescimento.length === 0 && (
+            {displayedCrescimento.length === 0 && (
               <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
                 <Timer size={40} className="mx-auto mb-3 opacity-50 text-green-400" />
-                <p className="font-bold text-white mb-1">Nenhum lote de crescimento cadastrado</p>
-                <p className="text-sm">Cadastre um lote para gerenciar a recria e crescimento das aves.</p>
+                <p className="font-bold text-white mb-1">
+                  {filterCrescimento.length === 0 
+                    ? 'Nenhum lote de crescimento cadastrado' 
+                    : `Nenhum lote de crescimento com status "${lotStatusFilter === 'ativos' ? 'Ativo' : lotStatusFilter === 'encerrados' ? 'Encerrado / Transferido' : 'selecionado'}"`}
+                </p>
+                <p className="text-sm">
+                  {filterCrescimento.length === 0 
+                    ? 'Cadastre um lote para gerenciar a recria e crescimento das aves.' 
+                    : 'Alterne o filtro acima para ver outros lotes.'}
+                </p>
               </div>
             )}
           </div>
