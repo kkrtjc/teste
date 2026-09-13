@@ -368,14 +368,13 @@ export function Login() {
 
       {/* ── HERO ── */}
       <section
-        className="relative flex flex-col justify-center items-center text-center py-20 px-6 max-w-4xl mx-auto"
-        style={{ zIndex: 3, minHeight: '88vh', overflow: 'hidden' }}
+        className="relative flex flex-col items-center text-center pt-3 pb-6 sm:pt-6 sm:pb-10 px-4 sm:px-6 max-w-4xl mx-auto overflow-hidden"
+        style={{ zIndex: 3 }}
       >
         {/*
-         * GALO: posicionado como no site de referência — absolute, canto inferior
-         * esquerdo, dentro da section do hero. Fica confinado apenas à 1ª dobra.
-         * mix-blend-mode:screen torna o fundo preto da imagem 100% transparente.
-         * A máscara suaviza o topo e a borda direita para fusão natural.
+         * GALO: posicionado no canto inferior esquerdo da primeira dobra.
+         * Fica visível imediatamente no celular ao abrir a página sem rolar.
+         * A máscara suaviza o topo e a borda direita para fusão com o fundo.
          */}
         <img
           src={roosterImg}
@@ -387,14 +386,12 @@ export function Login() {
             position: 'absolute',
             bottom: 0,
             left: 0,
-            /* altura = 90% da section para emergir de baixo como no exemplo */
-            height: '90%',
+            height: '92%',
             width: 'auto',
-            maxWidth: 'clamp(220px, 30vw, 420px)',
+            maxWidth: 'clamp(200px, 32vw, 420px)',
             objectFit: 'contain',
-            /* Imagem agora possui transparência real (.png) */
+            objectPosition: 'bottom left',
             opacity: 0.85,
-            /* Fade no topo e na borda direita para integração natural */
             WebkitMaskImage:
               'linear-gradient(to top, black 50%, rgba(0,0,0,0.7) 75%, transparent 100%), linear-gradient(to right, black 55%, rgba(0,0,0,0.4) 80%, transparent 100%)',
             maskImage:
@@ -411,7 +408,6 @@ export function Login() {
           style={{
             position: 'absolute',
             inset: 0,
-            /* Gradiente radial escuro atrás do bloco de texto central */
             background: 'radial-gradient(ellipse 70% 80% at 55% 45%, rgba(0,0,0,0.55) 0%, transparent 75%)',
             zIndex: 0,
             pointerEvents: 'none',
@@ -420,7 +416,7 @@ export function Login() {
 
         {/* Badge */}
         <div
-          className="mb-7 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0"
+          className="mb-3 sm:mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0"
           style={{
             border: '1px solid rgba(245,158,11,0.25)',
             background: 'rgba(10,10,11,0.55)',
@@ -434,19 +430,12 @@ export function Login() {
           <Star size={9} fill="currentColor" /> A gestão que seu criatório merece <Star size={9} fill="currentColor" />
         </div>
 
-        {/* Logo flutuante */}
-        <div className="mb-7 animate-float opacity-0 animate-fade-in-up delay-100" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
-          <img src={muraLogo} alt="Mura Manager" className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover"
-            style={{ border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 0 50px rgba(245,158,11,0.12), 0 20px 50px rgba(0,0,0,0.5)' }} />
-        </div>
-
         {/* Headline */}
         <h1
-          className="text-4xl sm:text-6xl font-black tracking-tight leading-[0.9] opacity-0 animate-fade-in-up delay-200 text-white"
+          className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] opacity-0 animate-fade-in-up delay-200 text-white"
           style={{
             animationFillMode: 'forwards',
             position: 'relative', zIndex: 1,
-            /* text-shadow duplo: sombra escura próxima + glow difuso — garante leitura sobre o galo */
             textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)',
           }}
         >
@@ -454,7 +443,7 @@ export function Login() {
         </h1>
 
         <p
-          className="mt-5 text-sm max-w-lg leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
+          className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm max-w-lg leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
           style={{
             animationFillMode: 'forwards',
             position: 'relative', zIndex: 1,
@@ -466,7 +455,7 @@ export function Login() {
         </p>
 
         {/* CTAs */}
-        <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
+        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
           <button
             onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
             className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-transform flex items-center gap-2"
@@ -492,7 +481,7 @@ export function Login() {
 
         {/* Stats */}
         <div
-          className="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 opacity-0 animate-fade-in-up delay-500"
+          className="mt-6 sm:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 opacity-0 animate-fade-in-up delay-500"
           style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}
         >
           {stats.map((s, i) => (
@@ -515,9 +504,11 @@ export function Login() {
             </div>
           ))}
         </div>
+      </section>
 
-        {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
-        <div className="mt-12 w-full max-w-md mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
+      {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
+      <section className="relative py-6 sm:py-10 px-4 max-w-md mx-auto" style={{ zIndex: 3 }}>
+        <div className="w-full mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
           <div className="relative rounded-[32px] overflow-hidden border-[4px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto">
             {carouselImages.map((img, idx) => (
               <div
@@ -572,17 +563,12 @@ export function Login() {
             ))}
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 opacity-20" style={{ zIndex: 1 }}>
-          <div style={{ width: 1, height: 36, background: 'linear-gradient(to bottom, transparent, #f59e0b, transparent)' }} className="animate-pulse" />
-        </div>
       </section>
 
       {/* ── FEATURES ── */}
-      <section ref={detailsRef} className="relative py-24 px-6 mx-auto max-w-5xl" style={{ zIndex: 3 }}>
+      <section ref={detailsRef} className="relative py-10 sm:py-14 px-6 mx-auto max-w-5xl" style={{ zIndex: 3 }}>
         <div className="max-w-4xl mx-auto">
-          <div className="mb-12 space-y-2">
+          <div className="mb-6 sm:mb-8 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Plataforma Completa</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">Tudo que seu criatório<br />precisa em um só lugar</h2>
           </div>
@@ -609,9 +595,9 @@ export function Login() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="relative py-24 px-6 mx-auto max-w-4xl" style={{ zIndex: 3 }}>
+      <section id="pricing" className="relative py-10 sm:py-14 px-6 mx-auto max-w-4xl" style={{ zIndex: 3 }}>
         <div className="max-w-3xl mx-auto">
-          <div className="mb-12 space-y-2">
+          <div className="mb-6 sm:mb-8 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Planos e Preços</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha seu plano</h2>
             <p className="text-sm font-bold text-theme-primary mt-1">Experimente Grátis por 7 dias — Sem compromisso e sem precisar cadastrar cartão!</p>
@@ -693,7 +679,7 @@ export function Login() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative py-8 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', zIndex: 3 }}>
+      <footer className="relative py-5 sm:py-6 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', zIndex: 3 }}>
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2.5">
             <img src={muraLogo} alt="" className="w-6 h-6 rounded object-cover opacity-50" />
