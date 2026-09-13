@@ -1237,23 +1237,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // ── Carrega cache local imediatamente → tela nunca aparece zerada ──
+      // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
+      await loadFromLocalForage();
+      setIsReady(true);
+
+      // ── Sincroniza com a nuvem em background (sem bloquear a tela) ──
+      // Isso corrige dados desatualizados silenciosamente após o app já estar visível
       if (isSupabaseConfigured && navigator.onLine) {
-        // ── CLOUD-FIRST: tem internet → busca da nuvem primeiro ──
-        // Processa a fila de mutações offline pendentes antes de sincronizar
         processSyncQueue().catch(() => {});
-        try {
-          // syncWithSupabaseBackground já atualiza state e salva no cache local
-          await syncWithSupabaseBackground(true);
-        } catch (err) {
-          console.warn('[LoadData] Falha na sync cloud-first, usando cache local como fallback:', err);
-          await loadFromLocalForage();
-        }
-        setIsReady(true);
-      } else {
-        // ── OFFLINE-FIRST: sem internet → carrega do cache local imediatamente ──
-        await loadFromLocalForage();
-        setIsReady(true);
-        // Quando voltar a conexão, sincroniza automaticamente via handleOnline listener
+        syncWithSupabaseBackground(true).catch(err => {
+          console.warn('[LoadData] Falha na sync background:', err);
+        });
       }
     }
 

@@ -25,7 +25,7 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
     }
   }, [isLoading, onFinish]);
 
-  // Blindagem de segurança: nunca trava o usuário na splash por mais de 3 segundos
+  // Blindagem de segurança: nunca trava o usuário na splash por mais de 8 segundos
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
       setIsFadingOut(true);
@@ -33,7 +33,7 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
         setShouldRender(false);
         if (onFinish) onFinish();
       }, 350);
-    }, 3000);
+    }, 8000);
     return () => clearTimeout(safetyTimer);
   }, [onFinish]);
 
