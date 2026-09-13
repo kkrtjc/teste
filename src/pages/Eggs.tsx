@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, memo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
@@ -37,8 +37,10 @@ const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // BarChart — Gráfico Interativo de Produção (Últimos 14 dias)
 // ─────────────────────────────────────────────────────────────────────────────
-function BarChart({ records }: { records: EggDailyRecord[] }) {
-  const last14 = [...records].sort((a, b) => a.data.localeCompare(b.data)).slice(-14);
+const BarChart = memo(function BarChart({ records }: { records: EggDailyRecord[] }) {
+  const last14 = useMemo(() => {
+    return [...records].sort((a, b) => a.data.localeCompare(b.data)).slice(-14);
+  }, [records]);
   if (last14.length === 0) return (
     <div className="h-32 flex items-center justify-center text-xs text-theme-text-muted">
       Nenhum registro de produção ainda
@@ -86,12 +88,12 @@ function BarChart({ records }: { records: EggDailyRecord[] }) {
       <line x1="10" y1={H} x2={W - 10} y2={H} stroke="#374151" strokeWidth="1" />
     </svg>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // KPI Card
 // ─────────────────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: string; value: string; sub?: string; color?: 'amber' | 'green' | 'red' | 'blue' | 'purple'; icon: any }) {
+const KpiCard = memo(function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: string; value: string; sub?: string; color?: 'amber' | 'green' | 'red' | 'blue' | 'purple'; icon: any }) {
   const colors: Record<string, string> = {
     amber: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
     green: 'text-green-400 bg-green-400/10 border-green-400/20',
@@ -110,7 +112,7 @@ function KpiCard({ label, value, sub, color = 'amber', icon: Icon }: { label: st
       {sub && <p className="text-[10px] opacity-70 mt-0.5">{sub}</p>}
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal: Criar Novo Lote de Postura

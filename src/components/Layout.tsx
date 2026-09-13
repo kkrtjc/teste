@@ -364,7 +364,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-theme-primary/5 rounded-full blur-[80px] pointer-events-none hidden md:block" />
         
         {/* Header */}
         <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
@@ -430,7 +430,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
       {/* Floating Bottom Navigation (Mobile Dock) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 touch-manipulation">
-        <nav className="bg-theme-surface/85 backdrop-blur-xl border border-theme-border/60 rounded-2xl shadow-2xl px-2 py-2">
+        <nav className="bg-[#121218]/95 backdrop-blur-md border border-theme-border/60 rounded-2xl shadow-xl px-2 py-2">
           <div className="flex justify-around items-center h-14">
             {mobileNavItems.map((item) => (
               <NavLink
