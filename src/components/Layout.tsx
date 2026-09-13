@@ -4,7 +4,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2
+  Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
+  CreditCard, QrCode, Zap
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -41,13 +42,29 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const { farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup, showToast } = useAppContext();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
-  const { isLocalMode, triggerWebhookPayment, isAdmin } = useAuth();
+  const { isLocalMode, triggerWebhookPayment, isAdmin, trialInfo, cpf } = useAuth();
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradePlan, setUpgradePlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [upgradeMethod, setUpgradeMethod] = useState<'card' | 'pix'>('card');
+  const [hideTrialBanner, setHideTrialBanner] = useState(false);
   const [copiedPixUpgrade, setCopiedPixUpgrade] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  const currentTrialDay = Math.max(1, Math.min(7, 7 - (trialInfo?.remainingDays ?? 7) + 1));
+
+  const getUpgradeWhatsappLink = (method: 'card' | 'pix' = upgradeMethod) => {
+    const planText = upgradePlan === 'monthly' ? 'Mensal (R$ 39,90/mês)' : 'Anual Promocional com 25% OFF (R$ 359,10/ano)';
+    const userIdent = cpf ? `CPF: ${cpf}` : '';
+    const methodText = method === 'card' 
+      ? 'Cartão de Crédito (com cobrança automática)' 
+      : 'PIX (à vista)';
+    const text = encodeURIComponent(
+      `Olá! Desejo ativar o plano ${planText} via ${methodText} no Mura Manager${userIdent ? ` (${userIdent})` : ''}. Por favor, me envie as instruções de liberação.`
+    );
+    return `https://wa.me/55${farmSettings.phone.replace(/\D/g, '') || '5599999999999'}?text=${text}`;
+  };
 
   // Abre o modal de upgrade quando acionado pelo TrialPopupModal (via App.tsx)
   useEffect(() => {
@@ -423,6 +440,48 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           </button>
         </header>
 
+        {/* ── AVISO INTELIGENTE DE TRIAL (DISCRETO, ELEGANTE E IMPECÁVEL) ── */}
+        {trialInfo?.isTrial && !isAdmin && !hideTrialBanner && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-[#16161f] to-amber-500/10 border-b border-amber-500/25 px-4 py-2 flex items-center justify-between gap-3 text-xs z-20 shrink-0 backdrop-blur-md animate-fade-in">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <Sparkles size={13} />
+              </div>
+              <p className="text-white text-xs leading-tight truncate sm:whitespace-normal">
+                {currentTrialDay >= 7 ? (
+                  <>
+                    <span className="font-black text-amber-400">Último dia de teste gratuito!</span>{' '}
+                    <span className="text-theme-text-muted">Ative agora o plano Anual com 25% de desconto e garanta seu criatório sempre seguro.</span>
+                  </>
+                ) : (
+                  <>
+                    Você está no <span className="font-black text-amber-400">{currentTrialDay}º dia de teste</span>.{' '}
+                    <span className="text-theme-text-muted hidden sm:inline">Ative agora o plano Anual com </span>
+                    <span className="font-bold text-emerald-400">25% de desconto</span>
+                    <span className="text-theme-text-muted"> e garanta seu criatório sempre seguro.</span>
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[10px] sm:text-[11px] uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Zap size={11} />
+                <span>Ativar Plano</span>
+              </button>
+              <button
+                onClick={() => setHideTrialBanner(true)}
+                className="p-1 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                title="Ocultar aviso"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-24 md:pb-6 gpu-accelerated">
           <Outlet />
         </div>
@@ -764,24 +823,88 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
               </div>
             </div>
 
-            {/* Pix key copy */}
-            <div className="bg-theme-base/60 border border-theme-border p-3.5 rounded-2xl space-y-2 text-center">
-              <p className="text-[11px] font-bold text-white">Chave Pix para Pagamento</p>
-              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-1.5 text-xs">
-                <span className="font-mono text-white text-[11px] truncate">mura.manager.pay@gmail.com</span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText('mura.manager.pay@gmail.com');
-                    setCopiedPixUpgrade(true);
-                    setTimeout(() => setCopiedPixUpgrade(false), 2500);
-                  }}
-                  className="p-1 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white"
-                >
-                  {copiedPixUpgrade ? <CheckCircle2 size={12}/> : <Copy size={12}/>}
-                  <span>{copiedPixUpgrade ? 'Copiado' : 'Copiar'}</span>
-                </button>
-              </div>
+            {/* Payment Method Selector */}
+            <div className="flex rounded-xl bg-theme-base/80 p-1 border border-theme-border/70 gap-1">
+              <button
+                type="button"
+                onClick={() => setUpgradeMethod('card')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  upgradeMethod === 'card'
+                    ? 'bg-amber-500 text-black shadow-md font-black'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <CreditCard size={13} />
+                <span>Cartão (Automático)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUpgradeMethod('pix')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  upgradeMethod === 'pix'
+                    ? 'bg-amber-500 text-black shadow-md font-black'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <QrCode size={13} />
+                <span>PIX (À Vista)</span>
+              </button>
             </div>
+
+            {/* Dynamic Payment Method Content */}
+            {upgradeMethod === 'card' ? (
+              <div className="bg-theme-base/60 border border-theme-border/60 rounded-2xl p-3.5 space-y-3 animate-fade-in">
+                <div className="flex items-center gap-2.5 bg-theme-surface border border-theme-border/80 rounded-xl p-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                    <CreditCard size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white leading-tight">Cobrança Automática no Cartão</p>
+                    <p className="text-[10px] text-theme-text-muted mt-0.5">Comodidade e tranquilidade mensal ou anual sem risco de interrupção.</p>
+                  </div>
+                </div>
+
+                <a
+                  href={getUpgradeWhatsappLink('card')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-amber-500 hover:bg-amber-400 text-xs shadow-md cursor-pointer"
+                >
+                  <CreditCard size={14} />
+                  <span>Ativar Assinatura no Cartão ({upgradePlan === 'yearly' ? 'R$ 359,10/ano' : 'R$ 39,90/mês'})</span>
+                </a>
+              </div>
+            ) : (
+              <div className="bg-theme-base/60 border border-theme-border/60 rounded-2xl p-3.5 space-y-3 animate-fade-in">
+                <div className="space-y-1.5 text-center">
+                  <p className="text-[11px] font-bold text-white">Chave Pix Copia e Cola (À Vista)</p>
+                  <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-1.5 text-xs">
+                    <span className="font-mono text-white text-[11px] truncate font-bold">mura.manager.pay@gmail.com</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText('mura.manager.pay@gmail.com');
+                        setCopiedPixUpgrade(true);
+                        setTimeout(() => setCopiedPixUpgrade(false), 2500);
+                      }}
+                      className="p-1 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white cursor-pointer"
+                    >
+                      {copiedPixUpgrade ? <CheckCircle2 size={12} className="text-emerald-400"/> : <Copy size={12}/>}
+                      <span className={copiedPixUpgrade ? 'text-emerald-400' : ''}>{copiedPixUpgrade ? 'Copiado!' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <a
+                  href={getUpgradeWhatsappLink('pix')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-white bg-emerald-600 hover:bg-emerald-500 text-xs shadow-md cursor-pointer"
+                >
+                  <MessageSquare size={14} />
+                  <span>Enviar Comprovante Pix no WhatsApp</span>
+                </a>
+              </div>
+            )}
 
             {/* Webhook Status Listener */}
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center space-y-1">
