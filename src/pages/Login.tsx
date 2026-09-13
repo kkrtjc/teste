@@ -368,41 +368,10 @@ export function Login() {
 
       {/* ── HERO ── */}
       <section
-        className="relative flex flex-col items-center text-center pt-3 pb-6 sm:pt-6 sm:pb-10 px-4 sm:px-6 max-w-4xl mx-auto overflow-hidden"
+        className="relative flex flex-col items-center text-center pt-3 pb-3 sm:pt-6 sm:pb-5 px-4 sm:px-6 max-w-4xl mx-auto"
         style={{ zIndex: 3 }}
       >
-        {/*
-         * GALO: posicionado no canto inferior esquerdo da primeira dobra.
-         * Fica visível imediatamente no celular ao abrir a página sem rolar.
-         * A máscara suaviza o topo e a borda direita para fusão com o fundo.
-         */}
-        <img
-          src={roosterImg}
-          alt=""
-          aria-hidden="true"
-          fetchPriority="high"
-          decoding="async"
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            height: '92%',
-            width: 'auto',
-            maxWidth: 'clamp(200px, 32vw, 420px)',
-            objectFit: 'contain',
-            objectPosition: 'bottom left',
-            opacity: 0.85,
-            WebkitMaskImage:
-              'linear-gradient(to top, black 50%, rgba(0,0,0,0.7) 75%, transparent 100%), linear-gradient(to right, black 55%, rgba(0,0,0,0.4) 80%, transparent 100%)',
-            maskImage:
-              'linear-gradient(to top, black 50%, rgba(0,0,0,0.7) 75%, transparent 100%), linear-gradient(to right, black 55%, rgba(0,0,0,0.4) 80%, transparent 100%)',
-            zIndex: 0,
-            pointerEvents: 'none',
-            transform: 'translateZ(0)',
-            willChange: 'transform',
-          }}
-        />
-        {/* Scrim radial escuro centrado — garante legibilidade dos textos sobre o galo */}
+        {/* Scrim radial escuro centrado — garante legibilidade dos textos */}
         <div
           aria-hidden="true"
           style={{
@@ -507,9 +476,39 @@ export function Login() {
       </section>
 
       {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
-      <section className="relative py-6 sm:py-10 px-4 max-w-md mx-auto" style={{ zIndex: 3 }}>
-        <div className="w-full mx-auto opacity-0 animate-fade-in-up delay-500" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 2 }}>
-          <div className="relative rounded-[32px] overflow-hidden border-[4px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto">
+      <section className="relative pt-2 pb-6 sm:pt-4 sm:pb-10 px-4 max-w-md mx-auto" style={{ zIndex: 2 }}>
+        <div className="w-full max-w-[360px] mx-auto opacity-0 animate-fade-in-up delay-500 relative" style={{ animationFillMode: 'forwards' }}>
+          {/*
+           * GALO DE FUNDO: pés apoiados exatamente na parte superior do container das imagens.
+           * A cabeça fica abaixo dos botões, sem cobrir ou conflitar com a leitura.
+           */}
+          <img
+            src={roosterImg}
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            decoding="async"
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% - 10px)',
+              left: '-10px',
+              height: 'clamp(210px, 30vw, 290px)',
+              width: 'auto',
+              maxWidth: 'none',
+              objectFit: 'contain',
+              objectPosition: 'bottom left',
+              opacity: 0.85,
+              WebkitMaskImage:
+                'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
+              maskImage:
+                'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
+              pointerEvents: 'none',
+              transform: 'translateZ(0)',
+              willChange: 'transform',
+            }}
+          />
+
+          <div className="relative rounded-[32px] overflow-hidden border-[4px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto" style={{ zIndex: 1 }}>
             {carouselImages.map((img, idx) => (
               <div
                 key={idx}
