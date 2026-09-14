@@ -71,6 +71,10 @@ const AppCarousel = memo(function AppCarousel() {
   return (
     <section className="relative pt-2 pb-6 sm:pt-4 sm:pb-10 px-4 max-w-md mx-auto z-10">
       <div className="w-full max-w-[360px] mx-auto relative">
+        {/*
+         * GALO DE FUNDO: pés apoiados exatamente na parte superior do container das imagens.
+         * Fica no plano de fundo, com máscara gradiente para não cobrir nenhum texto ou botão.
+         */}
         <img
           src={roosterImg}
           alt=""
@@ -87,7 +91,13 @@ const AppCarousel = memo(function AppCarousel() {
             maxWidth: 'none',
             objectFit: 'contain',
             objectPosition: 'bottom left',
-            opacity: 0.9,
+            opacity: 0.85,
+            WebkitMaskImage:
+              'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
+            maskImage:
+              'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
+            pointerEvents: 'none',
+            zIndex: 0,
             willChange: 'transform',
           }}
         />
@@ -891,8 +901,8 @@ export function Login() {
         </button>
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="relative flex flex-col items-center text-center pt-4 pb-3 sm:pt-8 sm:pb-6 px-4 sm:px-6 max-w-4xl mx-auto z-10">
+      {/* ── HERO (z-20 garante que títulos, botões e estatísticas fiquem na frente do galo) ── */}
+      <section className="relative flex flex-col items-center text-center pt-4 pb-3 sm:pt-8 sm:pb-6 px-4 sm:px-6 max-w-4xl mx-auto z-20">
         <div
           aria-hidden="true"
           className="absolute inset-0 pointer-events-none z-0"
