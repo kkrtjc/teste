@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
-  AlertCircle, UserPlus, X
+  AlertCircle, UserPlus, X, Send, Loader2
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
+import { generateBirdPdf, sharePdfFile } from '../../lib/pdfGenerator';
 
 function PedigreeTreeNode({
   label,
@@ -113,8 +114,9 @@ function PedigreeTreeNode({
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast, farmSettings } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -160,6 +162,39 @@ export function BirdProfileModal() {
   if (!bird) {
     return null;
   }
+
+  const pai = useMemo(() => bird?.paiId ? birds.find(b => b.id === bird.paiId) || null : null, [bird?.paiId, birds]);
+  const mae = useMemo(() => bird?.maeId ? birds.find(b => b.id === bird.maeId) || null : null, [bird?.maeId, birds]);
+
+  const handleSharePdf = async () => {
+    if (!bird) return;
+    setIsGeneratingPdf(true);
+    try {
+      const blob = await generateBirdPdf({
+        bird,
+        farmSettings,
+        pai,
+        mae,
+        inbreeding: inbreedingF,
+      });
+      const filename = `ficha-tecnica-${bird.anilha || 'ave'}.pdf`;
+      const result = await sharePdfFile(
+        blob,
+        filename,
+        `Ficha Técnica - ${bird.anilha}`,
+        `Ficha Técnica oficial da ave ${bird.anilha} (${farmSettings?.name || 'Mura Manager'})`
+      );
+      showToast?.(
+        result === 'shared' ? 'Compartilhando ficha técnica...' : 'Ficha técnica baixada com sucesso!',
+        'success'
+      );
+    } catch (err) {
+      console.error('Erro ao gerar ficha:', err);
+      showToast?.('Erro ao gerar Ficha Técnica em PDF.', 'error');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   const inbreedingF = useMemo(() => {
     return calculateInbreedingCoefficient(bird.id, birds);
@@ -281,7 +316,16 @@ export function BirdProfileModal() {
         {/* Header */}
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0 touch-none select-none">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleSharePdf}
+              disabled={isGeneratingPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              title="Gerar e compartilhar Ficha Técnica em PDF"
+            >
+              {isGeneratingPdf ? <Loader2 size={15} className="animate-spin text-amber-400" /> : <Send size={15} />}
+              <span className="hidden sm:inline">Ficha Técnica</span>
+            </button>
             <button
               onClick={() => {
                 if (confirm(`Deseja excluir permanentemente a ave ${bird.anilha} do plantel?`)) {

@@ -4,13 +4,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles
+  CheckCircle, Sparkles, Send, Loader2
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
+import { generateLotPdf, sharePdfFile } from '../lib/pdfGenerator';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -461,9 +462,39 @@ export function Lots() {
   const navigate = useNavigate();
   const { 
     birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
-    meatLots, addMeatLot, editMeatLot, removeMeatLot 
+    meatLots, addMeatLot, editMeatLot, removeMeatLot, farmSettings 
   } = useAppContext();
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
+  const [generatingLotId, setGeneratingLotId] = useState<string | null>(null);
+
+  const handleShareLotPdf = async (lote: any, lotType: 'cruzador' | 'incubacao' | 'engorda' | 'postura' | 'pintinhos' | 'crescimento') => {
+    setGeneratingLotId(lote.id);
+    try {
+      const blob = await generateLotPdf({
+        lot: lote,
+        lotType,
+        farmSettings,
+        birdsList: birds,
+      });
+      const filename = `ficha-lote-${lote.baia ? `baia-${lote.baia}` : lotType}.pdf`;
+      const lotTitle = lote.cageName || lote.numeroLote || (lote.baia ? `Lote Baia ${lote.baia}` : 'Lote');
+      const result = await sharePdfFile(
+        blob,
+        filename,
+        `Ficha do Lote - ${lotTitle}`,
+        `Relatório e Ficha Técnica oficial do ${lotTitle} (${farmSettings?.name || 'Mura Manager'})`
+      );
+      showToast?.(
+        result === 'shared' ? 'Compartilhando ficha do lote...' : 'Ficha do lote baixada com sucesso!',
+        'success'
+      );
+    } catch (err) {
+      console.error('Erro ao gerar PDF do lote:', err);
+      showToast?.('Erro ao gerar Ficha Técnica do lote em PDF.', 'error');
+    } finally {
+      setGeneratingLotId(null);
+    }
+  };
 
   useEffect(() => {
     if (location.state) {
@@ -1002,7 +1033,18 @@ export function Lots() {
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Postura</h3>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleShareLotPdf(lote, 'postura')}
+                        disabled={generatingLotId === lote.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        title="Gerar e compartilhar Ficha Técnica do lote"
+                      >
+                        {generatingLotId === lote.id ? <Loader2 size={13} className="animate-spin text-amber-400" /> : <Send size={13} />}
+                        <span className="hidden sm:inline">Ficha</span>
+                      </button>
+                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
+                    </div>
                   </div>
                   {/* Métricas */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -1236,6 +1278,15 @@ export function Lots() {
                       <h3 className="font-black text-lg text-white">Lote de Engorda</h3>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleShareLotPdf(lote, 'engorda')}
+                        disabled={generatingLotId === lote.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        title="Gerar e compartilhar Ficha Técnica do lote"
+                      >
+                        {generatingLotId === lote.id ? <Loader2 size={13} className="animate-spin text-amber-400" /> : <Send size={13} />}
+                        <span className="hidden sm:inline">Ficha</span>
+                      </button>
                       <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${meatStatusCls(lote.status)}`}>
                         {lote.status}
                       </span>
@@ -1518,6 +1569,15 @@ export function Lots() {
                       <h3 className="font-black text-lg text-white">Lote de Pintinhos</h3>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleShareLotPdf(lote, 'pintinhos')}
+                        disabled={generatingLotId === lote.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        title="Gerar e compartilhar Ficha Técnica do lote"
+                      >
+                        {generatingLotId === lote.id ? <Loader2 size={13} className="animate-spin text-amber-400" /> : <Send size={13} />}
+                        <span className="hidden sm:inline">Ficha</span>
+                      </button>
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
                       <button 
                         onClick={() => setDeleteLotConfirm({
@@ -1680,6 +1740,15 @@ export function Lots() {
                       <h3 className="font-black text-lg text-white">Lote de Crescimento</h3>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleShareLotPdf(lote, 'crescimento')}
+                        disabled={generatingLotId === lote.id}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        title="Gerar e compartilhar Ficha Técnica do lote"
+                      >
+                        {generatingLotId === lote.id ? <Loader2 size={13} className="animate-spin text-amber-400" /> : <Send size={13} />}
+                        <span className="hidden sm:inline">Ficha</span>
+                      </button>
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
                       <button 
                         onClick={() => setDeleteLotConfirm({
