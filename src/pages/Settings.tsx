@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Sparkles, ChevronRight, Copy, MessageSquare, X, ExternalLink,
-  Smartphone
+  Database, Sparkles, Copy, MessageSquare, X, ExternalLink,
+  Smartphone, Zap, CreditCard, QrCode
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -34,12 +34,10 @@ function calcTimeLeft(expiresAt: string | null) {
 function TrialCountdownTimer({ 
   trialInfo, 
   onOpenPaymentModal,
-  onSelectPlan,
   isAdmin 
 }: { 
   trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
   onOpenPaymentModal: () => void;
-  onSelectPlan?: (plan: 'monthly' | 'yearly') => void;
   isAdmin?: boolean;
 }) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(() => calcTimeLeft(trialInfo.expiresAt));
@@ -101,39 +99,304 @@ function TrialCountdownTimer({
         </div>
       </div>
 
-      {/* 💳 BOTÃO / LINK DE PAGAMENTO ANTECIPADO LOGO ABAIXO DO TIMER */}
+      {/* 🚀 BOTÃO VER PLANOS */}
       <button
         type="button"
         onClick={onOpenPaymentModal}
-        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/25 to-amber-500/20 hover:from-amber-500/30 hover:to-orange-500/35 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-white text-xs font-black transition-all active:scale-95 shadow-lg group cursor-pointer"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-amber-500/15 cursor-pointer mt-1"
       >
-        <Sparkles size={14} className="text-amber-400 group-hover:rotate-12 transition-transform shrink-0" />
-        <span>Antecipar Pagamento / Renovar Assinatura</span>
-        <ChevronRight size={14} className="text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+        <Zap size={13} />
+        <span>Ver Planos</span>
       </button>
-
-      {/* 🔗 Links diretos para os planos mensais e anuais */}
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-theme-text-muted mt-0.5">
-        <span>Conheça os planos:</span>
-        <button
-          type="button"
-          onClick={() => onSelectPlan ? onSelectPlan('yearly') : onOpenPaymentModal()}
-          className="font-black text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
-        >
-          Plano Anual (25% OFF)
-        </button>
-        <span>ou</span>
-        <button
-          type="button"
-          onClick={() => onSelectPlan ? onSelectPlan('monthly') : onOpenPaymentModal()}
-          className="font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
-        >
-          Plano Mensal
-        </button>
-      </div>
     </div>
   );
 }
+
+interface SettingsPaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  triggerWebhookPayment: (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => Promise<{ error: any }>;
+  showToast: (message: string, type?: 'success' | 'warning' | 'error' | 'info') => void;
+  cpf?: string;
+  farmPhone?: string;
+}
+
+const SettingsPaymentModal = memo(function SettingsPaymentModal({
+  isOpen,
+  onClose,
+  triggerWebhookPayment,
+  showToast,
+  cpf,
+  farmPhone = '',
+}: SettingsPaymentModalProps) {
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
+  const [copiedPix, setCopiedPix] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleCopyPix = () => {
+    try {
+      navigator.clipboard.writeText('mura.manager.pay@gmail.com');
+      setCopiedPix(true);
+      setTimeout(() => setCopiedPix(false), 2500);
+    } catch {
+      showToast('Chave PIX: mura.manager.pay@gmail.com', 'info');
+    }
+  };
+
+  const handleActivate = async () => {
+    setLoading(true);
+    try {
+      const { error } = await triggerWebhookPayment(selectedPlan, cpf);
+      if (!error) {
+        showToast('Assinatura ativada com sucesso! Seu criatório está com acesso total renovado.', 'success');
+        onClose();
+      } else {
+        showToast('Erro ao processar ativação de pagamento.', 'error');
+      }
+    } catch {
+      showToast('Erro ao processar ativação de pagamento.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cleanPhone = farmPhone.replace(/\D/g, '') || '5599999999999';
+  const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(
+    `Olá! Realizei o pagamento da assinatura do Mura Manager (${selectedPlan === 'yearly' ? 'Plano Anual 25% OFF' : 'Plano Mensal'}) para o ${cpf ? 'CPF: ' + cpf : 'meu usuário'}. Segue comprovante para baixa imediata.`
+  )}`;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-[#121216] border border-theme-border/80 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl p-5 sm:p-6 space-y-4 animate-scale-up relative max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-theme-border/70 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm sm:text-base text-white">Planos Mura Manager</h3>
+              <p className="text-[10px] sm:text-[11px] text-theme-text-muted">Ativação instantânea • Sem burocracia</p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Plan Cards Selector */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Mensal */}
+          <button
+            type="button"
+            onClick={() => setSelectedPlan('monthly')}
+            className={`p-3 sm:p-3.5 rounded-2xl border text-left cursor-pointer transition-all ${
+              selectedPlan === 'monthly'
+                ? 'border-amber-500 bg-amber-500/15 shadow-lg shadow-amber-500/10'
+                : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
+            }`}
+          >
+            <p className="font-bold text-xs text-white">Plano Mensal</p>
+            <p className="text-base sm:text-lg font-black text-amber-400 mt-1">
+              R$ 39,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span>
+            </p>
+            <p className="text-[10px] text-theme-text-muted mt-0.5">Renovação mês a mês</p>
+          </button>
+
+          {/* Anual */}
+          <button
+            type="button"
+            onClick={() => setSelectedPlan('yearly')}
+            className={`p-3 sm:p-3.5 rounded-2xl border text-left cursor-pointer transition-all relative overflow-hidden ${
+              selectedPlan === 'yearly'
+                ? 'border-emerald-500 bg-emerald-500/15 shadow-lg shadow-emerald-500/10'
+                : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
+            }`}
+          >
+            <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">
+              25% OFF
+            </span>
+            <p className="font-bold text-xs text-white">Plano Anual</p>
+            <p className="text-base sm:text-lg font-black text-emerald-400 mt-1">
+              R$ 359,10<span className="text-[9px] text-theme-text-muted font-normal">/ano</span>
+            </p>
+            <p className="text-[10px] text-emerald-400/90 font-medium mt-0.5">Economia de R$ 119,70</p>
+          </button>
+        </div>
+
+        {/* Benefícios do Plano Escolhido */}
+        <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs">
+          <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+            {selectedPlan === 'yearly' ? '⭐ Vantagens Exclusivas do Plano Anual (25% OFF):' : '📋 Recursos Inclusos no Plano Mensal:'}
+          </p>
+          <ul className="space-y-1.5 text-theme-text-muted text-[11px]">
+            {selectedPlan === 'yearly' ? (
+              <>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <span>Todas as funcionalidades do plano mensal inclusas</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <span>Cadastre até <strong className="text-amber-400 font-black">10 fotos</strong> por ave e mais de <strong className="text-amber-400 font-black">20.000 aves</strong></span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <span>Lotes de engorda, postura e linhagens <strong className="text-emerald-400 font-black">ilimitados</strong></span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <span>Fichas técnicas completas com pedigree <strong className="text-emerald-400 font-black">ilimitadas</strong></span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                  <span>Economia garantida de <strong className="text-emerald-400 font-black">25% (R$ 119,70/ano)</strong></span>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                  <span>Cadastre mais de <strong className="text-amber-400 font-bold">12.000 aves</strong> e até <strong className="text-amber-400 font-bold">3 fotos</strong> por ave</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                  <span>Controle completo de lotes de engorda, postura e crescimento</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                  <span>Alertas personalizados (vacinas, ração e ovos)</span>
+                </li>
+                <li className="flex items-center gap-1.5 text-white font-medium">
+                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
+                  <span>Gere e compartilhe até <strong className="text-amber-400 font-bold">5 fichas técnicas completas</strong></span>
+                </li>
+              </>
+            )}
+          </ul>
+        </div>
+
+        {/* Opção de Pagamento: PIX vs CARTÃO */}
+        <div className="space-y-2.5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-theme-text-muted">
+            Forma de Pagamento:
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('pix')}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                paymentMethod === 'pix'
+                  ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-300'
+                  : 'border-theme-border bg-theme-base/40 text-theme-text-muted hover:text-white'
+              }`}
+            >
+              <QrCode size={14} />
+              <span>PIX (À Vista)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('card')}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                paymentMethod === 'card'
+                  ? 'border-amber-500/80 bg-amber-500/15 text-amber-300'
+                  : 'border-theme-border bg-theme-base/40 text-theme-text-muted hover:text-white'
+              }`}
+            >
+              <CreditCard size={14} />
+              <span>Cartão de Crédito</span>
+            </button>
+          </div>
+
+          {paymentMethod === 'pix' ? (
+            /* Detalhes PIX */
+            <div className="bg-theme-base/60 border border-theme-border p-3.5 rounded-2xl space-y-3 text-center">
+              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-xs">
+                <span className="font-mono text-white text-[11px] truncate">mura.manager.pay@gmail.com</span>
+                <button
+                  type="button"
+                  onClick={handleCopyPix}
+                  className="p-1.5 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors cursor-pointer"
+                >
+                  {copiedPix ? <CheckCircle2 size={12} /> : <Copy size={12} />}
+                  <span>{copiedPix ? 'Copiado!' : 'Copiar'}</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <button 
+                  type="button"
+                  onClick={handleActivate}
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles size={15} />
+                  <span>{loading ? 'Confirmando...' : 'Confirmar Pagamento e Ativar Agora'}</span>
+                </button>
+
+                <a 
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-theme-text-muted hover:text-white bg-theme-surface border border-theme-border text-[11px] cursor-pointer"
+                >
+                  <MessageSquare size={13} />
+                  <span>Enviar Comprovante pelo WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          ) : (
+            /* Detalhes Cartão de Crédito */
+            <div className="bg-theme-base/60 border border-theme-border p-3.5 rounded-2xl space-y-3 text-center">
+              <p className="text-xs text-theme-text-muted leading-relaxed">
+                Renovação automática {selectedPlan === 'yearly' ? 'anual (25% OFF)' : 'mensal'} no cartão com total comodidade e segurança.
+              </p>
+              <div className="space-y-2">
+                <button 
+                  type="button"
+                  onClick={handleActivate}
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-emerald-500 hover:bg-emerald-400 text-xs shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+                >
+                  <CreditCard size={15} />
+                  <span>{loading ? 'Processando...' : `Assinar ${selectedPlan === 'yearly' ? 'Anual' : 'Mensal'} no Cartão`}</span>
+                </button>
+                <p className="text-[10px] text-theme-text-muted">
+                  Cobrança recorrente segura. Cancele quando quiser diretamente no aplicativo.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-theme-base hover:bg-white/5 border border-theme-border text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+});
 
 export function Settings() {
   const navigate = useNavigate();
@@ -221,16 +484,8 @@ export function Settings() {
     };
   }, []);
 
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
-  const [copiedPix, setCopiedPix] = useState(false);
   const [confirmSignOutOpen, setConfirmSignOutOpen] = useState(false);
   const [backupToImport, setBackupToImport] = useState<File | null>(null);
-
-  const handleCopyPix = () => {
-    navigator.clipboard.writeText('mura.manager.pay@gmail.com');
-    setCopiedPix(true);
-    setTimeout(() => setCopiedPix(false), 3000);
-  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -386,26 +641,12 @@ export function Settings() {
               {user?.email || email || 'Conta do Mura Manager'}
             </p>
 
-            {/* ⏱️ TIMER DO TESTE GRATUITO COM LINK DE PAGAMENTO ANTECIPADO */}
+            {/* ⏱️ TIMER DO TESTE GRATUITO COM BOTÃO VER PLANOS */}
             <TrialCountdownTimer 
               trialInfo={trialInfo} 
               onOpenPaymentModal={() => setIsPaymentModalOpen(true)} 
-              onSelectPlan={(plan) => {
-                setSelectedPlan(plan);
-                setIsPaymentModalOpen(true);
-              }}
               isAdmin={isAdmin}
             />
-
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                isLocalMode 
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-              }`}>
-                {isLocalMode ? '🟡 Armazenamento Local' : '🟢 Sincronizado na Nuvem Supabase'}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -725,162 +966,15 @@ export function Settings() {
         </button>
       </div>
 
-      {/* 💳 MODAL PORTAL DE PAGAMENTO ANTECIPADO DA ASSINATURA */}
-      {isPaymentModalOpen && createPortal(
-        <div className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl p-6 space-y-5 animate-scale-up relative">
-            <div className="flex items-center justify-between border-b border-theme-border pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-                  <Sparkles size={18} />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-white">Antecipar Assinatura / Pagamento</h3>
-                  <p className="text-[10px] text-theme-text-muted">Ativação instantânea via Pix ou Cartão</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsPaymentModalOpen(false)}
-                className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Plan selection */}
-            <div className="grid grid-cols-2 gap-3">
-              <div 
-                onClick={() => setSelectedPlan('monthly')}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                  selectedPlan === 'monthly' ? 'border-amber-500 bg-amber-500/15 shadow-lg shadow-amber-500/10' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
-                }`}
-              >
-                <p className="font-bold text-xs text-white">Plano Mensal</p>
-                <p className="text-lg font-black text-amber-400 mt-1">R$ 39,90<span className="text-[9px] text-theme-text-muted font-normal">/mês</span></p>
-                <p className="text-[10px] text-theme-text-muted mt-1">Ideal para começar</p>
-              </div>
-
-              <div 
-                onClick={() => setSelectedPlan('yearly')}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
-                  selectedPlan === 'yearly' ? 'border-emerald-500 bg-emerald-500/15 shadow-lg shadow-emerald-500/10' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
-                }`}
-              >
-                <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-bl-lg">25% OFF</span>
-                <p className="font-bold text-xs text-white">Plano Anual</p>
-                <p className="text-lg font-black text-emerald-400 mt-1">R$ 359,10<span className="text-[9px] text-theme-text-muted font-normal">/ano</span></p>
-                <p className="text-[10px] text-emerald-400/90 font-medium mt-1">Economia de R$ 119,70</p>
-              </div>
-            </div>
-
-            {/* Benefícios do Plano Escolhido */}
-            <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs animate-fade-in">
-              <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                {selectedPlan === 'yearly' ? '⭐ Vantagens Exclusivas do Plano Anual (25% OFF):' : '📋 Recursos Inclusos no Plano Mensal:'}
-              </p>
-              <ul className="space-y-1.5 text-theme-text-muted text-[11px]">
-                {selectedPlan === 'yearly' ? (
-                  <>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                      <span>Todas as funcionalidades do plano mensal inclusas</span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                      <span>Cadastre até <strong className="text-amber-400 font-black">10 fotos</strong> por ave e mais de <strong className="text-amber-400 font-black">20.000 aves</strong></span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                      <span>Lotes de engorda, postura e linhagens <strong className="text-emerald-400 font-black">ilimitados</strong></span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                      <span>Fichas técnicas completas com pedigree <strong className="text-emerald-400 font-black">ilimitadas</strong></span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                      <span>Economia garantida de <strong className="text-emerald-400 font-black">25% (R$ 119,70/ano)</strong></span>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                      <span>Cadastre mais de <strong className="text-amber-400 font-bold">12.000 aves</strong> e até <strong className="text-amber-400 font-bold">3 fotos</strong> por ave</span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                      <span>Controle completo de lotes de engorda, postura e crescimento</span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                      <span>Alertas personalizados (vacinas, ração e ovos)</span>
-                    </li>
-                    <li className="flex items-center gap-1.5 text-white font-medium">
-                      <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                      <span>Gere e compartilhe até <strong className="text-amber-400 font-bold">5 fichas técnicas completas</strong></span>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </div>
-
-            {/* Pix Key */}
-            <div className="bg-theme-base/60 border border-theme-border p-4 rounded-2xl space-y-3 text-center">
-              <p className="text-xs font-bold text-white">Chave Pix Oficial para Pagamento</p>
-              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-xs">
-                <span className="font-mono text-white text-[11px] truncate">mura.manager.pay@gmail.com</span>
-                <button
-                  onClick={handleCopyPix}
-                  className="p-1.5 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors"
-                >
-                  {copiedPix ? <CheckCircle2 size={12}/> : <Copy size={12}/>}
-                  <span>{copiedPix ? 'Copiado!' : 'Copiar'}</span>
-                </button>
-              </div>
-
-              <div className="pt-2 space-y-2.5">
-                <button 
-                  onClick={async () => {
-                    const { error } = await triggerWebhookPayment(selectedPlan, cpf);
-                    if (!error) {
-                      showToast('Assinatura ativada com sucesso! Seu criatório está com acesso total renovado.', 'success');
-                      setIsPaymentModalOpen(false);
-                    } else {
-                      showToast('Erro ao enviar Notificação de Pagamento.', 'error');
-                    }
-                  }}
-                  className="w-full py-3 rounded-xl font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-theme-primary hover:bg-amber-400 text-xs shadow-lg shadow-amber-500/20"
-                >
-                  <Sparkles size={16} />
-                  <span>Confirmar Pagamento e Ativar Agora</span>
-                </button>
-
-                <a 
-                  href={`https://wa.me/55${farmSettings.phone.replace(/\D/g, '') || '5599999999999'}?text=${encodeURIComponent(`Olá! Realizei o pagamento antecipado da assinatura do Mura Manager (${cpf ? 'CPF: ' + cpf : 'Usuário'}). Segue comprovante para baixa.`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-theme-text-muted hover:text-white bg-theme-surface border border-theme-border text-[11px]"
-                >
-                  <MessageSquare size={14} />
-                  <span>Enviar Comprovante pelo WhatsApp</span>
-                </a>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => setIsPaymentModalOpen(false)}
-                className="px-4 py-2 bg-theme-base hover:bg-white/5 border border-theme-border text-white rounded-xl text-xs font-bold transition-all"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* 💳 MODAL DE PLANOS E ASSINATURA */}
+      <SettingsPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        triggerWebhookPayment={triggerWebhookPayment}
+        showToast={showToast}
+        cpf={cpf}
+        farmPhone={farmSettings.phone}
+      />
 
       {/* Modal de Instruções de Instalação PWA (iPhone e Android) */}
       <PWAInstallGuideModal
