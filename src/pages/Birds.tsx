@@ -671,6 +671,27 @@ export function Birds() {
     return filteredBirds.slice(0, visibleCount);
   }, [filteredBirds, visibleCount]);
 
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Infinite Scroll automático: carrega mais aves conforme o usuário rola a página
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+    if (visibleCount >= filteredBirds.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => Math.min(prev + PAGE_SIZE, filteredBirds.length));
+        }
+      },
+      { threshold: 0.1, rootMargin: '300px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [visibleCount, filteredBirds.length]);
+
   useEffect(() => {
     if (showNewBreedModal) {
       document.body.classList.add('modal-open-lock');
@@ -917,7 +938,7 @@ export function Birds() {
                 </div>
 
                 {filteredBirds.length > visibleCount && (
-                  <div className="flex flex-col items-center justify-center mt-6 gap-2">
+                  <div ref={loadMoreRef} className="flex flex-col items-center justify-center mt-6 gap-2 py-4">
                     <button
                       type="button"
                       onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
@@ -927,7 +948,7 @@ export function Birds() {
                       <span>Carregar mais aves ({visibleBirds.length} de {filteredBirds.length})</span>
                     </button>
                     <span className="text-[10px] text-theme-text-muted">
-                      Mostrando as primeiras {visibleBirds.length} aves de {filteredBirds.length}
+                      Mostrando {visibleBirds.length} de {filteredBirds.length} (carregamento automático ao rolar)
                     </span>
                   </div>
                 )}
