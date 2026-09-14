@@ -447,58 +447,20 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
               <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
                 <Sparkles size={13} />
               </div>
-              <p className="text-white text-xs leading-tight">
+              <p 
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="text-white text-xs leading-tight cursor-pointer hover:text-amber-200 transition-colors"
+                title="Clique para ver os planos"
+              >
                 {currentTrialDay >= 7 ? (
                   <span>
                     <span className="font-black text-amber-400">Último dia de teste gratuito!</span>{' '}
-                    <span className="text-theme-text-muted">Garanta seu criatório sempre seguro: </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUpgradePlan('yearly');
-                        setIsUpgradeModalOpen(true);
-                      }}
-                      className="font-black text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
-                    >
-                      Plano Anual (25% OFF)
-                    </button>
-                    <span className="text-theme-text-muted"> ou </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUpgradePlan('monthly');
-                        setIsUpgradeModalOpen(true);
-                      }}
-                      className="font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
-                    >
-                      Plano Mensal
-                    </button>.
+                    <span className="text-theme-text-muted">Ative agora e garanta acesso às informações do seu criatório.</span>
                   </span>
                 ) : (
                   <span>
                     Você está no <span className="font-black text-amber-400">{currentTrialDay}º dia de teste</span>.{' '}
-                    <span className="text-theme-text-muted">Ative agora e garanta seu criatório: </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUpgradePlan('yearly');
-                        setIsUpgradeModalOpen(true);
-                      }}
-                      className="font-black text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors cursor-pointer"
-                    >
-                      Plano Anual (25% de desconto)
-                    </button>
-                    <span className="text-theme-text-muted"> ou </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUpgradePlan('monthly');
-                        setIsUpgradeModalOpen(true);
-                      }}
-                      className="font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
-                    >
-                      Plano Mensal
-                    </button>.
+                    <span className="text-theme-text-muted">Ative agora e garanta acesso às informações do seu criatório.</span>
                   </span>
                 )}
               </p>
