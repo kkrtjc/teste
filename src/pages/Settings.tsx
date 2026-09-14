@@ -36,7 +36,7 @@ function TrialCountdownTimer({
   onOpenPaymentModal,
   isAdmin 
 }: { 
-  trialInfo: { isTrial: boolean; remainingDays: number; expiresAt: string | null };
+  trialInfo: { isTrial: boolean; isPaid?: boolean; remainingDays: number; expiresAt: string | null; planType?: 'trial' | 'monthly' | 'yearly' };
   onOpenPaymentModal: () => void;
   isAdmin?: boolean;
 }) {
@@ -62,33 +62,44 @@ function TrialCountdownTimer({
     );
   }
 
-  if (!trialInfo.isTrial || !trialInfo.expiresAt) {
-    return (
-      <div className="flex items-center gap-2 mt-2 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black w-fit">
-        <span>👑 Plano Ativo · Acesso Liberado</span>
-      </div>
-    );
+  if (!trialInfo.expiresAt) {
+    return null;
   }
 
+  const isExpired = timeLeft ? (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0) : trialInfo.remainingDays <= 0;
+  const isPaid = Boolean(trialInfo.isPaid || (!trialInfo.isTrial && (timeLeft?.days ?? trialInfo.remainingDays) > 0));
   const isUrgent = (timeLeft?.days ?? trialInfo.remainingDays) <= 3;
 
   return (
     <div className="flex flex-col items-start gap-2 mt-2">
       {/* Timer badge */}
       <div className={`flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-xl border transition-all shadow-md ${
-        isUrgent
-          ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
-          : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+        isExpired
+          ? 'bg-rose-500/20 border-rose-500/50 text-rose-300'
+          : isUrgent
+            ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
+            : isPaid
+              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+              : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
       }`}>
         <div className="flex items-center gap-1.5 font-black text-xs">
-          <span className="text-sm">{isUrgent ? '⏳' : '⏱️'}</span>
-          <span>{isUrgent ? 'Teste Gratuito Acabando:' : 'Teste Gratuito:'}</span>
+          <span className="text-sm">{isExpired ? '⚠️' : isUrgent ? '⏳' : isPaid ? '⭐' : '⏱️'}</span>
+          <span>
+            {isExpired
+              ? 'Acesso Expirado:'
+              : isUrgent
+                ? (isPaid ? 'Assinatura Vencendo:' : 'Teste Gratuito Acabando:')
+                : (isPaid 
+                    ? (trialInfo.planType === 'yearly' ? 'Plano Anual Ativo:' : 'Plano Mensal Ativo:') 
+                    : 'Teste Gratuito:')
+            }
+          </span>
         </div>
 
         <div className="flex items-center gap-1 font-mono font-black text-xs text-white bg-black/60 px-2.5 py-0.5 rounded-lg border border-white/10 shadow-inner">
           {timeLeft ? (
             <>
-              <span className="text-amber-400 font-bold">{timeLeft.days}d</span> :
+              <span className={isPaid ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>{timeLeft.days}d</span> :
               <span>{String(timeLeft.hours).padStart(2, '0')}h</span> :
               <span>{String(timeLeft.minutes).padStart(2, '0')}m</span> :
               <span className="text-orange-400">{String(timeLeft.seconds).padStart(2, '0')}s</span>
@@ -99,15 +110,28 @@ function TrialCountdownTimer({
         </div>
       </div>
 
-      {/* 🚀 BOTÃO VER PLANOS */}
+      {/* 🚀 BOTÃO DE AÇÃO / RENOVAÇÃO / PLANOS */}
       <button
         type="button"
         onClick={onOpenPaymentModal}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-amber-500/15 cursor-pointer mt-1"
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 shadow-md cursor-pointer mt-1 ${
+          isExpired
+            ? 'bg-red-500 hover:bg-red-400 text-white shadow-red-500/20'
+            : isPaid
+              ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/15'
+              : 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/15'
+        }`}
       >
         <Zap size={13} />
-        <span>Ver Planos</span>
+        <span>{isExpired ? 'Renovar Acesso Agora' : isPaid ? 'Antecipar Renovação' : 'Ver Planos'}</span>
       </button>
+
+      {/* Mensagem informativa sobre soma de dias na renovação */}
+      {isPaid && !isExpired && (
+        <p className="text-[10.5px] text-emerald-400/80 font-medium">
+          ✨ Se renovar antes de vencer, os novos dias são somados ao seu tempo atual.
+        </p>
+      )}
     </div>
   );
 }
@@ -119,6 +143,7 @@ interface SettingsPaymentModalProps {
   showToast: (message: string, type?: 'success' | 'warning' | 'error' | 'info') => void;
   cpf?: string;
   farmPhone?: string;
+  remainingDays?: number;
 }
 
 const SettingsPaymentModal = memo(function SettingsPaymentModal({
@@ -128,6 +153,7 @@ const SettingsPaymentModal = memo(function SettingsPaymentModal({
   showToast,
   cpf,
   farmPhone = '',
+  remainingDays,
 }: SettingsPaymentModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
@@ -236,6 +262,18 @@ const SettingsPaymentModal = memo(function SettingsPaymentModal({
             <p className="text-[10px] text-emerald-400/90 font-medium mt-0.5">Economia de R$ 119,70</p>
           </button>
         </div>
+
+        {/* ⏱️ Alerta de Soma Acumulativa de Dias */}
+        {remainingDays && remainingDays > 0 ? (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3 text-center space-y-1">
+            <p className="text-xs text-emerald-300 font-bold">
+              ✨ Seus {remainingDays} dias atuais serão somados ao novo plano!
+            </p>
+            <p className="text-[11px] text-theme-text-muted">
+              Ao assinar agora, você terá <strong className="text-white font-black">{remainingDays + (selectedPlan === 'yearly' ? 365 : 30)} dias</strong> de acesso garantido sem interrupções.
+            </p>
+          </div>
+        ) : null}
 
         {/* Benefícios do Plano Escolhido */}
         <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs">
@@ -974,6 +1012,7 @@ export function Settings() {
         showToast={showToast}
         cpf={cpf}
         farmPhone={farmSettings.phone}
+        remainingDays={trialInfo?.remainingDays}
       />
 
       {/* Modal de Instruções de Instalação PWA (iPhone e Android) */}
