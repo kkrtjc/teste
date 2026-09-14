@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Sparkles, Copy, MessageSquare, X, ExternalLink,
+  Database, Sparkles, Copy, MessageSquare, X,
   Smartphone, Zap, CreditCard, QrCode
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
@@ -437,7 +436,6 @@ const SettingsPaymentModal = memo(function SettingsPaymentModal({
 });
 
 export function Settings() {
-  const navigate = useNavigate();
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
@@ -713,36 +711,6 @@ export function Settings() {
           </div>
         </div>
       )}
-
-      {/* ── RESUMO DOS DADOS SALVOS & ATALHOS RÁPIDOS DE NAVEGAÇÃO ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Aves Registradas', value: birds.length, icon: '🐓', color: 'text-blue-400', path: '/birds?tab=aves', state: { tab: 'aves' } },
-          { label: 'Raças & Linhagens', value: breeds.length, icon: '🧬', color: 'text-purple-400', path: '/birds?tab=racas', state: { tab: 'racas' } },
-          { label: 'Lotes de Ovos', value: eggLots.length, icon: '🥚', color: 'text-amber-400', path: '/eggs', state: {} },
-          { label: 'Lotes de Corte / Engorda', value: meatLots.length, icon: '🍗', color: 'text-orange-400', path: '/lots', state: {} },
-        ].map((item, idx) => (
-          <div 
-            key={idx} 
-            onClick={() => navigate(item.path, { state: item.state })}
-            className="bg-theme-surface border border-theme-border/60 p-3 sm:p-3.5 rounded-2xl shadow-md flex items-center justify-between gap-1.5 hover:border-theme-primary/80 hover:bg-theme-surface-hover transition-all cursor-pointer group active:scale-95 min-w-0"
-            title={`Clique para ir para ${item.label}`}
-          >
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <span className="text-xl sm:text-2xl shrink-0">{item.icon}</span>
-              <div className="min-w-0">
-                <p className={`text-base sm:text-lg font-black ${item.color}`}>{item.value}</p>
-                <p className="text-[10px] sm:text-[11px] text-theme-text-muted font-bold leading-snug uppercase font-sans whitespace-normal break-words">
-                  {item.label}
-                </p>
-              </div>
-            </div>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-theme-base border border-theme-border flex items-center justify-center text-theme-primary group-hover:bg-theme-primary group-hover:text-black transition-colors shrink-0">
-              <ExternalLink size={11} className="sm:w-3 sm:h-3" />
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* ── CARD ESPECIAL: INSTALAR NO CELULAR (IPHONE & ANDROID) ── */}
       {!isAppInstalled && (
