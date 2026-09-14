@@ -253,12 +253,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
         setIsExpired(expired);
-        setTrialInfo({
-          isTrial: !expired && !isUserPaid,
-          isPaid: isUserPaid && !expired,
-          remainingDays: daysLeft,
-          expiresAt: expDateObj.toISOString(),
-          planType: isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial'
+        setTrialInfo(prev => {
+          const nextIsTrial = !expired && !isUserPaid;
+          const nextIsPaid = isUserPaid && !expired;
+          const nextExpiresAt = expDateObj.toISOString();
+          const nextPlanType = isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial';
+
+          if (
+            prev.isTrial === nextIsTrial &&
+            prev.isPaid === nextIsPaid &&
+            prev.remainingDays === daysLeft &&
+            prev.expiresAt === nextExpiresAt &&
+            prev.planType === nextPlanType
+          ) {
+            return prev;
+          }
+
+          return {
+            isTrial: nextIsTrial,
+            isPaid: nextIsPaid,
+            remainingDays: daysLeft,
+            expiresAt: nextExpiresAt,
+            planType: nextPlanType
+          };
         });
       }
     } catch (err) {
@@ -753,27 +770,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // 1. Resposta instantânea (0ms): desconecta da UI imediatamente
+    setUser(null);
+    setSession(null);
+    setLinkedCpf('');
+
+    // 2. Limpa cache local
     try {
-      await localforage.removeItem('@mura-manager:local-session');
       localStorage.removeItem('@mura-manager:cached-user');
       localStorage.removeItem('@mura-manager:cached-session');
       localStorage.removeItem('@mura-manager:user-cpf');
       sessionStorage.clear();
+      await localforage.removeItem('@mura-manager:local-session');
     } catch (err) {
       console.error('Erro ao limpar cache local de sessão:', err);
     }
 
-    try {
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-    } catch (err) {
-      console.error('Erro ao deslogar do Supabase:', err);
+    // 3. Notifica o Supabase em segundo plano sem travar a navegação
+    if (supabase) {
+      supabase.auth.signOut().catch(err => {
+        console.error('Erro ao deslogar do Supabase:', err);
+      });
     }
-
-    setUser(null);
-    setSession(null);
-    setLinkedCpf('');
   };
 
   const getCpf = () => {
@@ -1101,12 +1119,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
           setIsExpired(expired);
-          setTrialInfo({
-            isTrial: !expired && !isUserPaid,
-            isPaid: isUserPaid && !expired,
-            remainingDays: daysLeft,
-            expiresAt: expDateObj.toISOString(),
-            planType: isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial'
+          setTrialInfo(prev => {
+            const nextIsTrial = !expired && !isUserPaid;
+            const nextIsPaid = isUserPaid && !expired;
+            const nextExpiresAt = expDateObj.toISOString();
+            const nextPlanType = isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial';
+
+            if (
+              prev.isTrial === nextIsTrial &&
+              prev.isPaid === nextIsPaid &&
+              prev.remainingDays === daysLeft &&
+              prev.expiresAt === nextExpiresAt &&
+              prev.planType === nextPlanType
+            ) {
+              return prev;
+            }
+
+            return {
+              isTrial: nextIsTrial,
+              isPaid: nextIsPaid,
+              remainingDays: daysLeft,
+              expiresAt: nextExpiresAt,
+              planType: nextPlanType
+            };
           });
         }
       } catch (err) {
