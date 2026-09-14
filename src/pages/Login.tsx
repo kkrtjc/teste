@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
   TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint,
@@ -13,7 +13,6 @@ import roosterImg from '../assets/rooster_sticker.png';
 import {
   checkBiometricSupport,
   hasBiometricRegistered,
-  registerBiometric,
   authenticateWithBiometric,
 } from '../lib/biometricAuth';
 import previewDashboard from '../assets/preview_dashboard.png';
@@ -46,17 +45,20 @@ const features = [
   { icon: ShieldCheck, title: 'Assinatura Segura', desc: 'Cobrança automática no cartão ou notificações Pix 3 dias antes do vencimento. Zero surpresas.', accent: '#f59e0b' },
 ];
 
-export function Login() {
-  const { 
-    signIn, 
-    isLocalMode,
-    sendPasswordReset,
-    updatePassword,
-    isPasswordRecovery,
-    setIsPasswordRecovery
-  } = useAuth();
-  const detailsRef = useRef<HTMLDivElement>(null);
+const inputCls = "w-full bg-white/[0.05] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/30 focus:border-amber-500 focus:outline-none transition-colors";
 
+const formatCPF = (value: string) => {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+};
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE ISOLADO: CARROSSEL (MEMOIZADO)              */
+/* ══════════════════════════════════════════════════════ */
+const AppCarousel = memo(function AppCarousel() {
   const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
@@ -66,71 +68,128 @@ export function Login() {
     return () => clearInterval(timer);
   }, []);
 
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  return (
+    <section className="relative pt-2 pb-6 sm:pt-4 sm:pb-10 px-4 max-w-md mx-auto z-10">
+      <div className="w-full max-w-[360px] mx-auto relative">
+        <img
+          src={roosterImg}
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
+          className="pointer-events-none select-none transform-gpu"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% - 10px)',
+            left: '-10px',
+            height: 'clamp(210px, 30vw, 290px)',
+            width: 'auto',
+            maxWidth: 'none',
+            objectFit: 'contain',
+            objectPosition: 'bottom left',
+            opacity: 0.9,
+            willChange: 'transform',
+          }}
+        />
 
-  // ── Recuperação de Senha ──
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotError, setForgotError] = useState('');
-  const [forgotSuccess, setForgotSuccess] = useState('');
+        <div className="relative rounded-[32px] overflow-hidden border-[3px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto z-10">
+          {carouselImages.map((img, idx) => (
+            <div
+              key={idx}
+              className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                idx === activeSlide ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              <img src={img.src} alt={img.title} className="w-full h-full object-contain bg-[#0a0a0b]" loading="lazy" />
+            </div>
+          ))}
 
-  // ── Definir Nova Senha (via link do e-mail) ──
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState('');
-  const [resetSuccess, setResetSuccess] = useState('');
+          <button
+            type="button"
+            onClick={() => setActiveSlide(prev => (prev - 1 + carouselImages.length) % carouselImages.length)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/80 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-70 group-hover:opacity-100 shadow-lg text-xs cursor-pointer"
+          >
+            ❮
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSlide(prev => (prev + 1) % carouselImages.length)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/80 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-70 group-hover:opacity-100 shadow-lg text-xs cursor-pointer"
+          >
+            ❯
+          </button>
+        </div>
 
+        <div className="mt-4 text-center px-4">
+          <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest">
+            {carouselImages[activeSlide].title}
+          </h4>
+          <p className="text-[11px] text-white/60 mt-1 max-w-md mx-auto">
+            {carouselImages[activeSlide].desc}
+          </p>
+        </div>
+
+        <div className="mt-3 flex justify-center gap-2">
+          {carouselImages.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActiveSlide(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                idx === activeSlide ? 'bg-amber-500 w-7' : 'bg-white/20 w-1.5'
+              }`}
+              aria-label={`Slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+});
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE ISOLADO: MODAL DE LOGIN                     */
+/* ══════════════════════════════════════════════════════ */
+const LoginFormModal = memo(function LoginFormModal({
+  isOpen,
+  onClose,
+  onOpenRegister,
+  onOpenForgot,
+  signIn,
+  isLocalMode,
+  biometricAvailable,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenRegister: () => void;
+  onOpenForgot: (id: string) => void;
+  signIn: (id: string, pass: string) => Promise<{ error: any }>;
+  isLocalMode: boolean;
+  biometricAvailable: boolean;
+}) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-
-  const [regNome, setRegNome] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regSenha, setRegSenha] = useState('');
-  const [regError, setRegError] = useState('');
-  const [regLoading, setRegLoading] = useState(false);
-
-  // ── Estado biométrico ──
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [biometricError, setBiometricError] = useState('');
-  // Após login com senha com sucesso: oferece ativar biometria
-  const [showBiometricOffer, setShowBiometricOffer] = useState(false);
-  const [lastLoggedIdentifier, setLastLoggedIdentifier] = useState('');
 
-  // Detecta suporte a biometria no dispositivo ao montar
-  useEffect(() => {
-    checkBiometricSupport().then(setBiometricAvailable);
-  }, []);
-
-  const formatCPF = (value: string) => {
-    const d = value.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
-    if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
-    return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
-  };
+  if (!isOpen) return null;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) { setLoginError('Preencha seu e-mail ou CPF.'); return; }
-    if (!password.trim()) { setLoginError('Preencha sua senha.'); return; }
+    if (!password) { setLoginError('Informe sua senha.'); return; }
     setLoginError('');
     setLoginLoading(true);
     try {
-      const { error } = await signIn(identifier, password);
+      const { error } = await signIn(identifier.trim(), password);
       if (error) {
-        setLoginError(error.message || 'Credenciais inválidas.');
-      } else {
-        // Login com senha bem-sucedido: oferecer ativar biometria se disponível e não registrada
-        if (biometricAvailable && !hasBiometricRegistered()) {
-          setLastLoggedIdentifier(identifier);
-          setShowBiometricOffer(true);
-        }
+        setLoginError(
+          error.message?.includes('Invalid login') 
+            ? 'E-mail, CPF ou senha incorretos.' 
+            : error.message || 'Erro ao entrar. Verifique os dados.'
+        );
       }
     } catch (err: any) {
       setLoginError(err.message || 'Erro inesperado.');
@@ -139,64 +198,6 @@ export function Login() {
     }
   };
 
-  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!forgotIdentifier.trim()) {
-      setForgotError('Por favor, informe seu e-mail ou CPF.');
-      return;
-    }
-    setForgotError('');
-    setForgotSuccess('');
-    setForgotLoading(true);
-
-    try {
-      const { error, email } = await sendPasswordReset(forgotIdentifier);
-      if (error) {
-        setForgotError(error.message || 'Erro ao processar solicitação de recuperação.');
-      } else {
-        setForgotSuccess(`Instruções de redefinição de senha enviadas com sucesso para ${email || 'seu e-mail'}. Acesse seu e-mail para cadastrar uma nova senha.`);
-      }
-    } catch (err: any) {
-      setForgotError(err.message || 'Erro inesperado.');
-    } finally {
-      setForgotLoading(false);
-    }
-  };
-
-  const handleUpdatePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      setResetError('A nova senha deve ter no mínimo 6 caracteres.');
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setResetError('As senhas digitadas não coincidem.');
-      return;
-    }
-    setResetError('');
-    setResetSuccess('');
-    setResetLoading(true);
-
-    try {
-      const { error } = await updatePassword(newPassword);
-      if (error) {
-        setResetError(error.message || 'Erro ao atualizar a senha.');
-      } else {
-        setResetSuccess('Sua nova senha foi cadastrada com sucesso! Redirecionando para a plataforma...');
-        setTimeout(() => {
-          setIsPasswordRecovery(false);
-          setNewPassword('');
-          setConfirmNewPassword('');
-        }, 2000);
-      }
-    } catch (err: any) {
-      setResetError(err.message || 'Erro ao redefinir a senha.');
-    } finally {
-      setResetLoading(false);
-    }
-  };
-
-  // ── Login com Face ID / Biometria ──
   const handleBiometricLogin = async () => {
     if (!hasBiometricRegistered()) {
       setBiometricError('Nenhuma biometria registrada. Faça login com senha primeiro.');
@@ -210,8 +211,6 @@ export function Login() {
         setBiometricError('Biometria não reconhecida. Tente novamente ou use sua senha.');
         return;
       }
-      // Usa o userId salvo para fazer sign in silencioso
-      // Como WebAuthn não retorna senha, usamos o identifier salvo como chave
       const { error } = await signIn(userId, '__biometric__');
       if (error) setBiometricError('Falha ao acessar a conta. Use sua senha.');
     } catch (err: any) {
@@ -221,6 +220,141 @@ export function Login() {
     }
   };
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85">
+      <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-white/10">
+        <div className="px-7 pt-7 pb-5 border-b border-white/[0.08] flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <img src={muraLogo} alt="" className="w-9 h-9 rounded-xl object-cover border border-amber-500/20" />
+            <div>
+              <h3 className="font-black text-sm text-white">Acesse sua Conta</h3>
+              <p className="text-[10px] mt-0.5 text-white/40">Bem-vindo ao Mura Manager</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-white/40 hover:text-white transition-colors cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleLoginSubmit} className="px-7 py-6 space-y-4">
+          {loginError && (
+            <div className="p-3 rounded-xl text-xs font-bold text-center bg-red-500/10 border border-red-500/20 text-red-400">
+              {loginError}
+            </div>
+          )}
+
+          {biometricAvailable && hasBiometricRegistered() && (
+            <div className="space-y-2">
+              {biometricError && (
+                <div className="p-2.5 rounded-xl text-xs font-bold text-center bg-red-500/10 border border-red-500/20 text-red-400">
+                  {biometricError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleBiometricLogin}
+                disabled={biometricLoading}
+                className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 active:scale-95 transition-all disabled:opacity-60 bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-sm cursor-pointer"
+              >
+                {biometricLoading ? <Activity size={15} className="animate-spin" /> : <Fingerprint size={16} />}
+                <span>{biometricLoading ? 'Verificando...' : 'Entrar com Face ID / Biometria'}</span>
+              </button>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">E-mail ou CPF</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+              <input 
+                type="text" 
+                required 
+                placeholder="email@exemplo.com ou CPF" 
+                value={identifier}
+                onChange={e => { 
+                  const v = e.target.value; 
+                  setIdentifier(v.includes('@') || /[a-zA-Z]/.test(v) ? v : formatCPF(v)); 
+                }}
+                className={inputCls} 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Senha</label>
+              <button
+                type="button"
+                onClick={() => onOpenForgot(identifier)}
+                className="text-[11px] text-amber-500 hover:text-amber-400 font-bold transition-colors cursor-pointer"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+              <input 
+                type="password" 
+                required 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                className={inputCls} 
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loginLoading}
+            className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-1 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
+          >
+            {loginLoading ? <Activity size={15} className="animate-spin text-black" /> : <><LogIn size={14} /> Entrar na Plataforma</>}
+          </button>
+          
+          <div className="pt-3 text-center border-t border-white/[0.08]">
+            <button
+              type="button"
+              onClick={onOpenRegister}
+              className="text-xs text-theme-text-muted hover:text-white transition-colors cursor-pointer"
+            >
+              Ainda não tem conta? <span className="text-amber-400 font-bold">Cadastre-se grátis por 7 dias</span>
+            </button>
+          </div>
+
+          {isLocalMode && (
+            <div className="p-2 rounded-lg text-[9px] text-center bg-amber-500/5 border border-amber-500/10 text-amber-400/50">
+              Modo Offline · Admin: 14477751630
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+});
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE ISOLADO: MODAL DE CADASTRO GRÁTIS (7 DIAS)  */
+/* ══════════════════════════════════════════════════════ */
+const RegisterFormModal = memo(function RegisterFormModal({
+  isOpen,
+  onClose,
+  onOpenLogin,
+  signIn,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenLogin: () => void;
+  signIn: (id: string, pass: string) => Promise<{ error: any }>;
+}) {
+  const [regNome, setRegNome] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regSenha, setRegSenha] = useState('');
+  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+
+  if (!isOpen) return null;
+
   const handleFreeRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = regEmail.trim().toLowerCase();
@@ -229,7 +363,7 @@ export function Login() {
     if (regSenha.length < 6) { setRegError('A senha deve ter no mínimo 6 caracteres.'); return; }
 
     if (isUserAdmin(cleanEmail)) {
-      setRegError('Este e-mail é a conta do Administrador Principal. Acesse usando o formulário de login acima.');
+      setRegError('Este e-mail é a conta do Administrador Principal. Acesse usando o formulário de login.');
       return;
     }
 
@@ -287,187 +421,521 @@ export function Login() {
     }
   };
 
-  /* ── INPUT STYLES ────────────────── */
-  const inputCls = "w-full bg-white/[0.04] border border-white/10 rounded-xl py-3.5 pl-10 pr-4 text-sm text-white placeholder-white/20 focus:border-amber-500/40 focus:outline-none transition-colors";
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85">
+      <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-white/10">
+        <div className="px-7 pt-7 pb-5 border-b border-white/[0.08] flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm text-white">Criar Conta Grátis</h3>
+              <p className="text-[10px] text-theme-text-muted">Acesso completo liberado por 7 dias sem cartão</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-white/40 hover:text-white transition-colors cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleFreeRegisterSubmit} className="px-7 py-6 space-y-4">
+          {regError && (
+            <div className="p-3 rounded-xl text-xs font-bold text-center bg-red-500/10 border border-red-500/20 text-red-400">
+              {regError}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Nome Completo</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+              <input 
+                type="text" 
+                required 
+                placeholder="Seu nome ou nome do criatório" 
+                value={regNome} 
+                onChange={e => setRegNome(e.target.value)} 
+                className={inputCls} 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">E-mail</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+              <input 
+                type="email" 
+                required 
+                placeholder="seuemail@exemplo.com" 
+                value={regEmail} 
+                onChange={e => setRegEmail(e.target.value)} 
+                className={inputCls} 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Senha de Acesso</label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+              <input 
+                type="password" 
+                required 
+                placeholder="Mínimo 6 caracteres" 
+                value={regSenha} 
+                onChange={e => setRegSenha(e.target.value)} 
+                className={inputCls} 
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={regLoading}
+            className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
+          >
+            {regLoading ? <Activity size={15} className="animate-spin text-black" /> : <><Sparkles size={14} /> Criar Minha Conta Grátis e Entrar</>}
+          </button>
+
+          <div className="pt-3 text-center border-t border-white/[0.08]">
+            <button
+              type="button"
+              onClick={onOpenLogin}
+              className="text-xs text-theme-text-muted hover:text-white transition-colors cursor-pointer"
+            >
+              Já possui uma conta? <span className="text-amber-400 font-bold">Acessar Conta</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE ISOLADO: MODAL RECUPERAÇÃO DE SENHA         */
+/* ══════════════════════════════════════════════════════ */
+const ForgotPasswordModal = memo(function ForgotPasswordModal({
+  isOpen,
+  onClose,
+  onOpenLogin,
+  sendPasswordReset,
+  initialIdentifier,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenLogin: () => void;
+  sendPasswordReset: (email: string) => Promise<{ error: any }>;
+  initialIdentifier: string;
+}) {
+  const [forgotIdentifier, setForgotIdentifier] = useState(initialIdentifier);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+
+  useEffect(() => {
+    if (initialIdentifier) setForgotIdentifier(initialIdentifier);
+  }, [initialIdentifier]);
+
+  if (!isOpen) return null;
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanId = forgotIdentifier.trim();
+    if (!cleanId) { setForgotError('Informe seu e-mail ou CPF.'); return; }
+    setForgotError('');
+    setForgotSuccess('');
+    setForgotLoading(true);
+
+    try {
+      let emailToSend = cleanId;
+      if (!cleanId.includes('@')) {
+        const rawDigits = cleanId.replace(/\D/g, '');
+        if (isSupabaseConfigured) {
+          const { data } = await supabase!
+            .from('allowed_cpfs')
+            .select('email')
+            .eq('cpf', rawDigits)
+            .maybeSingle();
+          if (!data?.email) {
+            setForgotError('Nenhum cadastro encontrado para este CPF.');
+            setForgotLoading(false);
+            return;
+          }
+          emailToSend = data.email;
+        } else {
+          setForgotError('Recuperação por CPF disponível apenas com conexão ativa.');
+          setForgotLoading(false);
+          return;
+        }
+      }
+
+      const { error } = await sendPasswordReset(emailToSend);
+      if (error) {
+        setForgotError(error.message || 'Erro ao enviar e-mail de recuperação.');
+      } else {
+        setForgotSuccess(`Instruções de redefinição de senha enviadas para: ${emailToSend}. Verifique sua caixa de entrada.`);
+      }
+    } catch (err: any) {
+      setForgotError(err.message || 'Erro inesperado.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   return (
-    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-[#0a0a0b] text-white font-sans pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] box-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85">
+      <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-white/10">
+        <div className="px-7 pt-7 pb-5 border-b border-white/[0.08] flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <KeyRound size={16} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm text-white">Recuperar Minha Senha</h3>
+              <p className="text-[10px] text-white/40">Informe seu E-mail ou CPF cadastrado</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 text-white/40 hover:text-white transition-colors cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
 
-      {/* ── BACKGROUND (GPU-composited, no CPU blur) ── */}
+        <form onSubmit={handleForgotPasswordSubmit} className="px-7 py-6 space-y-4">
+          <p className="text-xs text-white/70 leading-relaxed">
+            Digite seu e-mail ou CPF cadastrado. Nós enviaremos um link seguro para você redefinir sua senha diretamente no seu e-mail.
+          </p>
+
+          {forgotError && (
+            <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2 bg-red-500/10 border border-red-500/25 text-red-400">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{forgotError}</span>
+            </div>
+          )}
+
+          {forgotSuccess && (
+            <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+              <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+              <span>{forgotSuccess}</span>
+            </div>
+          )}
+
+          {!forgotSuccess && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">E-mail ou CPF</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="email@exemplo.com ou CPF" 
+                  value={forgotIdentifier}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setForgotIdentifier(v.includes('@') || /[a-zA-Z]/.test(v) ? v : formatCPF(v));
+                  }}
+                  className={inputCls} 
+                />
+              </div>
+            </div>
+          )}
+
+          {!forgotSuccess ? (
+            <button 
+              type="submit" 
+              disabled={forgotLoading}
+              className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-1 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
+            >
+              {forgotLoading ? <Activity size={15} className="animate-spin text-black" /> : <><Mail size={14} /> Enviar Link de Recuperação</>}
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={onOpenLogin}
+              className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-emerald-400 hover:bg-emerald-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <LogIn size={14} /> Voltar ao Login
+            </button>
+          )}
+
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={onOpenLogin}
+              className="text-xs text-theme-text-muted hover:text-white transition-colors flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+            >
+              <ArrowLeft size={13} /> Voltar para a tela de Login
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE ISOLADO: MODAL DEFINIR NOVA SENHA           */
+/* ══════════════════════════════════════════════════════ */
+const ResetPasswordModal = memo(function ResetPasswordModal({
+  isOpen,
+  onClose,
+  updatePassword,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  updatePassword: (pass: string) => Promise<{ error: any }>;
+}) {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleUpdatePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) { setResetError('A nova senha deve ter no mínimo 6 caracteres.'); return; }
+    if (newPassword !== confirmNewPassword) { setResetError('As senhas digitadas não coincidem.'); return; }
+    setResetError('');
+    setResetLoading(true);
+
+    try {
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        setResetError(error.message || 'Erro ao redefinir a senha.');
+      } else {
+        setResetSuccess('Sua nova senha foi definida com sucesso! Entrando...');
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
+    } catch (err: any) {
+      setResetError(err.message || 'Erro ao redefinir a senha.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90">
+      <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-amber-500/30">
+        <div className="px-7 pt-7 pb-5 border-b border-white/[0.08] flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/15 border border-amber-500/30 text-amber-400">
+              <KeyRound size={16} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm text-white">Criar Nova Senha</h3>
+              <p className="text-[10px] text-white/40">Redefinição de acesso segura</p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleUpdatePasswordSubmit} className="px-7 py-6 space-y-4">
+          <p className="text-xs text-white/70 leading-relaxed">
+            Você confirmou a recuperação pelo link do e-mail. Agora, digite sua nova senha para acessar a plataforma.
+          </p>
+
+          {resetError && (
+            <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2 bg-red-500/10 border border-red-500/25 text-red-400">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{resetError}</span>
+            </div>
+          )}
+
+          {resetSuccess && (
+            <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+              <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+              <span>{resetSuccess}</span>
+            </div>
+          )}
+
+          {!resetSuccess && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Nova Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder="Mínimo 6 caracteres" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)} 
+                    className={inputCls} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Confirmar Nova Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder="Repita a nova senha" 
+                    value={confirmNewPassword} 
+                    onChange={e => setConfirmNewPassword(e.target.value)} 
+                    className={inputCls} 
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={resetLoading}
+                className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                {resetLoading ? <Activity size={15} className="animate-spin text-black" /> : <><Check size={14} /> Salvar Nova Senha e Entrar</>}
+              </button>
+            </>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+});
+
+/* ══════════════════════════════════════════════════════ */
+/* COMPONENTE PRINCIPAL: LOGIN / LANDING PAGE             */
+/* ══════════════════════════════════════════════════════ */
+export function Login() {
+  const { 
+    signIn, 
+    isLocalMode,
+    sendPasswordReset,
+    updatePassword,
+    isPasswordRecovery,
+    setIsPasswordRecovery
+  } = useAuth();
+  const detailsRef = useRef<HTMLDivElement>(null);
+
+  // Controles de visibilidade dos modais (totalmente desacoplados dos inputs)
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotInitialId, setForgotInitialId] = useState('');
+
+  // Detecção de biometria
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  useEffect(() => {
+    checkBiometricSupport().then(setBiometricAvailable);
+  }, []);
+
+  // Detecção de anúncio/link direto para cadastro (?cadastro=true ou ?signup=true)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('cadastro') === 'true' || params.get('signup') === 'true') {
+      setShowRegisterForm(true);
+    } else if (params.get('entrar') === 'true' || params.get('login') === 'true') {
+      setShowLoginForm(true);
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen w-full bg-[#0a0a0b] text-white font-sans overflow-x-hidden relative selection:bg-amber-500 selection:text-black">
+
+      {/* ── BACKGROUND (GPU-composited, zero CPU blur, zero heavy SVG filters) ── */}
       <div
         aria-hidden="true"
-        style={{
-          position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
-          /* Force GPU layer */ transform: 'translateZ(0)', willChange: 'transform',
-        }}
+        className="fixed inset-0 z-0 pointer-events-none transform-gpu"
       >
-        {/* Hero photo — pre-baked, no runtime blur */}
         <img
           src={heroBg}
           alt=""
           fetchPriority="high"
           decoding="async"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.1, willChange: 'transform' }}
+          className="absolute inset-0 w-full h-full object-cover opacity-10"
         />
 
-        {/* Static gradient mesh — zero CSS filter, GPU composited via opacity */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 80% 50% at 50% -5%, rgba(245,158,11,0.11) 0%, transparent 60%), radial-gradient(ellipse 55% 70% at 85% 50%, rgba(22,101,52,0.07) 0%, transparent 55%)',
-          opacity: 1,
-        }} />
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 80% 50% at 50% -5%, rgba(245,158,11,0.12) 0%, transparent 60%), radial-gradient(ellipse 55% 70% at 85% 50%, rgba(22,101,52,0.08) 0%, transparent 55%)',
+          }} 
+        />
 
-        {/* Noise grain — pre-rendered SVG, one-time paint, no repaint */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.025,
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.75\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'300\' height=\'300\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-          backgroundSize: '300px 300px',
-        }} />
-
-        {/* Subtle grid */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.025,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }} />
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
+          }} 
+        />
       </div>
 
       {/* ── NAVBAR ── */}
-      <nav
-        style={{
-          position: 'sticky', top: 0, zIndex: 40,
-          background: 'rgba(10,10,11,0.88)',
-          /* Backdrop apenas nessa camada — GPU-composited */
-          backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          transform: 'translateZ(0)', willChange: 'transform',
-        }}
-        className="px-6 py-3 flex justify-between items-center"
-      >
+      <nav className="sticky top-0 z-40 bg-[#0a0a0b]/95 border-b border-white/[0.08] px-4 sm:px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={muraLogo} alt="Mura Manager" className="w-9 h-9 rounded-lg object-cover" style={{ border: '1px solid rgba(245,158,11,0.2)' }} />
+          <img src={muraLogo} alt="Mura Manager" className="w-9 h-9 rounded-lg object-cover border border-amber-500/20" />
           <div className="leading-none">
             <p className="text-sm font-black tracking-[0.2em] uppercase text-white">MURA</p>
-            <p className="text-[9px] font-bold tracking-[0.3em] uppercase" style={{ color: 'rgba(245,158,11,0.7)' }}>MANAGER</p>
+            <p className="text-[9px] font-bold tracking-[0.3em] uppercase text-amber-500/70">MANAGER</p>
           </div>
         </div>
 
-        <div className="hidden sm:flex gap-6 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          <button onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors">Recursos</button>
-          <button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors">Planos</button>
+        <div className="hidden sm:flex gap-6 text-xs font-semibold text-white/50">
+          <button onClick={() => detailsRef.current?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">Recursos</button>
+          <button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors cursor-pointer">Planos</button>
         </div>
 
         <button
-          onClick={() => { setShowLoginForm(true); setLoginError(''); }}
-          className="flex items-center gap-2 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-black rounded-full active:scale-95 transition-transform"
-          style={{ background: '#f59e0b', boxShadow: '0 0 18px rgba(245,158,11,0.3)' }}
+          onClick={() => setShowLoginForm(true)}
+          className="flex items-center gap-2 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-black rounded-full active:scale-95 transition-all bg-amber-500 hover:bg-amber-400 shadow-md shadow-amber-500/20 cursor-pointer"
         >
           <LogIn size={12} /> Entrar
         </button>
       </nav>
 
       {/* ── HERO ── */}
-      <section
-        className="relative flex flex-col items-center text-center pt-3 pb-3 sm:pt-6 sm:pb-5 px-4 sm:px-6 max-w-4xl mx-auto"
-        style={{ zIndex: 3 }}
-      >
-        {/* Scrim radial escuro centrado — garante legibilidade dos textos */}
+      <section className="relative flex flex-col items-center text-center pt-4 pb-3 sm:pt-8 sm:pb-6 px-4 sm:px-6 max-w-4xl mx-auto z-10">
         <div
           aria-hidden="true"
+          className="absolute inset-0 pointer-events-none z-0"
           style={{
-            position: 'absolute',
-            inset: 0,
             background: 'radial-gradient(ellipse 70% 80% at 55% 45%, rgba(0,0,0,0.55) 0%, transparent 75%)',
-            zIndex: 0,
-            pointerEvents: 'none',
           }}
         />
 
-        {/* Badge */}
-        <div
-          className="mb-3 sm:mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase animate-fade-in-up opacity-0"
-          style={{
-            border: '1px solid rgba(245,158,11,0.25)',
-            background: 'rgba(10,10,11,0.55)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            color: '#f59e0b',
-            animationFillMode: 'forwards',
-            position: 'relative', zIndex: 1,
-          }}
-        >
+        <div className="mb-3 sm:mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border border-amber-500/30 bg-[#121216] text-amber-400 shadow-sm relative z-10">
           <Star size={9} fill="currentColor" /> A gestão que seu criatório merece <Star size={9} fill="currentColor" />
         </div>
 
-        {/* Headline */}
-        <h1
-          className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] opacity-0 animate-fade-in-up delay-200 text-white"
-          style={{
-            animationFillMode: 'forwards',
-            position: 'relative', zIndex: 1,
-            textShadow: '0 2px 4px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.7), 0 0 60px rgba(0,0,0,0.5)',
-          }}
-        >
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.05] text-white relative z-10">
           Gestão de<br />Criatórios de Elite.
         </h1>
 
-        <p
-          className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm max-w-lg leading-relaxed font-semibold opacity-0 animate-fade-in-up delay-300"
-          style={{
-            animationFillMode: 'forwards',
-            position: 'relative', zIndex: 1,
-            color: 'rgba(255,255,255,0.75)',
-            textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.8)',
-          }}
-        >
+        <p className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm max-w-lg leading-relaxed font-semibold text-white/75 relative z-10">
           Cadastre mais de 20 mil aves e tenha o controle completo sobre o seu plantel, nível de parentesco e gestão inteligente de lotes de postura e engorda.
         </p>
 
-        {/* CTAs */}
-        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-3 items-center opacity-0 animate-fade-in-up delay-400" style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}>
+        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-3 items-center relative z-10 w-full sm:w-auto">
           <button
-            onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
-            className="px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-transform flex items-center gap-2"
-            style={{ background: '#f59e0b', boxShadow: '0 0 28px rgba(245,158,11,0.35)' }}
+            onClick={() => setShowRegisterForm(true)}
+            className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/25 cursor-pointer"
           >
-            <Sparkles size={13} /> Criar Conta
+            <Sparkles size={13} /> Criar Conta Grátis (7 Dias)
           </button>
 
           <button
-            onClick={() => { setShowLoginForm(true); setShowRegisterForm(false); setLoginError(''); }}
-            className="px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-colors flex items-center gap-2"
-            style={{
-              color: '#f59e0b',
-              border: '1px solid rgba(245,158,11,0.22)',
-              background: 'rgba(0,0,0,0.35)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-            }}
+            onClick={() => setShowLoginForm(true)}
+            className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 text-amber-400 border border-amber-500/30 bg-black/40 hover:bg-black/60 cursor-pointer"
           >
             <LogIn size={13} /> Acesse sua Conta
           </button>
         </div>
 
-        {/* Stats */}
-        <div
-          className="mt-6 sm:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 opacity-0 animate-fade-in-up delay-500"
-          style={{ animationFillMode: 'forwards', position: 'relative', zIndex: 1 }}
-        >
+        <div className="mt-6 sm:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 relative z-10 w-full max-w-lg">
           {stats.map((s, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
-              <span
-                className="text-2xl font-black text-white"
-                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)' }}
-              >
+              <span className="text-2xl font-black text-white">
                 {s.value}
               </span>
-              <span
-                className="text-[10px] uppercase tracking-widest font-bold"
-                style={{
-                  color: 'rgba(255,255,255,0.6)',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.95)',
-                }}
-              >
+              <span className="text-[10px] uppercase tracking-widest font-bold text-white/60">
                 {s.label}
               </span>
             </div>
@@ -475,117 +943,32 @@ export function Login() {
         </div>
       </section>
 
-      {/* ── CARROSSEL DE APRESENTAÇÃO DO APP ── */}
-      <section className="relative pt-2 pb-6 sm:pt-4 sm:pb-10 px-4 max-w-md mx-auto" style={{ zIndex: 2 }}>
-        <div className="w-full max-w-[360px] mx-auto opacity-0 animate-fade-in-up delay-500 relative" style={{ animationFillMode: 'forwards' }}>
-          {/*
-           * GALO DE FUNDO: pés apoiados exatamente na parte superior do container das imagens.
-           * A cabeça fica abaixo dos botões, sem cobrir ou conflitar com a leitura.
-           */}
-          <img
-            src={roosterImg}
-            alt=""
-            aria-hidden="true"
-            fetchPriority="high"
-            decoding="async"
-            style={{
-              position: 'absolute',
-              bottom: 'calc(100% - 10px)',
-              left: '-10px',
-              height: 'clamp(210px, 30vw, 290px)',
-              width: 'auto',
-              maxWidth: 'none',
-              objectFit: 'contain',
-              objectPosition: 'bottom left',
-              opacity: 0.85,
-              WebkitMaskImage:
-                'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
-              maskImage:
-                'linear-gradient(to top, black 70%, rgba(0,0,0,0.6) 85%, transparent 100%), linear-gradient(to right, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%)',
-              pointerEvents: 'none',
-              transform: 'translateZ(0)',
-              willChange: 'transform',
-            }}
-          />
-
-          <div className="relative rounded-[32px] overflow-hidden border-[4px] border-white/20 bg-[#0a0a0b] shadow-2xl shadow-amber-500/10 group aspect-[497/755] max-w-[360px] mx-auto" style={{ zIndex: 1 }}>
-            {carouselImages.map((img, idx) => (
-              <div
-                key={idx}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  idx === activeSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                }`}
-              >
-                <img src={img.src} alt={img.title} className="w-full h-full object-contain bg-[#0a0a0b]" />
-              </div>
-            ))}
-
-            {/* Setas de Navegação */}
-            <button
-              type="button"
-              onClick={() => setActiveSlide(prev => (prev - 1 + carouselImages.length) % carouselImages.length)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-60 group-hover:opacity-100 shadow-lg text-xs"
-            >
-              ❮
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSlide(prev => (prev + 1) % carouselImages.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all opacity-60 group-hover:opacity-100 shadow-lg text-xs"
-            >
-              ❯
-            </button>
-          </div>
-
-          {/* Legenda do Slide */}
-          <div className="mt-4 text-center px-4">
-            <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest">
-              {carouselImages[activeSlide].title}
-            </h4>
-            <p className="text-[11px] text-white/60 mt-1 max-w-md mx-auto">
-              {carouselImages[activeSlide].desc}
-            </p>
-          </div>
-
-          {/* Indicadores (Dots) */}
-          <div className="mt-3 flex justify-center gap-2">
-            {carouselImages.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveSlide(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === activeSlide ? 'bg-amber-500 w-7' : 'bg-white/20 w-1.5'
-                }`}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── CARROSSEL DE APRESENTAÇÃO DO APP (ISOLADO E RÁPIDO) ── */}
+      <AppCarousel />
 
       {/* ── FEATURES ── */}
-      <section ref={detailsRef} className="relative py-10 sm:py-14 px-6 mx-auto max-w-5xl" style={{ zIndex: 3 }}>
+      <section ref={detailsRef} className="relative py-10 sm:py-14 px-6 mx-auto max-w-5xl z-10">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6 sm:mb-8 space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Plataforma Completa</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Plataforma Completa</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">Tudo que seu criatório<br />precisa em um só lugar</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((f, i) => (
-              <div key={i}
-                className="rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-200 cursor-default"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${f.accent}30`; (e.currentTarget as HTMLElement).style.background = `rgba(255,255,255,0.05)`; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+              <div 
+                key={i}
+                className="rounded-2xl p-5 flex flex-col gap-3 bg-white/[0.03] border border-white/[0.08] hover:border-amber-500/30 hover:bg-white/[0.05] transition-all cursor-default"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${f.accent}15`, border: `1px solid ${f.accent}25` }}>
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" 
+                  style={{ background: `${f.accent}15`, border: `1px solid ${f.accent}25` }}
+                >
                   <f.icon size={18} style={{ color: f.accent }} />
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-white mb-1">{f.title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>{f.desc}</p>
+                  <p className="text-xs leading-relaxed text-white/50">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -594,27 +977,27 @@ export function Login() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="relative py-10 sm:py-14 px-6 mx-auto max-w-4xl" style={{ zIndex: 3 }}>
+      <section id="pricing" className="relative py-10 sm:py-14 px-6 mx-auto max-w-4xl z-10">
         <div className="max-w-3xl mx-auto">
           <div className="mb-6 sm:mb-8 space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#f59e0b' }}>Planos e Preços</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Planos e Preços</p>
             <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha seu plano</h2>
-            <p className="text-sm font-bold text-theme-primary mt-1">Experimente Grátis por 7 dias — Sem compromisso e sem precisar cadastrar cartão!</p>
+            <p className="text-sm font-bold text-amber-400 mt-1">Experimente Grátis por 7 dias — Sem compromisso e sem precisar cadastrar cartão!</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* MENSAL */}
-            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 bg-white/[0.03] border border-white/[0.08]">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>Mensal</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-white/40">Mensal</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 59,90</span>
-                  <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
+                  <span className="text-xs line-through text-white/30">R$ 59,90</span>
+                  <span className="text-base font-black text-white/50">R$</span>
                   <span className="text-5xl font-black text-white tracking-tighter leading-none">39</span>
-                  <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,90</span>
-                  <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/mês</span>
+                  <span className="text-lg font-black text-white/50">,90</span>
+                  <span className="text-xs font-bold ml-1 text-white/30">/mês</span>
                 </div>
-                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-theme-primary">
+                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-amber-400">
                   <Sparkles size={9} /> Economia de R$ 20,00 no plano mensal
                 </p>
               </div>
@@ -627,9 +1010,9 @@ export function Login() {
                   'Gere e compartilhe até 5 fichas técnicas completas de aves ou lotes',
                   'Backup automático e sincronização em nuvem',
                 ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                      <Check size={9} style={{ color: '#f59e0b' }} />
+                  <li key={i} className="flex items-start gap-2.5 text-xs text-white/70">
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/15 border border-amber-500/30">
+                      <Check size={9} className="text-amber-400" />
                     </div>
                     <span className="leading-snug">{item}</span>
                   </li>
@@ -637,27 +1020,26 @@ export function Login() {
               </ul>
 
               <button
-                onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform mt-2"
-                style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.05)' }}
+                onClick={() => setShowRegisterForm(true)}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all mt-2 text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer"
               >
-                Criar Conta
+                Criar Conta Grátis
               </button>
             </div>
 
             {/* ANUAL */}
-            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 relative overflow-hidden" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', boxShadow: '0 0 50px rgba(245,158,11,0.06)' }}>
-              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black" style={{ background: '#f59e0b' }}>
+            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 relative overflow-hidden bg-amber-500/[0.06] border border-amber-500/30 shadow-2xl shadow-amber-500/5">
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black bg-amber-500">
                 25% de Desconto • Melhor Valor
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(245,158,11,0.7)' }}>Anual</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-amber-400/80">Anual</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through" style={{ color: 'rgba(255,255,255,0.3)' }}>R$ 478,80</span>
-                  <span className="text-base font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>R$</span>
-                  <span className="text-5xl font-black text-theme-primary tracking-tighter leading-none">359</span>
-                  <span className="text-lg font-black" style={{ color: 'rgba(255,255,255,0.5)' }}>,10</span>
-                  <span className="text-xs font-bold ml-1" style={{ color: 'rgba(255,255,255,0.25)' }}>/ano</span>
+                  <span className="text-xs line-through text-white/30">R$ 478,80</span>
+                  <span className="text-base font-black text-white/50">R$</span>
+                  <span className="text-5xl font-black text-amber-400 tracking-tighter leading-none">359</span>
+                  <span className="text-lg font-black text-white/50">,10</span>
+                  <span className="text-xs font-bold ml-1 text-white/30">/ano</span>
                 </div>
                 <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-emerald-400">
                   <Sparkles size={9} /> Equivale a R$ 29,92/mês — economize R$ 119,70 no ano
@@ -672,9 +1054,9 @@ export function Login() {
                   'Alertas personalizados: vacina, ração e ovos',
                   'Tudo do plano mensal incluso + Suporte prioritário VIP',
                 ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(245,158,11,0.22)', border: '1px solid rgba(245,158,11,0.45)' }}>
-                      <Check size={9} style={{ color: '#f59e0b' }} />
+                  <li key={i} className="flex items-start gap-2.5 text-xs text-white/85">
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/25 border border-amber-500/50">
+                      <Check size={9} className="text-amber-400" />
                     </div>
                     <span className="leading-snug">{item}</span>
                   </li>
@@ -682,9 +1064,8 @@ export function Login() {
               </ul>
 
               <button
-                onClick={() => { setShowRegisterForm(true); setShowLoginForm(false); setRegError(''); }}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform mt-2"
-                style={{ background: '#f59e0b', boxShadow: '0 0 24px rgba(245,158,11,0.25)' }}
+                onClick={() => setShowRegisterForm(true)}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
               >
                 Ativar 7 Dias Grátis
               </button>
@@ -694,419 +1075,63 @@ export function Login() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative py-5 sm:py-6 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', zIndex: 3 }}>
+      <footer className="relative py-6 px-6 border-t border-white/[0.08] z-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2.5">
             <img src={muraLogo} alt="" className="w-6 h-6 rounded object-cover opacity-50" />
-            <span className="text-xs font-black tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>MURA MANAGER</span>
+            <span className="text-xs font-black tracking-widest uppercase text-white/30">MURA MANAGER</span>
           </div>
-          <p className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.18)' }}>© {new Date().getFullYear()} Mura Manager. Todos os direitos reservados.</p>
+          <p className="text-[10px] font-medium text-white/20">© {new Date().getFullYear()} Mura Manager. Todos os direitos reservados.</p>
         </div>
       </footer>
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL LOGIN                                           */}
+      {/* MODAIS TOTALMENTE DESACOPLADOS (0ms LATÊNCIA AO DIGITAR) */}
       {/* ══════════════════════════════════════════════════════ */}
-      {showLoginForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center gap-3">
-                <img src={muraLogo} alt="" className="w-9 h-9 rounded-xl object-cover" style={{ border: '1px solid rgba(245,158,11,0.2)' }} />
-                <div>
-                  <h3 className="font-black text-sm text-white">Acesse sua Conta</h3>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>Bem-vindo ao Mura Manager</p>
-                </div>
-              </div>
-              <button onClick={() => setShowLoginForm(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleLoginSubmit} className="px-7 py-6 space-y-4">
-              {loginError && (
-                <div className="p-3 rounded-xl text-xs font-bold text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                  {loginError}
-                </div>
-              )}
+      <LoginFormModal 
+        isOpen={showLoginForm}
+        onClose={() => setShowLoginForm(false)}
+        onOpenRegister={() => {
+          setShowLoginForm(false);
+          setShowRegisterForm(true);
+        }}
+        onOpenForgot={(id) => {
+          setShowLoginForm(false);
+          setForgotInitialId(id);
+          setShowForgotModal(true);
+        }}
+        signIn={signIn}
+        isLocalMode={isLocalMode}
+        biometricAvailable={biometricAvailable}
+      />
 
-              {/* Botão de Login por Biometria (Face ID / Impressao Digital) */}
-              {biometricAvailable && hasBiometricRegistered() && (
-                <div className="space-y-2">
-                  {biometricError && (
-                    <div className="p-2.5 rounded-xl text-xs font-bold text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                      {biometricError}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleBiometricLogin}
-                    disabled={biometricLoading}
-                    className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2.5 active:scale-95 transition-all disabled:opacity-60"
-                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', boxShadow: '0 0 18px rgba(245,158,11,0.08)' }}
-                  >
-                    {biometricLoading
-                      ? <Activity size={15} className="animate-spin" />
-                      : <Fingerprint size={16} />}
-                    <span>{biometricLoading ? 'Verificando...' : 'Entrar com Face ID / Biometria'}</span>
-                  </button>
-                </div>
-              )}
+      <RegisterFormModal
+        isOpen={showRegisterForm}
+        onClose={() => setShowRegisterForm(false)}
+        onOpenLogin={() => {
+          setShowRegisterForm(false);
+          setShowLoginForm(true);
+        }}
+        signIn={signIn}
+      />
 
+      <ForgotPasswordModal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        onOpenLogin={() => {
+          setShowForgotModal(false);
+          setShowLoginForm(true);
+        }}
+        sendPasswordReset={sendPasswordReset}
+        initialIdentifier={forgotInitialId}
+      />
 
+      <ResetPasswordModal
+        isOpen={isPasswordRecovery}
+        onClose={() => setIsPasswordRecovery(false)}
+        updatePassword={updatePassword}
+      />
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail ou CPF</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <input type="text" required placeholder="email@exemplo.com ou CPF" value={identifier}
-                    onChange={e => { const v = e.target.value; setIdentifier(v.includes('@') || /[a-zA-Z]/.test(v) ? v : formatCPF(v)); }}
-                    className={inputCls} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLoginForm(false);
-                      setShowForgotModal(true);
-                      setForgotError('');
-                      setForgotSuccess('');
-                      setForgotIdentifier(identifier);
-                    }}
-                    className="text-[11px] text-amber-500 hover:text-amber-400 font-bold transition-colors cursor-pointer"
-                  >
-                    Esqueceu a senha?
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <input type="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-              <button type="submit" disabled={loginLoading}
-                className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-1"
-                style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
-                {loginLoading ? <Activity size={15} className="animate-spin" /> : <><LogIn size={14} /> Entrar na Plataforma</>}
-              </button>
-              
-              <div className="pt-3 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                <button
-                  type="button"
-                  onClick={() => { setShowLoginForm(false); setShowRegisterForm(true); setRegError(''); }}
-                  className="text-xs text-theme-text-muted hover:text-white transition-colors"
-                >
-                  Ainda não tem conta? <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Cadastre-se grátis por 7 dias</span>
-                </button>
-              </div>
-
-              {isLocalMode && (
-                <div className="p-2 rounded-lg text-[9px] text-center" style={{ background: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.1)', color: 'rgba(253,186,116,0.35)' }}>
-                  Modo Offline · Admin: 14477751630
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL CADASTRO GRÁTIS DE 7 DIAS                       */}
-      {/* ══════════════════════════════════════════════════════ */}
-      {showRegisterForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                  <Sparkles size={16} style={{ color: '#f59e0b' }} />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-white font-serif">Tenha todo acesso por 7 dias gratuitos.</h3>
-                </div>
-              </div>
-              <button onClick={() => setShowRegisterForm(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleFreeRegisterSubmit} className="px-7 py-6 space-y-4">
-              {regError && (
-                <div className="p-3 rounded-xl text-xs font-bold text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                  {regError}
-                </div>
-              )}
-
-
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Nome Completo</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <input type="text" required placeholder="Seu nome ou nome do criatório" value={regNome} onChange={e => setRegNome(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail</label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <input type="email" required placeholder="seuemail@exemplo.com" value={regEmail} onChange={e => setRegEmail(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Senha de Acesso</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <input type="password" required placeholder="Mínimo 6 caracteres" value={regSenha} onChange={e => setRegSenha(e.target.value)} className={inputCls} />
-                </div>
-              </div>
-              <button type="submit" disabled={regLoading}
-                className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-2"
-                style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
-                {regLoading ? <Activity size={15} className="animate-spin" /> : <><Sparkles size={14} /> Criar Minha Conta Grátis e Entrar</>}
-              </button>
-              <div className="pt-3 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                <button
-                  type="button"
-                  onClick={() => { setShowRegisterForm(false); setShowLoginForm(true); setLoginError(''); }}
-                  className="text-xs text-theme-text-muted hover:text-white transition-colors"
-                >
-                  Já possui uma conta? <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Acessar Conta</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL RECUPERAÇÃO DE SENHA (POR EMAIL OU CPF)          */}
-      {/* ══════════════════════════════════════════════════════ */}
-      {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
-            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                  <KeyRound size={16} style={{ color: '#f59e0b' }} />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-white">Recuperar Minha Senha</h3>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Informe seu E-mail ou CPF cadastrado</p>
-                </div>
-              </div>
-              <button onClick={() => setShowForgotModal(false)} className="p-1 transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleForgotPasswordSubmit} className="px-7 py-6 space-y-4">
-              <p className="text-xs text-white/70 leading-relaxed">
-                Digite seu e-mail cadastrado ou o seu CPF. Nós localizaremos sua conta e enviaremos um link seguro para você redefinir sua senha diretamente no seu e-mail.
-              </p>
-
-              {forgotError && (
-                <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>{forgotError}</span>
-                </div>
-              )}
-
-              {forgotSuccess && (
-                <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
-                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
-                  <span>{forgotSuccess}</span>
-                </div>
-              )}
-
-              {!forgotSuccess && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>E-mail ou CPF</label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="email@exemplo.com ou CPF" 
-                      value={forgotIdentifier}
-                      onChange={e => {
-                        const v = e.target.value;
-                        setForgotIdentifier(v.includes('@') || /[a-zA-Z]/.test(v) ? v : formatCPF(v));
-                      }}
-                      className={inputCls} 
-                    />
-                  </div>
-                </div>
-              )}
-
-              {!forgotSuccess ? (
-                <button type="submit" disabled={forgotLoading}
-                  className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-1 cursor-pointer"
-                  style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
-                  {forgotLoading ? <Activity size={15} className="animate-spin" /> : <><Mail size={14} /> Enviar Link de Recuperação</>}
-                </button>
-              ) : (
-                <button 
-                  type="button" 
-                  onClick={() => { setShowForgotModal(false); setShowLoginForm(true); }}
-                  className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-widest text-black bg-emerald-400 hover:bg-emerald-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LogIn size={14} /> Voltar ao Login
-                </button>
-              )}
-
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setShowForgotModal(false); setShowLoginForm(true); }}
-                  className="text-xs text-theme-text-muted hover:text-white transition-colors flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
-                >
-                  <ArrowLeft size={13} /> Voltar para a tela de Login
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL DEFINIR NOVA SENHA (DISPARADO PELO EMAIL)       */}
-      {/* ══════════════════════════════════════════════════════ */}
-      {isPasswordRecovery && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.99)', border: '1px solid rgba(245,158,11,0.3)' }}>
-            <div className="px-7 pt-7 pb-5 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                  <KeyRound size={16} style={{ color: '#f59e0b' }} />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-white">Criar Nova Senha</h3>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Redefinição de acesso segura</p>
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdatePasswordSubmit} className="px-7 py-6 space-y-4">
-              <p className="text-xs text-white/70 leading-relaxed">
-                Você confirmou a recuperação pelo link do e-mail. Agora, digite e confirme sua nova senha para acessar a plataforma.
-              </p>
-
-              {resetError && (
-                <div className="p-3.5 rounded-xl text-xs font-bold text-center flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
-                  <AlertCircle size={16} className="shrink-0" />
-                  <span>{resetError}</span>
-                </div>
-              )}
-
-              {resetSuccess && (
-                <div className="p-3.5 rounded-xl text-xs font-bold flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
-                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
-                  <span>{resetSuccess}</span>
-                </div>
-              )}
-
-              {!resetSuccess && (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Nova Senha</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                      <input 
-                        type="password" 
-                        required 
-                        placeholder="Mínimo 6 caracteres" 
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        className={inputCls} 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>Confirmar Nova Senha</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={14} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                      <input 
-                        type="password" 
-                        required 
-                        placeholder="Repita a nova senha" 
-                        value={confirmNewPassword}
-                        onChange={e => setConfirmNewPassword(e.target.value)}
-                        className={inputCls} 
-                      />
-                    </div>
-                  </div>
-
-                  <button type="submit" disabled={resetLoading}
-                    className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 disabled:opacity-50 transition-transform flex items-center justify-center gap-2 mt-2 cursor-pointer"
-                    style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}>
-                    {resetLoading ? <Activity size={15} className="animate-spin" /> : <><Check size={14} /> Salvar Nova Senha</>}
-                  </button>
-                </>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════ */}
-      {/* MODAL OFERTA DE ATIVAR BIOMETRIA (pós-login com senha) */}
-      {/* ══════════════════════════════════════════════════════ */}
-      {showBiometricOffer && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-          <div className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-scale-up" style={{ background: 'rgba(18,18,20,0.98)', border: '1px solid rgba(245,158,11,0.2)' }}>
-            <div className="p-7 space-y-5">
-              <div className="flex justify-center">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                  <Fingerprint size={32} style={{ color: '#f59e0b' }} />
-                </div>
-              </div>
-              <div className="text-center space-y-1.5">
-                <h3 className="text-lg font-black text-white">Ativar Face ID / Biometria?</h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                  Nos próximos acessos, entre com apenas um toque — sem precisar digitar e-mail e senha.
-                  {typeof window !== 'undefined' && /iPhone|iPad|Mac/i.test(navigator.userAgent)
-                    ? ' Usa Face ID ou Touch ID do seu dispositivo Apple.'
-                    : ' Usa impressão digital ou desbloqueio facial do seu Android.'}
-                </p>
-              </div>
-              <div className="space-y-2.5">
-                <button
-                  onClick={async () => {
-                    const ok = await registerBiometric(lastLoggedIdentifier);
-                    setShowBiometricOffer(false);
-                    if (!ok) setBiometricError('Não foi possível registrar a biometria. Tente novamente mais tarde.');
-                  }}
-                  className="w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-transform flex items-center justify-center gap-2"
-                  style={{ background: '#f59e0b', boxShadow: '0 0 22px rgba(245,158,11,0.22)' }}
-                >
-                  <Fingerprint size={15} /> Ativar Agora
-                </button>
-                <button
-                  onClick={() => setShowBiometricOffer(false)}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold transition-colors"
-                  style={{ color: 'rgba(255,255,255,0.3)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'white'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; }}
-                >
-                  Agora não
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
