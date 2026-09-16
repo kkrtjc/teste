@@ -111,7 +111,7 @@ export function PaywallScreen() {
                 <span className="text-[9px] text-theme-text-muted">/mês</span>
               </div>
               <ul className="mt-2 space-y-1 text-[9px] text-theme-text-muted">
-                <li>• Até 50 aves ativas</li>
+                <li>• Até 100 aves ativas</li>
                 <li>• Até 15 fichas/mês</li>
                 <li>• Sem vitrine pública</li>
               </ul>

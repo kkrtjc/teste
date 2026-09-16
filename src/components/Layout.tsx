@@ -249,7 +249,7 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
           >
             <p className="font-bold text-[11px] text-white">Normal</p>
             <p className="text-sm font-black text-amber-400 mt-0.5">R$ 49,90<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
-            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Até 50 aves</p>
+            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Até 100 aves</p>
           </div>
 
           {/* Mensal PRO */}
@@ -334,7 +334,7 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
               <>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Gestão essencial: até <strong className="text-amber-400 font-bold">50 aves ativas</strong> no plantel</span>
+                  <span>Gestão essencial: até <strong className="text-amber-400 font-bold">100 aves ativas</strong> no plantel</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
