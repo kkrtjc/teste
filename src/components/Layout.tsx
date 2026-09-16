@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, memo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
-  CreditCard, QrCode, Zap, Store
+  CreditCard, QrCode, Zap, Store, ArrowLeft
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
 
@@ -482,14 +482,17 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { 
-    farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, 
+    farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
     isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal
   } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   const { triggerLight } = useHaptics();
   const { isLocalMode, triggerWebhookPayment, isAdmin, trialInfo, cpf } = useAuth();
+
+  const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -509,6 +512,27 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     setIsUpgradeModalOpen(false);
     globalCloseUpgradeModal();
     onUpgradeModalClose?.();
+  };
+
+  const handleGoBack = () => {
+    triggerLight();
+    if (selectedBirdProfileId || isAddBirdModalOpen) {
+      closeModals();
+      return;
+    }
+    if (isAdminModalOpen) {
+      setIsAdminModalOpen(false);
+      return;
+    }
+    if (effectiveUpgradeModalOpen) {
+      handleUpgradeModalClose();
+      return;
+    }
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
   };
 
   const effectiveUpgradeModalOpen = isUpgradeModalOpen || globalIsUpgradeModalOpen;
@@ -814,7 +838,18 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         
         {/* Header */}
         <header className="h-16 border-b border-theme-border bg-theme-surface/90 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {!isInitialMenu && (
+              <button
+                type="button"
+                onClick={handleGoBack}
+                className="w-9 h-9 rounded-full bg-theme-base/90 hover:bg-theme-surface-hover border border-theme-border/80 hover:border-amber-500/60 text-zinc-300 hover:text-white shadow-lg shadow-black/30 flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0 group animate-fade-in"
+                title="Voltar para a aba anterior"
+                aria-label="Voltar para a aba anterior"
+              >
+                <ArrowLeft size={18} className="text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+            )}
             <h1 className="font-bold text-lg truncate text-white hidden md:block">{farmSettings.name || 'Mura Manager'}</h1>
             {/* Connection Status Badge */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
