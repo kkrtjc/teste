@@ -191,6 +191,7 @@ export function AddBirdModal() {
   const [status, setStatus] = useState('Reprodutor');
   const [dataNasc, setDataNasc] = useState('');
   const [peso, setPeso] = useState('');
+  const [valorEstimado, setValorEstimado] = useState('');
   const [previewImages, setPreviewImages] = useState<string[]>([]);
 
   // ── Origin ──
@@ -238,6 +239,7 @@ export function AddBirdModal() {
         setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
         setBaia(b.baia); setStatus(b.status);
         setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
+        setValorEstimado(b.valorEstimado !== undefined ? String(b.valorEstimado) : '');
         setPreviewImages((b.imagens || (b.imagem ? [b.imagem] : [])).slice(0, 3));
         const orig = b.origem || 'Criatório';
         setNascidaAqui(orig !== 'Externo');
@@ -260,7 +262,7 @@ export function AddBirdModal() {
       setAnilha(''); setNome(''); setSexo('Macho');
       setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
       setBaia(''); setStatus('Reprodutor');
-      setDataNasc(''); setPeso(''); setPreviewImages([]);
+      setDataNasc(''); setPeso(''); setValorEstimado(''); setPreviewImages([]);
       setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
       setSelectedVacs([]);
@@ -360,6 +362,7 @@ export function AddBirdModal() {
         maeId: cleanMaeId || undefined,
         dataNascimento: dataNasc || undefined,
         peso: peso || undefined,
+        valorEstimado: valorEstimado ? parseFloat(valorEstimado.replace(',', '.')) : undefined,
         imagem: imagesToSave[0] || undefined,
         imagens: imagesToSave,
         observacoes: descricaoOrigem || undefined,
@@ -705,6 +708,27 @@ export function AddBirdModal() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Valor Estimado / Preço */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center justify-between">
+            <span>Valor Estimado / Preço (R$)</span>
+            <span className="text-[10px] text-theme-text-muted/60 normal-case font-normal">(Opcional)</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-400">R$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={valorEstimado}
+              onChange={e => setValorEstimado(e.target.value.replace(/[^0-9.,]/g, ''))}
+              onKeyDown={onlyNumericKeyDown}
+              className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-10 pr-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
+              placeholder="0,00"
+            />
+          </div>
+          <p className="text-[10px] text-theme-text-muted">Valor sugerido de venda ou avaliação do animal no plantel</p>
         </div>
       </div>
     );

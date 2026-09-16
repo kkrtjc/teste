@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
-  AlertCircle, UserPlus, X, Share2
+  AlertCircle, UserPlus, X, Share2, DollarSign, RotateCcw
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 import { ShareBirdModal } from './ShareBirdModal';
+import { SellBirdModal } from './SellBirdModal';
 
 function PedigreeTreeNode({
   label,
@@ -117,6 +118,7 @@ export function BirdProfileModal() {
   const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppContext();
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -289,6 +291,35 @@ export function BirdProfileModal() {
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0 touch-none select-none">
           <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
           <div className="flex items-center gap-2 sm:gap-3">
+            {bird.status === 'Vendido' ? (
+              <button
+                onClick={() => {
+                  if (confirm(`Deseja reativar a ave ${bird.anilha} de volta para o plantel ativo?`)) {
+                    editBird(bird.id, {
+                      status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
+                      dataBaixa: undefined,
+                      dataVenda: undefined,
+                    });
+                    showToast('Ave reativada no plantel ativo!', 'success');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                title="Reativar ave e trazer de volta para o plantel ativo"
+              >
+                <RotateCcw size={15} />
+                <span className="hidden sm:inline">Reativar</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsSellModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                title="Registrar Venda desta Ave"
+              >
+                <DollarSign size={15} />
+                <span className="hidden sm:inline">Vender</span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsShareModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
@@ -304,14 +335,14 @@ export function BirdProfileModal() {
                   closeModals();
                 }
               }}
-              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors"
+              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
             >
               <Trash2 size={16} /> <span className="hidden sm:inline">Excluir</span>
             </button>
-            <button onClick={() => openAddBirdModal('', bird.id)} className="flex items-center gap-2 text-sm font-bold text-theme-primary hover:text-orange-400 transition-colors">
+            <button onClick={() => openAddBirdModal('', bird.id)} className="flex items-center gap-2 text-sm font-bold text-theme-primary hover:text-orange-400 transition-colors cursor-pointer">
               <Edit2 size={16} /> <span className="hidden sm:inline">Editar</span>
             </button>
-            <button onClick={closeModals} className="text-theme-text-muted hover:text-white p-2">✕</button>
+            <button onClick={closeModals} className="text-theme-text-muted hover:text-white p-2 cursor-pointer">✕</button>
           </div>
         </div>
         
@@ -484,6 +515,26 @@ export function BirdProfileModal() {
                   ⚖️ Peso
                 </p>
                 <p className="text-sm text-white font-bold truncate">{bird.peso || 'Não informado'}</p>
+              </div>
+
+              {/* Valor / Financeiro */}
+              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                  💰 {bird.status === 'Vendido' ? 'Valor da Venda' : 'Valor Estimado'}
+                </p>
+                <p className="text-sm font-bold text-emerald-400 truncate">
+                  {bird.status === 'Vendido' && bird.valorVenda !== undefined
+                    ? `R$ ${Number(bird.valorVenda).toFixed(2)}`
+                    : bird.valorEstimado !== undefined
+                    ? `R$ ${Number(bird.valorEstimado).toFixed(2)}`
+                    : 'Não avaliado'}
+                </p>
+                {bird.status === 'Vendido' && (
+                  <div className="mt-1 pt-1 border-t border-theme-border/50 text-[10px] text-theme-text-muted space-y-0.5">
+                    {bird.compradorNome && <p className="truncate">👤 {bird.compradorNome}</p>}
+                    {bird.dataVenda && <p className="truncate">📅 {bird.dataVenda.split('-').reverse().join('/')}</p>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -994,6 +1045,16 @@ export function BirdProfileModal() {
           mae={mae}
           inbreeding={inbreedingF}
           onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
+
+      {/* Modal de Registro de Venda da Ave */}
+      {isSellModalOpen && bird && (
+        <SellBirdModal
+          bird={bird}
+          isOpen={isSellModalOpen}
+          onClose={() => setIsSellModalOpen(false)}
+          onSuccess={() => closeModals()}
         />
       )}
     </div>,

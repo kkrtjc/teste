@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import { Plus, Edit2, Camera, Search, X, ChevronRight, Trash2 } from 'lucide-react';
+import { 
+  Plus, Edit2, Camera, Search, X, ChevronRight, Trash2,
+  DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye
+} from 'lucide-react';
 import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -489,7 +492,9 @@ export function Birds() {
     activeBreed, setActiveBreed, showToast
   } = useAppContext();
 
-  const [activeTab, setActiveTab] = useState<'aves' | 'racas'>('aves');
+  const [activeTab, setActiveTab] = useState<'aves' | 'racas' | 'historico'>('aves');
+  const [historyFilter, setHistoryFilter] = useState<'todos' | 'vendidas' | 'obitos' | 'entradas'>('todos');
+  const [historySearch, setHistorySearch] = useState('');
 
   // Sincroniza aba selecionada via URL query ou state de navegação
   useEffect(() => {
@@ -497,6 +502,8 @@ export function Birds() {
     const tabParam = searchParams.get('tab') || (location.state as any)?.tab;
     if (tabParam === 'racas' || tabParam === 'breeds') {
       setActiveTab('racas');
+    } else if (tabParam === 'historico' || tabParam === 'history' || tabParam === 'vendas') {
+      setActiveTab('historico');
     } else if (tabParam === 'aves') {
       setActiveTab('aves');
     }
@@ -537,6 +544,72 @@ export function Birds() {
     });
     return counts;
   }, [birds]);
+
+  const activeBirdsCount = useMemo(() => {
+    return birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length;
+  }, [birds]);
+
+  const soldBirds = useMemo(() => {
+    return birds.filter(b => b.status === 'Vendido');
+  }, [birds]);
+
+  const deceasedBirds = useMemo(() => {
+    return birds.filter(b => b.status === 'Faleceu');
+  }, [birds]);
+
+  const salesMetrics = useMemo(() => {
+    let totalRevenue = 0;
+    soldBirds.forEach(b => {
+      const price = b.valorVenda !== undefined && b.valorVenda !== null
+        ? Number(b.valorVenda) 
+        : (b.valorEstimado !== undefined && b.valorEstimado !== null ? Number(b.valorEstimado) : 0);
+      if (price > 0) {
+        totalRevenue += price;
+      }
+    });
+
+    const avgTicket = soldBirds.length > 0 ? (totalRevenue / soldBirds.length) : 0;
+
+    return {
+      totalRevenue,
+      soldCount: soldBirds.length,
+      avgTicket,
+      deceasedCount: deceasedBirds.length,
+    };
+  }, [soldBirds, deceasedBirds]);
+
+  const historyBirds = useMemo(() => {
+    let list = birds;
+    if (historyFilter === 'vendidas') {
+      list = list.filter(b => b.status === 'Vendido');
+    } else if (historyFilter === 'obitos') {
+      list = list.filter(b => b.status === 'Faleceu');
+    } else if (historyFilter === 'entradas') {
+      list = [...birds];
+    } else {
+      // 'todos' (movimentações relevantes: vendidas, falecidas e todas as demais)
+      list = list.filter(b => b.status === 'Vendido' || b.status === 'Faleceu');
+      if (list.length === 0) {
+        list = birds;
+      }
+    }
+
+    const q = historySearch.toLowerCase().trim();
+    if (q) {
+      list = list.filter(b => 
+        (b.anilha && b.anilha.toLowerCase().includes(q)) ||
+        (b.nome && b.nome.toLowerCase().includes(q)) ||
+        (b.raca && b.raca.toLowerCase().includes(q)) ||
+        (b.compradorNome && b.compradorNome.toLowerCase().includes(q))
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      const dateA = a.dataVenda || a.dataBaixa || a.dataCadastro || a.dataNascimento || '';
+      const dateB = b.dataVenda || b.dataBaixa || b.dataCadastro || b.dataNascimento || '';
+      return dateB.localeCompare(dateA);
+    });
+  }, [birds, historyFilter, historySearch]);
 
   // Sync tab focus and stats filters when activeBreed/state changes
   useEffect(() => {
@@ -715,15 +788,22 @@ export function Birds() {
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {activeBreed || sexFilter !== 'Todos' || statusFilter !== 'Todos'
                   ? `Filtrado (${filteredBirds.length} ave${filteredBirds.length !== 1 ? 's' : ''})`
-                  : `Total: ${birds.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu').length} aves`
+                  : `Total: ${activeBirdsCount} aves ativas`
                 }
               </p>
             </>
-          ) : (
+          ) : activeTab === 'racas' ? (
             <>
               <h2 className="text-base sm:text-lg font-black text-white leading-none">Raças &amp; Linhagens</h2>
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
                 {breeds.length} raça{breeds.length !== 1 ? 's' : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-base sm:text-lg font-black text-white leading-none">Histórico &amp; Vendas</h2>
+              <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
+                Balanço financeiro, vendas e baixas do plantel
               </p>
             </>
           )}
@@ -762,19 +842,19 @@ export function Birds() {
             >
               <Plus size={14} strokeWidth={3} /> Cadastrar Ave
             </button>
-          ) : (
+          ) : activeTab === 'racas' ? (
             <button 
               onClick={() => openBreedModal()} 
               className="btn-primary !px-3.5 !py-1.5 !text-xs flex items-center gap-1.5 shrink-0"
             >
               <Plus size={14} strokeWidth={3} /> Cadastrar Raça
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
       {/* ── Tabs (Glassmorphic Pill Bar) ── */}
-      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-md self-start gap-1">
+      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-lg self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
           className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
@@ -783,7 +863,7 @@ export function Birds() {
               : 'text-theme-text-muted hover:text-white hover:bg-white/5'
           }`}
         >
-          Plantel de Aves
+          Plantel Ativo ({activeBirdsCount})
         </button>
         <button 
           onClick={() => { setActiveTab('racas'); }}
@@ -794,6 +874,21 @@ export function Birds() {
           }`}
         >
           Raças &amp; Linhagens
+        </button>
+        <button 
+          onClick={() => { setActiveTab('historico'); }}
+          className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap flex items-center justify-center gap-1.5 ${
+            activeTab === 'historico' 
+              ? 'bg-theme-primary text-black shadow-[0_2px_10px_rgba(245,158,11,0.2)]' 
+              : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <span>Histórico &amp; Vendas</span>
+          {soldBirds.length > 0 && (
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${activeTab === 'historico' ? 'bg-black text-amber-400' : 'bg-amber-500/20 text-amber-400'}`}>
+              {soldBirds.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -1004,6 +1099,236 @@ export function Birds() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Tab Content: Histórico & Vendas ── */}
+      {activeTab === 'historico' && (
+        <div className="space-y-6">
+          {/* 1. Cards de Balanço Financeiro & Zootécnico */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Total Faturado */}
+            <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-lg">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                <DollarSign size={80} className="text-emerald-400" />
+              </div>
+              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Faturamento com Vendas
+              </p>
+              <h3 className="text-xl sm:text-2xl font-black text-emerald-400">
+                {salesMetrics.totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </h3>
+              <p className="text-[10px] text-theme-text-muted mt-1">
+                Acumulado no histórico
+              </p>
+            </div>
+
+            {/* Aves Vendidas */}
+            <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-lg">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                <ShoppingBag size={80} className="text-theme-primary" />
+              </div>
+              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1">
+                Aves Vendidas
+              </p>
+              <h3 className="text-xl sm:text-2xl font-black text-white">
+                {salesMetrics.soldCount} <span className="text-xs font-normal text-theme-text-muted">aves</span>
+              </h3>
+              <p className="text-[10px] text-theme-text-muted mt-1">
+                Saíram do plantel ativo
+              </p>
+            </div>
+
+            {/* Ticket Médio */}
+            <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-lg">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                <TrendingUp size={80} className="text-amber-400" />
+              </div>
+              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1">
+                Ticket Médio / Ave
+              </p>
+              <h3 className="text-xl sm:text-2xl font-black text-amber-400">
+                {salesMetrics.avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </h3>
+              <p className="text-[10px] text-theme-text-muted mt-1">
+                Média por ave comercializada
+              </p>
+            </div>
+
+            {/* Baixas / Óbitos */}
+            <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-lg">
+              <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                <Skull size={80} className="text-red-400" />
+              </div>
+              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1">
+                Baixas / Óbitos
+              </p>
+              <h3 className="text-xl sm:text-2xl font-black text-red-400">
+                {salesMetrics.deceasedCount} <span className="text-xs font-normal text-theme-text-muted">aves</span>
+              </h3>
+              <p className="text-[10px] text-theme-text-muted mt-1">
+                Registradas com baixa
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Filtros e Busca do Histórico */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            {/* Sub-filtros por tipo */}
+            <div className="flex bg-theme-surface p-1 rounded-xl border border-theme-border/50 gap-1 overflow-x-auto hide-scrollbar">
+              {[
+                { id: 'todos', label: 'Todas Movimentações' },
+                { id: 'vendidas', label: `Vendidas (${salesMetrics.soldCount})` },
+                { id: 'obitos', label: `Óbitos / Baixas (${salesMetrics.deceasedCount})` },
+                { id: 'entradas', label: `Cadastros (${birds.length})` },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setHistoryFilter(f.id as any)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    historyFilter === f.id
+                      ? 'bg-theme-primary text-black shadow-sm'
+                      : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Busca do Histórico */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
+              <input
+                type="text"
+                value={historySearch}
+                onChange={e => setHistorySearch(e.target.value)}
+                placeholder="Buscar anilha, comprador..."
+                className="w-full bg-theme-surface border border-theme-border/60 focus:border-theme-primary rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none transition-colors"
+              />
+              {historySearch && (
+                <button onClick={() => setHistorySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Lista de Aves no Histórico */}
+          {historyBirds.length === 0 ? (
+            <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-2xl text-theme-text-muted">
+              Nenhuma movimentação encontrada para o filtro selecionado.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {historyBirds.map(b => {
+                const isSold = b.status === 'Vendido';
+                const isDeceased = b.status === 'Faleceu';
+                const valorExibicao = isSold 
+                  ? (b.valorVenda !== undefined ? Number(b.valorVenda) : (b.valorEstimado ? Number(b.valorEstimado) : 0))
+                  : (b.valorEstimado ? Number(b.valorEstimado) : 0);
+
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => openBirdProfile(b.id)}
+                    className="p-4 bg-theme-surface border border-theme-border/60 hover:border-theme-primary/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all cursor-pointer group shadow-md"
+                  >
+                    {/* Lado Esquerdo: Foto e Dados Básicos */}
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-theme-base border border-theme-border/60 overflow-hidden shrink-0 flex items-center justify-center">
+                        {b.imagem || b.imagens?.[0] ? (
+                          <img src={b.imagem || b.imagens![0]} alt={b.anilha} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <span className="text-xl">{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-sm font-black text-white group-hover:text-theme-primary transition-colors">
+                            {b.anilha}
+                          </span>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-extrabold uppercase ${
+                            isSold 
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : isDeceased
+                              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {isSold ? 'VENDIDA' : isDeceased ? 'ÓBITO' : 'NO PLANTEL'}
+                          </span>
+                          <span className="text-[10px] text-theme-text-muted">
+                            {b.sexo} • {b.raca || 'Sem raça'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-1 text-xs text-theme-text-muted flex-wrap">
+                          {b.nome && <span className="text-zinc-300 font-semibold">{b.nome}</span>}
+                          {isSold && b.compradorNome && (
+                            <span className="text-emerald-300/80">
+                              👤 Comprador: <b>{b.compradorNome}</b> {b.compradorContato ? `(${b.compradorContato})` : ''}
+                            </span>
+                          )}
+                          {isSold && b.dataVenda && (
+                            <span>📅 Vendida em: {b.dataVenda.split('-').reverse().join('/')}</span>
+                          )}
+                          {isDeceased && b.dataBaixa && (
+                            <span>📅 Óbito em: {b.dataBaixa.split('-').reverse().join('/')}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lado Direito: Valores Financeiros e Ações */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-theme-border/40 shrink-0">
+                      {valorExibicao > 0 && (
+                        <div className="text-left sm:text-right">
+                          <p className="text-[9px] font-bold text-theme-text-muted uppercase">
+                            {isSold ? 'Valor da Venda' : 'Valor Estimado'}
+                          </p>
+                          <p className="text-base font-black text-emerald-400">
+                            {valorExibicao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                        {(isSold || isDeceased) && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Deseja reativar a ave ${b.anilha} de volta para o plantel ativo?`)) {
+                                editBird(b.id, {
+                                  status: b.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
+                                  dataBaixa: undefined,
+                                  dataVenda: undefined,
+                                });
+                                showToast(`Ave ${b.anilha} reativada no plantel!`, 'success');
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                            title="Reativar ave e trazer de volta para o plantel ativo"
+                          >
+                            <RotateCcw size={13} />
+                            <span className="hidden md:inline">Reativar</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => openBirdProfile(b.id)}
+                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Eye size={13} />
+                          <span>Ver Ficha</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

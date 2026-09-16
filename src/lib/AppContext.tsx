@@ -45,6 +45,13 @@ export type Bird = {
   inVitrine?: boolean;
   vitrinePrice?: string;
   vitrineStatus?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
+  valorEstimado?: number | string;
+  valorVenda?: number | string;
+  dataVenda?: string;
+  compradorNome?: string;
+  compradorContato?: string;
+  motivoBaixa?: string;
+  dataCadastro?: string;
 };
 
 export type IncubationLot = {
@@ -1542,8 +1549,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBird = (bird: Bird) => {
     clearDeletedBirdId(bird.id);
     markPendingOfflineBird(bird.id);
+    const birdWithDate: Bird = {
+      ...bird,
+      dataCadastro: bird.dataCadastro || new Date().toISOString().split('T')[0]
+    };
     setBirds(prev => {
-      const next = [...prev, bird];
+      const next = [...prev, birdWithDate];
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
@@ -1581,14 +1592,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => {
               if (error) {
                 console.warn('Erro Supabase addBird, enfileirando offline:', error);
-                enqueueMutation('birds', 'upsert', payload);
+                enqueueMutation('birds', 'upsert', payload, { column: 'id', value: bird.id });
               } else {
                 clearPendingOfflineBird(bird.id);
                 triggerRemoteSync('birds');
               }
             },
             () => {
-              enqueueMutation('birds', 'upsert', payload);
+              enqueueMutation('birds', 'upsert', payload, { column: 'id', value: bird.id });
             }
           );
       }
@@ -1602,10 +1613,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (b.id === id) {
           const nextFields = { ...updatedBird };
           if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu') && !b.dataBaixa) {
-            nextFields.dataBaixa = new Date().toISOString().split('T')[0];
+            nextFields.dataBaixa = updatedBird.dataVenda || new Date().toISOString().split('T')[0];
           }
           if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu') {
             nextFields.dataBaixa = undefined;
+            nextFields.dataVenda = undefined;
+            nextFields.compradorNome = undefined;
+            nextFields.compradorContato = undefined;
           }
           return { ...b, ...nextFields };
         }
