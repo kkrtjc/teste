@@ -26,7 +26,7 @@ export function ShareBirdModal({
   onClose
 }: ShareBirdModalProps) {
   const { 
-    farmSettings, vitrineBirds, birds, showToast,
+    farmSettings, vitrineBirds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
   } = useAppContext();
   const { trialInfo, isAdmin } = useAuth();
@@ -41,17 +41,10 @@ export function ShareBirdModal({
   const [copied, setCopied] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
-  // Obtém todas as outras aves disponíveis no criatório para compor a vitrine
+  // Obtém APENAS as outras aves que foram explicitamente marcadas na vitrine pelo criador
   const availableVitrineBirds = useMemo(() => {
-    // 1. Aves marcadas explicitamente na vitrine (exceto a ave atual)
-    const marked = (vitrineBirds || []).filter(b => b && b.id !== bird.id);
-    if (marked.length > 0) return marked;
-
-    // 2. Se nenhuma foi marcada ainda na aba vitrine, inclui as outras aves ativas do criatório
-    return (birds || []).filter(
-      b => b && b.id !== bird.id && b.status !== 'Vendido' && b.status !== 'Baixa' && b.status !== 'Morto'
-    );
-  }, [vitrineBirds, birds, bird.id]);
+    return (vitrineBirds || []).filter(b => b && b.id !== bird.id && !!b.inVitrine);
+  }, [vitrineBirds, bird.id]);
 
   // Gera a publicação e o link público ao abrir o modal ou mudar o modo
   useEffect(() => {

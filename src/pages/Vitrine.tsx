@@ -12,6 +12,7 @@ export function Vitrine() {
   const { 
     birds, 
     vitrineBirds, 
+    vitrineConfig,
     isVitrineUnlocked, 
     toggleBirdVitrine, 
     openAddBirdModal, 
@@ -38,11 +39,12 @@ export function Vitrine() {
 
       if (!matchSearch) return false;
 
-      if (filterMode === 'inVitrine') return !!b.inVitrine;
-      if (filterMode === 'outVitrine') return !b.inVitrine;
+      const isInVitrine = Boolean(b.inVitrine || vitrineConfig[b.id]?.inVitrine);
+      if (filterMode === 'inVitrine') return isInVitrine;
+      if (filterMode === 'outVitrine') return !isInVitrine;
       return true;
     });
-  }, [birds, searchQuery, filterMode]);
+  }, [birds, vitrineConfig, searchQuery, filterMode]);
 
   const handleCopyVitrineLink = async () => {
     try {
@@ -297,13 +299,13 @@ export function Vitrine() {
               <div className="pt-2 border-t border-theme-border space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <Store size={13} className={b.inVitrine ? 'text-amber-400' : 'text-zinc-500'} />
+                    <Store size={13} className={(b.inVitrine || vitrineConfig[b.id]?.inVitrine) ? 'text-amber-400' : 'text-zinc-500'} />
                     <span>Exibir na Vitrine</span>
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
                       type="checkbox"
-                      checked={!!b.inVitrine}
+                      checked={Boolean(b.inVitrine || vitrineConfig[b.id]?.inVitrine)}
                       onChange={e => {
                         toggleBirdVitrine(b.id, e.target.checked);
                         triggerLight();
@@ -314,14 +316,14 @@ export function Vitrine() {
                   </label>
                 </div>
 
-                {b.inVitrine && (
+                {(b.inVitrine || vitrineConfig[b.id]?.inVitrine) && (
                   <div className="grid grid-cols-2 gap-2 pt-1 animate-scale-up">
                     <div className="space-y-1">
                       <label className="text-[9px] uppercase font-bold text-zinc-500 block">Preço (R$)</label>
                       <input 
                         type="text"
-                        defaultValue={b.vitrinePrice || ''}
-                        onBlur={e => toggleBirdVitrine(b.id, true, e.target.value, b.vitrineStatus)}
+                        defaultValue={b.vitrinePrice || vitrineConfig[b.id]?.vitrinePrice || ''}
+                        onBlur={e => toggleBirdVitrine(b.id, true, e.target.value, b.vitrineStatus || vitrineConfig[b.id]?.vitrineStatus)}
                         placeholder="Ex: R$ 1.500"
                         className="w-full bg-theme-base border border-theme-border rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-amber-400 font-mono"
                       />
@@ -330,8 +332,8 @@ export function Vitrine() {
                     <div className="space-y-1">
                       <label className="text-[9px] uppercase font-bold text-zinc-500 block">Status</label>
                       <select 
-                        defaultValue={b.vitrineStatus || 'Disponível'}
-                        onChange={e => toggleBirdVitrine(b.id, true, b.vitrinePrice, e.target.value as any)}
+                        defaultValue={b.vitrineStatus || vitrineConfig[b.id]?.vitrineStatus || 'Disponível'}
+                        onChange={e => toggleBirdVitrine(b.id, true, b.vitrinePrice || vitrineConfig[b.id]?.vitrinePrice, e.target.value as any)}
                         className="w-full bg-theme-base border border-theme-border rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-amber-400"
                       >
                         <option value="Disponível">Disponível</option>

@@ -579,6 +579,23 @@ export function PublicBirdShowcase() {
                     </p>
                     <p className="text-[10px] text-zinc-400 truncate mt-0.5">{otherBird.raca}</p>
                   </div>
+
+                  {cleanWhatsapp && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const priceText = otherBird.vitrinePrice ? ` (Valor: ${otherBird.vitrinePrice})` : '';
+                        const msg = `Olá! Gostei da ave anilha *${otherBird.anilha}* (${otherBird.nome || otherBird.raca})${priceText} que vi na vitrine do seu criatório e tenho interesse em negociar.`;
+                        window.open(`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(msg)}`, '_blank');
+                      }}
+                      className="w-full py-2 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer truncate"
+                      title="Chamar no WhatsApp sobre esta ave"
+                    >
+                      <MessageCircle size={13} className="shrink-0" />
+                      <span className="truncate">Chamar no WhatsApp</span>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

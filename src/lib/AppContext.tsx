@@ -225,6 +225,7 @@ type AppContextType = {
   // Vitrine Digital
   isVitrineUnlocked: boolean;
   vitrineBirds: Bird[];
+  vitrineConfig: Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }>;
   toggleBirdVitrine: (birdId: string, inVitrine: boolean, price?: string, status?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque') => void;
 
   // Onboarding & Profile Setup Optional Helpers
@@ -417,6 +418,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [breeds, setBreeds] = useState<Breed[]>([]);
   const [birds, setBirds] = useState<Bird[]>([]);
+  const [vitrineConfig, setVitrineConfig] = useState<Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }>>(() => {
+    try {
+      const raw = localStorage.getItem('@mura-manager:vitrine-config');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
   const [couples, setCouples] = useState<Couple[]>([]);
   const [coupleEggs, setCoupleEggs] = useState<CoupleEgg[]>([]);
   const [eggLots, setEggLots] = useState<EggLot[]>([]);
@@ -605,7 +614,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { suffix: 'egglots',         setter: (d: any) => setEggLots(Array.isArray(d) ? d : []) },
       { suffix: 'meatlots',        setter: (d: any) => setMeatLots(Array.isArray(d) ? d : []) },
       { suffix: 'incubation-lots', setter: (d: any) => setIncubationLots(Array.isArray(d) ? d : []) },
-      { suffix: 'settings',        setter: (d: any) => { if (d) setFarmSettings(d); } }
+      { suffix: 'settings',        setter: (d: any) => { if (d) setFarmSettings(d); } },
+      {
+        suffix: 'vitrine-config',
+        setter: (d: any) => {
+          if (d && typeof d === 'object') {
+            setVitrineConfig(prev => ({ ...prev, ...d }));
+            try {
+              localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(d));
+            } catch {}
+          }
+        }
+      }
     ];
 
     await Promise.all(storageItems.map(async (item) => {
@@ -956,6 +976,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
           }
 
+          const vConfig = vitrineConfig[b.id] || {};
+          const isBirdInVitrine = localBird?.inVitrine !== undefined 
+            ? localBird.inVitrine 
+            : (vConfig.inVitrine !== undefined ? vConfig.inVitrine : false);
+          const birdVitrinePrice = localBird?.vitrinePrice !== undefined 
+            ? localBird.vitrinePrice 
+            : (vConfig.vitrinePrice || '');
+          const birdVitrineStatus = localBird?.vitrineStatus !== undefined 
+            ? localBird.vitrineStatus 
+            : (vConfig.vitrineStatus || 'Disponível');
+
           return {
             id: b.id,
             anilha: b.anilha || '',
@@ -976,7 +1007,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataNascimento: b.data_nascimento || b.dataNascimento,
             peso: b.peso,
             dataBaixa: localBird?.dataBaixa,
-            observacoes: b.observacoes || localBird?.observacoes || ''
+            observacoes: b.observacoes || localBird?.observacoes || '',
+            inVitrine: isBirdInVitrine,
+            vitrinePrice: birdVitrinePrice,
+            vitrineStatus: birdVitrineStatus,
+            valorEstimado: localBird?.valorEstimado,
+            valorVenda: localBird?.valorVenda,
+            dataVenda: localBird?.dataVenda,
+            compradorNome: localBird?.compradorNome,
+            compradorContato: localBird?.compradorContato,
+            motivoBaixa: localBird?.motivoBaixa
           };
         });
 
@@ -1698,6 +1738,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
         localforage.setItem('@mura-manager:birds', next).catch(() => {});
+      }
+
+      // Persistência robusta de vitrineConfig (isolada e imune a sobrescritas de sync)
+      if (updatedBird.inVitrine !== undefined || updatedBird.vitrinePrice !== undefined || updatedBird.vitrineStatus !== undefined) {
+        setVitrineConfig(prev => {
+          const prevEntry = prev[id] || {};
+          const isVit = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : prevEntry.inVitrine;
+          const nextConfig = { ...prev };
+          if (isVit) {
+            nextConfig[id] = {
+              inVitrine: true,
+              vitrinePrice: updatedBird.vitrinePrice !== undefined ? updatedBird.vitrinePrice : (prevEntry.vitrinePrice || ''),
+              vitrineStatus: updatedBird.vitrineStatus !== undefined ? updatedBird.vitrineStatus : (prevEntry.vitrineStatus || 'Disponível')
+            };
+          } else {
+            delete nextConfig[id];
+          }
+          localforage.setItem(getStorageKey('vitrine-config'), nextConfig).catch(console.error);
+          try {
+            localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(nextConfig));
+          } catch {}
+          return nextConfig;
+        });
       }
       
       if (isSupabaseConfigured && user) {
@@ -2546,7 +2609,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, isCurrentUserAdmin, getStorageKey, showToast, getDeletedBirdIds]);
 
   const isVitrineUnlocked = useMemo(() => birds.length >= 10, [birds.length]);
-  const vitrineBirds = useMemo(() => birds.filter(b => b.inVitrine), [birds]);
+  const vitrineBirds = useMemo(() => {
+    return birds.filter(b => b && (b.inVitrine || vitrineConfig[b.id]?.inVitrine));
+  }, [birds, vitrineConfig]);
 
   const toggleBirdVitrine = useCallback((
     birdId: string, 
@@ -2579,7 +2644,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
     showToast,
     recoverAllBirds,
-    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine,
+    isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
     isTourOpen, isProfileSetupOpen,
     startTour, closeTour, finishTour,
     openProfileSetup, closeProfileSetup, finishProfileSetup,
@@ -2590,7 +2655,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
     isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen,
-    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine,
+    isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
