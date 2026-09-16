@@ -19,11 +19,14 @@ export type PublicShowcaseData = {
   mae?: Bird | null;
   inbreeding?: number;
   mode: 'private' | 'public';
-  vitrineBirds?: Bird[];
+  vitrineBirds?: (Partial<Bird> & { id: string; anilha: string })[];
   ownerId?: string;
   createdAt: string;
 };
 
+/**
+ * Publica os dados da ficha da ave na API e guarda cópia local
+ */
 /**
  * Publica os dados da ficha da ave na API e guarda cópia local
  */
@@ -35,14 +38,14 @@ export async function publishShowcase(data: PublicShowcaseData): Promise<string>
     createdAt: data.createdAt || new Date().toISOString()
   };
 
-  // Salva no cache local do dispositivo
+  // Salva no cache local do dispositivo imediatamente
   try {
     await localforage.setItem(`@mura-manager:showcase:${shareId}`, payload);
   } catch (e) {
     console.warn('Erro ao salvar showcase no localforage:', e);
   }
 
-  // Tenta publicar na API online do Cloudflare Worker (com timeout de 8s)
+  // Publica na API online do Cloudflare Worker (timeout de 8s)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -57,43 +60,57 @@ export async function publishShowcase(data: PublicShowcaseData): Promise<string>
     console.warn('Erro ao enviar showcase para a API online:', err);
   }
 
-  // Retorna o link universal da ficha pública
+  // Retorna o link universal da ficha pública com parâmetro explícito do modo
   const baseUrl = window.location.origin;
-  return `${baseUrl}/p/ave/${shareId}`;
+  const modeParam = data.mode === 'public' ? '?modo=vitrine' : '?modo=privado';
+  return `${baseUrl}/p/ave/${shareId}${modeParam}`;
 }
 
 /**
- * Busca os dados de uma ficha pública por ID (primeiro local, depois online)
+ * Busca os dados de uma ficha pública por ID (busca online prioritária com fallback para cache local)
  */
 export async function fetchShowcase(id: string): Promise<PublicShowcaseData | null> {
   if (!id) return null;
 
-  // 1. Tenta pegar do cache local
+  // Verifica se há parâmetro de URL explícito (?modo=vitrine ou ?modo=privado)
+  let urlMode: 'private' | 'public' | null = null;
   try {
-    const cached = await localforage.getItem<PublicShowcaseData>(`@mura-manager:showcase:${id}`);
-    if (cached && cached.bird) {
-      return cached;
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      const modo = params.get('modo');
+      if (modo === 'vitrine' || modo === 'public') urlMode = 'public';
+      else if (modo === 'privado' || modo === 'private') urlMode = 'private';
     }
-  } catch (e) {
-    console.warn('Erro ao ler cache local de showcase:', e);
-  }
+  } catch {}
 
-  // 2. Busca na API online com timeout de segurança (7s)
+  // 1. Tenta buscar da API online primeiro para garantir os dados mais recentes
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(`${SHOWCASE_API_URL}/${id}`, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (res.ok) {
-      const data = await res.json();
+      const data: PublicShowcaseData = await res.json();
       if (data && data.bird) {
-        // Atualiza cache local
+        if (urlMode) data.mode = urlMode;
+        // Atualiza cache local com os dados mais frescos
         localforage.setItem(`@mura-manager:showcase:${id}`, data).catch(() => {});
         return data;
       }
     }
   } catch (err) {
-    console.error('Erro ao buscar showcase online:', err);
+    console.warn('Busca online falhou ou timeout, tentando cache local:', err);
+  }
+
+  // 2. Fallback: Lê do cache local (offline ou se a rede falhar)
+  try {
+    const cached = await localforage.getItem<PublicShowcaseData>(`@mura-manager:showcase:${id}`);
+    if (cached && cached.bird) {
+      if (urlMode) cached.mode = urlMode;
+      return cached;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler cache local de showcase:', e);
   }
 
   return null;

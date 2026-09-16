@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Share2, Copy, Check, Lock, Globe, 
@@ -26,7 +26,7 @@ export function ShareBirdModal({
   onClose
 }: ShareBirdModalProps) {
   const { 
-    farmSettings, vitrineBirds, isVitrineUnlocked, birds, showToast,
+    farmSettings, vitrineBirds, birds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
   } = useAppContext();
   const { trialInfo, isAdmin } = useAuth();
@@ -41,6 +41,18 @@ export function ShareBirdModal({
   const [copied, setCopied] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
+  // Obtém todas as outras aves disponíveis no criatório para compor a vitrine
+  const availableVitrineBirds = useMemo(() => {
+    // 1. Aves marcadas explicitamente na vitrine (exceto a ave atual)
+    const marked = (vitrineBirds || []).filter(b => b && b.id !== bird.id);
+    if (marked.length > 0) return marked;
+
+    // 2. Se nenhuma foi marcada ainda na aba vitrine, inclui as outras aves ativas do criatório
+    return (birds || []).filter(
+      b => b && b.id !== bird.id && b.status !== 'Vendido' && b.status !== 'Baixa' && b.status !== 'Morto'
+    );
+  }, [vitrineBirds, birds, bird.id]);
+
   // Gera a publicação e o link público ao abrir o modal ou mudar o modo
   useEffect(() => {
     let isMounted = true;
@@ -54,7 +66,18 @@ export function ShareBirdModal({
       setIsPublishing(true);
       try {
         const otherVitrineBirds = mode === 'public'
-          ? vitrineBirds.filter(b => b.id !== bird.id)
+          ? availableVitrineBirds.map(b => ({
+              id: b.id,
+              anilha: b.anilha,
+              nome: b.nome || '',
+              raca: b.raca || '',
+              sexo: b.sexo || '',
+              status: b.status || 'Disponível',
+              imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
+              imagens: b.imagens && b.imagens.length > 0 ? [b.imagens[0]] : (b.imagem ? [b.imagem] : []),
+              vitrinePrice: b.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
+              vitrineStatus: b.vitrineStatus || 'Disponível'
+            }))
           : [];
 
         const url = await publishShowcase({
@@ -93,7 +116,7 @@ export function ShareBirdModal({
 
     initShare();
     return () => { isMounted = false; };
-  }, [bird, pai, mae, inbreeding, mode, vitrineBirds, farmSettings, isBlockedByTrial, registerBirdShare]);
+  }, [bird, pai, mae, inbreeding, mode, availableVitrineBirds, farmSettings, isBlockedByTrial, registerBirdShare]);
 
   const qrCodeUrl = shareUrl ? generateQrCodeUrl(shareUrl, 320) : '';
 
@@ -121,11 +144,15 @@ export function ShareBirdModal({
     if (!shareUrl) return;
     triggerLight();
     const criatorio = farmSettings?.name || 'Mura Manager';
+    const vitrineNotice = mode === 'public' && availableVitrineBirds.length > 0
+      ? `\n🏪 *Veja também nossa vitrine com mais ${availableVitrineBirds.length} aves disponíveis no link!*`
+      : '';
     const text = `🐔 *Ficha Técnica da Ave - ${bird.anilha}*\n` +
       `*Nome:* ${bird.nome || 'Sem Nome'}\n` +
       `*Raça:* ${bird.raca}\n` +
       (bird.peso ? `*Peso:* ${bird.peso}\n` : '') +
-      `*Criatório:* ${criatorio}\n\n` +
+      `*Criatório:* ${criatorio}` +
+      vitrineNotice + `\n\n` +
       `👉 *Acesse a ficha interativa com fotos e pedigree:* \n${shareUrl}`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
@@ -273,18 +300,25 @@ export function ShareBirdModal({
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <Globe size={14} className={mode === 'public' ? 'text-emerald-400' : ''} />
                   <span>Vitrine Pública</span>
+                  {availableVitrineBirds.length > 0 && (
+                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/25 text-emerald-300 font-black">
+                      +{availableVitrineBirds.length} aves
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-zinc-400 mt-1 leading-tight">
-                  Mostra esta ave e também as <b>outras aves liberadas na sua vitrine</b>.
+                  Mostra esta ave e o cliente pode ver a <b>vitrine do seu criatório ({availableVitrineBirds.length} outras aves)</b>.
                 </p>
               </button>
             </div>
 
-            {mode === 'public' && !isVitrineUnlocked && (
-              <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-amber-300 flex items-center gap-2">
-                <Sparkles size={14} className="shrink-0 text-amber-400" />
+            {mode === 'public' && (
+              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-[11px] text-emerald-300 flex items-center gap-2">
+                <Sparkles size={14} className="shrink-0 text-emerald-400" />
                 <span>
-                  Sua vitrine completa tem {birds.length}/10 aves. A partir de 10 aves, suas outras aves aparecem na galeria pública!
+                  {availableVitrineBirds.length > 0 
+                    ? `O cliente verá um botão em destaque para ver as outras ${availableVitrineBirds.length} aves da sua vitrine!`
+                    : 'Modo vitrine ativo! Ao adicionar mais aves no seu plantel, elas estarão visíveis na vitrine.'}
                 </span>
               </div>
             )}
