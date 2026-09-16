@@ -5,6 +5,7 @@ import {
   Loader2, Sparkles, Send, ExternalLink, FileText 
 } from 'lucide-react';
 import { useAppContext, type Bird } from '../../lib/AppContext';
+import { useAuth } from '../../lib/AuthContext';
 import { publishShowcase, generateQrCodeUrl } from '../../lib/showcaseShare';
 import { generateBirdPdf, sharePdfFile } from '../../lib/pdfGenerator';
 import { useHaptics } from '../../hooks/useHaptics';
@@ -24,12 +25,19 @@ export function ShareBirdModal({
   inbreeding = 0,
   onClose
 }: ShareBirdModalProps) {
-  const { farmSettings, vitrineBirds, isVitrineUnlocked, birds, showToast } = useAppContext();
-  const { triggerLight, triggerSuccess } = useHaptics();
+  const { 
+    farmSettings, vitrineBirds, isVitrineUnlocked, birds, showToast,
+    canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
+  } = useAppContext();
+  const { trialInfo, isAdmin } = useAuth();
+  const { triggerLight, triggerSuccess, triggerWarning } = useHaptics();
+
+  const isTrialUser = Boolean(trialInfo?.isTrial && !trialInfo?.isPaid && !isAdmin);
+  const isBlockedByTrial = isTrialUser && !canShareBird(bird.id);
 
   const [mode, setMode] = useState<'private' | 'public'>('public');
   const [shareUrl, setShareUrl] = useState<string>('');
-  const [isPublishing, setIsPublishing] = useState<boolean>(true);
+  const [isPublishing, setIsPublishing] = useState<boolean>(!isBlockedByTrial);
   const [copied, setCopied] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
@@ -37,6 +45,12 @@ export function ShareBirdModal({
   useEffect(() => {
     let isMounted = true;
     async function initShare() {
+      if (isBlockedByTrial) {
+        setIsPublishing(false);
+        setShareUrl('');
+        return;
+      }
+
       setIsPublishing(true);
       try {
         const otherVitrineBirds = mode === 'public'
@@ -65,6 +79,8 @@ export function ShareBirdModal({
 
         if (isMounted) {
           setShareUrl(url);
+          // Registra compartilhamento no período de teste
+          await registerBirdShare(bird.id);
         }
       } catch (err) {
         console.error('Erro ao gerar link de compartilhamento:', err);
@@ -77,7 +93,7 @@ export function ShareBirdModal({
 
     initShare();
     return () => { isMounted = false; };
-  }, [bird, pai, mae, inbreeding, mode, vitrineBirds, farmSettings]);
+  }, [bird, pai, mae, inbreeding, mode, vitrineBirds, farmSettings, isBlockedByTrial, registerBirdShare]);
 
   const qrCodeUrl = shareUrl ? generateQrCodeUrl(shareUrl, 320) : '';
 
@@ -95,6 +111,13 @@ export function ShareBirdModal({
   };
 
   const handleShareWhatsApp = () => {
+    if (isBlockedByTrial) {
+      triggerWarning();
+      showToast('Limite de 5 fichas do teste atingido. Assine o Plano PRO para liberar!', 'warning');
+      onClose();
+      openUpgradeModal('yearly');
+      return;
+    }
     if (!shareUrl) return;
     triggerLight();
     const criatorio = farmSettings?.name || 'Mura Manager';
@@ -159,9 +182,30 @@ export function ShareBirdModal({
 
         {/* Content */}
         <div 
-          className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-5 flex-1 touch-pan-y"
+          className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-4 flex-1 touch-pan-y"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
+          {/* Trial Share Counter Badge */}
+          {isTrialUser && (
+            <div className={`p-3 rounded-2xl border flex items-center justify-between gap-2 text-xs animate-fade-in ${
+              isBlockedByTrial 
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' 
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className={isBlockedByTrial ? 'text-rose-400' : 'text-amber-400'} />
+                <span className="font-bold">
+                  {isBlockedByTrial ? 'Limite do teste atingido' : 'Fichas do Período de Teste'}
+                </span>
+              </div>
+              <span className={`font-mono font-black px-2.5 py-0.5 rounded-full text-[11px] ${
+                isBlockedByTrial ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+              }`}>
+                {trialSharesCount}/{maxTrialShares} utilizadas
+              </span>
+            </div>
+          )}
+
           {/* Bird Summary Card */}
           <div className="flex items-center gap-3 p-3 bg-theme-base/60 border border-theme-border/70 rounded-xl">
             <div className="w-14 h-14 rounded-lg bg-theme-surface overflow-hidden border border-theme-border shrink-0">
@@ -246,53 +290,92 @@ export function ShareBirdModal({
             )}
           </div>
 
-          {/* QR Code Preview & Direct Link */}
-          <div className="p-4 bg-theme-base/50 border border-theme-border rounded-2xl flex flex-col items-center gap-3 text-center">
-            {isPublishing ? (
-              <div className="w-36 h-36 flex flex-col items-center justify-center gap-2 text-theme-text-muted">
-                <Loader2 size={24} className="animate-spin text-theme-primary" />
-                <span className="text-[11px]">Gerando ficha...</span>
+          {/* Se atingiu o limite do teste: Card de Upgrade PRO */}
+          {isBlockedByTrial ? (
+            <div className="p-5 bg-gradient-to-br from-amber-500/15 via-theme-base/80 to-theme-base border-2 border-amber-500/40 rounded-2xl text-center space-y-3.5 animate-scale-up shadow-xl shadow-amber-500/10">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center border border-amber-500/30">
+                <Lock size={22} />
               </div>
-            ) : qrCodeUrl ? (
-              <div className="p-2 bg-[#121214] border-2 border-amber-500/40 rounded-xl shadow-xl shadow-amber-500/10">
-                <img src={qrCodeUrl} alt="QR Code da Ave" className="w-32 h-32 rounded-lg" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-black text-white">Limite de 5 Fichas Gratuitas Atingido</h4>
+                <p className="text-xs text-theme-text-muted leading-relaxed max-w-sm mx-auto">
+                  Você já compartilhou 5 fichas no período de testes. Assine o <strong>Plano PRO</strong> para compartilhar sem limites, exibir sua vitrine completa e alavancar suas vendas!
+                </p>
               </div>
-            ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  openUpgradeModal('yearly');
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer active:scale-95 transition-all"
+              >
+                <Sparkles size={16} />
+                <span>Desbloquear Compartilhamento Ilimitado (Plano PRO)</span>
+              </button>
+            </div>
+          ) : (
+            /* QR Code Preview & Direct Link */
+            <div className="p-4 bg-theme-base/50 border border-theme-border rounded-2xl flex flex-col items-center gap-3 text-center">
+              {isPublishing ? (
+                <div className="w-36 h-36 flex flex-col items-center justify-center gap-2 text-theme-text-muted">
+                  <Loader2 size={24} className="animate-spin text-theme-primary" />
+                  <span className="text-[11px]">Gerando ficha...</span>
+                </div>
+              ) : qrCodeUrl ? (
+                <div className="p-2 bg-[#121214] border-2 border-amber-500/40 rounded-xl shadow-xl shadow-amber-500/10">
+                  <img src={qrCodeUrl} alt="QR Code da Ave" className="w-32 h-32 rounded-lg" />
+                </div>
+              ) : null}
 
-            <div className="w-full space-y-1.5">
-              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
-                Link da Ficha Interativa:
-              </span>
-              <div className="flex items-center gap-1.5 bg-theme-surface border border-theme-border rounded-xl p-1.5 pr-2">
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={shareUrl || 'Carregando link...'} 
-                  className="bg-transparent text-xs text-zinc-300 flex-1 px-2 outline-none truncate font-mono select-all"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  disabled={isPublishing || !shareUrl}
-                  className="px-3 py-1.5 rounded-lg bg-theme-primary hover:bg-orange-500 text-black font-black text-xs flex items-center gap-1 active:scale-95 transition-all shrink-0 cursor-pointer disabled:opacity-50"
-                >
-                  {copied ? <Check size={13} /> : <Copy size={13} />}
-                  <span>{copied ? 'Copiado' : 'Copiar'}</span>
-                </button>
+              <div className="w-full space-y-1.5">
+                <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">
+                  Link da Ficha Interativa:
+                </span>
+                <div className="flex items-center gap-1.5 bg-theme-surface border border-theme-border rounded-xl p-1.5 pr-2">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={shareUrl || 'Carregando link...'} 
+                    className="bg-transparent text-xs text-zinc-300 flex-1 px-2 outline-none truncate font-mono select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    disabled={isPublishing || !shareUrl}
+                    className="px-3 py-1.5 rounded-lg bg-theme-primary hover:bg-orange-500 text-black font-black text-xs flex items-center gap-1 active:scale-95 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copied ? 'Copiado' : 'Copiar'}</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="space-y-2 pt-1">
             <button
               type="button"
               onClick={handleShareWhatsApp}
-              disabled={isPublishing || !shareUrl}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+              disabled={!isBlockedByTrial && (isPublishing || !shareUrl)}
+              className={`w-full py-3.5 px-4 rounded-xl text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 ${
+                isBlockedByTrial
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/20'
+                  : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-emerald-600/25'
+              }`}
             >
-              <Send size={16} />
-              <span>Enviar Ficha no WhatsApp</span>
+              {isBlockedByTrial ? (
+                <>
+                  <Sparkles size={16} />
+                  <span>Liberar Compartilhamento no Plano PRO</span>
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  <span>Enviar Ficha no WhatsApp</span>
+                </>
+              )}
             </button>
 
             <div className="grid grid-cols-2 gap-2">
@@ -301,7 +384,7 @@ export function ShareBirdModal({
                 onClick={() => {
                   if (shareUrl) window.open(shareUrl, '_blank');
                 }}
-                disabled={isPublishing || !shareUrl}
+                disabled={isBlockedByTrial || isPublishing || !shareUrl}
                 className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <ExternalLink size={14} />

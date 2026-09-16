@@ -49,12 +49,14 @@ export function sanitizeAdminUser(u: any): any {
   };
 }
 
+export type SubscriptionPlan = 'monthly' | 'pro_monthly' | 'yearly';
+
 export type TrialInfo = {
   isTrial: boolean;
   isPaid?: boolean;
   remainingDays: number;
   expiresAt: string | null;
-  planType?: 'trial' | 'monthly' | 'yearly';
+  planType?: 'trial' | SubscriptionPlan;
 };
 
 type AuthContextType = {
@@ -73,8 +75,8 @@ type AuthContextType = {
   sendPasswordReset: (identifier: string) => Promise<{ error: any; email?: string }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
   linkCpfToUser: (cpfInput: string) => Promise<{ error: any }>;
-  activateSubscription: (plan: 'monthly' | 'yearly') => Promise<{ error: any }>;
-  triggerWebhookPayment: (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => Promise<{ error: any }>;
+  activateSubscription: (plan: SubscriptionPlan) => Promise<{ error: any }>;
+  triggerWebhookPayment: (plan: SubscriptionPlan, targetEmailOrCpf?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 };
 
@@ -806,7 +808,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return '';
   };
 
-  const activateSubscription = async (plan: 'monthly' | 'yearly') => {
+  const activateSubscription = async (plan: SubscriptionPlan) => {
     if (!user) return { error: { message: 'Usuário não autenticado.' } };
 
     const days = plan === 'yearly' ? 365 : 30;
@@ -903,7 +905,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const triggerWebhookPayment = async (plan: 'monthly' | 'yearly', targetEmailOrCpf?: string) => {
+  const triggerWebhookPayment = async (plan: SubscriptionPlan, targetEmailOrCpf?: string) => {
     const emailToUse = targetEmailOrCpf || user?.email;
     const cleanCpfToUse = targetEmailOrCpf?.replace(/\D/g, '') || getCpf();
     if (!emailToUse && !cleanCpfToUse) return { error: { message: 'Identificador do usuário não encontrado.' } };

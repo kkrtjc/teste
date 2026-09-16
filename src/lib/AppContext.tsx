@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback, u
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import localforage from 'localforage';
-import { useAuth, isUserAdmin, ADMIN_CANONICAL_ID } from './AuthContext';
+import { useAuth, isUserAdmin, ADMIN_CANONICAL_ID, type SubscriptionPlan } from './AuthContext';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
@@ -236,6 +236,17 @@ type AppContextType = {
   startTour?: () => void;
   closeTour?: () => void;
   finishTour?: () => void;
+
+  // Limite de Compartilhamento no Período de Teste & Upgrade Modal
+  trialSharedBirdIds: string[];
+  trialSharesCount: number;
+  maxTrialShares: number;
+  canShareBird: (birdId: string) => boolean;
+  registerBirdShare: (birdId: string) => Promise<boolean>;
+  isUpgradeModalOpen: boolean;
+  selectedUpgradePlan: SubscriptionPlan;
+  openUpgradeModal: (initialPlan?: SubscriptionPlan) => void;
+  closeUpgradeModal: () => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -328,13 +339,71 @@ export const DEFAULT_BREEDS: Breed[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user, cpf, isAdmin: isAuthAdmin } = useAuth();
+  const { user, cpf, isAdmin: isAuthAdmin, trialInfo } = useAuth();
   const isCurrentUserAdmin = Boolean(
     isAuthAdmin ||
     (user && isUserAdmin(user.email)) ||
     (user && isUserAdmin(user.id)) ||
     isUserAdmin(cpf)
   );
+
+  // ── Limite de Compartilhamento no Período de Teste (Máximo 5 fichas) ──
+  const [trialSharedBirdIds, setTrialSharedBirdIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTrialShares() {
+      const userKey = user?.id || cpf || 'local';
+      try {
+        const stored = await localforage.getItem<string[]>(`@mura-manager:trial-shared-birds:${userKey}`);
+        if (isMounted && stored && Array.isArray(stored)) {
+          setTrialSharedBirdIds(stored);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar trial-shared-birds:', err);
+      }
+    }
+    loadTrialShares();
+    return () => { isMounted = false; };
+  }, [user?.id, cpf]);
+
+  const maxTrialShares = 5;
+  const trialSharesCount = trialSharedBirdIds.length;
+
+  const canShareBird = useCallback((birdId: string): boolean => {
+    if (isCurrentUserAdmin || trialInfo?.isPaid || !trialInfo?.isTrial) return true;
+    if (trialSharedBirdIds.includes(birdId)) return true;
+    return trialSharedBirdIds.length < maxTrialShares;
+  }, [isCurrentUserAdmin, trialInfo?.isPaid, trialInfo?.isTrial, trialSharedBirdIds, maxTrialShares]);
+
+  const registerBirdShare = useCallback(async (birdId: string): Promise<boolean> => {
+    if (isCurrentUserAdmin || trialInfo?.isPaid || !trialInfo?.isTrial) return true;
+    if (trialSharedBirdIds.includes(birdId)) return true;
+    if (trialSharedBirdIds.length >= maxTrialShares) return false;
+
+    const updated = [...trialSharedBirdIds, birdId];
+    setTrialSharedBirdIds(updated);
+    const userKey = user?.id || cpf || 'local';
+    try {
+      await localforage.setItem(`@mura-manager:trial-shared-birds:${userKey}`, updated);
+    } catch (err) {
+      console.error('Erro ao salvar trial-shared-birds:', err);
+    }
+    return true;
+  }, [isCurrentUserAdmin, trialInfo?.isPaid, trialInfo?.isTrial, trialSharedBirdIds, maxTrialShares, user?.id, cpf]);
+
+  // ── Controle do Modal Global de Upgrade (3 Planos) ──
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<SubscriptionPlan>('yearly');
+
+  const openUpgradeModal = useCallback((initialPlan: SubscriptionPlan = 'yearly') => {
+    setSelectedUpgradePlan(initialPlan);
+    setIsUpgradeModalOpen(true);
+  }, []);
+
+  const closeUpgradeModal = useCallback(() => {
+    setIsUpgradeModalOpen(false);
+  }, []);
 
   const getStorageKey = useCallback((keyName: string) => {
     if (isCurrentUserAdmin) {
@@ -2513,12 +2582,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isVitrineUnlocked, vitrineBirds, toggleBirdVitrine,
     isTourOpen, isProfileSetupOpen,
     startTour, closeTour, finishTour,
-    openProfileSetup, closeProfileSetup, finishProfileSetup
+    openProfileSetup, closeProfileSetup, finishProfileSetup,
+    trialSharedBirdIds, trialSharesCount, maxTrialShares,
+    canShareBird, registerBirdShare,
+    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
   }), [
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
     isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen,
-    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine
+    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine,
+    trialSharedBirdIds, trialSharesCount, maxTrialShares,
+    canShareBird, registerBirdShare,
+    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
   ]);
 
   return (

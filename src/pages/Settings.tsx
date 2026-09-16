@@ -7,7 +7,7 @@ import {
   Smartphone, Zap, CreditCard, QrCode
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth, type TrialInfo } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -35,7 +35,7 @@ function TrialCountdownTimer({
   onOpenPaymentModal,
   isAdmin 
 }: { 
-  trialInfo: { isTrial: boolean; isPaid?: boolean; remainingDays: number; expiresAt: string | null; planType?: 'trial' | 'monthly' | 'yearly' };
+  trialInfo: TrialInfo;
   onOpenPaymentModal: () => void;
   isAdmin?: boolean;
 }) {
