@@ -66,12 +66,16 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[92dvh] animate-scale-up relative"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/70">
@@ -93,7 +97,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
           {/* Card Resumo da Ave */}
           <div className="flex items-center gap-3 p-3 bg-theme-base/60 border border-theme-border rounded-xl">
             <div className="w-12 h-12 rounded-lg bg-theme-surface overflow-hidden border border-theme-border shrink-0 flex items-center justify-center">

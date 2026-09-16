@@ -186,12 +186,16 @@ export function ShareBirdModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in overscroll-contain"
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92dvh] animate-scale-up relative"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/60 shrink-0">
@@ -209,7 +213,7 @@ export function ShareBirdModal({
 
         {/* Content */}
         <div 
-          className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-4 flex-1 touch-pan-y"
+          className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {/* Trial Share Counter Badge */}

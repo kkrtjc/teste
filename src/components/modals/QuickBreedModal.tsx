@@ -89,12 +89,16 @@ export function QuickBreedModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden animate-fade-in"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <h3 className="font-black text-lg text-white flex items-center gap-2">
@@ -104,13 +108,13 @@ export function QuickBreedModal({
           <button 
             type="button" 
             onClick={onClose} 
-            className="text-theme-text-muted hover:text-white transition-colors"
+            className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
           <div className="space-y-1">
             <label className={labelCls}>Nome da Raça *</label>
             <input

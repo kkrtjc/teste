@@ -180,9 +180,11 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
       onClick={onClose}
-      onTouchMove={e => e.preventDefault()}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" 
@@ -197,12 +199,12 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
             </h3>
             <p className="text-[11px] text-theme-text-muted mt-0.5">Cadastre uma baia para controle diário de ovos</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-theme-text-muted hover:text-white rounded-lg transition-colors">
+          <button onClick={onClose} className="p-1.5 text-theme-text-muted hover:text-white rounded-lg transition-colors cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
-        <div className="overflow-y-auto smooth-scroll flex-1 p-5 space-y-4 text-xs modal-scrollable-content overscroll-contain touch-pan-y">
+        <div className="overflow-y-auto smooth-scroll flex-1 min-h-0 p-5 space-y-4 text-xs modal-scrollable-content overscroll-contain touch-pan-y">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 font-bold">
               <AlertCircle size={14} />
@@ -630,8 +632,18 @@ function RegisterDaySheet({
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors";
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" 
+      onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
+      <div 
+        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" 
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         <div className="px-5 pt-4 pb-3 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <h3 className="font-black text-white text-sm flex items-center gap-2">
@@ -640,12 +652,12 @@ function RegisterDaySheet({
             </h3>
             <p className="text-[11px] text-theme-text-muted mt-0.5">Baia {lot.baia}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-theme-text-muted hover:text-white rounded-lg transition-colors">
+          <button onClick={onClose} className="p-1.5 text-theme-text-muted hover:text-white rounded-lg transition-colors cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
-        <div className="overflow-y-auto smooth-scroll flex-1 p-5 space-y-4">
+        <div className="overflow-y-auto smooth-scroll flex-1 min-h-0 p-5 space-y-4 modal-scrollable-content touch-pan-y">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400 font-bold">
               <AlertCircle size={14} />

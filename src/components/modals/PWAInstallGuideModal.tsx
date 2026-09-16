@@ -57,10 +57,17 @@ export function PWAInstallGuideModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
       <div 
         className="w-full max-w-lg bg-[#0f0f14] border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         {/* Cabeçalho do Modal */}
         <div className="relative p-5 sm:p-6 bg-gradient-to-b from-amber-500/15 via-amber-500/5 to-transparent border-b border-white/5 flex items-start justify-between">
@@ -87,7 +94,7 @@ export function PWAInstallGuideModal({
 
           <button
             onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
             title="Fechar"
           >
             <X size={20} />
@@ -124,7 +131,7 @@ export function PWAInstallGuideModal({
         </div>
 
         {/* Conteúdo com Scroll Suave */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-sm flex-1 custom-scrollbar">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-sm flex-1 min-h-0 modal-scrollable-content touch-pan-y custom-scrollbar">
           {activeTab === 'ios' ? (
             <div className="space-y-4">
               {/* Seletor rápido de navegador no iPhone */}

@@ -261,25 +261,15 @@ export function BirdProfileModal() {
 
   const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    const target = e.target as HTMLElement | null;
-    const scrollContainer = target?.closest('.modal-scrollable-content') as HTMLElement | null;
-
-    if (!scrollContainer) {
-      if (e.cancelable) e.preventDefault();
-      return;
-    }
-
-    const hasScroll = scrollContainer.scrollHeight > scrollContainer.clientHeight;
-    if (!hasScroll) {
-      if (e.cancelable) e.preventDefault();
-    }
   };
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
       onClick={closeModals}
-      onTouchMove={e => e.preventDefault()}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up relative" 
@@ -346,7 +336,7 @@ export function BirdProfileModal() {
           </div>
         </div>
         
-        <div ref={modalScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden modal-scrollable-content overscroll-contain touch-pan-y">
+        <div ref={modalScrollRef} className="flex-1 min-h-0 overflow-y-auto smooth-scroll overflow-x-hidden modal-scrollable-content overscroll-contain touch-pan-y">
           {/* Cover / Header section with Carousel */}
           <div className="relative h-64 bg-theme-base select-none">
             {images.length > 0 ? (
@@ -833,8 +823,18 @@ export function BirdProfileModal() {
 
         {/* ── MODAL FLUTUANTE DE SELEÇÃO E CONFIRMAÇÃO DE VÍNCULO DIRETO ── */}
         {linkingTarget && (
-          <div className="absolute inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 animate-fade-in">
-            <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up">
+          <div 
+            className="absolute inset-0 z-[150] flex items-center justify-center p-4 bg-black/90 animate-fade-in"
+            onClick={() => { setLinkingTarget(null); setConfirmingCandidate(null); }}
+            onTouchMove={e => {
+              if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+            }}
+          >
+            <div 
+              className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] animate-scale-up"
+              onClick={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
+            >
               
               {/* Header do Seletor */}
               <div className="p-4 border-b border-theme-border flex items-center justify-between bg-theme-base/60">
@@ -846,7 +846,7 @@ export function BirdProfileModal() {
                 </div>
                 <button 
                   onClick={() => { setLinkingTarget(null); setConfirmingCandidate(null); }}
-                  className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                  className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -873,7 +873,7 @@ export function BirdProfileModal() {
               </div>
 
               {/* Conteúdo da Tab */}
-              <div className="p-4 flex-1 overflow-y-auto space-y-3">
+              <div className="p-4 flex-1 min-h-0 overflow-y-auto space-y-3 modal-scrollable-content touch-pan-y">
                 {!isExternalTab ? (
                   <>
                     {/* Barra de pesquisa de aves */}
@@ -889,7 +889,7 @@ export function BirdProfileModal() {
                     </div>
 
                     {/* Lista de Aves Candidatas */}
-                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 smooth-scroll">
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 smooth-scroll modal-scrollable-content touch-pan-y">
                       {(() => {
                         const candidates = birds.filter(b => {
                           if (b.id === linkingTarget.targetBirdId) return false;

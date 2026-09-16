@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, X, Plus, History, TrendingDown, TrendingUp, CheckCircle, Trash2, Search, Check } from 'lucide-react';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -324,8 +324,18 @@ export function LotMovementModal({
   return (
     <>
       {createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-          <div className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up my-auto max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto" 
+          onClick={onClose}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up my-auto max-h-[90vh] flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-theme-border pb-4">
               <div>
@@ -340,7 +350,7 @@ export function LotMovementModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-full text-theme-text-muted hover:text-white transition-colors"
+                className="p-2 hover:bg-white/10 rounded-full text-theme-text-muted hover:text-white transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -371,7 +381,7 @@ export function LotMovementModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 modal-scrollable-content touch-pan-y">
               {activeSubTab === 'novo' ? (
                 <form onSubmit={handleSaveMovement} className="space-y-4">
                   {/* Toggle Tipo */}

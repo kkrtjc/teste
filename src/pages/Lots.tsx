@@ -1878,9 +1878,11 @@ export function Lots() {
       {/* ── MODAL POSTURA ── */}
       {showPostura && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
           onClick={resetPostura}
-          onTouchMove={e => e.preventDefault()}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
         >
           <div 
             className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
@@ -1890,10 +1892,10 @@ export function Lots() {
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Egg className="text-theme-primary" size={20} />Novo Lote de Postura</h3>
-              <button type="button" onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
+              <button type="button" onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSavePosturaSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
+            <form onSubmit={handleSavePosturaSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -2010,9 +2012,11 @@ export function Lots() {
       {/* ── MODAL ENGORDA ── */}
       {showEngorda && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
           onClick={resetEngorda}
-          onTouchMove={e => e.preventDefault()}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
         >
           <div 
             className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
@@ -2022,10 +2026,10 @@ export function Lots() {
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Beef className="text-theme-primary" size={20} />Novo Lote de Engorda</h3>
-              <button type="button" onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
+              <button type="button" onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSaveEngordaSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
+            <form onSubmit={handleSaveEngordaSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -2258,9 +2262,11 @@ export function Lots() {
       {/* ── MODAL PINTINHOS ── */}
       {showPintinhos && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
           onClick={resetPintinhos}
-          onTouchMove={e => e.preventDefault()}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
         >
           <div 
             className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
@@ -2270,10 +2276,10 @@ export function Lots() {
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Baby className="text-theme-primary" size={20} />Novo Lote de Pintinhos</h3>
-              <button type="button" onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
+              <button type="button" onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSavePintinhosSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
+            <form onSubmit={handleSavePintinhosSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -2350,9 +2356,11 @@ export function Lots() {
       {/* ── MODAL CRESCIMENTO ── */}
       {showCrescimento && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
           onClick={resetCrescimento}
-          onTouchMove={e => e.preventDefault()}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
         >
           <div 
             className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
@@ -2362,10 +2370,10 @@ export function Lots() {
             <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
             <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Timer className="text-theme-primary" size={20} />Novo Lote de Crescimento</h3>
-              <button type="button" onClick={resetCrescimento} className="text-theme-text-muted hover:text-white transition-colors"><X size={20} /></button>
+              <button type="button" onClick={resetCrescimento} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSaveCrescimentoSubmit} className="flex flex-col overflow-hidden flex-1 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
+            <form onSubmit={handleSaveCrescimentoSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">

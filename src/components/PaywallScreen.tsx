@@ -64,7 +64,7 @@ export function PaywallScreen() {
 
       {/* CARD PRINCIPAL */}
       <div 
-        className="w-full max-w-2xl bg-theme-surface border-2 border-theme-border/80 rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between max-h-[96vh] relative z-10 animate-scale-up overflow-y-auto"
+        className="w-full max-w-2xl bg-theme-surface border-2 border-theme-border/80 rounded-3xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between max-h-[96vh] relative z-10 animate-scale-up overflow-y-auto modal-scrollable-content touch-pan-y"
         onTouchMove={e => e.stopPropagation()}
       >
         

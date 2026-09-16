@@ -719,10 +719,15 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
     const handleGlobalTouchMove = (e: TouchEvent) => {
       const target = e.target as HTMLElement | null;
-      const scrollableContent = target?.closest('.modal-scrollable-content');
-      if (!scrollableContent) {
-        if (e.cancelable) e.preventDefault();
-      }
+      if (!target) return;
+
+      // Permite rolagem livre dentro de qualquer modal, overlay, formulário ou elemento rolável
+      const isInteractiveOrModal = target.closest(
+        '.modal-scrollable-content, .overflow-y-auto, .overflow-auto, [role="dialog"], .fixed, form, input, select, textarea, button'
+      );
+      if (isInteractiveOrModal) return;
+
+      if (e.cancelable) e.preventDefault();
     };
 
     window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
@@ -952,8 +957,18 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in">
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in"
+          onClick={() => setIsAdminModalOpen(false)}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up"
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="p-5 border-b border-theme-border flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -962,14 +977,14 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
               </div>
               <button 
                 onClick={() => setIsAdminModalOpen(false)}
-                className="text-theme-text-muted hover:text-white transition-colors"
+                className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
             
             {/* Content */}
-            <div className="p-5 overflow-y-auto space-y-5 flex-1">
+            <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
               <p className="text-xs text-theme-text-muted leading-relaxed">
                 Cadastre novos clientes autorizados, defina o prazo de vencimento da mensalidade e receba alertas automáticos de vencimento.
               </p>

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Scale, Plus, History, Check, Trash2, X } from 'lucide-react';
 import { useAppContext, type MeatLot, type WeightRecord } from '../../lib/AppContext';
@@ -80,12 +80,16 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden select-none animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden animate-fade-in"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
@@ -106,7 +110,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+        <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
           {/* Formulário de Nova Pesagem */}
           <form onSubmit={handleSaveWeightRecord} className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-4 space-y-3">
             <p className="text-xs font-black text-white flex items-center gap-1.5">
@@ -175,7 +179,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
                 Nenhuma pesagem manual registrada ainda. Registre acima para acompanhar o ganho real do lote.
               </div>
             ) : (
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-1 modal-scrollable-content touch-pan-y">
                 {[...currentPesagens]
                   .sort((a, b) => b.data.localeCompare(a.data))
                   .map((p, idx, arr) => {

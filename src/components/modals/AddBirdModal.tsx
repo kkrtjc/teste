@@ -46,21 +46,31 @@ function BirdDetailOverlay({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+    <div 
+      className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl"
+      onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
+      <div 
+        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in"
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
           <p className="font-black text-white text-sm flex items-center gap-2">
             <Eye size={14} className="text-theme-primary" />
             Detalhes da Ave
           </p>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/15 transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/15 transition-colors cursor-pointer">
             <X size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto modal-scrollable-content touch-pan-y">
           {/* Foto + info principal */}
           <div className="flex items-center gap-3">
             {(bird.imagem || bird.imagens?.[0]) ? (
@@ -135,19 +145,29 @@ function BaiaDetailOverlay({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl">
-      <div className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in">
+    <div 
+      className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 animate-fade-in rounded-2xl"
+      onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
+      <div 
+        className="bg-theme-surface border border-theme-border rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden animate-fade-in"
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border bg-theme-base/60">
           <p className="font-black text-white text-sm flex items-center gap-2">
             <Home size={14} className="text-amber-400" />
             Baia {baia} — {avesNaBaia.length} ave(s)
           </p>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
             <X size={16} />
           </button>
         </div>
 
-        <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+        <div className="p-4 space-y-2 max-h-64 overflow-y-auto modal-scrollable-content touch-pan-y">
           {avesNaBaia.map(b => (
             <div key={b.id} className="flex items-center gap-3 bg-theme-base rounded-xl px-3 py-2.5 border border-theme-border/50">
               {(b.imagem || b.imagens?.[0]) ? (
@@ -983,25 +1003,15 @@ export function AddBirdModal() {
 
   const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    const target = e.target as HTMLElement | null;
-    const scrollContainer = target?.closest('.modal-scrollable-content') as HTMLElement | null;
-
-    if (!scrollContainer) {
-      if (e.cancelable) e.preventDefault();
-      return;
-    }
-
-    const hasScroll = scrollContainer.scrollHeight > scrollContainer.clientHeight;
-    if (!hasScroll) {
-      if (e.cancelable) e.preventDefault();
-    }
   };
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
       onClick={closeModals}
-      onTouchMove={e => e.preventDefault()}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       {/* Container relativo para os overlays internos (travado contra rolagem horizontal/vertical da janela) */}
       <div 
@@ -1021,12 +1031,12 @@ export function AddBirdModal() {
         )}
 
         {/* Header */}
-        <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0 touch-none select-none">
+        <div className="px-5 pt-4 pb-2 border-b border-theme-border bg-theme-base/50 shrink-0 select-none">
           <div className="flex justify-between items-center mb-1">
             <h3 className="font-black text-lg text-white">
               {birdToEditId ? 'Editar Ave' : 'Nova Ave'}
             </h3>
-            <button onClick={closeModals} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors">
+            <button onClick={closeModals} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
               <X size={20} />
             </button>
           </div>
@@ -1043,7 +1053,7 @@ export function AddBirdModal() {
         </div>
 
         {/* Body – fully scrollable */}
-        <div className="flex-1 overflow-y-auto smooth-scroll p-5 overscroll-contain modal-scrollable-content touch-pan-y">
+        <div className="flex-1 min-h-0 overflow-y-auto smooth-scroll p-5 overscroll-contain modal-scrollable-content touch-pan-y">
           {renderStep()}
         </div>
 

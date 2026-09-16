@@ -98,10 +98,14 @@ export function UserProfileSetupModal({
     <div 
       className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in overflow-y-auto"
       onClick={handleDismiss}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-3xl shadow-2xl relative my-auto animate-scale-up flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         
         {/* Header Fixo */}
@@ -129,8 +133,8 @@ export function UserProfileSetupModal({
         </div>
 
         {/* Formulário com Scroll Interno Fluido */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-5 overflow-y-auto space-y-4 flex-1 overscroll-contain pr-2">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y overscroll-contain pr-2">
             
             {/* Avatar Upload */}
             <div className="flex flex-col items-center justify-center space-y-2 pb-1">

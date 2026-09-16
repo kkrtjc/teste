@@ -317,6 +317,9 @@ const BreedFormModal = memo(function BreedFormModal({
     <div 
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 animate-fade-in touch-manipulation"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-hidden animate-scale-up" 
@@ -327,10 +330,10 @@ const BreedFormModal = memo(function BreedFormModal({
           <h3 className="font-bold text-lg text-white">
             {breedToEdit ? 'Editar Raça' : 'Cadastrar Nova Raça'}
           </h3>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-white">✕</button>
+          <button onClick={onClose} className="text-theme-text-muted hover:text-white cursor-pointer">✕</button>
         </div>
         
-        <div className="p-5 space-y-5 overflow-y-auto flex-1 modal-scrollable-content overscroll-contain touch-pan-y">
+        <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
 
           {/* ── Nome + Foto em linha ── */}
           <div className="flex gap-3 items-start">
