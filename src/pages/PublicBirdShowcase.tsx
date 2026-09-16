@@ -18,14 +18,25 @@ export function PublicBirdShowcase() {
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       if (!id) return;
       setLoading(true);
-      const res = await fetchShowcase(id);
-      setData(res);
-      setLoading(false);
+      try {
+        const res = await fetchShowcase(id);
+        if (isMounted) {
+          setData(res);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados da ave:', err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }
     loadData();
+    return () => { isMounted = false; };
   }, [id]);
 
   const bird = data?.bird;

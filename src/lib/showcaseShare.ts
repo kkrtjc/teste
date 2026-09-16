@@ -42,13 +42,17 @@ export async function publishShowcase(data: PublicShowcaseData): Promise<string>
     console.warn('Erro ao salvar showcase no localforage:', e);
   }
 
-  // Tenta publicar na API online do Cloudflare Worker
+  // Tenta publicar na API online do Cloudflare Worker (com timeout de 8s)
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     await fetch(SHOWCASE_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
   } catch (err) {
     console.warn('Erro ao enviar showcase para a API online:', err);
   }
@@ -74,9 +78,12 @@ export async function fetchShowcase(id: string): Promise<PublicShowcaseData | nu
     console.warn('Erro ao ler cache local de showcase:', e);
   }
 
-  // 2. Busca na API online
+  // 2. Busca na API online com timeout de segurança (7s)
   try {
-    const res = await fetch(`${SHOWCASE_API_URL}/${id}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const res = await fetch(`${SHOWCASE_API_URL}/${id}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (res.ok) {
       const data = await res.json();
       if (data && data.bird) {

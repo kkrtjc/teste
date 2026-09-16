@@ -8,6 +8,8 @@ import { SplashScreen } from './components/SplashScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 
+import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
+
 // Code-splitting com React.lazy para carregamento instantâneo do bundle principal
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -16,7 +18,6 @@ const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds }
 const Vitrine = lazy(() => import('./pages/Vitrine').then(m => ({ default: m.Vitrine })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
-const PublicBirdShowcase = lazy(() => import('./pages/PublicBirdShowcase').then(m => ({ default: m.PublicBirdShowcase })));
 
 function AppContent() {
   const location = useLocation();
@@ -26,12 +27,10 @@ function AppContent() {
   // ── Rota Pública de Compartilhamento (Visualização da Ave / Vitrine externa sem exigir login) ──
   if (location.pathname.startsWith('/p/')) {
     return (
-      <Suspense fallback={<SplashScreen isLoading={true} />}>
-        <Routes>
-          <Route path="/p/ave/:id" element={<PublicBirdShowcase />} />
-          <Route path="/p/vitrine/:id" element={<PublicBirdShowcase />} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/p/ave/:id" element={<PublicBirdShowcase />} />
+        <Route path="/p/vitrine/:id" element={<PublicBirdShowcase />} />
+      </Routes>
     );
   }
 
