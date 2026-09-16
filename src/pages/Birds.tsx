@@ -25,7 +25,7 @@ const BreedItemCard = memo(function BreedItemCard({
   return (
     <div 
       onClick={() => onSelect(breed.nome)}
-      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
+      className="premium-card content-visibility-auto flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
     >
       {/* Image block 1:1 */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
@@ -115,7 +115,7 @@ const BirdItemCard = memo(function BirdItemCard({
   return (
     <div
       onClick={() => onSelect(bird.id)}
-      className="premium-card flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
+      className="premium-card content-visibility-auto flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
     >
       {/* Bloco da Foto 1:1 Quadrada Grande igual a de Raças */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
@@ -1233,13 +1233,13 @@ export function Birds() {
                   <div
                     key={b.id}
                     onClick={() => openBirdProfile(b.id)}
-                    className="p-4 bg-theme-surface border border-theme-border/60 hover:border-theme-primary/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all cursor-pointer group shadow-md"
+                    className="p-4 bg-theme-surface border border-theme-border/60 hover:border-theme-primary/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all cursor-pointer group shadow-md content-visibility-auto"
                   >
                     {/* Lado Esquerdo: Foto e Dados Básicos */}
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="w-12 h-12 rounded-xl bg-theme-base border border-theme-border/60 overflow-hidden shrink-0 flex items-center justify-center">
                         {b.imagem || b.imagens?.[0] ? (
-                          <img src={b.imagem || b.imagens![0]} alt={b.anilha} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          <img src={b.imagem || b.imagens![0]} alt={b.anilha} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
                           <span className="text-xl">{b.sexo === 'Macho' ? '🐓' : '🐔'}</span>
                         )}

@@ -23,6 +23,9 @@ export default defineConfig({
             if (id.includes('localforage')) {
               return 'vendor-storage';
             }
+            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('purify') || id.includes('fflate')) {
+              return 'vendor-pdf';
+            }
           }
         }
       }

@@ -2378,51 +2378,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const openAddBirdModal = (breedName?: string, birdId?: string) => {
+  const openAddBirdModal = useCallback((breedName?: string, birdId?: string) => {
     setPreSelectedBreedForNewBird(breedName || '');
     setBirdToEditId(birdId || null);
     setIsAddBirdModalOpen(true);
     setSelectedBirdProfileId(null);
-  };
+  }, []);
 
-  const openBirdProfile = (birdId: string) => {
+  const openBirdProfile = useCallback((birdId: string) => {
     setSelectedBirdProfileId(birdId);
     setIsAddBirdModalOpen(false);
-  };
+  }, []);
 
-  const closeModals = () => {
+  const closeModals = useCallback(() => {
     setIsAddBirdModalOpen(false);
     setSelectedBirdProfileId(null);
     setBirdToEditId(null);
-  };
+  }, []);
 
-  const openTutorial = () => {
+  const openTutorial = useCallback(() => {
     setIsTutorialOpen(true);
-  };
+  }, []);
 
-  const closeTutorial = () => {
+  const closeTutorial = useCallback(() => {
     setIsTutorialOpen(false);
     localforage.setItem(getStorageKey('has-seen-tutorial'), true).catch(console.error);
     localStorage.setItem('@mura-manager:has-seen-tutorial', 'true');
     if (user) {
       localStorage.setItem(`@mura-manager:${user.id}:has-seen-tutorial`, 'true');
     }
-  };
+  }, [getStorageKey, user]);
 
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
     return localStorage.getItem('@mura-manager:hasSeenTour_v1') !== 'true';
   });
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
 
-  const startTour = () => setIsTourOpen(true);
-  const closeTour = () => {
+  const startTour = useCallback(() => setIsTourOpen(true), []);
+  const closeTour = useCallback(() => {
     setIsTourOpen(false);
     localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-  };
-  const finishTour = () => {
+  }, []);
+  const finishTour = useCallback(() => {
     setIsTourOpen(false);
     localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-  };
+  }, []);
 
   const { triggerSuccess, triggerWarning, triggerError, triggerLight } = useHaptics();
 
@@ -2451,12 +2451,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 3500);
   }, [triggerSuccess, triggerWarning, triggerError, triggerLight, dismissToast]);
 
-  const openProfileSetup = () => setIsProfileSetupOpen(true);
-  const closeProfileSetup = () => setIsProfileSetupOpen(false);
-  const finishProfileSetup = () => {
+  const openProfileSetup = useCallback(() => setIsProfileSetupOpen(true), []);
+  const closeProfileSetup = useCallback(() => setIsProfileSetupOpen(false), []);
+  const finishProfileSetup = useCallback(() => {
     setIsProfileSetupOpen(false);
     localStorage.setItem('@mura-manager:hasSetupProfile_v1', 'true');
-  };
+  }, []);
 
   const recoverAllBirds = useCallback(async () => {
     const res = await deepScanAllStorage(user?.id);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
@@ -7,12 +7,14 @@ import {
   Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
   CreditCard, QrCode, Zap, Store
 } from 'lucide-react';
-import { AddBirdModal } from './modals/AddBirdModal';
-import { BirdProfileModal } from './modals/BirdProfileModal';
-import { OnboardingTour } from './modals/OnboardingTour';
-import { UserProfileSetupModal } from './modals/UserProfileSetupModal';
-import { PWAInstallGuideModal } from './modals/PWAInstallGuideModal';
 import { ConfirmDialog } from './modals/ConfirmDialog';
+
+// Code-splitting dos modais pesados para alívio de memória e boot instantâneo
+const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ default: m.AddBirdModal })));
+const BirdProfileModal = lazy(() => import('./modals/BirdProfileModal').then(m => ({ default: m.BirdProfileModal })));
+const OnboardingTour = lazy(() => import('./modals/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
+const UserProfileSetupModal = lazy(() => import('./modals/UserProfileSetupModal').then(m => ({ default: m.UserProfileSetupModal })));
+const PWAInstallGuideModal = lazy(() => import('./modals/PWAInstallGuideModal').then(m => ({ default: m.PWAInstallGuideModal })));
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -696,10 +698,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     <div className="flex items-center justify-center h-[100dvh] w-full overflow-hidden bg-[#121218] p-2.5 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] box-border">
       {/* Container Interno Protegido e Perfeitamente Centralizado */}
       <div className="flex flex-1 w-full h-full max-w-7xl rounded-2xl sm:rounded-3xl overflow-hidden bg-theme-base shadow-2xl relative min-w-0">
-        {isAddBirdModalOpen && <AddBirdModal />}
-        {selectedBirdProfileId && <BirdProfileModal />}
-        {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
-        {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
+        <Suspense fallback={null}>
+          {isAddBirdModalOpen && <AddBirdModal />}
+          {selectedBirdProfileId && <BirdProfileModal />}
+          {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
+          {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
+        </Suspense>
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
@@ -1062,10 +1066,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
       />
 
       {/* Modal Interativo de Instruções PWA */}
-      <PWAInstallGuideModal
-        isOpen={isPwaGuideOpen}
-        onClose={() => setIsPwaGuideOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <PWAInstallGuideModal
+          isOpen={isPwaGuideOpen}
+          onClose={() => setIsPwaGuideOpen(false)}
+        />
+      </Suspense>
 
       {/* Confirmação de Revogação de Acesso */}
       <ConfirmDialog

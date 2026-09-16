@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+import type { jsPDF } from 'jspdf';
 import { type Bird, type FarmSettings } from './AppContext';
 import { calculateExactAge } from './utils';
 
@@ -36,6 +36,7 @@ export async function generateBirdPdf({
   mae,
   inbreeding,
 }: BirdPdfOptions): Promise<Blob> {
+  const { jsPDF } = await import('jspdf');
   // A4 = 210 x 297 mm
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -335,6 +336,7 @@ export async function generateLotPdf({
   farmSettings: FarmSettings;
   birdsList?: Bird[];
 }): Promise<Blob> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

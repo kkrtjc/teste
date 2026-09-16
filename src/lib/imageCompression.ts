@@ -5,9 +5,9 @@
  */
 export async function compressImage(
   file: File | string,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.82
+  maxWidth = 1000,
+  maxHeight = 1000,
+  quality = 0.80
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const processImg = (src: string) => {
@@ -38,6 +38,7 @@ export async function compressImage(
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
+          img.src = '';
           reject(new Error('Failed to get canvas context'));
           return;
         }
@@ -53,10 +54,21 @@ export async function compressImage(
         ctx.drawImage(img, 0, 0, width, height);
 
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        // Desaloca memória de bitmap imediatamente para o Garbage Collector
+        canvas.width = 0;
+        canvas.height = 0;
+        img.onload = null;
+        img.onerror = null;
+        img.src = '';
+
         resolve(dataUrl);
       };
 
-      img.onerror = (error) => reject(error);
+      img.onerror = (error) => {
+        img.src = '';
+        reject(error);
+      };
     };
 
     if (typeof file === 'string') {

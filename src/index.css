@@ -211,3 +211,21 @@ button, a, input, select, textarea, [role="button"] {
   background-size: 200% 100%;
   animation: shimmer 1.8s ease-in-out infinite;
 }
+
+/* ── ULTRA-PERFORMANCE & GPU ACCELERATION (60 FPS EM APARELHOS ANTIGOS) ── */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 240px;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Otimização de toque e eliminação do atraso de 300ms no Safari / Chrome Mobile */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
