@@ -67,14 +67,19 @@ export function ShareBirdModal({
       try {
         const otherVitrineBirds = mode === 'public'
           ? availableVitrineBirds.map(b => ({
+              ...b,
               id: b.id,
               anilha: b.anilha,
               nome: b.nome || '',
               raca: b.raca || '',
               sexo: b.sexo || '',
               status: b.status || 'Disponível',
+              peso: b.peso || '',
+              dataNascimento: b.dataNascimento || '',
+              vacinas: b.vacinas || '',
+              observacoes: b.observacoes || '',
               imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
-              imagens: b.imagens && b.imagens.length > 0 ? [b.imagens[0]] : (b.imagem ? [b.imagem] : []),
+              imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
               vitrinePrice: b.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
               vitrineStatus: b.vitrineStatus || 'Disponível'
             }))
