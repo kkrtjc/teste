@@ -136,7 +136,7 @@ export function ShareBirdModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in touch-none select-none"
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in overscroll-contain"
       onClick={onClose}
     >
       <div 
@@ -144,21 +144,24 @@ export function ShareBirdModal({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/60">
+        <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/60 shrink-0">
           <div className="flex items-center gap-2">
             <Share2 className="text-theme-primary" size={20} />
             <h3 className="font-bold text-base sm:text-lg text-white">Compartilhar Ficha da Ave</h3>
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <div 
+          className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-5 flex-1 touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {/* Bird Summary Card */}
           <div className="flex items-center gap-3 p-3 bg-theme-base/60 border border-theme-border/70 rounded-xl">
             <div className="w-14 h-14 rounded-lg bg-theme-surface overflow-hidden border border-theme-border shrink-0">

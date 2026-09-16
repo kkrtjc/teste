@@ -14,7 +14,7 @@ export function PublicBirdShowcase() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PublicShowcaseData | null>(null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -46,18 +46,20 @@ export function PublicBirdShowcase() {
     ? [bird.imagem] 
     : [];
 
-  // Carrossel automático de 3 segundos
+  // Carrossel automático de 3 segundos (sem causar re-render ao tocar na tela)
   useEffect(() => {
-    if (images.length <= 1 || isPaused) return;
+    if (images.length <= 1) return;
 
     timerRef.current = setInterval(() => {
-      setCurrentImgIndex(prev => (prev + 1) % images.length);
+      if (!isPausedRef.current) {
+        setCurrentImgIndex(prev => (prev + 1) % images.length);
+      }
     }, 3000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [images.length, isPaused]);
+  }, [images.length]);
 
   if (loading) {
     return (
@@ -102,21 +104,21 @@ export function PublicBirdShowcase() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0d12] text-zinc-100 flex flex-col items-center pb-20">
-      {/* Top Header Bar */}
-      <header className="w-full max-w-lg bg-[#14141c]/90 backdrop-blur-md border-b border-white/5 sticky top-0 z-50 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-black text-black text-xs">
+    <div className="w-full min-h-screen bg-[#0d0d12] text-zinc-100 flex flex-col items-center pb-36 relative overflow-x-hidden">
+      {/* Top Header Bar with Safe Area Top */}
+      <header className="w-full max-w-lg bg-[#14141c]/95 backdrop-blur-md border-b border-white/5 sticky top-0 z-50 px-4 pt-[max(env(safe-area-inset-top,0px),12px)] pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-black text-black text-xs shrink-0">
             M
           </div>
-          <div>
-            <span className="font-mono text-xs font-black tracking-wider text-amber-400">MURA MANAGER</span>
-            <span className="text-[10px] text-zinc-400 block -mt-0.5">Certificado Digital</span>
+          <div className="min-w-0">
+            <span className="font-mono text-xs font-black tracking-wider text-amber-400 block truncate">MURA MANAGER</span>
+            <span className="text-[10px] text-zinc-400 block -mt-0.5 truncate">Certificado Digital</span>
           </div>
         </div>
         <a
           href="/"
-          className="text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold hover:bg-amber-500/25 transition-all"
+          className="text-[11px] px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold hover:bg-amber-500/25 transition-all shrink-0 ml-2"
         >
           Criar Conta
         </a>
@@ -125,8 +127,8 @@ export function PublicBirdShowcase() {
       <main className="w-full max-w-lg px-4 py-4 space-y-4">
         {/* Criatório Header Info */}
         {farm?.name && (
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#171722] border border-white/5 shadow-lg">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#171722] border border-white/5 shadow-lg gap-2">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                 {farm.logo ? (
                   <img src={farm.logo} alt={farm.name} className="w-full h-full object-cover" />
@@ -134,27 +136,28 @@ export function PublicBirdShowcase() {
                   <Award className="text-amber-400" size={18} />
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-black text-white truncate">{farm.name}</p>
                 <p className="text-[10px] text-zinc-400 truncate">
                   {farm.city && farm.state ? `${farm.city} - ${farm.state}` : 'Criatório Credenciado'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+            <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold shrink-0">
               <ShieldCheck size={12} />
               <span>Plantel Ativo</span>
             </div>
           </div>
         )}
 
-        {/* Hero Photo Section with 3-Second Automated Carousel */}
+        {/* Hero Photo Section with 3-Second Automated Carousel & Safe Touch Scrolling */}
         <div 
-          className="relative rounded-3xl overflow-hidden bg-black aspect-[4/5] border-2 border-amber-500/30 shadow-2xl group select-none"
-          onTouchStart={() => setIsPaused(true)}
-          onTouchEnd={() => setIsPaused(false)}
-          onMouseDown={() => setIsPaused(true)}
-          onMouseUp={() => setIsPaused(false)}
+          className="relative rounded-3xl overflow-hidden bg-black aspect-[4/5] max-h-[58vh] border-2 border-amber-500/30 shadow-2xl group select-none"
+          style={{ touchAction: 'pan-y' }}
+          onTouchStart={() => { isPausedRef.current = true; }}
+          onTouchEnd={() => { isPausedRef.current = false; }}
+          onMouseDown={() => { isPausedRef.current = true; }}
+          onMouseUp={() => { isPausedRef.current = false; }}
         >
           {/* Progress Bars on top (Instagram Stories Style) */}
           {images.length > 1 && (
@@ -177,7 +180,7 @@ export function PublicBirdShowcase() {
 
           {/* Current Photo */}
           {images.length > 0 ? (
-            <div className="w-full h-full relative">
+            <div className="w-full h-full relative pointer-events-none">
               {/* Blurred background */}
               <div 
                 className="absolute inset-0 opacity-40 blur-lg scale-110"
@@ -205,6 +208,7 @@ export function PublicBirdShowcase() {
                   setCurrentImgIndex(prev => (prev - 1 + images.length) % images.length);
                 }}
                 className="absolute left-0 top-12 bottom-12 w-1/3 z-20 opacity-0 active:opacity-100 flex items-center pl-2"
+                style={{ touchAction: 'pan-y' }}
                 aria-label="Foto anterior"
               >
                 <div className="p-2 rounded-full bg-black/50 text-white"><ChevronLeft size={20} /></div>
@@ -216,6 +220,7 @@ export function PublicBirdShowcase() {
                   setCurrentImgIndex(prev => (prev + 1) % images.length);
                 }}
                 className="absolute right-0 top-12 bottom-12 w-1/3 z-20 opacity-0 active:opacity-100 flex items-center justify-end pr-2"
+                style={{ touchAction: 'pan-y' }}
                 aria-label="Próxima foto"
               >
                 <div className="p-2 rounded-full bg-black/50 text-white"><ChevronRight size={20} /></div>
@@ -223,17 +228,17 @@ export function PublicBirdShowcase() {
             </>
           )}
 
-          {/* Overlay Tag / Status */}
-          <div className="absolute bottom-3 left-3 right-3 z-30 flex items-end justify-between pointer-events-none">
-            <div className="bg-black/75 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-xl">
+          {/* Overlay Tag / Status - Protected against collision */}
+          <div className="absolute bottom-3 left-3 right-3 z-30 flex items-end justify-between pointer-events-none gap-2">
+            <div className="bg-black/80 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-xl min-w-0 max-w-[65%]">
               <span className="text-[10px] text-zinc-400 uppercase font-bold block">Anilha Oficial</span>
-              <span className="text-base font-black font-mono text-amber-400">{bird.anilha}</span>
+              <span className="text-base font-black font-mono text-amber-400 block truncate">{bird.anilha}</span>
             </div>
 
             {bird.vitrinePrice && (
-              <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-3.5 py-1.5 rounded-xl shadow-lg border border-emerald-400/40">
+              <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-3.5 py-1.5 rounded-xl shadow-lg border border-emerald-400/40 shrink-0 max-w-[35%] text-right">
                 <span className="text-[9px] text-emerald-100 uppercase font-black block">Valor</span>
-                <span className="text-sm font-black text-white">{bird.vitrinePrice}</span>
+                <span className="text-sm font-black text-white block truncate">{bird.vitrinePrice}</span>
               </div>
             )}
           </div>
@@ -241,15 +246,15 @@ export function PublicBirdShowcase() {
 
         {/* Primary Bird Technical Info Card */}
         <div className="p-5 rounded-3xl bg-[#171722] border border-white/5 shadow-xl space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-xl font-black text-white font-serif tracking-tight">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-black text-white font-serif tracking-tight break-words">
                 {bird.nome || `Ave ${bird.anilha}`}
               </h1>
-              <p className="text-xs text-amber-400/90 font-bold mt-0.5">{bird.raca}</p>
+              <p className="text-xs text-amber-400/90 font-bold mt-0.5 truncate">{bird.raca}</p>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase whitespace-nowrap ${
                 bird.sexo === 'Macho' 
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
                   : 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
@@ -257,7 +262,9 @@ export function PublicBirdShowcase() {
                 {bird.sexo}
               </span>
               {bird.status && (
-                <span className="text-[10px] text-zinc-400 font-medium">Status: {bird.status}</span>
+                <span className="text-[10px] text-zinc-400 font-medium whitespace-nowrap bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                  {bird.status}
+                </span>
               )}
             </div>
           </div>
@@ -265,21 +272,21 @@ export function PublicBirdShowcase() {
           {/* Technical Grid Specs */}
           <div className="grid grid-cols-2 gap-2 text-xs pt-1">
             {bird.peso && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5">
+              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
                 <Scale size={16} className="text-amber-400 shrink-0" />
-                <div>
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold">Peso Atual</span>
-                  <span className="font-bold text-white">{bird.peso}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Peso Atual</span>
+                  <span className="font-bold text-white block truncate">{bird.peso}</span>
                 </div>
               </div>
             )}
 
             {bird.dataNascimento && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5">
+              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
                 <Calendar size={16} className="text-amber-400 shrink-0" />
-                <div>
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold">Nascimento</span>
-                  <span className="font-bold text-white">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Nascimento</span>
+                  <span className="font-bold text-white block truncate">
                     {new Date(bird.dataNascimento).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
@@ -287,10 +294,10 @@ export function PublicBirdShowcase() {
             )}
 
             {data?.pai && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5">
+              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
                 <Dna size={16} className="text-blue-400 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold">Pai</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Pai</span>
                   <span className="font-bold text-white truncate block font-mono text-[11px]">
                     {data.pai.anilha}
                   </span>
@@ -299,10 +306,10 @@ export function PublicBirdShowcase() {
             )}
 
             {data?.mae && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5">
+              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
                 <Dna size={16} className="text-pink-400 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold">Mãe</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Mãe</span>
                   <span className="font-bold text-white truncate block font-mono text-[11px]">
                     {data.mae.anilha}
                   </span>
@@ -327,7 +334,7 @@ export function PublicBirdShowcase() {
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
                 Histórico Sanitário / Vacinas:
               </span>
-              <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed">
+              <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed break-words">
                 {bird.vacinas}
               </p>
             </div>
@@ -339,21 +346,10 @@ export function PublicBirdShowcase() {
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
                 Observações do Criador:
               </span>
-              <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed italic">
+              <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed italic break-words">
                 "{bird.observacoes}"
               </p>
             </div>
-          )}
-
-          {/* WhatsApp CTA Button */}
-          {cleanWhatsapp && (
-            <button
-              onClick={handleWhatsappContact}
-              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer"
-            >
-              <MessageCircle size={18} />
-              <span>Negociar com o Criador no WhatsApp</span>
-            </button>
           )}
         </div>
 
@@ -441,6 +437,21 @@ export function PublicBirdShowcase() {
           </a>
         </div>
       </main>
+
+      {/* Sticky Bottom Action Bar with WhatsApp - Always accessible without scrolling */}
+      {cleanWhatsapp && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[#121218]/95 backdrop-blur-lg border-t border-white/10 flex justify-center pb-[max(env(safe-area-inset-bottom,0px),12px)] shadow-[0_-10px_30px_rgba(0,0,0,0.7)]">
+          <div className="w-full max-w-lg">
+            <button
+              onClick={handleWhatsappContact}
+              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <MessageCircle size={19} />
+              <span>Negociar com o Criador no WhatsApp</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
