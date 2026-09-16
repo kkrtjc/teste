@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
-  CreditCard, QrCode, Zap
+  CreditCard, QrCode, Zap, Store
 } from 'lucide-react';
 import { AddBirdModal } from './modals/AddBirdModal';
 import { BirdProfileModal } from './modals/BirdProfileModal';
@@ -677,17 +677,19 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const navItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/' },
     { icon: Bird, label: 'Aves & Raças', path: '/birds' },
+    { icon: Store, label: 'Vitrine', path: '/vitrine' },
     { icon: Layers, label: 'Lotes', path: '/lots' },
     { icon: Egg, label: 'Ovos', path: '/eggs' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
-  // Mobile bottom nav: first 4 items (no settings — access via profile photo)
+  // Mobile bottom nav: first 5 items (no settings — access via profile photo)
   const mobileNavItems = [
     navItems[0], // Dashboard
     navItems[1], // Aves & Raças
-    navItems[2], // Lotes
-    navItems[3], // Ovos
+    navItems[2], // Vitrine
+    navItems[3], // Lotes
+    navItems[4], // Ovos
   ];
 
   return (

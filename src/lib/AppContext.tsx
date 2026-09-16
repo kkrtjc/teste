@@ -42,6 +42,9 @@ export type Bird = {
   peso?: string;
   dataBaixa?: string;
   observacoes?: string;
+  inVitrine?: boolean;
+  vitrinePrice?: string;
+  vitrineStatus?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
 };
 
 export type IncubationLot = {
@@ -148,6 +151,11 @@ export type FarmSettings = {
   photo: string;
   email: string;
   phone: string;
+  responsible?: string;
+  city?: string;
+  state?: string;
+  logo?: string;
+  whatsapp?: string;
 };
 
 type AppContextType = {
@@ -206,6 +214,11 @@ type AppContextType = {
 
   // Recuperação Profunda de Aves e Armazenamento
   recoverAllBirds: () => Promise<{ count: number; birds: Bird[]; report: string }>;
+
+  // Vitrine Digital
+  isVitrineUnlocked: boolean;
+  vitrineBirds: Bird[];
+  toggleBirdVitrine: (birdId: string, inVitrine: boolean, price?: string, status?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque') => void;
 
   // Onboarding & Profile Setup Optional Helpers
   isTourOpen?: boolean;
@@ -2449,6 +2462,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { ...res, count: validBirds.length, birds: validBirds };
   }, [user, isCurrentUserAdmin, getStorageKey, showToast, getDeletedBirdIds]);
 
+  const isVitrineUnlocked = useMemo(() => birds.length >= 10, [birds.length]);
+  const vitrineBirds = useMemo(() => birds.filter(b => b.inVitrine), [birds]);
+
+  const toggleBirdVitrine = useCallback((
+    birdId: string, 
+    inVitrine: boolean, 
+    price?: string, 
+    status?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque'
+  ) => {
+    editBird(birdId, {
+      inVitrine,
+      ...(price !== undefined ? { vitrinePrice: price } : {}),
+      ...(status !== undefined ? { vitrineStatus: status } : {})
+    });
+    showToast(inVitrine ? 'Ave adicionada à vitrine pública!' : 'Ave removida da vitrine.', 'info');
+  }, [editBird, showToast]);
+
   const contextValue = useMemo(() => ({
     isReady,
     breeds, addBreed, editBreed, removeBreed,
@@ -2466,13 +2496,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
     showToast,
     recoverAllBirds,
+    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine,
     isTourOpen, isProfileSetupOpen,
     startTour, closeTour, finishTour,
     openProfileSetup, closeProfileSetup, finishProfileSetup
   }), [
     isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen
+    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen,
+    isVitrineUnlocked, vitrineBirds, toggleBirdVitrine
   ]);
 
   return (

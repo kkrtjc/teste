@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
@@ -13,12 +13,27 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
+const Vitrine = lazy(() => import('./pages/Vitrine').then(m => ({ default: m.Vitrine })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
+const PublicBirdShowcase = lazy(() => import('./pages/PublicBirdShowcase').then(m => ({ default: m.PublicBirdShowcase })));
 
 function AppContent() {
+  const location = useLocation();
   const { isReady } = useAppContext();
   const { user, loading: authLoading, isExpired, trialInfo, isAdmin } = useAuth();
+
+  // ── Rota Pública de Compartilhamento (Visualização da Ave / Vitrine externa sem exigir login) ──
+  if (location.pathname.startsWith('/p/')) {
+    return (
+      <Suspense fallback={<SplashScreen isLoading={true} />}>
+        <Routes>
+          <Route path="/p/ave/:id" element={<PublicBirdShowcase />} />
+          <Route path="/p/vitrine/:id" element={<PublicBirdShowcase />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   // ── Estado do popup de trial ──
   const [showTrialPopup, setShowTrialPopup] = useState(false);
@@ -54,7 +69,7 @@ function AppContent() {
       {/* 🌟 SPLASH SCREEN ANIMADA: Fundo escuro com logo diminuindo e transição lisa ao carregar/logar */}
       <SplashScreen isLoading={isAppLoading} />
 
-      {/* Renderiza o App Router apenas quando autenticado e com banco pronto */}
+      {/* Renderiza o App apenas quando autenticado e com banco pronto */}
       {user && isReady && (
         <>
           {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
@@ -77,20 +92,19 @@ function AppContent() {
             />
           )}
 
-          {/* App Router com resposta síncrona instantânea (0ms) */}
-          <Router>
-            <Suspense fallback={<SplashScreen isLoading={true} />}>
-              <Routes>
-                <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="birds" element={<Birds />} />
-                  <Route path="lots" element={<Lots />} />
-                  <Route path="eggs" element={<Eggs />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-              </Routes>
-            </Suspense>
-          </Router>
+          {/* App Routes com resposta síncrona instantânea (0ms) */}
+          <Suspense fallback={<SplashScreen isLoading={true} />}>
+            <Routes>
+              <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+                <Route index element={<Dashboard />} />
+                <Route path="birds" element={<Birds />} />
+                <Route path="vitrine" element={<Vitrine />} />
+                <Route path="lots" element={<Lots />} />
+                <Route path="eggs" element={<Eggs />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </>
       )}
     </>
@@ -99,11 +113,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
