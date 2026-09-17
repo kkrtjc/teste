@@ -477,6 +477,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return {};
     }
   });
+  const recentVitrineChangesRef = useRef<Map<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any; timestamp: number }>>(new Map());
   const [couples, setCouples] = useState<Couple[]>([]);
   const [coupleEggs, setCoupleEggs] = useState<CoupleEgg[]>([]);
   const [eggLots, setEggLots] = useState<EggLot[]>([]);
@@ -659,16 +660,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
           });
           setBirds(mapped);
-          // Sincroniza vitrineConfig em paralelo
+          // Sincroniza vitrineConfig em paralelo (apenas aves ativas na vitrine)
           const vMap: Record<string, any> = {};
           mapped.forEach(b => {
             if (b.inVitrine) {
               vMap[b.id] = { inVitrine: true, vitrinePrice: b.vitrinePrice, vitrineStatus: b.vitrineStatus };
             }
           });
-          if (Object.keys(vMap).length > 0) {
-            setVitrineConfig(prev => ({ ...prev, ...vMap }));
-          }
+          setVitrineConfig(vMap);
         }
       },
       {
@@ -691,7 +690,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         suffix: 'vitrine-config',
         setter: (d: any) => {
           if (d && typeof d === 'object') {
-            setVitrineConfig(prev => ({ ...prev, ...d }));
+            setVitrineConfig(d);
             try {
               localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(d));
             } catch {}
@@ -1089,31 +1088,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
           const parsedLocalVitrine = parseBirdVitrine(localBird?.observacoes);
-          const vConfig = vitrineConfig[b.id] || {};
+          const recentChange = recentVitrineChangesRef.current.get(b.id);
+          const isRecentChangeActive = recentChange && (Date.now() - recentChange.timestamp < 30000);
 
-          const isBirdInVitrine = parsedCloudVitrine.inVitrine || 
-            Boolean(localBird?.inVitrine) || 
-            parsedLocalVitrine.inVitrine || 
-            Boolean(vConfig.inVitrine);
+          let isBirdInVitrine: boolean;
+          let birdVitrinePrice: string;
+          let birdVitrineStatus: any;
 
-          const birdVitrinePrice = parsedCloudVitrine.vitrinePrice || 
-            localBird?.vitrinePrice || 
-            parsedLocalVitrine.vitrinePrice || 
-            vConfig.vitrinePrice || '';
-
-          const birdVitrineStatus = parsedCloudVitrine.vitrineStatus || 
-            localBird?.vitrineStatus || 
-            parsedLocalVitrine.vitrineStatus || 
-            vConfig.vitrineStatus || 'Disponível';
+          if (isRecentChangeActive) {
+            // Ação explícita recente do usuário local tem autoridade absoluta
+            isBirdInVitrine = recentChange.inVitrine;
+            birdVitrinePrice = recentChange.vitrinePrice ?? (parsedCloudVitrine.vitrinePrice || localBird?.vitrinePrice || '');
+            birdVitrineStatus = recentChange.vitrineStatus ?? (parsedCloudVitrine.vitrineStatus || localBird?.vitrineStatus || 'Disponível');
+          } else {
+            // Sem alteração recente local:
+            if (localBird?.inVitrine === false && !parsedCloudVitrine.inVitrine) {
+              isBirdInVitrine = false;
+              birdVitrinePrice = '';
+              birdVitrineStatus = 'Disponível';
+            } else if (parsedCloudVitrine.inVitrine) {
+              isBirdInVitrine = true;
+              birdVitrinePrice = parsedCloudVitrine.vitrinePrice || '';
+              birdVitrineStatus = parsedCloudVitrine.vitrineStatus || 'Disponível';
+            } else if (localBird?.inVitrine === true) {
+              isBirdInVitrine = true;
+              birdVitrinePrice = localBird.vitrinePrice || parsedLocalVitrine.vitrinePrice || '';
+              birdVitrineStatus = localBird.vitrineStatus || parsedLocalVitrine.vitrineStatus || 'Disponível';
+            } else {
+              isBirdInVitrine = false;
+              birdVitrinePrice = '';
+              birdVitrineStatus = 'Disponível';
+            }
+          }
 
           const cleanObs = parsedCloudVitrine.cleanObservacoes || parsedLocalVitrine.cleanObservacoes || '';
 
-          // Se a ave estava na vitrine local mas o observacoes na nuvem ainda não tinha a tag, grava no Supabase
-          if (!parsedCloudVitrine.inVitrine && isBirdInVitrine && isSupabaseConfigured && user) {
-            const obsWithTag = formatBirdObservacoesWithVitrine(cleanObs, true, birdVitrinePrice, birdVitrineStatus);
-            supabase!.from('birds').update({ observacoes: obsWithTag }).eq('id', b.id).then(({ error }) => {
-              if (error) console.warn('[Sync] Falha ao persistir tag vitrine em nuvem:', error);
-            });
+          // Sincroniza Supabase caso haja divergência entre nuvem e o status consolidado
+          if (isSupabaseConfigured && user) {
+            if (!parsedCloudVitrine.inVitrine && isBirdInVitrine) {
+              // Ave deve estar na vitrine, grava a tag na nuvem
+              const obsWithTag = formatBirdObservacoesWithVitrine(cleanObs, true, birdVitrinePrice, birdVitrineStatus);
+              supabase!.from('birds').update({ observacoes: obsWithTag }).eq('id', b.id).then(({ error }) => {
+                if (error) console.warn('[Sync] Falha ao persistir tag vitrine em nuvem:', error);
+              });
+            } else if (parsedCloudVitrine.inVitrine && !isBirdInVitrine) {
+              // Ave foi removida da vitrine pelo usuário, remove a tag da nuvem
+              const obsWithoutTag = formatBirdObservacoesWithVitrine(cleanObs, false);
+              supabase!.from('birds').update({ observacoes: obsWithoutTag }).eq('id', b.id).then(({ error }) => {
+                if (error) console.warn('[Sync] Falha ao remover tag vitrine em nuvem:', error);
+              });
+            }
           }
 
           if (isBirdInVitrine) {
@@ -1157,15 +1181,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
 
-        // Atualiza vitrineConfig em sincronia
-        setVitrineConfig(prev => {
-          const merged = { ...prev, ...nextVitrineMap };
-          localforage.setItem(getStorageKey('vitrine-config'), merged).catch(console.error);
-          try {
-            localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(merged));
-          } catch {}
-          return merged;
-        });
+        // Atualiza vitrineConfig exatamente com o mapa de aves ativas na vitrine
+        setVitrineConfig(nextVitrineMap);
+        localforage.setItem(getStorageKey('vitrine-config'), nextVitrineMap).catch(console.error);
+        try {
+          localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(nextVitrineMap));
+        } catch {}
 
         // Adiciona apenas aves locais que foram criadas offline e ainda não chegaram à nuvem
         // e que NÃO estão nos tombstones (evita aves deletadas offline ressurgirem)
@@ -1483,7 +1504,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       isSyncingRef.current = false;
     }
-  }, [user, loadFromLocalForage, vitrineConfig]);
+  }, [user, loadFromLocalForage]);
 
   // Carregamento inicial de dados ao iniciar ou trocar de usuário
   useEffect(() => {
@@ -1892,6 +1913,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
     let finalObsForDb: string | undefined = undefined;
 
+    if (updatedBird.inVitrine !== undefined) {
+      recentVitrineChangesRef.current.set(id, {
+        inVitrine: updatedBird.inVitrine,
+        vitrinePrice: updatedBird.vitrinePrice,
+        vitrineStatus: updatedBird.vitrineStatus,
+        timestamp: Date.now()
+      });
+    }
+
     setBirds(prev => {
       const currentBird = prev.find(b => b.id === id);
       const isVit = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : Boolean(currentBird?.inVitrine);
@@ -2028,6 +2058,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch {}
+
+      // Limpa rastros de vitrine
+      recentVitrineChangesRef.current.delete(id);
+      setVitrineConfig(vPrev => {
+        if (!vPrev[id]) return vPrev;
+        const nextConfig = { ...vPrev };
+        delete nextConfig[id];
+        localforage.setItem(getStorageKey('vitrine-config'), nextConfig).catch(console.error);
+        try {
+          localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(nextConfig));
+        } catch {}
+        return nextConfig;
+      });
       
       if (isSupabaseConfigured && user) {
         supabase!
@@ -2802,7 +2845,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isVitrineUnlocked = useMemo(() => birds.length >= 10, [birds.length]);
   const vitrineBirds = useMemo(() => {
-    return birds.filter(b => b && (b.inVitrine || vitrineConfig[b.id]?.inVitrine));
+    return birds.filter(b => b && (b.inVitrine !== undefined ? b.inVitrine : Boolean(vitrineConfig[b.id]?.inVitrine)));
   }, [birds, vitrineConfig]);
 
   const toggleBirdVitrine = useCallback((

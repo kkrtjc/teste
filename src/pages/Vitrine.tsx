@@ -40,7 +40,7 @@ export function Vitrine() {
 
       if (!matchSearch) return false;
 
-      const isInVitrine = Boolean(b.inVitrine || vitrineConfig[b.id]?.inVitrine);
+      const isInVitrine = Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine);
       if (filterMode === 'inVitrine') return isInVitrine;
       if (filterMode === 'outVitrine') return !isInVitrine;
       return true;
@@ -344,13 +344,13 @@ export function Vitrine() {
               <div className="pt-2 border-t border-theme-border space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <Store size={13} className={(b.inVitrine || vitrineConfig[b.id]?.inVitrine) ? 'text-amber-400' : 'text-zinc-500'} />
+                    <Store size={13} className={(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine) ? 'text-amber-400' : 'text-zinc-500'} />
                     <span>Exibir na Vitrine</span>
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
                       type="checkbox"
-                      checked={Boolean(b.inVitrine || vitrineConfig[b.id]?.inVitrine)}
+                      checked={Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine)}
                       onChange={e => {
                         toggleBirdVitrine(b.id, e.target.checked);
                         triggerLight();
@@ -361,7 +361,7 @@ export function Vitrine() {
                   </label>
                 </div>
 
-                {(b.inVitrine || vitrineConfig[b.id]?.inVitrine) && (
+                {(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine) && (
                   <div className="grid grid-cols-2 gap-2 pt-1 animate-scale-up">
                     <div className="space-y-1">
                       <label className="text-[9px] uppercase font-bold text-zinc-500 block">Preço (R$)</label>
