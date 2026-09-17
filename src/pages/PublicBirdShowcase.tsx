@@ -1,28 +1,45 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ShieldCheck, MessageCircle, 
   ChevronLeft, ChevronRight, Award, Calendar, 
   Scale, Dna, ArrowUpRight, Loader2,
-  Store, ChevronDown, ArrowLeft
+  Store, ChevronDown, ArrowLeft, Search
 } from 'lucide-react';
 import { fetchShowcase, type PublicShowcaseData } from '../lib/showcaseShare';
 
 export function PublicBirdShowcase() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PublicShowcaseData | null>(null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [selectedVitrineBird, setSelectedVitrineBird] = useState<any | null>(null);
+  const [catalogSearch, setCatalogSearch] = useState('');
   const [highlightVitrine, setHighlightVitrine] = useState(false);
   const vitrineSectionRef = useRef<HTMLDivElement>(null);
   const isPausedRef = useRef(false);
   const timerRef = useRef<any>(null);
 
+  const isVitrineRoute = location.pathname.startsWith('/p/vitrine');
+  const isVitrineMode = isVitrineRoute || Boolean(data?.isVitrineOnly);
+  const isViewingCatalog = isVitrineMode && !selectedVitrineBird;
   const isViewingVitrineBird = Boolean(selectedVitrineBird);
   const activeBird = selectedVitrineBird || data?.bird;
+
+  const vitrineList = (data?.vitrineBirds && data.vitrineBirds.length > 0)
+    ? data.vitrineBirds
+    : (data?.bird ? [data.bird] : []);
+
+  const filteredCatalogBirds = vitrineList.filter((b: any) => {
+    if (!catalogSearch.trim()) return true;
+    const q = catalogSearch.toLowerCase();
+    return (b.anilha && b.anilha.toLowerCase().includes(q)) ||
+      (b.nome && b.nome.toLowerCase().includes(q)) ||
+      (b.raca && b.raca.toLowerCase().includes(q));
+  });
 
   // Reseta índice de imagens e pausa ao trocar de ave
   useEffect(() => {
@@ -47,7 +64,11 @@ export function PublicBirdShowcase() {
         }
       } catch {}
       setTimeout(() => {
-        vitrineSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (isVitrineMode) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          vitrineSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
       }, 100);
     }
   };
@@ -124,7 +145,7 @@ export function PublicBirdShowcase() {
     );
   }
 
-  if (!bird) {
+  if (!bird && vitrineList.length === 0) {
     return (
       <div className="min-h-screen bg-[#0d0d12] flex flex-col items-center justify-center p-6 text-center text-white">
         <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4 text-red-400">
@@ -185,10 +206,10 @@ export function PublicBirdShowcase() {
           </div>
           <div className="min-w-0">
             <span className="font-mono text-xs font-black tracking-wider text-amber-400 block truncate">
-              {isViewingVitrineBird ? 'VITRINE DO CRIATÓRIO' : 'MURA MANAGER'}
+              {isViewingVitrineBird || isViewingCatalog ? 'VITRINE DO CRIATÓRIO' : 'MURA MANAGER'}
             </span>
             <span className="text-[10px] text-zinc-400 block -mt-0.5 truncate">
-              {isViewingVitrineBird ? `Ave: ${bird.anilha}` : 'Certificado Digital'}
+              {isViewingVitrineBird ? `Ave: ${bird?.anilha || ''}` : (farm?.name || 'Catálogo Oficial')}
             </span>
           </div>
         </div>
@@ -203,6 +224,16 @@ export function PublicBirdShowcase() {
               <Store size={13} />
               <span>Voltar à Vitrine</span>
             </button>
+          ) : cleanWhatsapp ? (
+            <a
+              href={`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(`Olá! Estou vendo sua vitrine digital (${farm?.name || 'Mura Manager'}) e gostaria de informações.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 font-bold hover:bg-emerald-600/30 transition-all flex items-center gap-1.5"
+            >
+              <MessageCircle size={13} />
+              <span>WhatsApp</span>
+            </a>
           ) : (
             <a
               href="/"
@@ -215,32 +246,195 @@ export function PublicBirdShowcase() {
       </header>
 
       <main className="w-full max-w-lg px-4 py-4 space-y-4">
-        {/* Banner Indicativo quando estiver visualizando ave da vitrine */}
-        {isViewingVitrineBird && (
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#161622] to-amber-500/10 border border-amber-500/30 shadow-md animate-fade-in">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <button
-                type="button"
-                onClick={handleBackFromVitrineBird}
-                className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
-                title="Voltar à Vitrine"
-              >
-                <ArrowLeft size={14} />
-              </button>
-              <div className="min-w-0">
-                <span className="text-xs font-black text-white block truncate">Ave Selecionada da Vitrine</span>
-                <span className="text-[10px] text-amber-400 block truncate">Toque na seta para ver as outras aves</span>
+        {isViewingCatalog ? (
+          <div className="space-y-4 animate-fade-in">
+            {/* Criatório Header Info */}
+            {farm?.name && (
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#171722] border border-white/10 shadow-lg gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    {farm.logo ? (
+                      <img src={farm.logo} alt={farm.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Award className="text-amber-400" size={22} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-white truncate">{farm.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">
+                      {farm.city && farm.state ? `${farm.city} - ${farm.state}` : 'Criatório Oficial'}
+                    </p>
+                    {farm.responsible && (
+                      <p className="text-[10px] text-zinc-500 truncate">Resp: {farm.responsible}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full font-bold shrink-0 border border-emerald-500/20">
+                  <ShieldCheck size={13} />
+                  <span>Plantel Ativo</span>
+                </div>
               </div>
+            )}
+
+            {/* Banner de Apresentação da Vitrine */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 via-[#191924] to-amber-500/5 border border-amber-500/30 shadow-xl space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider">
+                  <Store size={12} />
+                  <span>Vitrine Digital Oficial</span>
+                </div>
+                <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-black">
+                  {vitrineList.length} ave{vitrineList.length > 1 ? 's' : ''} disponível{vitrineList.length > 1 ? 'is' : ''}
+                </span>
+              </div>
+              <h1 className="text-base sm:text-lg font-black text-white font-serif tracking-tight">
+                Aves Disponíveis para Negociação
+              </h1>
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                Selecione qualquer ave abaixo para ver a ficha técnica completa com fotos, pedigree e procedência.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={handleBackFromVitrineBird}
-              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline shrink-0 cursor-pointer pl-2"
-            >
-              Ver Todas
-            </button>
+
+            {/* Barra de Busca Rápida se houver mais de 3 aves */}
+            {vitrineList.length > 3 && (
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+                <input
+                  type="text"
+                  value={catalogSearch}
+                  onChange={e => setCatalogSearch(e.target.value)}
+                  placeholder="Buscar por anilha, nome ou raça..."
+                  className="w-full bg-[#171722] border border-white/10 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-amber-400 transition-colors"
+                />
+              </div>
+            )}
+
+            {/* Grid das Aves Lado a Lado (2 Colunas) */}
+            {filteredCatalogBirds.length === 0 ? (
+              <div className="p-8 text-center bg-[#171722] border border-white/5 rounded-2xl">
+                <p className="text-xs text-zinc-400">Nenhuma ave encontrada na busca.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+                {filteredCatalogBirds.map((item) => (
+                  <div 
+                    key={item.id}
+                    onClick={() => handleSelectVitrineBird(item)}
+                    className="bg-[#171722] border border-white/10 hover:border-amber-500/50 rounded-2xl overflow-hidden shadow-xl p-2.5 sm:p-3 flex flex-col justify-between space-y-2 cursor-pointer active:scale-95 transition-all group"
+                  >
+                    <div className="aspect-square bg-black rounded-xl overflow-hidden relative">
+                      {item.imagem || (item.imagens && item.imagens[0]) ? (
+                        <img 
+                          src={item.imagem || item.imagens![0]} 
+                          alt={item.anilha} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600">
+                          Sem foto
+                        </div>
+                      )}
+                      {item.vitrinePrice && (
+                        <div className="absolute bottom-1.5 right-1.5 bg-emerald-600/95 text-[10px] font-black text-white px-2 py-0.5 rounded-md shadow">
+                          {item.vitrinePrice}
+                        </div>
+                      )}
+                      {item.sexo && (
+                        <div className="absolute top-1.5 left-1.5 text-[9px] font-bold text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded">
+                          {item.sexo}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="font-mono text-[11px] font-black text-amber-400 block truncate">
+                        {item.anilha}
+                      </span>
+                      <p className="text-xs font-bold text-white truncate">
+                        {item.nome || item.raca}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 truncate mt-0.5">{item.raca}</p>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectVitrineBird(item);
+                        }}
+                        className="w-full py-1.5 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      >
+                        <span>Ver Ficha</span>
+                        <ArrowUpRight size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBirdWhatsApp(item);
+                        }}
+                        className="w-full py-2 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer truncate"
+                      >
+                        <MessageCircle size={13} className="shrink-0" />
+                        <span className="truncate">Tenho interesse</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Viral Banner: Powered by Mura Manager */}
+            <div className="mt-8 p-5 rounded-3xl bg-gradient-to-br from-[#1c1a2e] to-[#12121c] border border-amber-500/30 text-center space-y-3 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-wider">
+                <span>🏆</span>
+                <span>Tecnologia Mura Manager</span>
+              </div>
+              <h3 className="text-base font-black text-white font-serif leading-snug">
+                Crie Fichas Técnicas como esta e organize todo o seu Criatório
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed max-w-xs mx-auto">
+                Controle árvores genealógicas, consanguinidade, lotes de ovos, vacinas e tenha sua própria vitrine digital.
+              </p>
+              <a
+                href="/"
+                className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                <span>Experimentar Mura Manager Grátis</span>
+                <ArrowUpRight size={15} />
+              </a>
+            </div>
           </div>
-        )}
+        ) : (
+          <div className="space-y-4 animate-fade-in">
+            {/* Banner Indicativo quando estiver visualizando ave da vitrine */}
+            {isViewingVitrineBird && (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#161622] to-amber-500/10 border border-amber-500/30 shadow-md animate-fade-in">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={handleBackFromVitrineBird}
+                    className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                    title="Voltar à Vitrine"
+                  >
+                    <ArrowLeft size={14} />
+                  </button>
+                  <div className="min-w-0">
+                    <span className="text-xs font-black text-white block truncate">Ave Selecionada da Vitrine</span>
+                    <span className="text-[10px] text-amber-400 block truncate">Toque na seta para ver as outras aves</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBackFromVitrineBird}
+                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline shrink-0 cursor-pointer pl-2"
+                >
+                  Ver Todas
+                </button>
+              </div>
+            )}
 
         {/* Criatório Header Info */}
         {farm?.name && (
@@ -628,43 +822,65 @@ export function PublicBirdShowcase() {
             <ArrowUpRight size={15} />
           </a>
         </div>
-      </main>
+      </div>
+    )}
+  </main>
 
       {/* Sticky Bottom Action Bar with Vitrine Button & WhatsApp */}
       <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[#121218]/95 backdrop-blur-lg border-t border-white/10 flex justify-center pb-[max(env(safe-area-inset-bottom,0px),12px)] shadow-[0_-10px_30px_rgba(0,0,0,0.7)]">
         <div className="w-full max-w-lg flex items-center gap-2">
-          {isViewingVitrineBird ? (
-            <button
-              type="button"
-              onClick={handleBackFromVitrineBird}
-              className="py-3 px-3.5 rounded-2xl bg-[#1e1e2c] border border-white/10 hover:border-amber-500/50 text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg"
-              title="Voltar para a vitrine"
-              aria-label="Voltar para a vitrine"
-            >
-              <ArrowLeft size={17} className="text-amber-400" />
-              <span className="hidden sm:inline">Vitrine</span>
-            </button>
-          ) : (
-            data?.mode === 'public' && data.vitrineBirds && data.vitrineBirds.length > 0 && (
+          {isViewingCatalog ? (
+            cleanWhatsapp && (
               <button
                 type="button"
-                onClick={handleOpenVitrine}
-                className="py-3 px-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg shadow-amber-500/10"
+                onClick={() => {
+                  const msg = `Olá! Estou vendo sua vitrine digital de aves do criatório *${farm?.name || 'Mura Manager'}* e gostaria de informações.`;
+                  window.open(`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(msg)}`, '_blank');
+                }}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer"
               >
-                <Store size={18} />
-                <span>Vitrine ({data.vitrineBirds.length})</span>
+                <MessageCircle size={19} className="shrink-0 animate-pulse" />
+                <span>Conversar com o Criador no WhatsApp</span>
               </button>
             )
-          )}
+          ) : (
+            <>
+              {isViewingVitrineBird ? (
+                <button
+                  type="button"
+                  onClick={handleBackFromVitrineBird}
+                  className="py-3 px-3.5 rounded-2xl bg-[#1e1e2c] border border-white/10 hover:border-amber-500/50 text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg"
+                  title="Voltar para a vitrine"
+                  aria-label="Voltar para a vitrine"
+                >
+                  <ArrowLeft size={17} className="text-amber-400" />
+                  <span className="hidden sm:inline">Vitrine</span>
+                </button>
+              ) : (
+                data?.mode === 'public' && data.vitrineBirds && data.vitrineBirds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleOpenVitrine}
+                    className="py-3 px-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg shadow-amber-500/10"
+                  >
+                    <Store size={18} />
+                    <span>Vitrine ({data.vitrineBirds.length})</span>
+                  </button>
+                )
+              )}
 
-          <button
-            type="button"
-            onClick={() => handleBirdWhatsApp(bird)}
-            className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer truncate"
-          >
-            <MessageCircle size={19} className="shrink-0 animate-pulse" />
-            <span className="truncate">Tenho interesse, chamar no WhatsApp</span>
-          </button>
+              {bird && (
+                <button
+                  type="button"
+                  onClick={() => handleBirdWhatsApp(bird)}
+                  className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer truncate"
+                >
+                  <MessageCircle size={19} className="shrink-0 animate-pulse" />
+                  <span className="truncate">Tenho interesse, chamar no WhatsApp</span>
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

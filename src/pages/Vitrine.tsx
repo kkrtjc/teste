@@ -54,6 +54,7 @@ export function Vitrine() {
       const activePhone = farmSettings?.phone || farmSettings?.whatsapp || '';
       await publishShowcase({
         id: user?.id || 'meu-criatorio',
+        isVitrineOnly: true,
         bird: firstBird,
         farmSettings: {
           name: farmSettings?.name,

@@ -19,6 +19,7 @@ export type PublicShowcaseData = {
   mae?: Bird | null;
   inbreeding?: number;
   mode: 'private' | 'public';
+  isVitrineOnly?: boolean;
   vitrineBirds?: (Partial<Bird> & { id: string; anilha: string })[];
   ownerId?: string;
   createdAt: string;
