@@ -760,8 +760,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,imagens,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,imagem,imagens,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -1038,16 +1038,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       let finalBirds: Bird[] = [];
       if (sbBirdsFromCloud !== null) {
-        // A nuvem respondeu com sucesso: é a autoridade central absoluta
+        // ── OTIMIZAÇÃO DE BANDA (Supabase Egress Saver) ──
+        // Identifica apenas as aves vindas da nuvem que NÃO têm fotos no armazenamento local deste aparelho
+        const missingPhotoBirdIds: string[] = [];
+        const cloudPhotoMap: Record<string, { imagem?: string; imagens?: string[] }> = {};
+
+        sbBirdsFromCloud.forEach((b: any) => {
+          const local = (localBirds || []).find((x: any) => x.id === b.id);
+          const hasLocal = Boolean(local?.imagem || (local?.imagens && local.imagens.length > 0));
+          if (!hasLocal) {
+            missingPhotoBirdIds.push(b.id);
+          }
+        });
+
+        // Se houver aves novas (ex: cadastradas em outro aparelho ou primeiro login), busca fotos apenas para elas
+        if (missingPhotoBirdIds.length > 0 && isSupabaseConfigured) {
+          try {
+            for (let i = 0; i < missingPhotoBirdIds.length; i += 10) {
+              const chunkIds = missingPhotoBirdIds.slice(i, i + 10);
+              const { data: pData } = await supabase!
+                .from('birds')
+                .select('id,imagem,imagens')
+                .in('id', chunkIds);
+              if (pData) {
+                pData.forEach((pb: any) => {
+                  cloudPhotoMap[pb.id] = {
+                    imagem: pb.imagem || (pb.imagens && pb.imagens[0]) || undefined,
+                    imagens: pb.imagens || (pb.imagem ? [pb.imagem] : [])
+                  };
+                });
+              }
+            }
+          } catch (pErr) {
+            console.warn('[Sync Otimizado] Falha ao buscar fotos sob demanda:', pErr);
+          }
+        }
+
         const nextVitrineMap: Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }> = {};
 
         const cloudMapped: Bird[] = sbBirdsFromCloud.map((b: any) => {
           const localBird = (localBirds || []).find((x: any) => x.id === b.id);
-          let birdImagens = b.imagens || localBird?.imagens || [];
-          if (birdImagens.length === 0 && b.imagem) {
-            birdImagens = [b.imagem];
-          } else if (b.imagem && birdImagens[0] !== b.imagem) {
-            birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
+          let birdImagens = (localBird?.imagens && localBird.imagens.length > 0)
+            ? localBird.imagens
+            : (localBird?.imagem ? [localBird.imagem] : []);
+
+          // Se o cache local não tinha fotos desta ave, usa as fotos trazidas sob demanda da nuvem
+          if (birdImagens.length === 0 && cloudPhotoMap[b.id]) {
+            birdImagens = cloudPhotoMap[b.id].imagens || (cloudPhotoMap[b.id].imagem ? [cloudPhotoMap[b.id].imagem!] : []);
           }
 
           const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
