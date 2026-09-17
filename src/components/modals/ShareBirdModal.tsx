@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Share2, Copy, Check, Lock, Globe, 
-  Loader2, Sparkles, Send, ExternalLink, FileText 
+  Loader2, Sparkles, Send, ExternalLink, FileText,
+  MessageCircle
 } from 'lucide-react';
 import { useAppContext, type Bird } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
@@ -26,7 +27,7 @@ export function ShareBirdModal({
   onClose
 }: ShareBirdModalProps) {
   const { 
-    farmSettings, vitrineBirds, showToast,
+    farmSettings, updateFarmSettings, vitrineBirds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
   } = useAppContext();
   const { trialInfo, isAdmin } = useAuth();
@@ -40,6 +41,14 @@ export function ShareBirdModal({
   const [isPublishing, setIsPublishing] = useState<boolean>(!isBlockedByTrial);
   const [copied, setCopied] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
+  const [sellerWhatsapp, setSellerWhatsapp] = useState<string>(
+    farmSettings?.phone || farmSettings?.whatsapp || ''
+  );
+
+  const handleWhatsappChange = (val: string) => {
+    setSellerWhatsapp(val);
+    updateFarmSettings({ phone: val, whatsapp: val });
+  };
 
   // Obtém APENAS as outras aves que foram explicitamente marcadas na vitrine pelo criador
   const availableVitrineBirds = useMemo(() => {
@@ -78,17 +87,19 @@ export function ShareBirdModal({
             }))
           : [];
 
+        const activePhone = sellerWhatsapp || farmSettings?.phone || farmSettings?.whatsapp || '';
+
         const url = await publishShowcase({
           id: bird.id,
           bird,
           farmSettings: {
             name: farmSettings?.name,
             responsible: farmSettings?.responsible,
-            phone: farmSettings?.phone,
+            phone: activePhone,
             city: farmSettings?.city,
             state: farmSettings?.state,
             logo: farmSettings?.logo,
-            whatsapp: farmSettings?.phone || farmSettings?.whatsapp
+            whatsapp: activePhone
           },
           pai,
           mae,
@@ -114,7 +125,7 @@ export function ShareBirdModal({
 
     initShare();
     return () => { isMounted = false; };
-  }, [bird, pai, mae, inbreeding, mode, availableVitrineBirds, farmSettings, isBlockedByTrial, registerBirdShare]);
+  }, [bird, pai, mae, inbreeding, mode, availableVitrineBirds, farmSettings, isBlockedByTrial, registerBirdShare, sellerWhatsapp]);
 
   const qrCodeUrl = shareUrl ? generateQrCodeUrl(shareUrl, 320) : '';
 
@@ -351,13 +362,45 @@ export function ShareBirdModal({
               </button>
             </div>
           ) : (
-            /* QR Code Preview & Direct Link */
-            <div className="p-4 bg-theme-base/50 border border-theme-border rounded-2xl flex flex-col items-center gap-3 text-center">
-              {isPublishing ? (
-                <div className="w-36 h-36 flex flex-col items-center justify-center gap-2 text-theme-text-muted">
-                  <Loader2 size={24} className="animate-spin text-theme-primary" />
-                  <span className="text-[11px]">Gerando ficha...</span>
+            <>
+              {/* Campo WhatsApp para Vendas / Contato dos Clientes */}
+              <div className="p-3.5 bg-gradient-to-r from-emerald-950/40 via-theme-base/80 to-emerald-950/40 border border-emerald-500/30 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageCircle size={14} className="text-emerald-400 shrink-0" />
+                    <span>Seu WhatsApp de Vendas:</span>
+                  </label>
+                  {sellerWhatsapp ? (
+                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                      <Check size={11} /> Vinculado à Ficha
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/30">
+                      ⚠️ Obrigatório p/ Botão
+                    </span>
+                  )}
                 </div>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={sellerWhatsapp}
+                    onChange={e => handleWhatsappChange(e.target.value)}
+                    placeholder="Ex: (11) 99999-9999"
+                    className="w-full bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500 font-mono tracking-wider"
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-tight">
+                  O cliente terá o botão <b className="text-emerald-400">"Tenho interesse, chamar no WhatsApp"</b> na ficha e falará direto com você.
+                </p>
+              </div>
+
+              {/* QR Code Preview & Direct Link */}
+              <div className="p-4 bg-theme-base/50 border border-theme-border rounded-2xl flex flex-col items-center gap-3 text-center">
+                {isPublishing ? (
+                  <div className="w-36 h-36 flex flex-col items-center justify-center gap-2 text-theme-text-muted">
+                    <Loader2 size={24} className="animate-spin text-theme-primary" />
+                    <span className="text-[11px]">Gerando ficha...</span>
+                  </div>
               ) : qrCodeUrl ? (
                 <div className="p-2 bg-[#121214] border-2 border-amber-500/40 rounded-xl shadow-xl shadow-amber-500/10">
                   <img src={qrCodeUrl} alt="QR Code da Ave" className="w-32 h-32 rounded-lg" />
@@ -387,6 +430,7 @@ export function ShareBirdModal({
                 </div>
               </div>
             </div>
+          </>
           )}
 
           {/* Action Buttons */}

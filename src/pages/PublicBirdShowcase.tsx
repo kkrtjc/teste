@@ -148,16 +148,19 @@ export function PublicBirdShowcase() {
   const whatsappNumber = farm?.whatsapp || farm?.phone || '';
   const cleanWhatsapp = whatsappNumber.replace(/\D/g, '');
 
-  const handleWhatsappContact = () => {
-    if (!cleanWhatsapp || !bird) return;
-    const msg = `Olá! Vi a ficha técnica da ave anilha *${bird.anilha}* (${bird.nome || 'Sem nome'}) e gostaria de mais informações.`;
-    window.open(`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(msg)}`, '_blank');
-  };
+  const handleBirdWhatsApp = (targetBird: any) => {
+    if (!targetBird) return;
+    if (!cleanWhatsapp) {
+      alert('O criador ainda não informou um número de WhatsApp nesta ficha técnica.');
+      return;
+    }
+    const anilhaStr = targetBird.anilha ? `anilha *${targetBird.anilha}*` : 'esta ave';
+    const nomeStr = targetBird.nome ? ` (${targetBird.nome})` : '';
+    const racaStr = targetBird.raca ? ` - Raça: *${targetBird.raca}*` : '';
+    const precoStr = targetBird.vitrinePrice ? ` (Valor: *${targetBird.vitrinePrice}*)` : '';
+    const criatorioStr = farm?.name ? ` do criatório *${farm.name}*` : '';
 
-  const handleVitrineWhatsappContact = () => {
-    if (!cleanWhatsapp || !bird) return;
-    const priceText = bird.vitrinePrice ? ` (Valor: ${bird.vitrinePrice})` : '';
-    const msg = `Olá! Gostei da ave anilha *${bird.anilha}* (${bird.nome || bird.raca})${priceText} que vi na vitrine do seu criatório e tenho interesse em negociar.`;
+    const msg = `Olá! Gostei da ave ${anilhaStr}${nomeStr}${racaStr}${precoStr}${criatorioStr} que vi na sua vitrine digital e tenho interesse em negociar. Ela ainda está disponível?`;
     window.open(`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -485,30 +488,32 @@ export function PublicBirdShowcase() {
           )}
 
           {/* Observações */}
-          {bird.observacoes && (
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
-                Observações do Criador:
-              </span>
-              <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed italic break-words">
-                "{bird.observacoes}"
-              </p>
-            </div>
-          )}
+          {(() => {
+            const cleanObs = (bird.observacoes || '').replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
+            if (!cleanObs) return null;
+            return (
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+                  Observações do Criador:
+                </span>
+                <p className="text-xs text-zinc-300 bg-[#111118] p-3 rounded-xl border border-white/5 leading-relaxed italic break-words">
+                  "{cleanObs}"
+                </p>
+              </div>
+            );
+          })()}
 
-          {/* Botão de Contato para Ave da Vitrine no corpo da ficha */}
-          {isViewingVitrineBird && cleanWhatsapp && (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleVitrineWhatsappContact}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <MessageCircle size={19} className="shrink-0 animate-pulse" />
-                <span>Gostei dessa, chamar no WhatsApp</span>
-              </button>
-            </div>
-          )}
+          {/* Botão de Contato Direto no WhatsApp em toda e qualquer ave */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => handleBirdWhatsApp(bird)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <MessageCircle size={19} className="shrink-0 animate-pulse" />
+              <span>Tenho interesse, chamar no WhatsApp</span>
+            </button>
+          </div>
         </div>
 
         {/* Vitrine: Outras Aves Disponíveis deste Criador */}
@@ -580,22 +585,18 @@ export function PublicBirdShowcase() {
                     <p className="text-[10px] text-zinc-400 truncate mt-0.5">{otherBird.raca}</p>
                   </div>
 
-                  {cleanWhatsapp && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const priceText = otherBird.vitrinePrice ? ` (Valor: ${otherBird.vitrinePrice})` : '';
-                        const msg = `Olá! Gostei da ave anilha *${otherBird.anilha}* (${otherBird.nome || otherBird.raca})${priceText} que vi na vitrine do seu criatório e tenho interesse em negociar.`;
-                        window.open(`https://api.whatsapp.com/send?phone=${cleanWhatsapp}&text=${encodeURIComponent(msg)}`, '_blank');
-                      }}
-                      className="w-full py-2 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer truncate"
-                      title="Chamar no WhatsApp sobre esta ave"
-                    >
-                      <MessageCircle size={13} className="shrink-0" />
-                      <span className="truncate">Chamar no WhatsApp</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBirdWhatsApp(otherBird);
+                    }}
+                    className="w-full py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer truncate"
+                    title="Tenho interesse nesta ave"
+                  >
+                    <MessageCircle size={13} className="shrink-0" />
+                    <span className="truncate">Tenho interesse</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -633,52 +634,37 @@ export function PublicBirdShowcase() {
       <div className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-[#121218]/95 backdrop-blur-lg border-t border-white/10 flex justify-center pb-[max(env(safe-area-inset-bottom,0px),12px)] shadow-[0_-10px_30px_rgba(0,0,0,0.7)]">
         <div className="w-full max-w-lg flex items-center gap-2">
           {isViewingVitrineBird ? (
-            <>
+            <button
+              type="button"
+              onClick={handleBackFromVitrineBird}
+              className="py-3 px-3.5 rounded-2xl bg-[#1e1e2c] border border-white/10 hover:border-amber-500/50 text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg"
+              title="Voltar para a vitrine"
+              aria-label="Voltar para a vitrine"
+            >
+              <ArrowLeft size={17} className="text-amber-400" />
+              <span className="hidden sm:inline">Vitrine</span>
+            </button>
+          ) : (
+            data?.mode === 'public' && data.vitrineBirds && data.vitrineBirds.length > 0 && (
               <button
                 type="button"
-                onClick={handleBackFromVitrineBird}
-                className="py-3 px-3.5 rounded-2xl bg-[#1e1e2c] border border-white/10 hover:border-amber-500/50 text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg"
-                title="Voltar para a vitrine"
-                aria-label="Voltar para a vitrine"
+                onClick={handleOpenVitrine}
+                className="py-3 px-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg shadow-amber-500/10"
               >
-                <ArrowLeft size={17} className="text-amber-400" />
-                <span className="hidden sm:inline">Vitrine</span>
+                <Store size={18} />
+                <span>Vitrine ({data.vitrineBirds.length})</span>
               </button>
-
-              {cleanWhatsapp && (
-                <button
-                  onClick={handleVitrineWhatsappContact}
-                  className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer truncate"
-                >
-                  <MessageCircle size={19} className="shrink-0 animate-pulse" />
-                  <span className="truncate">Gostei dessa, chamar no WhatsApp</span>
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              {data?.mode === 'public' && data.vitrineBirds && data.vitrineBirds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleOpenVitrine}
-                  className="py-3 px-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-95 shadow-lg shadow-amber-500/10"
-                >
-                  <Store size={18} />
-                  <span>Vitrine ({data.vitrineBirds.length})</span>
-                </button>
-              )}
-
-              {cleanWhatsapp && (
-                <button
-                  onClick={handleWhatsappContact}
-                  className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer truncate"
-                >
-                  <MessageCircle size={19} className="shrink-0" />
-                  <span className="truncate">Negociar no WhatsApp</span>
-                </button>
-              )}
-            </>
+            )
           )}
+
+          <button
+            type="button"
+            onClick={() => handleBirdWhatsApp(bird)}
+            className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 active:scale-[0.98] transition-all cursor-pointer truncate"
+          >
+            <MessageCircle size={19} className="shrink-0 animate-pulse" />
+            <span className="truncate">Tenho interesse, chamar no WhatsApp</span>
+          </button>
         </div>
       </div>
     </div>

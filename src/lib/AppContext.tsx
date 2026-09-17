@@ -54,6 +54,57 @@ export type Bird = {
   dataCadastro?: string;
 };
 
+export type VitrineMeta = {
+  inVitrine: boolean;
+  vitrinePrice?: string;
+  vitrineStatus?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
+};
+
+export function parseBirdVitrine(rawObservacoes?: string): {
+  cleanObservacoes: string;
+  inVitrine: boolean;
+  vitrinePrice: string;
+  vitrineStatus: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
+} {
+  if (!rawObservacoes) {
+    return { cleanObservacoes: '', inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
+  }
+  const match = rawObservacoes.match(/\[\[VITRINE:(.*?)\]\]/);
+  if (!match) {
+    return { cleanObservacoes: rawObservacoes, inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
+  }
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanObservacoes = rawObservacoes.replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
+    return {
+      cleanObservacoes,
+      inVitrine: Boolean(meta.inVitrine),
+      vitrinePrice: meta.vitrinePrice || meta.price || '',
+      vitrineStatus: meta.vitrineStatus || meta.status || 'Disponível'
+    };
+  } catch {
+    return { cleanObservacoes: rawObservacoes, inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
+  }
+}
+
+export function formatBirdObservacoesWithVitrine(
+  cleanObservacoes: string | undefined,
+  inVitrine: boolean,
+  vitrinePrice?: string,
+  vitrineStatus?: string
+): string {
+  const base = (cleanObservacoes || '').replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
+  if (!inVitrine) {
+    return base;
+  }
+  const meta: VitrineMeta = {
+    inVitrine: true,
+    vitrinePrice: vitrinePrice || '',
+    vitrineStatus: (vitrineStatus as any) || 'Disponível'
+  };
+  return base ? `${base}\n[[VITRINE:${JSON.stringify(meta)}]]` : `[[VITRINE:${JSON.stringify(meta)}]]`;
+}
+
 export type IncubationLot = {
   id: string;
   coupleId: string;
@@ -596,7 +647,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setter: (d: any) => {
           const list = Array.isArray(d) ? (d as Bird[]) : [];
           const filtered = list.filter(b => b && b.id && !deletedBirdIds.has(b.id));
-          setBirds(filtered);
+          const mapped = filtered.map(b => {
+            const parsed = parseBirdVitrine(b.observacoes);
+            const inVit = b.inVitrine !== undefined ? b.inVitrine : parsed.inVitrine;
+            return {
+              ...b,
+              inVitrine: inVit,
+              vitrinePrice: b.vitrinePrice || parsed.vitrinePrice || '',
+              vitrineStatus: b.vitrineStatus || parsed.vitrineStatus || 'Disponível',
+              observacoes: parsed.cleanObservacoes
+            };
+          });
+          setBirds(mapped);
+          // Sincroniza vitrineConfig em paralelo
+          const vMap: Record<string, any> = {};
+          mapped.forEach(b => {
+            if (b.inVitrine) {
+              vMap[b.id] = { inVitrine: true, vitrinePrice: b.vitrinePrice, vitrineStatus: b.vitrineStatus };
+            }
+          });
+          if (Object.keys(vMap).length > 0) {
+            setVitrineConfig(prev => ({ ...prev, ...vMap }));
+          }
         }
       },
       {
@@ -967,6 +1039,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let finalBirds: Bird[] = [];
       if (sbBirdsFromCloud !== null) {
         // A nuvem respondeu com sucesso: é a autoridade central absoluta
+        const nextVitrineMap: Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }> = {};
+
         const cloudMapped: Bird[] = sbBirdsFromCloud.map((b: any) => {
           const localBird = (localBirds || []).find((x: any) => x.id === b.id);
           let birdImagens = b.imagens || localBird?.imagens || [];
@@ -976,16 +1050,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
             birdImagens = [b.imagem, ...birdImagens.filter((img: string) => img !== b.imagem)].slice(0, 10);
           }
 
+          const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
+          const parsedLocalVitrine = parseBirdVitrine(localBird?.observacoes);
           const vConfig = vitrineConfig[b.id] || {};
-          const isBirdInVitrine = localBird?.inVitrine !== undefined 
-            ? localBird.inVitrine 
-            : (vConfig.inVitrine !== undefined ? vConfig.inVitrine : false);
-          const birdVitrinePrice = localBird?.vitrinePrice !== undefined 
-            ? localBird.vitrinePrice 
-            : (vConfig.vitrinePrice || '');
-          const birdVitrineStatus = localBird?.vitrineStatus !== undefined 
-            ? localBird.vitrineStatus 
-            : (vConfig.vitrineStatus || 'Disponível');
+
+          const isBirdInVitrine = parsedCloudVitrine.inVitrine || 
+            Boolean(localBird?.inVitrine) || 
+            parsedLocalVitrine.inVitrine || 
+            Boolean(vConfig.inVitrine);
+
+          const birdVitrinePrice = parsedCloudVitrine.vitrinePrice || 
+            localBird?.vitrinePrice || 
+            parsedLocalVitrine.vitrinePrice || 
+            vConfig.vitrinePrice || '';
+
+          const birdVitrineStatus = parsedCloudVitrine.vitrineStatus || 
+            localBird?.vitrineStatus || 
+            parsedLocalVitrine.vitrineStatus || 
+            vConfig.vitrineStatus || 'Disponível';
+
+          const cleanObs = parsedCloudVitrine.cleanObservacoes || parsedLocalVitrine.cleanObservacoes || '';
+
+          // Se a ave estava na vitrine local mas o observacoes na nuvem ainda não tinha a tag, grava no Supabase
+          if (!parsedCloudVitrine.inVitrine && isBirdInVitrine && isSupabaseConfigured && user) {
+            const obsWithTag = formatBirdObservacoesWithVitrine(cleanObs, true, birdVitrinePrice, birdVitrineStatus);
+            supabase!.from('birds').update({ observacoes: obsWithTag }).eq('id', b.id).then(({ error }) => {
+              if (error) console.warn('[Sync] Falha ao persistir tag vitrine em nuvem:', error);
+            });
+          }
+
+          if (isBirdInVitrine) {
+            nextVitrineMap[b.id] = {
+              inVitrine: true,
+              vitrinePrice: birdVitrinePrice,
+              vitrineStatus: birdVitrineStatus
+            };
+          }
 
           return {
             id: b.id,
@@ -1007,7 +1107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataNascimento: b.data_nascimento || b.dataNascimento,
             peso: b.peso,
             dataBaixa: localBird?.dataBaixa,
-            observacoes: b.observacoes || localBird?.observacoes || '',
+            observacoes: cleanObs,
             inVitrine: isBirdInVitrine,
             vitrinePrice: birdVitrinePrice,
             vitrineStatus: birdVitrineStatus,
@@ -1018,6 +1118,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             compradorContato: localBird?.compradorContato,
             motivoBaixa: localBird?.motivoBaixa
           };
+        });
+
+        // Atualiza vitrineConfig em sincronia
+        setVitrineConfig(prev => {
+          const merged = { ...prev, ...nextVitrineMap };
+          localforage.setItem(getStorageKey('vitrine-config'), merged).catch(console.error);
+          try {
+            localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(merged));
+          } catch {}
+          return merged;
         });
 
         // Adiciona apenas aves locais que foram criadas offline e ainda não chegaram à nuvem
@@ -1336,7 +1446,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       isSyncingRef.current = false;
     }
-  }, [user, loadFromLocalForage]);
+  }, [user, loadFromLocalForage, vitrineConfig]);
 
   // Carregamento inicial de dados ao iniciar ou trocar de usuário
   useEffect(() => {
@@ -1658,8 +1768,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addBird = (bird: Bird) => {
     clearDeletedBirdId(bird.id);
     markPendingOfflineBird(bird.id);
+    const cleanObs = parseBirdVitrine(bird.observacoes).cleanObservacoes;
+    const finalObsForDb = formatBirdObservacoesWithVitrine(
+      cleanObs,
+      Boolean(bird.inVitrine),
+      bird.vitrinePrice,
+      bird.vitrineStatus
+    );
     const birdWithDate: Bird = {
       ...bird,
+      observacoes: cleanObs,
       dataCadastro: bird.dataCadastro || new Date().toISOString().split('T')[0]
     };
     setBirds(prev => {
@@ -1668,6 +1786,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
         localforage.setItem('@mura-manager:birds', next).catch(() => {});
+      }
+
+      if (bird.inVitrine) {
+        setVitrineConfig(vPrev => {
+          const vNext = {
+            ...vPrev,
+            [bird.id]: {
+              inVitrine: true,
+              vitrinePrice: bird.vitrinePrice || '',
+              vitrineStatus: bird.vitrineStatus || 'Disponível'
+            }
+          };
+          localforage.setItem(getStorageKey('vitrine-config'), vNext).catch(console.error);
+          try {
+            localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(vNext));
+          } catch {}
+          return vNext;
+        });
       }
       
       if (isSupabaseConfigured && user) {
@@ -1692,7 +1828,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           data_nascimento: bird.dataNascimento || null,
           peso: bird.peso || null,
           imagens: bird.imagens || [],
-          observacoes: bird.observacoes || ''
+          observacoes: finalObsForDb
         };
         supabase!
           .from('birds')
@@ -1717,7 +1853,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const editBird = (id: string, updatedBird: Partial<Bird>) => {
+    let finalObsForDb: string | undefined = undefined;
+
     setBirds(prev => {
+      const currentBird = prev.find(b => b.id === id);
+      const isVit = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : Boolean(currentBird?.inVitrine);
+      const vitPrice = updatedBird.vitrinePrice !== undefined ? updatedBird.vitrinePrice : (currentBird?.vitrinePrice || '');
+      const vitStat = updatedBird.vitrineStatus !== undefined ? updatedBird.vitrineStatus : (currentBird?.vitrineStatus || 'Disponível');
+
+      const rawObs = updatedBird.observacoes !== undefined ? updatedBird.observacoes : (currentBird?.observacoes || '');
+      const cleanObs = parseBirdVitrine(rawObs).cleanObservacoes;
+      finalObsForDb = formatBirdObservacoesWithVitrine(cleanObs, isVit, vitPrice, vitStat);
+
       const next = prev.map(b => {
         if (b.id === id) {
           const nextFields = { ...updatedBird };
@@ -1730,6 +1877,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             nextFields.compradorNome = undefined;
             nextFields.compradorContato = undefined;
           }
+          nextFields.inVitrine = isVit;
+          nextFields.vitrinePrice = vitPrice;
+          nextFields.vitrineStatus = vitStat;
+          nextFields.observacoes = cleanObs;
           return { ...b, ...nextFields };
         }
         return b;
@@ -1742,11 +1893,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Persistência robusta de vitrineConfig (isolada e imune a sobrescritas de sync)
       if (updatedBird.inVitrine !== undefined || updatedBird.vitrinePrice !== undefined || updatedBird.vitrineStatus !== undefined) {
-        setVitrineConfig(prev => {
-          const prevEntry = prev[id] || {};
-          const isVit = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : prevEntry.inVitrine;
-          const nextConfig = { ...prev };
-          if (isVit) {
+        setVitrineConfig(vPrev => {
+          const prevEntry = vPrev[id] || {};
+          const isVitVal = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : prevEntry.inVitrine;
+          const nextConfig = { ...vPrev };
+          if (isVitVal) {
             nextConfig[id] = {
               inVitrine: true,
               vitrinePrice: updatedBird.vitrinePrice !== undefined ? updatedBird.vitrinePrice : (prevEntry.vitrinePrice || ''),
@@ -1762,36 +1913,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return nextConfig;
         });
       }
-      
-      if (isSupabaseConfigured && user) {
-        const dbUpdate: any = {};
-        if (updatedBird.anilha !== undefined) dbUpdate.anilha = updatedBird.anilha;
-        if (updatedBird.nome !== undefined) dbUpdate.nome = updatedBird.nome || null;
-        if (updatedBird.sexo !== undefined) dbUpdate.sexo = updatedBird.sexo;
-        if (updatedBird.raca !== undefined) dbUpdate.raca = updatedBird.raca;
-        if (updatedBird.baia !== undefined) dbUpdate.baia = updatedBird.baia || 'ND';
-        if (updatedBird.status !== undefined) dbUpdate.status = updatedBird.status;
-        if (updatedBird.vacinas !== undefined) dbUpdate.vacinas = updatedBird.vacinas || null;
-        if (updatedBird.origem !== undefined) dbUpdate.origem = updatedBird.origem || 'Criatório';
-        if (updatedBird.casalId !== undefined) dbUpdate.casal_id = updatedBird.casalId || null;
-        if (updatedBird.paiId !== undefined) dbUpdate.pai_id = updatedBird.paiId || null;
-        if (updatedBird.maeId !== undefined) dbUpdate.mae_id = updatedBird.maeId || null;
-        if (updatedBird.isPaiExterno !== undefined) dbUpdate.is_pai_externo = !!updatedBird.isPaiExterno;
-        if (updatedBird.isMaeExterno !== undefined) dbUpdate.is_mae_externo = !!updatedBird.isMaeExterno;
-        if (updatedBird.dataNascimento !== undefined) dbUpdate.data_nascimento = updatedBird.dataNascimento || null;
-        if (updatedBird.peso !== undefined) dbUpdate.peso = updatedBird.peso || null;
-        if (updatedBird.observacoes !== undefined) dbUpdate.observacoes = updatedBird.observacoes || '';
-        if (updatedBird.imagens !== undefined) {
-          dbUpdate.imagem = updatedBird.imagens?.[0] || null;
-          dbUpdate.imagens = updatedBird.imagens;
-        } else if (updatedBird.imagem !== undefined) {
-          dbUpdate.imagem = updatedBird.imagem || null;
-        }
+      return next;
+    });
 
-        supabase!
-          .from('birds')
-          .update(dbUpdate)
-          .eq('id', id)
+    if (isSupabaseConfigured && user) {
+      const dbUpdate: any = {};
+      if (updatedBird.anilha !== undefined) dbUpdate.anilha = updatedBird.anilha;
+      if (updatedBird.nome !== undefined) dbUpdate.nome = updatedBird.nome || null;
+      if (updatedBird.sexo !== undefined) dbUpdate.sexo = updatedBird.sexo;
+      if (updatedBird.raca !== undefined) dbUpdate.raca = updatedBird.raca;
+      if (updatedBird.baia !== undefined) dbUpdate.baia = updatedBird.baia || 'ND';
+      if (updatedBird.status !== undefined) dbUpdate.status = updatedBird.status;
+      if (updatedBird.vacinas !== undefined) dbUpdate.vacinas = updatedBird.vacinas || null;
+      if (updatedBird.origem !== undefined) dbUpdate.origem = updatedBird.origem || 'Criatório';
+      if (updatedBird.casalId !== undefined) dbUpdate.casal_id = updatedBird.casalId || null;
+      if (updatedBird.paiId !== undefined) dbUpdate.pai_id = updatedBird.paiId || null;
+      if (updatedBird.maeId !== undefined) dbUpdate.mae_id = updatedBird.maeId || null;
+      if (updatedBird.isPaiExterno !== undefined) dbUpdate.is_pai_externo = !!updatedBird.isPaiExterno;
+      if (updatedBird.isMaeExterno !== undefined) dbUpdate.is_mae_externo = !!updatedBird.isMaeExterno;
+      if (updatedBird.dataNascimento !== undefined) dbUpdate.data_nascimento = updatedBird.dataNascimento || null;
+      if (updatedBird.peso !== undefined) dbUpdate.peso = updatedBird.peso || null;
+      if (finalObsForDb !== undefined) {
+        dbUpdate.observacoes = finalObsForDb;
+      } else if (updatedBird.observacoes !== undefined) {
+        dbUpdate.observacoes = updatedBird.observacoes || '';
+      }
+      if (updatedBird.imagens !== undefined) {
+        dbUpdate.imagem = updatedBird.imagens?.[0] || null;
+        dbUpdate.imagens = updatedBird.imagens;
+      } else if (updatedBird.imagem !== undefined) {
+        dbUpdate.imagem = updatedBird.imagem || null;
+      }
+
+      supabase!
+        .from('birds')
+        .update(dbUpdate)
+        .eq('id', id)
           .then(
             ({ error }) => {
               if (error) {
@@ -1806,9 +1963,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           );
       }
-      return next;
-    });
-  };
+    };
 
   const removeBird = (id: string) => {
     // 1. Grava no túmulo persistente de IDs deletados e fila pendente

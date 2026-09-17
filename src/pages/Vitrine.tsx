@@ -6,6 +6,7 @@ import {
 import { useAppContext, type Bird } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ShareBirdModal } from '../components/modals/ShareBirdModal';
+import { publishShowcase } from '../lib/showcaseShare';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Vitrine() {
@@ -46,7 +47,50 @@ export function Vitrine() {
     });
   }, [birds, vitrineConfig, searchQuery, filterMode]);
 
+  const syncVitrineOnline = async () => {
+    if (vitrineBirds.length === 0) return;
+    try {
+      const firstBird = vitrineBirds[0];
+      const activePhone = farmSettings?.phone || farmSettings?.whatsapp || '';
+      await publishShowcase({
+        id: user?.id || 'meu-criatorio',
+        bird: firstBird,
+        farmSettings: {
+          name: farmSettings?.name,
+          responsible: farmSettings?.responsible,
+          phone: activePhone,
+          city: farmSettings?.city,
+          state: farmSettings?.state,
+          logo: farmSettings?.logo,
+          whatsapp: activePhone
+        },
+        mode: 'public',
+        vitrineBirds: vitrineBirds.map(b => ({
+          ...b,
+          id: b.id,
+          anilha: b.anilha,
+          nome: b.nome || '',
+          raca: b.raca || '',
+          sexo: b.sexo || '',
+          status: b.status || 'Disponível',
+          peso: b.peso || '',
+          dataNascimento: b.dataNascimento || '',
+          vacinas: b.vacinas || '',
+          observacoes: b.observacoes || '',
+          imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
+          imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
+          vitrinePrice: b.vitrinePrice || vitrineConfig[b.id]?.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
+          vitrineStatus: b.vitrineStatus || vitrineConfig[b.id]?.vitrineStatus || 'Disponível'
+        })),
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      console.warn('Erro ao sincronizar vitrine online:', err);
+    }
+  };
+
   const handleCopyVitrineLink = async () => {
+    syncVitrineOnline();
     try {
       await navigator.clipboard.writeText(vitrineUrl);
       setCopiedVitrine(true);
@@ -59,6 +103,7 @@ export function Vitrine() {
   };
 
   const handleShareVitrineWhatsApp = () => {
+    syncVitrineOnline();
     triggerLight();
     const criatorio = farmSettings?.name || 'Mura Manager';
     const text = `🏆 *Vitrine de Aves Disponíveis - ${criatorio}*\n` +
