@@ -129,16 +129,37 @@ export function ShareBirdModal({
 
   const qrCodeUrl = shareUrl ? generateQrCodeUrl(shareUrl, 320) : '';
 
+  const getBirdShareText = () => {
+    const criatorio = farmSettings?.name || 'Mura Manager';
+    const vitrineNotice = mode === 'public' && availableVitrineBirds.length > 0
+      ? `\n🏪 *Veja também nossa vitrine com mais ${availableVitrineBirds.length} aves disponíveis no link!*`
+      : '';
+    const priceText = bird.vitrinePrice ? `\n💰 *Valor:* ${bird.vitrinePrice}` : '';
+    const statusText = bird.vitrineStatus && bird.vitrineStatus !== 'Disponível' ? `\n🏷️ *Status:* ${bird.vitrineStatus}` : '';
+
+    return `🐔 *Ficha Técnica da Ave - ${bird.anilha}*\n` +
+      (bird.nome ? `*Nome:* ${bird.nome}\n` : '') +
+      `*Raça:* ${bird.raca}\n` +
+      (bird.sexo ? `*Sexo:* ${bird.sexo}\n` : '') +
+      (bird.peso ? `*Peso:* ${bird.peso}\n` : '') +
+      priceText +
+      statusText +
+      `\n*Criatório:* ${criatorio}` +
+      vitrineNotice + `\n\n` +
+      `👉 *Acesse a ficha interativa com fotos e pedigree:* \n${shareUrl}`;
+  };
+
   const handleCopyLink = async () => {
     if (!shareUrl) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      const textToCopy = getBirdShareText();
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       triggerSuccess();
-      showToast('Link da ficha copiado com sucesso!', 'success');
+      showToast('Ficha e link copiados com sucesso!', 'success');
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      showToast('Não foi possível copiar o link.', 'error');
+      showToast('Não foi possível copiar.', 'error');
     }
   };
 
@@ -152,18 +173,7 @@ export function ShareBirdModal({
     }
     if (!shareUrl) return;
     triggerLight();
-    const criatorio = farmSettings?.name || 'Mura Manager';
-    const vitrineNotice = mode === 'public' && availableVitrineBirds.length > 0
-      ? `\n🏪 *Veja também nossa vitrine com mais ${availableVitrineBirds.length} aves disponíveis no link!*`
-      : '';
-    const text = `🐔 *Ficha Técnica da Ave - ${bird.anilha}*\n` +
-      `*Nome:* ${bird.nome || 'Sem Nome'}\n` +
-      `*Raça:* ${bird.raca}\n` +
-      (bird.peso ? `*Peso:* ${bird.peso}\n` : '') +
-      `*Criatório:* ${criatorio}` +
-      vitrineNotice + `\n\n` +
-      `👉 *Acesse a ficha interativa com fotos e pedigree:* \n${shareUrl}`;
-
+    const text = getBirdShareText();
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 

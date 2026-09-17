@@ -89,27 +89,37 @@ export function Vitrine() {
     }
   };
 
+  const getVitrineShareText = () => {
+    const criatorio = farmSettings?.name || 'Mura Manager';
+    const totalAves = vitrineBirds.length;
+    const countDesc = totalAves > 0 ? ` (${totalAves} ave${totalAves > 1 ? 's' : ''} disponível${totalAves > 1 ? 'is' : ''})` : '';
+    const phone = farmSettings?.phone || farmSettings?.whatsapp;
+    const contactText = phone ? `\n📞 *Contato:* ${phone}` : '';
+
+    return `🏆 *Vitrine de Aves - ${criatorio}*${countDesc}\n\n` +
+      `✨ Conheça nossa vitrine digital de aves e reprodutores disponíveis para negociação! Fotos, pedigree e procedência selecionada:\n` +
+      contactText + `\n\n` +
+      `👉 *Clique no link para acessar nossa vitrine digital:* \n${vitrineUrl}`;
+  };
+
   const handleCopyVitrineLink = async () => {
     syncVitrineOnline();
     try {
-      await navigator.clipboard.writeText(vitrineUrl);
+      const text = getVitrineShareText();
+      await navigator.clipboard.writeText(text);
       setCopiedVitrine(true);
       triggerSuccess();
-      showToast('Link da sua Vitrine copiado com sucesso!', 'success');
+      showToast('Mensagem da vitrine copiada para colar no WhatsApp!', 'success');
       setTimeout(() => setCopiedVitrine(false), 2500);
     } catch {
-      showToast('Erro ao copiar link.', 'error');
+      showToast('Erro ao copiar mensagem.', 'error');
     }
   };
 
   const handleShareVitrineWhatsApp = () => {
     syncVitrineOnline();
     triggerLight();
-    const criatorio = farmSettings?.name || 'Mura Manager';
-    const text = `🏆 *Vitrine de Aves Disponíveis - ${criatorio}*\n` +
-      `Confira o nosso catálogo oficial de aves e reprodutores disponíveis para negociação:\n\n` +
-      `👉 *Acesse nossa vitrine digital:* \n${vitrineUrl}`;
-
+    const text = getVitrineShareText();
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
