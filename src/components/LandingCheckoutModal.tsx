@@ -481,31 +481,54 @@ export function LandingCheckoutModal({
         : 'visa';
 
       // 3. Processa no Worker
-      const res = await fetch(`${WORKER_URL}/api/checkout/card`, {
+      // Se for plano mensal (comum ou completo), cria Assinatura Recorrente Automática via Preapproval
+      const isSubscription = selectedPlan === 'monthly' || selectedPlan === 'pro_monthly';
+      const endpoint = isSubscription 
+        ? `${WORKER_URL}/api/checkout/subscription` 
+        : `${WORKER_URL}/api/checkout/card`;
+
+      const payload = isSubscription ? {
+        items: [{
+          id: `plano_${selectedPlan}`,
+          title: `Mura Manager - ${planInfo.title}`,
+          price: planInfo.price
+        }],
+        customer: {
+          name: nome.trim(),
+          email: cleanEmail,
+          cpf: cleanAccountCpf,
+          phone: whatsapp.replace(/\D/g, '') || ''
+        },
+        token: tokenData.id,
+        plan: selectedPlan,
+        site: 'mura_app',
+      } : {
+        items: [{
+          id: `plano_${selectedPlan}`,
+          title: `Mura Manager - ${planInfo.title}`,
+          price: planInfo.price
+        }],
+        customer: {
+          name: nome.trim(),
+          email: cleanEmail,
+          cpf: cleanAccountCpf,
+          phone: whatsapp.replace(/\D/g, '') || ''
+        },
+        token: tokenData.id,
+        installments: Number(installments),
+        payment_method_id: paymentMethodId,
+        site: 'mura_app',
+      };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: [{
-            id: `plano_${selectedPlan}`,
-            title: `Mura Manager - ${planInfo.title}`,
-            price: planInfo.price
-          }],
-          customer: {
-            name: nome.trim(),
-            email: cleanEmail,
-            cpf: cleanAccountCpf,
-            phone: whatsapp.replace(/\D/g, '') || ''
-          },
-          token: tokenData.id,
-          installments: Number(installments),
-          payment_method_id: paymentMethodId,
-          site: 'mura_app',
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
-      if (data.status === 'approved') {
+      if (data.status === 'approved' || data.status === 'authorized') {
         await handleLiberarConta(cleanAccountCpf, cleanEmail, senha);
       } else if (data.status === 'in_process' || data.status === 'pending') {
         startPolling(data.id, cleanAccountCpf, cleanEmail, senha);
@@ -972,18 +995,29 @@ export function LandingCheckoutModal({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/50 uppercase">Parcelas</label>
-                        <select
-                          value={installments}
-                          onChange={e => setInstallments(Number(e.target.value))}
-                          className="w-full bg-[#181822] border border-white/[0.2] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
-                        >
-                          {installmentOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
+                        {selectedPlan === 'yearly' ? (
+                          <>
+                            <label className="text-[10px] font-bold text-white/50 uppercase">Parcelas</label>
+                            <select
+                              value={installments}
+                              onChange={e => setInstallments(Number(e.target.value))}
+                              className="w-full bg-[#181822] border border-white/[0.2] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
+                            >
+                              {installmentOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <label className="text-[10px] font-bold text-amber-400 uppercase">Recorrência</label>
+                            <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-2 text-[11px] text-amber-300 font-bold text-center truncate">
+                              Cobrança Mensal
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -1029,6 +1063,16 @@ export function LandingCheckoutModal({
                         )}
                       </div>
                     </div>
+
+                    {/* Aviso de Assinatura Automática para Planos Mensais */}
+                    {(selectedPlan === 'monthly' || selectedPlan === 'pro_monthly') && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2 text-[11px] text-amber-300/90 leading-snug">
+                        <Zap size={14} className="text-amber-400 shrink-0 mt-0.5 fill-amber-400" />
+                        <span>
+                          <strong>Assinatura Recorrente:</strong> O valor de {planInfo.priceFormatted} será debitado automaticamente todo mês no seu cartão. Você pode cancelar quando quiser sem fidelidade nem multas.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1201,11 +1245,15 @@ export function LandingCheckoutModal({
                   <div className="pt-2 border-t border-white/[0.08] flex items-end justify-between">
                     <div>
                       <span className="text-[10px] font-bold uppercase text-white/50 block">
-                        Total a pagar hoje:
+                        {paymentMethod === 'card' && (selectedPlan === 'monthly' || selectedPlan === 'pro_monthly') 
+                          ? 'Valor da Mensalidade:' 
+                          : 'Total a pagar hoje:'}
                       </span>
                       <span className="text-[10.5px] text-white/70 font-medium">
                         {paymentMethod === 'pix' ? (
                           'À vista no PIX Instantâneo'
+                        ) : (selectedPlan === 'monthly' || selectedPlan === 'pro_monthly') ? (
+                          'Assinatura Mensal no Cartão'
                         ) : installments > 1 ? (
                           `${installments}x de R$ ${(planInfo.price / installments).toFixed(2).replace('.', ',')} no Cartão`
                         ) : (
@@ -1216,7 +1264,7 @@ export function LandingCheckoutModal({
 
                     <div className="text-right">
                       <div className="text-lg font-black text-amber-400 tracking-tight leading-none">
-                        {paymentMethod === 'card' && installments > 1 ? (
+                        {paymentMethod === 'card' && installments > 1 && selectedPlan === 'yearly' ? (
                           <span>
                             {installments}x de R$ {(planInfo.price / installments).toFixed(2).replace('.', ',')}
                           </span>
@@ -1224,11 +1272,15 @@ export function LandingCheckoutModal({
                           <span>{planInfo.priceFormatted}</span>
                         )}
                       </div>
-                      {paymentMethod === 'card' && installments > 1 && (
+                      {paymentMethod === 'card' && (selectedPlan === 'monthly' || selectedPlan === 'pro_monthly') ? (
+                        <span className="text-[9px] text-amber-400/90 block mt-0.5 font-bold">
+                          Cobrança automática todo mês
+                        </span>
+                      ) : paymentMethod === 'card' && installments > 1 && selectedPlan === 'yearly' ? (
                         <span className="text-[9px] text-white/40 block mt-0.5 font-mono">
                           Total: {planInfo.priceFormatted}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -1247,7 +1299,11 @@ export function LandingCheckoutModal({
                     <>
                       <Zap size={16} className="fill-black" />
                       <span>
-                        {paymentMethod === 'pix' ? 'Gerar PIX e Liberar Acesso' : 'Pagar no Cartão e Liberar Acesso'}
+                        {paymentMethod === 'pix' 
+                          ? 'Gerar PIX e Liberar Acesso' 
+                          : (selectedPlan === 'monthly' || selectedPlan === 'pro_monthly')
+                            ? `Ativar Assinatura (${planInfo.priceFormatted}/mês)`
+                            : 'Pagar no Cartão e Liberar Acesso'}
                       </span>
                       <ArrowRight size={16} />
                     </>
