@@ -12,8 +12,6 @@ import muraLogo from '../assets/mura_logo.jpg';
 import pixLogo from '../assets/payments/pix.png';
 import visaLogo from '../assets/payments/visa.png';
 import mastercardLogo from '../assets/payments/mastercard.png';
-import eloLogo from '../assets/payments/elo.svg';
-import hipercardLogo from '../assets/payments/hipercard.svg';
 import mercadoPagoLogo from '../assets/payments/mercado-pago.png';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
@@ -1258,64 +1256,42 @@ export function LandingCheckoutModal({
               </form>
 
               {/* ══════════════════════════════════════════════════════ */}
-              {/* BANDEIRAS OFICIAIS (PIX, VISA, MASTER, ELO, HIPER, MP) */}
+              {/* BANDEIRAS OFICIAIS (PIX, VISA, MASTERCARD, MP)        */}
               {/* ══════════════════════════════════════════════════════ */}
               <div className="pt-2 flex flex-col items-center gap-3">
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
-                  {/* Badge PIX Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="PIX Instantâneo">
-                    <img 
-                      src={pixLogo} 
-                      alt="PIX" 
-                      style={{ maxHeight: '16px', maxWidth: '30px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
-                  {/* Badge Visa Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Visa">
-                    <img 
-                      src={visaLogo} 
-                      alt="Visa" 
-                      style={{ maxHeight: '13px', maxWidth: '32px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
-                  {/* Badge Mastercard Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Mastercard">
-                    <img 
-                      src={mastercardLogo} 
-                      alt="Mastercard" 
-                      style={{ maxHeight: '17px', maxWidth: '26px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
-                  {/* Badge Elo Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Elo">
-                    <img 
-                      src={eloLogo} 
-                      alt="Elo" 
-                      style={{ maxHeight: '16px', maxWidth: '30px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
-                  {/* Badge Hipercard Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Hipercard">
-                    <img 
-                      src={hipercardLogo} 
-                      alt="Hipercard" 
-                      style={{ maxHeight: '15px', maxWidth: '30px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
-                  {/* Badge Mercado Pago Oficial */}
-                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Mercado Pago Gateway Oficial">
-                    <img 
-                      src={mercadoPagoLogo} 
-                      alt="Mercado Pago" 
-                      style={{ maxHeight: '14px', maxWidth: '32px', objectFit: 'contain' }}
-                      className="block w-auto h-auto" 
-                    />
-                  </div>
+                <div className="flex items-center justify-center gap-5 sm:gap-6 py-1 opacity-90">
+                  {/* PIX Oficial */}
+                  <img 
+                    src={pixLogo} 
+                    alt="PIX" 
+                    style={{ maxHeight: '18px', maxWidth: '38px', objectFit: 'contain' }}
+                    className="block w-auto h-auto select-none pointer-events-none drop-shadow" 
+                    title="PIX Instantâneo"
+                  />
+                  {/* Visa Oficial */}
+                  <img 
+                    src={visaLogo} 
+                    alt="Visa" 
+                    style={{ maxHeight: '14px', maxWidth: '42px', objectFit: 'contain' }}
+                    className="block w-auto h-auto select-none pointer-events-none drop-shadow" 
+                    title="Visa"
+                  />
+                  {/* Mastercard Oficial */}
+                  <img 
+                    src={mastercardLogo} 
+                    alt="Mastercard" 
+                    style={{ maxHeight: '20px', maxWidth: '32px', objectFit: 'contain' }}
+                    className="block w-auto h-auto select-none pointer-events-none drop-shadow" 
+                    title="Mastercard"
+                  />
+                  {/* Mercado Pago Oficial */}
+                  <img 
+                    src={mercadoPagoLogo} 
+                    alt="Mercado Pago" 
+                    style={{ maxHeight: '16px', maxWidth: '50px', objectFit: 'contain' }}
+                    className="block w-auto h-auto select-none pointer-events-none drop-shadow" 
+                    title="Mercado Pago Gateway Oficial"
+                  />
                 </div>
 
                 {/* ══════════════════════════════════════════════════════ */}
