@@ -7,6 +7,8 @@ import {
   CheckCircle, Sparkles, Send, Loader2
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { useAuth } from '../lib/AuthContext';
+import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
@@ -458,12 +460,18 @@ function BaiaBirdsManagementCard({
 }
 
 export function Lots() {
+  const { hasModuleAccess } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { 
     birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot, farmSettings 
   } = useAppContext();
+
+  if (!hasModuleAccess('lots')) {
+    return <ModuleLockedPaywall module="lots" />;
+  }
+
   const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
   const [generatingLotId, setGeneratingLotId] = useState<string | null>(null);
 

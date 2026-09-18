@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
-  CreditCard, QrCode, Zap, Store, ArrowLeft
+  CreditCard, QrCode, Zap, Store, ArrowLeft, Lock
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
 
@@ -50,14 +50,28 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
   const [newCpf, setNewCpf] = useState('');
   const [newName, setNewName] = useState('');
   const [newWhatsapp, setNewWhatsapp] = useState('');
-  const [newExpiresAt, setNewExpiresAt] = useState('');
+  const [planType, setPlanType] = useState<SubscriptionPlan>('pro_monthly');
+  const [newExpiresAt, setNewExpiresAt] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
   const [newPassword, setNewPassword] = useState('');
+
+  const handlePlanChange = (selected: SubscriptionPlan) => {
+    setPlanType(selected);
+    const d = new Date();
+    d.setDate(d.getDate() + (selected === 'yearly' ? 365 : 30));
+    setNewExpiresAt(d.toISOString().split('T')[0]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const planTag = planType === 'monthly' ? '[COMUM]' : planType === 'pro_monthly' ? '[COMPLETO]' : '[ANUAL]';
+    const cleanBase = newName.replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim();
     await onAdd({
       cpf: newCpf,
-      nome: newName,
+      nome: `${cleanBase} ${planTag}`.trim(),
       whatsapp: newWhatsapp,
       expires_at: newExpiresAt,
       password: newPassword,
@@ -71,6 +85,60 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 bg-theme-base/30 p-4 border border-theme-border rounded-xl">
+      {/* Seletor de Plano Autorizado */}
+      <div className="space-y-1">
+        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Plano Autorizado</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => handlePlanChange('monthly')}
+            className={`p-2 rounded-xl text-left border text-xs transition-all cursor-pointer ${
+              planType === 'monthly'
+                ? 'bg-blue-500/20 border-blue-500 text-white font-bold'
+                : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold">Mensal Comum</span>
+              <span className="text-[10px] text-blue-400 font-mono">R$ 39,90</span>
+            </div>
+            <p className="text-[10px] opacity-75 mt-0.5">Aves & Vitrine</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handlePlanChange('pro_monthly')}
+            className={`p-2 rounded-xl text-left border text-xs transition-all cursor-pointer ${
+              planType === 'pro_monthly'
+                ? 'bg-emerald-500/20 border-emerald-500 text-white font-bold'
+                : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold">Mensal Completo</span>
+              <span className="text-[10px] text-emerald-400 font-mono">R$ 59,80</span>
+            </div>
+            <p className="text-[10px] opacity-75 mt-0.5">+ Lotes & Ovos</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handlePlanChange('yearly')}
+            className={`p-2 rounded-xl text-left border text-xs transition-all cursor-pointer ${
+              planType === 'yearly'
+                ? 'bg-amber-500/20 border-amber-500 text-white font-bold'
+                : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold">Anual Completo</span>
+              <span className="text-[10px] text-amber-400 font-mono">R$ 567,90</span>
+            </div>
+            <p className="text-[10px] opacity-75 mt-0.5">Tudo Liberado (1 ano)</p>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-theme-text-muted uppercase">CPF do Cliente</label>
@@ -510,7 +578,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const navigate = useNavigate();
   const location = useLocation();
   const { triggerLight } = useHaptics();
-  const { isLocalMode, triggerWebhookPayment, isAdmin, trialInfo, cpf } = useAuth();
+  const { isLocalMode, triggerWebhookPayment, isAdmin, trialInfo, cpf, hasModuleAccess } = useAuth();
 
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
@@ -792,13 +860,15 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
   const expiringCount = expiringClients.length;
 
+  const canAccessLots = hasModuleAccess('lots');
+
   const navItems = [
-    { icon: LayoutDashboard, label: 'Início', path: '/' },
-    { icon: Bird, label: 'Aves & Raças', path: '/birds' },
-    { icon: Store, label: 'Vitrine', path: '/vitrine' },
-    { icon: Layers, label: 'Lotes', path: '/lots' },
-    { icon: Egg, label: 'Ovos', path: '/eggs' },
-    { icon: Settings, label: 'Configurações', path: '/settings' },
+    { icon: LayoutDashboard, label: 'Início', path: '/', locked: false },
+    { icon: Bird, label: 'Aves & Raças', path: '/birds', locked: false },
+    { icon: Store, label: 'Vitrine', path: '/vitrine', locked: false },
+    { icon: Layers, label: 'Lotes', path: '/lots', locked: !canAccessLots },
+    { icon: Egg, label: 'Ovos', path: '/eggs', locked: !canAccessLots },
+    { icon: Settings, label: 'Configurações', path: '/settings', locked: false },
   ];
 
   // Mobile bottom nav: first 5 items (no settings — access via profile photo)
@@ -846,7 +916,13 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
               }
             >
               <item.icon size={18} />
-              {item.label}
+              <span>{item.label}</span>
+              {item.locked && (
+                <span className="ml-auto inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <Lock size={9} />
+                  <span>PRO</span>
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -990,14 +1066,21 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                 onClick={triggerLight}
                 id={`mobile-nav-link-${item.path === '/' ? 'dashboard' : item.path.replace('/', '')}`}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl active:scale-95 touch-manipulation ${
+                  `flex flex-col items-center justify-center w-full h-full gap-1 transition-all rounded-xl active:scale-95 touch-manipulation relative ${
                     isActive ? 'text-theme-primary' : 'text-theme-text-muted hover:text-white'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon size={18} className={isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-105' : ''} />
+                    <div className="relative">
+                      <item.icon size={18} className={isActive ? 'drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-105' : ''} />
+                      {item.locked && (
+                        <span className="absolute -top-1.5 -right-2 w-3.5 h-3.5 rounded-full bg-amber-500 text-black flex items-center justify-center shadow font-bold">
+                          <Lock size={8} />
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[9px] font-black tracking-wide truncate px-1 max-w-full text-center">
                       {item.label.split(' ')[0]}
                     </span>
@@ -1143,8 +1226,25 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
                           <div className="space-y-1 min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-white truncate max-w-[150px]" title={client.nome}>
-                                {client.nome || 'Sem Nome'}
+                                {(client.nome || 'Sem Nome').replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim() || 'Sem Nome'}
                               </span>
+                              {client.nome?.toUpperCase().includes('[COMUM]') ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                  Comum
+                                </span>
+                              ) : client.nome?.toUpperCase().includes('[COMPLETO]') || client.nome?.toUpperCase().includes('[PRO]') ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  Completo
+                                </span>
+                              ) : client.nome?.toUpperCase().includes('[ANUAL]') || (days !== null && days > 60) ? (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                  Anual
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-500/20 text-zinc-300 border border-zinc-500/30">
+                                  Mensal
+                                </span>
+                              )}
                               <span className="font-mono text-[10px] text-theme-text-muted">
                                 {formatCPF(client.cpf)}
                               </span>

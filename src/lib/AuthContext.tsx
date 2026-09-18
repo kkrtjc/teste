@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
@@ -68,6 +68,7 @@ type AuthContextType = {
   isExpired: boolean;
   isAdmin: boolean;
   trialInfo: TrialInfo;
+  hasModuleAccess: (module: 'birds' | 'lots' | 'eggs' | 'vitrine') => boolean;
   lastWebhookConfirmation: number | null;
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
@@ -87,6 +88,23 @@ function parseIsoDate(dateStr: any): Date | null {
   const normalized = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
   const d = new Date(normalized);
   return isNaN(d.getTime()) ? null : d;
+}
+
+export function extractPlanFromName(nome?: string | null, daysLeft?: number, storedPlan?: string | null): SubscriptionPlan {
+  if (storedPlan === 'monthly' || storedPlan === 'pro_monthly' || storedPlan === 'yearly') {
+    return storedPlan;
+  }
+  const clean = (nome || '').toUpperCase();
+  if (clean.includes('[COMUM]') || clean.includes('(COMUM)') || clean.includes('MENSAL COMUM')) {
+    return 'monthly';
+  }
+  if (clean.includes('[COMPLETO]') || clean.includes('(COMPLETO)') || clean.includes('MENSAL COMPLETO') || clean.includes('[PRO]')) {
+    return 'pro_monthly';
+  }
+  if (clean.includes('[ANUAL]') || clean.includes('(ANUAL)') || clean.includes('ANUAL COMPLETO') || clean.includes('ANUAL')) {
+    return 'yearly';
+  }
+  return daysLeft && daysLeft > 60 ? 'yearly' : 'monthly';
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -150,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       let rawExpiresAt: string | null = null;
+      let clientNome: string | null = null;
       const userKey = targetUser.id || targetUser.email || cleanCpf;
       const storedExpiresAt: string | null = await localforage.getItem(`@mura-manager:locked-trial-expires:${userKey}`);
 
@@ -170,10 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
           await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
         }
+        clientNome = localData?.nome ?? null;
         rawExpiresAt = localData?.expires_at ?? storedExpiresAt;
       } else {
         const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
-        let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
+        let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email, nome');
 
         if (normEmail && cleanCpf) {
           query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
@@ -207,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           rawExpiresAt = initialExpires;
         } else {
           rawExpiresAt = data?.expires_at ?? storedExpiresAt;
+          clientNome = data?.nome ?? null;
           if (data?.cpf) {
             const raw = data.cpf.replace(/\D/g, '');
             if (raw.length === 11) {
@@ -253,13 +274,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        const storedPlan = (await localforage.getItem<string>(`@mura-manager:user-plan:${userKey}`)) || null;
+        const detectedPlan = extractPlanFromName(clientNome, daysLeft, storedPlan);
 
         setIsExpired(expired);
         setTrialInfo(prev => {
           const nextIsTrial = !expired && !isUserPaid;
           const nextIsPaid = isUserPaid && !expired;
           const nextExpiresAt = expDateObj.toISOString();
-          const nextPlanType = isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial';
+          const nextPlanType = isUserPaid ? detectedPlan : 'trial';
 
           if (
             prev.isTrial === nextIsTrial &&
@@ -851,6 +874,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const totalRemainingMs = baseTimeMs + additionalMs - now;
       const calculatedDaysRemaining = Math.max(1, Math.ceil(totalRemainingMs / (1000 * 60 * 60 * 24)));
 
+      const planTag = plan === 'monthly' ? '[COMUM]' : plan === 'pro_monthly' ? '[COMPLETO]' : '[ANUAL]';
+
       if (!isSupabaseConfigured) {
         const localAllowedList = (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
         const index = localAllowedList.findIndex(
@@ -859,24 +884,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (index >= 0) {
           localAllowedList[index].expires_at = newExpiresAt;
+          const curNome = (localAllowedList[index].nome || '').replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim();
+          localAllowedList[index].nome = `${curNome || 'Cliente'} ${planTag}`.trim();
         } else {
           localAllowedList.push({
             cpf: cleanCpf || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+            nome: `Cliente ${planTag}`,
             email: userEmail,
             expires_at: newExpiresAt
           });
         }
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
       } else {
+        const { data: curRecord } = await supabase!.from('allowed_cpfs').select('nome').or(`email.eq.${userEmail},cpf.eq.${cleanCpf}`).maybeSingle();
+        const baseNome = (curRecord?.nome || user?.user_metadata?.full_name || userEmail?.split('@')[0] || 'Cliente').replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim();
+        const taggedNome = `${baseNome} ${planTag}`.trim();
+
         const { error: updateErr } = await supabase!
           .from('allowed_cpfs')
-          .update({ expires_at: newExpiresAt })
+          .update({ expires_at: newExpiresAt, nome: taggedNome })
           .or(`email.eq.${userEmail},cpf.eq.${cleanCpf}`);
 
         if (updateErr) {
           await supabase!.from('allowed_cpfs').insert([
             {
               cpf: cleanCpf || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+              nome: taggedNome,
               email: userEmail,
               expires_at: newExpiresAt
             }
@@ -887,6 +920,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userKey) {
         await localforage.setItem(`@mura-manager:user-is-paid:${userKey}`, 'true');
         await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, newExpiresAt);
+        await localforage.setItem(`@mura-manager:user-plan:${userKey}`, plan);
+        try { localStorage.setItem('@mura-manager:user-plan', plan); } catch {}
       }
 
       setIsExpired(false);
@@ -944,6 +979,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newExpiresAt = new Date(baseTimeMs + additionalMs).toISOString();
       const totalRemainingMs = baseTimeMs + additionalMs - now;
       const calculatedDaysRemaining = Math.max(1, Math.ceil(totalRemainingMs / (1000 * 60 * 60 * 24)));
+      const planTag = plan === 'monthly' ? '[COMUM]' : plan === 'pro_monthly' ? '[COMPLETO]' : '[ANUAL]';
 
       if (!isSupabaseConfigured) {
         const localAllowedList = (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
@@ -953,9 +989,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (index >= 0) {
           localAllowedList[index].expires_at = newExpiresAt;
+          const curNome = (localAllowedList[index].nome || '').replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim();
+          localAllowedList[index].nome = `${curNome || 'Cliente'} ${planTag}`.trim();
         } else {
           localAllowedList.push({
             cpf: cleanCpfToUse || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+            nome: `Cliente ${planTag}`,
             email: emailToUse,
             expires_at: newExpiresAt
           });
@@ -963,15 +1002,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
       } else {
         const query = emailToUse ? `email.eq.${emailToUse}` : `cpf.eq.${cleanCpfToUse}`;
+        const { data: curRecord } = await supabase!.from('allowed_cpfs').select('nome').or(query).maybeSingle();
+        const baseNome = (curRecord?.nome || user?.user_metadata?.full_name || emailToUse?.split('@')[0] || 'Cliente').replace(/\[(COMUM|COMPLETO|ANUAL|PRO)\]/gi, '').trim();
+        const taggedNome = `${baseNome} ${planTag}`.trim();
+
         const { error: updateErr } = await supabase!
           .from('allowed_cpfs')
-          .update({ expires_at: newExpiresAt })
+          .update({ expires_at: newExpiresAt, nome: taggedNome })
           .or(query);
 
         if (updateErr) {
           await supabase!.from('allowed_cpfs').insert([
             {
               cpf: cleanCpfToUse || Math.floor(10000000000 + Math.random() * 90000000000).toString(),
+              nome: taggedNome,
               email: emailToUse,
               expires_at: newExpiresAt
             }
@@ -982,6 +1026,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userKey) {
         await localforage.setItem(`@mura-manager:user-is-paid:${userKey}`, 'true');
         await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, newExpiresAt);
+        await localforage.setItem(`@mura-manager:user-plan:${userKey}`, plan);
+        try { localStorage.setItem('@mura-manager:user-plan', plan); } catch {}
       }
 
       setIsExpired(false);
@@ -1018,6 +1064,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function checkCurrentCpfAccess() {
       try {
         let rawExpiresAt: string | null = null;
+        let clientNome: string | null = null;
         const userKey = user.id || user.email || cleanCpf;
         const storedExpiresAt: string | null = await localforage.getItem(`@mura-manager:locked-trial-expires:${userKey}`);
 
@@ -1038,11 +1085,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await localforage.setItem('@mura-manager:local-allowed-cpfs', localAllowedList);
             await localforage.setItem(`@mura-manager:locked-trial-expires:${userKey}`, initialExpires);
           }
+          clientNome = localData?.nome ?? null;
           rawExpiresAt = localData?.expires_at ?? storedExpiresAt;
         } else {
           // Validação online no Supabase com busca segura
           const normEmail = userEmail ? userEmail.toLowerCase().trim() : '';
-          let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email');
+          let query = supabase!.from('allowed_cpfs').select('cpf, expires_at, email, nome');
 
           if (normEmail && cleanCpf) {
             query = query.or(`email.ilike.${normEmail},cpf.eq.${cleanCpf}`);
@@ -1076,6 +1124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rawExpiresAt = initialExpires;
           } else {
             rawExpiresAt = data?.expires_at ?? storedExpiresAt;
+            clientNome = data?.nome ?? null;
           }
         }
 
@@ -1119,13 +1168,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           const daysLeft = expired ? 0 : Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+          const storedPlan = (await localforage.getItem<string>(`@mura-manager:user-plan:${userKey}`)) || null;
+          const detectedPlan = extractPlanFromName(clientNome, daysLeft, storedPlan);
 
           setIsExpired(expired);
           setTrialInfo(prev => {
             const nextIsTrial = !expired && !isUserPaid;
             const nextIsPaid = isUserPaid && !expired;
             const nextExpiresAt = expDateObj.toISOString();
-            const nextPlanType = isUserPaid ? (daysLeft > 60 ? 'yearly' : 'monthly') : 'trial';
+            const nextPlanType = isUserPaid ? detectedPlan : 'trial';
 
             if (
               prev.isTrial === nextIsTrial &&
@@ -1160,6 +1211,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  const hasModuleAccess = useCallback((module: 'birds' | 'lots' | 'eggs' | 'vitrine'): boolean => {
+    // 1. Admin sempre tem acesso completo e irrestrito
+    if (isUserAdmin(user?.email) || isUserAdmin(getCpf()) || isUserAdmin(user?.id)) {
+      return true;
+    }
+    // 2. Os 7 dias de teste gratuito liberam TUDO
+    if (trialInfo?.isTrial && !isExpired) {
+      return true;
+    }
+    // 3. Se expirou, o paywall principal bloqueará
+    if (isExpired) {
+      return false;
+    }
+    // 4. Módulo de Aves e Vitrine liberados em todos os planos pagos
+    if (module === 'birds' || module === 'vitrine') {
+      return true;
+    }
+    // 5. Módulo de Lotes e Ovos: liberados no Anual Completo e Mensal Completo
+    const currentPlan = trialInfo?.planType;
+    if (currentPlan === 'yearly' || currentPlan === 'pro_monthly') {
+      return true;
+    }
+    if (currentPlan === 'monthly') {
+      return false;
+    }
+    // Fallback permissivo caso usuário antigo não tenha tag explícita
+    return true;
+  }, [user, linkedCpf, trialInfo, isExpired]);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -1170,6 +1250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isExpired: (isUserAdmin(user?.email) || isUserAdmin(getCpf())) ? false : isExpired,
       isAdmin: isUserAdmin(user?.email) || isUserAdmin(getCpf()),
       trialInfo,
+      hasModuleAccess,
       lastWebhookConfirmation,
       isPasswordRecovery,
       setIsPasswordRecovery,

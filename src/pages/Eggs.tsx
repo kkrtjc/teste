@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, memo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
+import { useAuth } from '../lib/AuthContext';
+import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
 import type { EggDailyRecord, EggLot, IncubationLot } from '../lib/AppContext';
 import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
@@ -1057,8 +1059,13 @@ function LotCard({
 // Componente Principal: Eggs
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
+  const { hasModuleAccess } = useAuth();
   const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, addIncubationLot, showToast } = useAppContext();
   const location = useLocation();
+
+  if (!hasModuleAccess('eggs')) {
+    return <ModuleLockedPaywall module="eggs" />;
+  }
 
   const [registerTarget, setRegisterTarget] = useState<EggLot | null>(null);
   const [editingRecord, setEditingRecord] = useState<EggDailyRecord | null>(null);
