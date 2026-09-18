@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
   CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap
@@ -50,6 +50,15 @@ function isValidCardExpiry(exp: string): boolean {
   if (year < currentYear) return false;
   if (year === currentYear && month < currentMonth) return false;
   return true;
+}
+
+// Detecção pura da bandeira do cartão (0 hooks)
+function getDetectedBrand(cleanCardDigits: string) {
+  if (cleanCardDigits.startsWith('4')) return { name: 'Visa', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
+  if (/^5[1-5]/.test(cleanCardDigits) || /^2[2-7]/.test(cleanCardDigits)) return { name: 'Mastercard', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
+  if (/^(4011|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(cleanCardDigits) || cleanCardDigits.startsWith('6')) return { name: 'Elo', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' };
+  if (/^3[47]/.test(cleanCardDigits)) return { name: 'Amex', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+  return null;
 }
 
 interface LandingCheckoutModalProps {
@@ -201,14 +210,8 @@ export function LandingCheckoutModal({
   const isCardCvvValid = cardCvv.length >= 3 && cardCvv.length <= 4;
   const isCardCpfValid = isValidCPF(cardCpf);
 
-  // Detecção automática de bandeira
-  const detectedBrand = useMemo(() => {
-    if (cleanCardDigits.startsWith('4')) return { name: 'Visa', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
-    if (/^5[1-5]/.test(cleanCardDigits) || /^2[2-7]/.test(cleanCardDigits)) return { name: 'Mastercard', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
-    if (/^(4011|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(cleanCardDigits) || cleanCardDigits.startsWith('6')) return { name: 'Elo', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' };
-    if (/^3[47]/.test(cleanCardDigits)) return { name: 'Amex', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
-    return null;
-  }, [cleanCardDigits]);
+  // Detecção automática de bandeira (0 hooks, instantâneo)
+  const detectedBrand = getDetectedBrand(cleanCardDigits);
 
   const markTouched = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
