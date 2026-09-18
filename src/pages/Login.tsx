@@ -951,7 +951,7 @@ export function Login() {
           <button
             type="button"
             onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-            className="text-xs font-extrabold text-white/60 hover:text-amber-400 transition-colors flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-white/5 cursor-pointer"
+            className="text-xs font-extrabold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-white/5 cursor-pointer"
           >
             <span>Conheça os planos</span>
             <ArrowRight size={13} />
@@ -1048,22 +1048,13 @@ export function Login() {
                 ))}
               </ul>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleOpenCheckout('monthly')}
-                  className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-amber-500 hover:bg-amber-400 shadow-md cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <span>Assinar Mensal Comum</span>
-                  <ArrowRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterForm(true)}
-                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  ou teste grátis por 7 dias
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenCheckout('monthly')}
+                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-amber-500 hover:bg-amber-400 shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Assinar Mensal Comum</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
 
             {/* 2. MENSAL COMPLETO */}
@@ -1102,22 +1093,13 @@ export function Login() {
                 ))}
               </ul>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleOpenCheckout('pro_monthly')}
-                  className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
-                >
-                  <span>Assinar Mensal Completo</span>
-                  <ArrowRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterForm(true)}
-                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  ou teste grátis por 7 dias
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenCheckout('pro_monthly')}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
+              >
+                <span>Assinar Mensal Completo</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
 
             {/* 3. ANUAL COMPLETO */}
@@ -1157,22 +1139,13 @@ export function Login() {
                 ))}
               </ul>
 
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleOpenCheckout('yearly')}
-                  className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-1 bg-gradient-to-r from-emerald-400 to-amber-400 hover:from-emerald-300 hover:to-amber-300 shadow-lg shadow-emerald-500/20 cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <span>Assinar Anual Completo</span>
-                  <ArrowRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterForm(true)}
-                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-emerald-400 transition-colors cursor-pointer"
-                >
-                  ou teste grátis por 7 dias
-                </button>
-              </div>
+              <button
+                onClick={() => handleOpenCheckout('yearly')}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-1 bg-gradient-to-r from-emerald-400 to-amber-400 hover:from-emerald-300 hover:to-amber-300 shadow-lg shadow-emerald-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Assinar Anual Completo</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
           </div>
         </div>
