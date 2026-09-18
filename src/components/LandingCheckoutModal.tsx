@@ -989,49 +989,78 @@ export function LandingCheckoutModal({
                 )}
 
                 {/* ══════════════════════════════════════════════════════ */}
-                {/* UPSELL APÓS FORMULÁRIO E ANTES DO BOTÃO DE LIBERAR    */}
+                {/* UPSELL / ORDER BUMP: CAIXA DE MARCAÇÃO COMPACTA      */}
                 {/* ══════════════════════════════════════════════════════ */}
-                {selectedPlan === 'monthly' && (
-                  <div className="bg-gradient-to-br from-amber-500/25 via-amber-500/10 to-[#181824] border-2 border-amber-500/60 rounded-2xl p-3.5 space-y-2.5 shadow-xl shadow-amber-500/10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded-md font-mono tracking-wider">
-                        OPORTUNIDADE EXCLUSIVA
-                      </span>
-                      <span className="text-xs font-black text-amber-400">+ R$ 19,90/mês</span>
+                {initialPlan === 'monthly' && (
+                  <label 
+                    className={`block rounded-2xl p-3 sm:p-3.5 border transition-all cursor-pointer select-none ${
+                      selectedPlan === 'pro_monthly'
+                        ? 'bg-amber-500/10 border-amber-500/80 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/40'
+                        : 'bg-black/50 border-white/15 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Caixa de marcação (Checkbox acessível e estilizado) */}
+                      <input 
+                        type="checkbox"
+                        checked={selectedPlan === 'pro_monthly'}
+                        onChange={(e) => {
+                          setSelectedPlan(e.target.checked ? 'pro_monthly' : 'monthly');
+                        }}
+                        className="sr-only"
+                      />
+                      <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border transition-all ${
+                        selectedPlan === 'pro_monthly'
+                          ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-500/30'
+                          : 'bg-white/5 border-white/30 text-transparent'
+                      }`}>
+                        <Check size={13} strokeWidth={3} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded font-mono shrink-0">
+                              UPGRADE RECOMENDADO
+                            </span>
+                            <span className="text-xs font-black text-white">
+                              Adicionar Módulo de Lotes e Ovos
+                            </span>
+                          </div>
+                          <span className="text-xs font-black text-amber-400 shrink-0">
+                            + R$ 19,90<span className="text-[9px] text-white/50 font-normal">/mês</span>
+                          </span>
+                        </div>
+
+                        {/* Descrição em lista compacta */}
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 pt-2 border-t border-white/[0.08]">
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
+                            <span className="text-amber-400 font-bold">•</span>
+                            <span className="truncate">Lotes de cria, recria e engorda</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
+                            <span className="text-amber-400 font-bold">•</span>
+                            <span className="truncate">Controle diário de ovos e postura</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
+                            <span className="text-amber-400 font-bold">•</span>
+                            <span className="truncate">Gestão de chocadeira e eclosão</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
+                            <span className="text-amber-400 font-bold">•</span>
+                            <span className="truncate">Alertas de pesagem e vacinação</span>
+                          </div>
+                        </div>
+
+                        {selectedPlan === 'pro_monthly' && (
+                          <p className="text-[10px] text-amber-300/90 font-medium mt-1.5 flex items-center gap-1">
+                            <Check size={10} className="text-emerald-400 shrink-0" />
+                            <span>Módulo adicionado! Valor atualizado para R$ 59,80/mês</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-
-                    <div>
-                      <h5 className="text-xs font-black text-white flex items-center gap-1.5">
-                        <Zap size={13} className="text-amber-400 fill-amber-400" />
-                        <span>Turbine sua assinatura com o Módulo de Lotes e Ovos</span>
-                      </h5>
-                      <p className="text-[11px] text-white/80 leading-relaxed mt-1">
-                        Cadastre lotes inteiros de postura, engorda e crescimento. Tenha controle total de ovos, chocadeira e pesagem coletiva no seu aplicativo.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPlan('pro_monthly')}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wide active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <span>Sim! Adicionar Lotes e Ovos (Total: R$ 59,80/mês)</span>
-                      <ArrowRight size={13} />
-                    </button>
-                  </div>
-                )}
-
-                {/* Se o cliente estiver no Completo e quiser voltar para o comum */}
-                {selectedPlan === 'pro_monthly' && initialPlan === 'monthly' && (
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPlan('monthly')}
-                      className="text-[10px] text-white/40 hover:text-white transition-colors cursor-pointer"
-                    >
-                      ← Manter apenas o Plano Comum (R$ 39,90/mês)
-                    </button>
-                  </div>
+                  </label>
                 )}
 
                 {/* ══════════════════════════════════════════════════════ */}
@@ -1047,7 +1076,9 @@ export function LandingCheckoutModal({
                   ) : (
                     <>
                       <Zap size={16} className="fill-black" />
-                      <span>Liberar Meu Acesso Agora</span>
+                      <span>
+                        {paymentMethod === 'pix' ? 'Gerar PIX e Liberar Acesso' : 'Pagar no Cartão e Liberar Acesso'}
+                      </span>
                       <ArrowRight size={16} />
                     </>
                   )}
