@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import type { SubscriptionPlan } from '../lib/AuthContext';
 import heroBg from '../assets/hero_bg.jpg';
+import roosterImg from '../assets/rooster_sticker.png';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
 const MP_PUBLIC_KEY = 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5';
@@ -498,23 +499,27 @@ export function LandingCheckoutModal({
         {/* ══════════════════════════════════════════════════════ */}
         <div 
           aria-hidden="true" 
-          className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none"
+          className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none flex items-center justify-end"
         >
+          {/* Fundo escuro texturizado heroBg */}
           <img
             src={heroBg}
             alt=""
             fetchPriority="high"
             decoding="async"
-            className="w-full h-full object-cover object-[center_20%] opacity-35 scale-105 transform-gpu"
+            className="absolute inset-0 w-full h-full object-cover opacity-20 scale-105 pointer-events-none"
           />
-          {/* Máscara equilibrada: escurece o suficiente para leitura mas deixa o galo 100% visível */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#111116]/80 via-[#111116]/65 to-[#111116]/90" />
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse 70% 50% at 50% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 70%)'
-            }}
+          {/* O Galo Oficial da Página Inicial (rooster_sticker.png) */}
+          <img
+            src={roosterImg}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="relative h-[85%] max-h-[520px] w-auto object-contain opacity-50 pointer-events-none select-none translate-x-8 translate-y-4"
           />
+          {/* Gradiente sutil para harmonizar com os textos e inputs */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#111116]/95 via-[#111116]/60 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#111116]/65 via-transparent to-[#111116]/85 pointer-events-none" />
         </div>
 
         {/* Header do Checkout */}
