@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
   CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap
@@ -6,6 +6,7 @@ import {
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import type { SubscriptionPlan } from '../lib/AuthContext';
+import heroBg from '../assets/hero_bg.jpg';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
 const MP_PUBLIC_KEY = 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5';
@@ -102,6 +103,7 @@ export function LandingCheckoutModal({
     setError('');
     setPixData(null);
     setTouched({});
+    setInstallments(1);
   }, [initialPlan, isOpen]);
 
   useEffect(() => {
@@ -171,6 +173,19 @@ export function LandingCheckoutModal({
     }
   }[selectedPlan];
 
+  // Opções de parcelas inteligentes (até 12x no anual, até 4x no mensal)
+  const maxInstallments = selectedPlan === 'yearly' ? 12 : 4;
+  const installmentOptions = Array.from({ length: maxInstallments }, (_, i) => {
+    const num = i + 1;
+    const val = (planInfo.price / num).toFixed(2).replace('.', ',');
+    return {
+      value: num,
+      label: num === 1 
+        ? `1x de ${planInfo.priceFormatted} (À vista)` 
+        : `${num}x de R$ ${val} (Sem acréscimo)`
+    };
+  });
+
   // Validações em tempo real para cada campo
   const isNomeValid = nome.trim().split(/\s+/).length >= 2 && nome.trim().length >= 5;
   const isEmailValid = isValidEmail(email);
@@ -185,6 +200,15 @@ export function LandingCheckoutModal({
   const isCardExpiryValid = isValidCardExpiry(cardExpiry);
   const isCardCvvValid = cardCvv.length >= 3 && cardCvv.length <= 4;
   const isCardCpfValid = isValidCPF(cardCpf);
+
+  // Detecção automática de bandeira
+  const detectedBrand = useMemo(() => {
+    if (cleanCardDigits.startsWith('4')) return { name: 'Visa', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
+    if (/^5[1-5]/.test(cleanCardDigits) || /^2[2-7]/.test(cleanCardDigits)) return { name: 'Mastercard', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
+    if (/^(4011|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(cleanCardDigits) || cleanCardDigits.startsWith('6')) return { name: 'Elo', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' };
+    if (/^3[47]/.test(cleanCardDigits)) return { name: 'Amex', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+    return null;
+  }, [cleanCardDigits]);
 
   const markTouched = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
@@ -464,12 +488,36 @@ export function LandingCheckoutModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-white/10 my-auto animate-scale-up">
+      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#0e0e13] border border-white/15 my-auto animate-scale-up relative">
         
+        {/* ══════════════════════════════════════════════════════ */}
+        {/* FOTO FIXA DE FUNDO: O GALO DA PÁGINA INICIAL          */}
+        {/* ══════════════════════════════════════════════════════ */}
+        <div 
+          aria-hidden="true" 
+          className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none"
+        >
+          <img
+            src={heroBg}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover object-center opacity-[0.13] scale-105"
+          />
+          {/* Gradiente escuro com toque âmbar para garantir contraste e leitura impecável */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0e0e13]/92 via-[#0e0e13]/82 to-[#0e0e13]/96" />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 70% 50% at 50% 10%, rgba(245, 158, 11, 0.09) 0%, transparent 70%)'
+            }}
+          />
+        </div>
+
         {/* Header do Checkout */}
-        <div className="px-5 sm:px-6 py-4 border-b border-white/[0.08] flex justify-between items-center bg-[#15151c]">
+        <div className="px-5 sm:px-6 py-4 border-b border-white/[0.08] flex justify-between items-center bg-[#15151c]/90 backdrop-blur-sm relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black shadow-sm">
               M
             </div>
             <div>
@@ -479,7 +527,7 @@ export function LandingCheckoutModal({
                   100% Seguro
                 </span>
               </h3>
-              <p className="text-[10px] text-white/50">Mercado Pago Gateway • Criptografia Bancária</p>
+              <p className="text-[10px] text-white/50">Mercado Pago Gateway • Criptografia Bancária SSL</p>
             </div>
           </div>
           <button 
@@ -490,19 +538,19 @@ export function LandingCheckoutModal({
           </button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto smooth-scroll">
+        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto smooth-scroll relative z-10">
           
           {/* ══════════════════════════════════════════════════════ */}
           {/* CARD DE PLANO SELECIONADO (SOBREPOSIÇÃO + BENEFÍCIOS)  */}
           {/* ══════════════════════════════════════════════════════ */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-amber-500/30 shadow-lg space-y-3">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-amber-500/[0.04] border border-amber-500/30 shadow-lg space-y-3 backdrop-blur-sm">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                     Plano Selecionado
                   </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">
                     {planInfo.discountBadge}
                   </span>
                 </div>
@@ -526,7 +574,7 @@ export function LandingCheckoutModal({
             {/* Lista resumida de benefícios */}
             <div className="pt-2 border-t border-white/[0.08] space-y-1.5">
               {planInfo.benefits.map((b, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/80">
+                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/85">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
                     <Check size={8} className="text-emerald-400" />
                   </div>
@@ -598,7 +646,7 @@ export function LandingCheckoutModal({
                       value={nome}
                       onBlur={() => markTouched('nome')}
                       onChange={e => setNome(e.target.value)}
-                      className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                      className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                         touched.nome 
                           ? isNomeValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                           : 'border-white/[0.1] focus:border-amber-500'
@@ -629,7 +677,7 @@ export function LandingCheckoutModal({
                         value={email}
                         onBlur={() => markTouched('email')}
                         onChange={e => setEmail(e.target.value)}
-                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.email 
                             ? isEmailValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                             : 'border-white/[0.1] focus:border-amber-500'
@@ -662,7 +710,7 @@ export function LandingCheckoutModal({
                           else if (clean.length <= 7) setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2)}`);
                           else setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`);
                         }}
-                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.whatsapp 
                             ? isWhatsappValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                             : 'border-white/[0.1] focus:border-amber-500'
@@ -700,7 +748,7 @@ export function LandingCheckoutModal({
                           else if (clean.length <= 9) setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
                           else setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
                         }}
-                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
                           touched.cpf 
                             ? isCpfValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-red-500/50 focus:border-red-500'
                             : 'border-white/[0.1] focus:border-amber-500'
@@ -729,7 +777,7 @@ export function LandingCheckoutModal({
                         value={senha}
                         onBlur={() => markTouched('senha')}
                         onChange={e => setSenha(e.target.value)}
-                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.senha 
                             ? isSenhaValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                             : 'border-white/[0.1] focus:border-amber-500'
@@ -746,12 +794,16 @@ export function LandingCheckoutModal({
                 {/* CAMPOS ESPECÍFICOS DO CARTÃO + CPF DO TITULAR         */}
                 {/* ══════════════════════════════════════════════════════ */}
                 {paymentMethod === 'card' && (
-                  <div className="pt-3 border-t border-white/[0.08] space-y-3 animate-fade-in bg-white/[0.02] p-3 rounded-2xl border">
+                  <div className="pt-3 border-t border-white/[0.08] space-y-3 animate-fade-in bg-black/40 p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                         <CreditCard size={12} /> Dados do Cartão de Crédito
                       </span>
-                      <span className="text-[9px] text-white/40 font-mono">Processamento Seguro</span>
+                      {detectedBrand && (
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${detectedBrand.color}`}>
+                          {detectedBrand.name} Detectado
+                        </span>
+                      )}
                     </div>
 
                     {/* Número do Cartão */}
@@ -776,7 +828,7 @@ export function LandingCheckoutModal({
                             const parts = clean.match(/.{1,4}/g);
                             setCardNumber(parts ? parts.join(' ') : clean);
                           }}
-                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center tracking-wider transition-colors ${
+                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center tracking-wider transition-colors ${
                             touched.cardNumber 
                               ? isCardNumberValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                               : 'border-white/[0.1] focus:border-amber-500'
@@ -805,7 +857,7 @@ export function LandingCheckoutModal({
                         value={cardName}
                         onBlur={() => markTouched('cardName')}
                         onChange={e => setCardName(e.target.value)}
-                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none uppercase transition-colors ${
+                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none uppercase transition-colors ${
                           touched.cardName 
                             ? isCardNameValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                             : 'border-white/[0.1] focus:border-amber-500'
@@ -813,7 +865,7 @@ export function LandingCheckoutModal({
                       />
                     </div>
 
-                    {/* Validade, CVV e Parcelamento */}
+                    {/* Validade, CVV e Parcelamento Inteligente */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-white/50 uppercase">Validade</label>
@@ -828,7 +880,7 @@ export function LandingCheckoutModal({
                             if (clean.length <= 2) setCardExpiry(clean);
                             else setCardExpiry(`${clean.slice(0, 2)}/${clean.slice(2)}`);
                           }}
-                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
                             touched.cardExpiry 
                               ? isCardExpiryValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                               : 'border-white/[0.1] focus:border-amber-500'
@@ -845,7 +897,7 @@ export function LandingCheckoutModal({
                           value={cardCvv}
                           onBlur={() => markTouched('cardCvv')}
                           onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
                             touched.cardCvv 
                               ? isCardCvvValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
                               : 'border-white/[0.1] focus:border-amber-500'
@@ -857,12 +909,13 @@ export function LandingCheckoutModal({
                         <select
                           value={installments}
                           onChange={e => setInstallments(Number(e.target.value))}
-                          className="w-full bg-[#15151c] border border-white/[0.1] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
+                          className="w-full bg-[#181822] border border-white/[0.15] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
                         >
-                          <option value={1}>1x {planInfo.priceFormatted}</option>
-                          <option value={2}>2x R$ {(planInfo.price / 2).toFixed(2).replace('.', ',')}</option>
-                          <option value={3}>3x R$ {(planInfo.price / 3).toFixed(2).replace('.', ',')}</option>
-                          <option value={4}>4x R$ {(planInfo.price / 4).toFixed(2).replace('.', ',')}</option>
+                          {installmentOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -900,7 +953,7 @@ export function LandingCheckoutModal({
                             else if (clean.length <= 9) setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
                             else setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
                           }}
-                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
                             sameAsAccountCpf ? 'opacity-60 cursor-not-allowed border-white/[0.08]' : 'border-white/[0.1] focus:border-amber-500'
                           }`}
                         />
@@ -916,7 +969,7 @@ export function LandingCheckoutModal({
                 {/* UPSELL APÓS FORMULÁRIO E ANTES DO BOTÃO DE LIBERAR    */}
                 {/* ══════════════════════════════════════════════════════ */}
                 {selectedPlan === 'monthly' && (
-                  <div className="bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#181824] border-2 border-amber-500/50 rounded-2xl p-3.5 space-y-2.5 animate-scale-up shadow-xl shadow-amber-500/5">
+                  <div className="bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#181824]/90 border-2 border-amber-500/50 rounded-2xl p-3.5 space-y-2.5 animate-scale-up shadow-xl shadow-amber-500/5 backdrop-blur-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded-md font-mono tracking-wider">
                         OPORTUNIDADE EXCLUSIVA
@@ -1010,7 +1063,7 @@ export function LandingCheckoutModal({
                 {/* ══════════════════════════════════════════════════════ */}
                 {/* PROVA SOCIAL: DEPOIMENTO E AVATARES DE USUÁRIOS        */}
                 {/* ══════════════════════════════════════════════════════ */}
-                <div className="w-full pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/[0.02] p-3 rounded-2xl">
+                <div className="w-full pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 p-3 rounded-2xl border border-white/10 backdrop-blur-sm">
                   {/* Avatares sobrepostos */}
                   <div className="flex items-center">
                     <div className="flex -space-x-2 overflow-hidden shrink-0">
@@ -1058,9 +1111,10 @@ export function LandingCheckoutModal({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 text-[9px] text-white/40 pb-1">
-                  <ShieldCheck size={11} className="text-emerald-400" />
-                  <span>Acesso liberado imediatamente após a confirmação</span>
+                {/* Selo de Garantia Incondicional */}
+                <div className="w-full flex items-center justify-center gap-2 text-[10px] text-emerald-400/90 font-bold bg-emerald-500/10 border border-emerald-500/20 py-2 px-3 rounded-xl">
+                  <ShieldCheck size={13} className="shrink-0 text-emerald-400" />
+                  <span>Garantia incondicional de 7 dias • Cancele quando quiser</span>
                 </div>
               </div>
             </div>
@@ -1097,7 +1151,7 @@ export function LandingCheckoutModal({
                     type="text"
                     readOnly
                     value={pixData.qr_code}
-                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white/80 font-mono select-all"
+                    className="w-full bg-black/60 border border-white/[0.1] rounded-xl p-2.5 text-xs text-white/80 font-mono select-all"
                   />
                   <button
                     type="button"
