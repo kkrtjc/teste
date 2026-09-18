@@ -1263,28 +1263,58 @@ export function LandingCheckoutModal({
               <div className="pt-2 flex flex-col items-center gap-3">
                 <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
                   {/* Badge PIX Oficial */}
-                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="PIX Instantâneo">
-                    <img src={pixLogo} alt="PIX" className="h-3.5 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="PIX Instantâneo">
+                    <img 
+                      src={pixLogo} 
+                      alt="PIX" 
+                      style={{ maxHeight: '16px', maxWidth: '30px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                   {/* Badge Visa Oficial */}
-                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Visa">
-                    <img src={visaLogo} alt="Visa" className="h-3 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Visa">
+                    <img 
+                      src={visaLogo} 
+                      alt="Visa" 
+                      style={{ maxHeight: '13px', maxWidth: '32px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                   {/* Badge Mastercard Oficial */}
-                  <div className="h-7 px-2 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Mastercard">
-                    <img src={mastercardLogo} alt="Mastercard" className="h-4.5 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Mastercard">
+                    <img 
+                      src={mastercardLogo} 
+                      alt="Mastercard" 
+                      style={{ maxHeight: '17px', maxWidth: '26px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                   {/* Badge Elo Oficial */}
-                  <div className="h-7 px-1.5 py-0.5 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Elo">
-                    <img src={eloLogo} alt="Elo" className="h-5 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Elo">
+                    <img 
+                      src={eloLogo} 
+                      alt="Elo" 
+                      style={{ maxHeight: '16px', maxWidth: '30px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                   {/* Badge Hipercard Oficial */}
-                  <div className="h-7 px-1.5 py-0.5 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Hipercard">
-                    <img src={hipercardLogo} alt="Hipercard" className="h-5 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Hipercard">
+                    <img 
+                      src={hipercardLogo} 
+                      alt="Hipercard" 
+                      style={{ maxHeight: '15px', maxWidth: '30px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                   {/* Badge Mercado Pago Oficial */}
-                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Mercado Pago Gateway Oficial">
-                    <img src={mercadoPagoLogo} alt="Mercado Pago" className="h-3.5 w-auto object-contain" />
+                  <div className="w-11 h-7 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm overflow-hidden p-1 shrink-0" title="Mercado Pago Gateway Oficial">
+                    <img 
+                      src={mercadoPagoLogo} 
+                      alt="Mercado Pago" 
+                      style={{ maxHeight: '14px', maxWidth: '32px', objectFit: 'contain' }}
+                      className="block w-auto h-auto" 
+                    />
                   </div>
                 </div>
 
