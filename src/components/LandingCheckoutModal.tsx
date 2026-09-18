@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
-  CreditCard, QrCode, ShieldCheck
+  CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
@@ -9,6 +9,47 @@ import type { SubscriptionPlan } from '../lib/AuthContext';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
 const MP_PUBLIC_KEY = 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5';
+
+// Validação de CPF real (dígitos verificadores)
+function isValidCPF(cpf: string): boolean {
+  const clean = cpf.replace(/\D/g, '');
+  if (clean.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(clean)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(clean.charAt(i)) * (10 - i);
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(9))) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(clean.charAt(i)) * (11 - i);
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(10))) return false;
+
+  return true;
+}
+
+// Validação de E-mail
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+// Validação de Validade de Cartão (MM/AA)
+function isValidCardExpiry(exp: string): boolean {
+  const [m, y] = exp.split('/');
+  if (!m || !y || m.length !== 2 || y.length !== 2) return false;
+  const month = parseInt(m, 10);
+  if (month < 1 || month > 12) return false;
+  const now = new Date();
+  const currentYear = now.getFullYear() % 100;
+  const currentMonth = now.getMonth() + 1;
+  const year = parseInt(y, 10);
+  if (year < currentYear) return false;
+  if (year === currentYear && month < currentMonth) return false;
+  return true;
+}
 
 interface LandingCheckoutModalProps {
   isOpen: boolean;
@@ -26,21 +67,26 @@ export function LandingCheckoutModal({
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(initialPlan);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
 
-  // Customer fields
+  // Dados da Conta
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
 
-  // Card fields
+  // Dados do Cartão
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
+  const [cardCpf, setCardCpf] = useState('');
+  const [sameAsAccountCpf, setSameAsAccountCpf] = useState(true);
   const [installments, setInstallments] = useState(1);
 
-  // States
+  // Estados de toque (para feedback inteligente nos inputs)
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Estados de Operação
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +101,7 @@ export function LandingCheckoutModal({
     setStep('form');
     setError('');
     setPixData(null);
+    setTouched({});
   }, [initialPlan, isOpen]);
 
   useEffect(() => {
@@ -63,37 +110,85 @@ export function LandingCheckoutModal({
     };
   }, []);
 
+  // Se o usuário marcar "mesmo CPF da conta", sincroniza
+  useEffect(() => {
+    if (sameAsAccountCpf && cpf) {
+      setCardCpf(cpf);
+    }
+  }, [cpf, sameAsAccountCpf]);
+
   if (!isOpen) return null;
 
+  // Planos com ancoragem de preço (riscado) e lista de benefícios
   const planInfo = {
     monthly: {
       title: 'Mensal Comum',
+      originalPrice: 'R$ 59,90',
       price: 39.90,
       priceFormatted: 'R$ 39,90',
+      discountBadge: '33% OFF',
       period: 'mês',
       days: 30,
       tag: '[COMUM]',
-      desc: 'Acesso completo a Aves & Raças, Fotos e Vitrine Digital.'
+      benefits: [
+        'Cadastro ilimitado de aves, linhagens e baias',
+        'Ficha técnica genealógica com fotos em alta definição',
+        'Vitrine Digital exclusiva para vendas no WhatsApp',
+        'Sincronização em tempo real entre celular e computador'
+      ]
     },
     pro_monthly: {
       title: 'Mensal Completo',
+      originalPrice: 'R$ 89,90',
       price: 59.80,
       priceFormatted: 'R$ 59,80',
+      discountBadge: '33% OFF',
       period: 'mês',
       days: 30,
       tag: '[COMPLETO]',
-      desc: 'Aves, Vitrine + Lotes inteiros e Gestão de Ovos.'
+      benefits: [
+        'Tudo do Plano Comum (Aves, Fotos e Vitrine)',
+        'Controle completo de Lotes de Postura e Engorda',
+        'Gestão de Chocadeira, Ovos e Taxa de Eclosão',
+        'Alertas automáticos de vacinação e pesagem de plantel'
+      ]
     },
     yearly: {
       title: 'Anual Completo',
+      originalPrice: 'R$ 717,60',
       price: 567.90,
       priceFormatted: 'R$ 567,90',
+      discountBadge: '21% OFF • ECONOMIZE R$ 149,70',
       period: 'ano',
       days: 365,
       tag: '[ANUAL]',
-      desc: 'Tudo 100% liberado por 1 ano com 21% de desconto.'
+      benefits: [
+        'Acesso 100% irrestrito a todos os recursos por 1 ano',
+        'Aves, Vitrine + Lotes inteiros e Gestão de Ovos inclusos',
+        'Equivale a apenas R$ 47,32/mês com desconto total',
+        'Suporte prioritário VIP direto com o desenvolvedor'
+      ]
     }
   }[selectedPlan];
+
+  // Validações em tempo real para cada campo
+  const isNomeValid = nome.trim().split(/\s+/).length >= 2 && nome.trim().length >= 5;
+  const isEmailValid = isValidEmail(email);
+  const isWhatsappValid = whatsapp.replace(/\D/g, '').length >= 10;
+  const isCpfValid = isValidCPF(cpf);
+  const isSenhaValid = senha.length >= 6;
+
+  // Validações do Cartão
+  const cleanCardDigits = cardNumber.replace(/\s/g, '');
+  const isCardNumberValid = cleanCardDigits.length >= 15 && cleanCardDigits.length <= 16;
+  const isCardNameValid = cardName.trim().split(/\s+/).length >= 2;
+  const isCardExpiryValid = isValidCardExpiry(cardExpiry);
+  const isCardCvvValid = cardCvv.length >= 3 && cardCvv.length <= 4;
+  const isCardCpfValid = isValidCPF(cardCpf);
+
+  const markTouched = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   // Helper de ativação da conta após aprovação no MP
   const handleLiberarConta = async (cleanCpf: string, cleanEmail: string, userSenha: string) => {
@@ -102,7 +197,6 @@ export function LandingCheckoutModal({
       const taggedNome = `${nome.trim()} ${planInfo.tag}`.trim();
 
       if (isSupabaseConfigured) {
-        // 1. Cria ou atualiza o cliente na tabela allowed_cpfs
         const { error: upsertErr } = await supabase!
           .from('allowed_cpfs')
           .upsert({
@@ -118,7 +212,6 @@ export function LandingCheckoutModal({
           console.warn('Erro ao atualizar allowed_cpfs:', upsertErr);
         }
 
-        // 2. Cria a conta no Supabase Auth se ainda não existir
         await supabase!.auth.signUp({
           email: cleanEmail,
           password: userSenha,
@@ -146,7 +239,6 @@ export function LandingCheckoutModal({
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localList);
       }
 
-      // Salva localmente
       try {
         localStorage.setItem('@mura-manager:user-cpf', cleanCpf);
         localStorage.setItem('@mura-manager:user-plan', selectedPlan);
@@ -157,7 +249,6 @@ export function LandingCheckoutModal({
 
       setStep('success');
 
-      // Faz login automático após 1.5s
       setTimeout(async () => {
         await signIn(cleanEmail, userSenha);
         onClose();
@@ -204,7 +295,7 @@ export function LandingCheckoutModal({
         if (pollingRef.current) clearInterval(pollingRef.current);
         await handleLiberarConta(cleanCpf, cleanEmail, senha);
       } else {
-        setError('O pagamento ainda não foi identificado pelo Mercado Pago. Aguarde alguns segundos após pagar e clique novamente.');
+        setError('O pagamento ainda não foi identificado pelo banco. Aguarde alguns instantes e clique novamente.');
       }
     } catch {
       setError('Erro de conexão ao verificar pagamento. Tente novamente.');
@@ -214,12 +305,11 @@ export function LandingCheckoutModal({
   };
 
   const validateCustomer = () => {
-    const cleanCpf = cpf.replace(/\D/g, '');
-    const cleanEmail = email.trim().toLowerCase();
-    if (!nome.trim()) { setError('Informe seu nome completo.'); return false; }
-    if (!cleanEmail || !cleanEmail.includes('@')) { setError('Informe um e-mail válido.'); return false; }
-    if (cleanCpf.length !== 11) { setError('Informe um CPF válido com 11 dígitos.'); return false; }
-    if (senha.length < 6) { setError('Crie uma senha de acesso com no mínimo 6 dígitos.'); return false; }
+    if (!isNomeValid) { setError('Informe seu nome completo (nome e sobrenome).'); return false; }
+    if (!isEmailValid) { setError('Informe um e-mail válido (ex: seu@email.com).'); return false; }
+    if (!isWhatsappValid) { setError('Informe um número de WhatsApp válido com DDD.'); return false; }
+    if (!isCpfValid) { setError('Informe um CPF válido para ativação da sua conta.'); return false; }
+    if (!isSenhaValid) { setError('Crie uma senha de acesso com no mínimo 6 caracteres.'); return false; }
     return true;
   };
 
@@ -274,22 +364,24 @@ export function LandingCheckoutModal({
     e.preventDefault();
     if (!validateCustomer()) return;
 
-    if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
-      setError('Preencha todos os dados do cartão de crédito.');
-      return;
-    }
+    if (!isCardNumberValid) { setError('Número de cartão de crédito incompleto ou inválido.'); return; }
+    if (!isCardNameValid) { setError('Informe o nome completo impresso no cartão de crédito.'); return; }
+    if (!isCardExpiryValid) { setError('Validade do cartão expirada ou inválida (MM/AA).'); return; }
+    if (!isCardCvvValid) { setError('Código de segurança (CVV) inválido.'); return; }
+    if (!isCardCpfValid) { setError('Informe um CPF válido do titular do cartão de crédito.'); return; }
 
     setError('');
     setLoading(true);
 
-    const cleanCpf = cpf.replace(/\D/g, '');
+    const cleanAccountCpf = cpf.replace(/\D/g, '');
+    const cleanCardholderCpf = cardCpf.replace(/\D/g, '');
     const cleanEmail = email.trim().toLowerCase();
     const cardDigits = cardNumber.replace(/\s/g, '');
     const [expMonth, expYearShort] = cardExpiry.split('/');
     const expYear = expYearShort?.length === 2 ? `20${expYearShort}` : expYearShort;
 
     try {
-      // 1. Tokenização via API pública do Mercado Pago
+      // 1. Tokenização via API oficial do Mercado Pago com o CPF do Titular do Cartão
       const tokenRes = await fetch(
         `https://api.mercadopago.com/v1/card_tokens?public_key=${MP_PUBLIC_KEY}`,
         {
@@ -299,7 +391,7 @@ export function LandingCheckoutModal({
             card_number: cardDigits,
             cardholder: {
               name: cardName.toUpperCase(),
-              identification: { type: 'CPF', number: cleanCpf },
+              identification: { type: 'CPF', number: cleanCardholderCpf },
             },
             security_code: cardCvv,
             expiration_month: Number(expMonth),
@@ -310,13 +402,13 @@ export function LandingCheckoutModal({
 
       const tokenData = await tokenRes.json();
       if (!tokenData.id) {
-        const errMsg = tokenData.cause?.[0]?.description || tokenData.message || 'Dados do cartão inválidos. Verifique número, validade e CVV.';
+        const errMsg = tokenData.cause?.[0]?.description || tokenData.message || 'Dados do cartão recusados. Verifique número, validade e CVV.';
         setError(errMsg);
         setLoading(false);
         return;
       }
 
-      // 2. Detecta bandeira pelo primeiro dígito
+      // 2. Detecta bandeira
       const firstDigit = cardDigits[0];
       const paymentMethodId = firstDigit === '4' ? 'visa'
         : firstDigit === '5' ? 'master'
@@ -337,7 +429,7 @@ export function LandingCheckoutModal({
           customer: {
             name: nome.trim(),
             email: cleanEmail,
-            cpf: cleanCpf,
+            cpf: cleanAccountCpf,
             phone: whatsapp.replace(/\D/g, '') || ''
           },
           token: tokenData.id,
@@ -350,9 +442,9 @@ export function LandingCheckoutModal({
       const data = await res.json();
 
       if (data.status === 'approved') {
-        await handleLiberarConta(cleanCpf, cleanEmail, senha);
+        await handleLiberarConta(cleanAccountCpf, cleanEmail, senha);
       } else if (data.status === 'in_process' || data.status === 'pending') {
-        startPolling(data.id, cleanCpf, cleanEmail, senha);
+        startPolling(data.id, cleanAccountCpf, cleanEmail, senha);
         setError('O pagamento está sendo processado pela operadora do seu cartão. Aguarde um instante...');
       } else {
         setError(data.status_detail || data.error || 'Pagamento recusado pela operadora. Verifique o limite ou tente outro cartão.');
@@ -371,7 +463,7 @@ export function LandingCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in">
       <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#121216] border border-white/10 my-auto animate-scale-up">
         
         {/* Header do Checkout */}
@@ -383,11 +475,11 @@ export function LandingCheckoutModal({
             <div>
               <h3 className="font-black text-sm text-white flex items-center gap-1.5">
                 <span>Checkout Oficial</span>
-                <span className="text-[9px] px-2 py-0.2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full font-mono uppercase">
+                <span className="text-[9px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full font-mono uppercase font-bold">
                   100% Seguro
                 </span>
               </h3>
-              <p className="text-[10px] text-white/50">Mercado Pago Gateway</p>
+              <p className="text-[10px] text-white/50">Mercado Pago Gateway • Criptografia Bancária</p>
             </div>
           </div>
           <button 
@@ -398,44 +490,51 @@ export function LandingCheckoutModal({
           </button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4 max-h-[82vh] overflow-y-auto smooth-scroll">
+        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto smooth-scroll">
           
-          {/* Resumo do Plano Selecionado */}
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2">
-            <div className="flex items-center justify-between">
+          {/* ══════════════════════════════════════════════════════ */}
+          {/* CARD DE PLANO SELECIONADO (SOBREPOSIÇÃO + BENEFÍCIOS)  */}
+          {/* ══════════════════════════════════════════════════════ */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-amber-500/30 shadow-lg space-y-3">
+            <div className="flex items-start justify-between">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Plano Selecionado</span>
-                <h4 className="text-base font-black text-white">{planInfo.title}</h4>
-              </div>
-              <div className="text-right">
-                <span className="text-xl font-black text-white">{planInfo.priceFormatted}</span>
-                <span className="text-[10px] text-white/50 block">/{planInfo.period}</span>
-              </div>
-            </div>
-            <p className="text-[11px] text-white/60 leading-tight">{planInfo.desc}</p>
-          </div>
-
-          {/* UPSELL INTERATIVO DOS LOTES SE ESTIVER NO MENSAL COMUM */}
-          {selectedPlan === 'monthly' && step === 'form' && (
-            <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-[#181824] border border-amber-500/40 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-scale-up">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] font-black uppercase px-1.5 py-0.2 bg-amber-500 text-black rounded font-mono">OPORTUNIDADE</span>
-                  <span className="text-[11px] font-black text-amber-300">Turbine com Lotes & Ovos!</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    Plano Selecionado
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    {planInfo.discountBadge}
+                  </span>
                 </div>
-                <p className="text-[10px] text-zinc-300 leading-tight">
-                  Adicione Lotes de Postura e Gestão de Ovos por apenas <strong className="text-amber-400">+ R$ 19,90/mês</strong>.
-                </p>
+                <h4 className="text-lg font-black text-white mt-1">{planInfo.title}</h4>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedPlan('pro_monthly')}
-                className="py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-[10px] uppercase tracking-wide shrink-0 active:scale-95 transition-all shadow-md cursor-pointer text-center"
-              >
-                Mudar para Completo (+ R$ 19,90)
-              </button>
+
+              {/* Preço com ancoragem / corte */}
+              <div className="text-right">
+                <span className="text-xs line-through text-white/40 font-bold block">
+                  {planInfo.originalPrice}
+                </span>
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className="text-2xl font-black text-amber-400 tracking-tight">
+                    {planInfo.priceFormatted}
+                  </span>
+                  <span className="text-[10px] text-white/50 font-bold">/{planInfo.period}</span>
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Lista resumida de benefícios */}
+            <div className="pt-2 border-t border-white/[0.08] space-y-1.5">
+              {planInfo.benefits.map((b, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/80">
+                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                    <Check size={8} className="text-emerald-400" />
+                  </div>
+                  <span>{b}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* MENSAGEM DE ERRO */}
           {error && (
@@ -474,119 +573,247 @@ export function LandingCheckoutModal({
                   }`}
                 >
                   <CreditCard size={14} />
-                  <span>Cartão (Até 4x)</span>
+                  <span>Cartão de Crédito</span>
                 </button>
               </div>
 
               {/* Formulário Principal */}
               <form onSubmit={paymentMethod === 'pix' ? handleGerarPix : handlePagarCartao} className="space-y-3">
+                
+                {/* Nome Completo */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-white/50 uppercase">Nome Completo</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Seu nome completo"
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none transition-colors"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-white/50 uppercase">E-mail</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none transition-colors"
-                    />
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-white/50 uppercase">Nome Completo</label>
+                    {touched.nome && (
+                      <span className={`text-[9px] font-bold ${isNomeValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {isNomeValid ? '✓ Válido' : 'Nome e sobrenome'}
+                      </span>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-white/50 uppercase">WhatsApp / Telefone</label>
-                    <input
-                      type="text"
-                      placeholder="(00) 00000-0000"
-                      value={whatsapp}
-                      onChange={e => {
-                        const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
-                        if (clean.length <= 2) setWhatsapp(clean);
-                        else if (clean.length <= 7) setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2)}`);
-                        else setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`);
-                      }}
-                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-white/50 uppercase">CPF (Para liberação da conta)</label>
+                  <div className="relative">
                     <input
                       type="text"
                       required
-                      placeholder="000.000.000-00"
-                      value={cpf}
-                      onChange={e => {
-                        const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
-                        if (clean.length <= 3) setCpf(clean);
-                        else if (clean.length <= 6) setCpf(`${clean.slice(0, 3)}.${clean.slice(3)}`);
-                        else if (clean.length <= 9) setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
-                        else setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
-                      }}
-                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none transition-colors font-mono font-bold text-center"
+                      placeholder="Seu nome completo"
+                      value={nome}
+                      onBlur={() => markTouched('nome')}
+                      onChange={e => setNome(e.target.value)}
+                      className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        touched.nome 
+                          ? isNomeValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                          : 'border-white/[0.1] focus:border-amber-500'
+                      }`}
                     />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-white/50 uppercase">Criar Senha de Acesso</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="Mínimo 6 dígitos"
-                      value={senha}
-                      onChange={e => setSenha(e.target.value)}
-                      className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none transition-colors"
-                    />
+                    {isNomeValid && (
+                      <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                    )}
                   </div>
                 </div>
 
-                {/* Campos Específicos do Cartão */}
-                {paymentMethod === 'card' && (
-                  <div className="pt-2 border-t border-white/[0.08] space-y-2.5 animate-fade-in">
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
-                      Dados do Cartão de Crédito
-                    </span>
+                {/* E-mail e WhatsApp */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-white/50 uppercase">E-mail</label>
+                      {touched.email && (
+                        <span className={`text-[9px] font-bold ${isEmailValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {isEmailValid ? '✓ Válido' : 'E-mail incorreto'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        required
+                        placeholder="seu@email.com"
+                        value={email}
+                        onBlur={() => markTouched('email')}
+                        onChange={e => setEmail(e.target.value)}
+                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                          touched.email 
+                            ? isEmailValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                            : 'border-white/[0.1] focus:border-amber-500'
+                        }`}
+                      />
+                      {isEmailValid && (
+                        <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                      )}
+                    </div>
+                  </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-white/50 uppercase">Número do Cartão</label>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-white/50 uppercase">WhatsApp</label>
+                      {touched.whatsapp && (
+                        <span className={`text-[9px] font-bold ${isWhatsappValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {isWhatsappValid ? '✓ Válido' : 'Com DDD'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
                       <input
                         type="text"
-                        required
-                        placeholder="0000 0000 0000 0000"
-                        value={cardNumber}
+                        placeholder="(00) 00000-0000"
+                        value={whatsapp}
+                        onBlur={() => markTouched('whatsapp')}
                         onChange={e => {
-                          const clean = e.target.value.replace(/\D/g, '').slice(0, 16);
-                          const parts = clean.match(/.{1,4}/g);
-                          setCardNumber(parts ? parts.join(' ') : clean);
+                          const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          if (clean.length <= 2) setWhatsapp(clean);
+                          else if (clean.length <= 7) setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2)}`);
+                          else setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`);
                         }}
-                        className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none font-mono text-center tracking-wider"
+                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                          touched.whatsapp 
+                            ? isWhatsappValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                            : 'border-white/[0.1] focus:border-amber-500'
+                        }`}
                       />
+                      {isWhatsappValid && (
+                        <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                      )}
                     </div>
+                  </div>
+                </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-white/50 uppercase">Nome Impresso no Cartão</label>
+                {/* CPF da Conta e Senha */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-white/50 uppercase">CPF da Conta (Criador)</label>
+                      {touched.cpf && (
+                        <span className={`text-[9px] font-bold ${isCpfValid ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isCpfValid ? '✓ CPF Válido' : 'CPF Inválido'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
                       <input
                         type="text"
                         required
-                        placeholder="COMO ESTÁ NO CARTÃO"
+                        placeholder="000.000.000-00"
+                        value={cpf}
+                        onBlur={() => markTouched('cpf')}
+                        onChange={e => {
+                          const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          if (clean.length <= 3) setCpf(clean);
+                          else if (clean.length <= 6) setCpf(`${clean.slice(0, 3)}.${clean.slice(3)}`);
+                          else if (clean.length <= 9) setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
+                          else setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
+                        }}
+                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                          touched.cpf 
+                            ? isCpfValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-red-500/50 focus:border-red-500'
+                            : 'border-white/[0.1] focus:border-amber-500'
+                        }`}
+                      />
+                      {isCpfValid && (
+                        <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-bold text-white/50 uppercase">Criar Senha de Acesso</label>
+                      {touched.senha && (
+                        <span className={`text-[9px] font-bold ${isSenhaValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {isSenhaValid ? '✓ Válida' : 'Mín. 6 dígitos'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={senha}
+                        onBlur={() => markTouched('senha')}
+                        onChange={e => setSenha(e.target.value)}
+                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                          touched.senha 
+                            ? isSenhaValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                            : 'border-white/[0.1] focus:border-amber-500'
+                        }`}
+                      />
+                      {isSenhaValid && (
+                        <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* CAMPOS ESPECÍFICOS DO CARTÃO + CPF DO TITULAR         */}
+                {/* ══════════════════════════════════════════════════════ */}
+                {paymentMethod === 'card' && (
+                  <div className="pt-3 border-t border-white/[0.08] space-y-3 animate-fade-in bg-white/[0.02] p-3 rounded-2xl border">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <CreditCard size={12} /> Dados do Cartão de Crédito
+                      </span>
+                      <span className="text-[9px] text-white/40 font-mono">Processamento Seguro</span>
+                    </div>
+
+                    {/* Número do Cartão */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-white/50 uppercase">Número do Cartão</label>
+                        {touched.cardNumber && (
+                          <span className={`text-[9px] font-bold ${isCardNumberValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {isCardNumberValid ? '✓ Válido' : '16 dígitos'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          placeholder="0000 0000 0000 0000"
+                          value={cardNumber}
+                          onBlur={() => markTouched('cardNumber')}
+                          onChange={e => {
+                            const clean = e.target.value.replace(/\D/g, '').slice(0, 16);
+                            const parts = clean.match(/.{1,4}/g);
+                            setCardNumber(parts ? parts.join(' ') : clean);
+                          }}
+                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center tracking-wider transition-colors ${
+                            touched.cardNumber 
+                              ? isCardNumberValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                              : 'border-white/[0.1] focus:border-amber-500'
+                          }`}
+                        />
+                        {isCardNumberValid && (
+                          <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Nome Impresso no Cartão */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-white/50 uppercase">Nome Impresso no Cartão</label>
+                        {touched.cardName && (
+                          <span className={`text-[9px] font-bold ${isCardNameValid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {isCardNameValid ? '✓ Válido' : 'Como está no cartão'}
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        placeholder="COMO IMPRESSO NO CARTÃO"
                         value={cardName}
+                        onBlur={() => markTouched('cardName')}
                         onChange={e => setCardName(e.target.value)}
-                        className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none uppercase"
+                        className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none uppercase transition-colors ${
+                          touched.cardName 
+                            ? isCardNameValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                            : 'border-white/[0.1] focus:border-amber-500'
+                        }`}
                       />
                     </div>
 
+                    {/* Validade, CVV e Parcelamento */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-white/50 uppercase">Validade</label>
@@ -595,12 +822,17 @@ export function LandingCheckoutModal({
                           required
                           placeholder="MM/AA"
                           value={cardExpiry}
+                          onBlur={() => markTouched('cardExpiry')}
                           onChange={e => {
                             const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
                             if (clean.length <= 2) setCardExpiry(clean);
                             else setCardExpiry(`${clean.slice(0, 2)}/${clean.slice(2)}`);
                           }}
-                          className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none text-center font-mono"
+                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                            touched.cardExpiry 
+                              ? isCardExpiryValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                              : 'border-white/[0.1] focus:border-amber-500'
+                          }`}
                         />
                       </div>
                       <div className="space-y-1">
@@ -611,51 +843,225 @@ export function LandingCheckoutModal({
                           maxLength={4}
                           placeholder="123"
                           value={cardCvv}
+                          onBlur={() => markTouched('cardCvv')}
                           onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl p-2.5 text-xs text-white focus:border-amber-500 outline-none text-center font-mono"
+                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                            touched.cardCvv 
+                              ? isCardCvvValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
+                              : 'border-white/[0.1] focus:border-amber-500'
+                          }`}
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/50 uppercase">Parcelamento</label>
+                        <label className="text-[10px] font-bold text-white/50 uppercase">Parcelas</label>
                         <select
                           value={installments}
                           onChange={e => setInstallments(Number(e.target.value))}
                           className="w-full bg-[#15151c] border border-white/[0.1] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
                         >
-                          <option value={1}>1x de {planInfo.priceFormatted}</option>
-                          <option value={2}>2x de R$ {(planInfo.price / 2).toFixed(2).replace('.', ',')}</option>
-                          <option value={3}>3x de R$ {(planInfo.price / 3).toFixed(2).replace('.', ',')}</option>
-                          <option value={4}>4x de R$ {(planInfo.price / 4).toFixed(2).replace('.', ',')}</option>
+                          <option value={1}>1x {planInfo.priceFormatted}</option>
+                          <option value={2}>2x R$ {(planInfo.price / 2).toFixed(2).replace('.', ',')}</option>
+                          <option value={3}>3x R$ {(planInfo.price / 3).toFixed(2).replace('.', ',')}</option>
+                          <option value={4}>4x R$ {(planInfo.price / 4).toFixed(2).replace('.', ',')}</option>
                         </select>
+                      </div>
+                    </div>
+
+                    {/* CPF DO TITULAR DO CARTÃO */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-white/50 uppercase">CPF do Titular do Cartão</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-amber-400 font-bold select-none">
+                          <input
+                            type="checkbox"
+                            checked={sameAsAccountCpf}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              setSameAsAccountCpf(checked);
+                              if (checked && cpf) setCardCpf(cpf);
+                            }}
+                            className="rounded border-white/20 bg-white/10 text-amber-500 focus:ring-0 cursor-pointer"
+                          />
+                          <span>Mesmo CPF da conta</span>
+                        </label>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          disabled={sameAsAccountCpf}
+                          placeholder="000.000.000-00"
+                          value={sameAsAccountCpf ? cpf : cardCpf}
+                          onBlur={() => markTouched('cardCpf')}
+                          onChange={e => {
+                            const clean = e.target.value.replace(/\D/g, '').slice(0, 11);
+                            if (clean.length <= 3) setCardCpf(clean);
+                            else if (clean.length <= 6) setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3)}`);
+                            else if (clean.length <= 9) setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
+                            else setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
+                          }}
+                          className={`w-full bg-white/[0.05] border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                            sameAsAccountCpf ? 'opacity-60 cursor-not-allowed border-white/[0.08]' : 'border-white/[0.1] focus:border-amber-500'
+                          }`}
+                        />
+                        {(sameAsAccountCpf ? isCpfValid : isCardCpfValid) && (
+                          <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* UPSELL APÓS FORMULÁRIO E ANTES DO BOTÃO DE LIBERAR    */}
+                {/* ══════════════════════════════════════════════════════ */}
+                {selectedPlan === 'monthly' && (
+                  <div className="bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#181824] border-2 border-amber-500/50 rounded-2xl p-3.5 space-y-2.5 animate-scale-up shadow-xl shadow-amber-500/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded-md font-mono tracking-wider">
+                        OPORTUNIDADE EXCLUSIVA
+                      </span>
+                      <span className="text-xs font-black text-amber-400">+ R$ 19,90/mês</span>
+                    </div>
+
+                    <div>
+                      <h5 className="text-xs font-black text-white flex items-center gap-1.5">
+                        <Zap size={13} className="text-amber-400 fill-amber-400" />
+                        <span>Turbine sua assinatura com o Módulo de Lotes e Ovos</span>
+                      </h5>
+                      <p className="text-[11px] text-white/70 leading-relaxed mt-1">
+                        Cadastre lotes inteiros de postura, engorda e crescimento. Tenha controle total de ovos, chocadeira e pesagem coletiva no seu aplicativo.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan('pro_monthly')}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wide active:scale-95 transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <span>Sim! Adicionar Lotes e Ovos (Total: R$ 59,80/mês)</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Se o cliente estiver no Completo e quiser voltar para o comum */}
+                {selectedPlan === 'pro_monthly' && initialPlan === 'monthly' && (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan('monthly')}
+                      className="text-[10px] text-white/40 hover:text-white transition-colors cursor-pointer"
+                    >
+                      ← Manter apenas o Plano Comum (R$ 39,90/mês)
+                    </button>
+                  </div>
+                )}
+
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* BOTÃO PRINCIPAL: LIBERAR MEU ACESSO                   */}
+                {/* ══════════════════════════════════════════════════════ */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50"
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-sm uppercase tracking-wider active:scale-95 transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer mt-3 disabled:opacity-50"
                 >
                   {loading ? (
-                    <Loader2 size={16} className="animate-spin text-black" />
-                  ) : paymentMethod === 'pix' ? (
-                    <>
-                      <QrCode size={15} />
-                      <span>Gerar PIX de {planInfo.priceFormatted}</span>
-                    </>
+                    <Loader2 size={18} className="animate-spin text-black" />
                   ) : (
                     <>
-                      <CreditCard size={15} />
-                      <span>Pagar {planInfo.priceFormatted} no Cartão</span>
+                      <Zap size={16} className="fill-black" />
+                      <span>Liberar Meu Acesso Agora</span>
+                      <ArrowRight size={16} />
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 pt-1">
-                <ShieldCheck size={12} className="text-emerald-400" />
-                <span>Transação criptografada pelo Mercado Pago</span>
+              {/* ══════════════════════════════════════════════════════ */}
+              {/* BANDEIRAS DE PAGAMENTO (MASTER, VISA, ELO, PIX)        */}
+              {/* ══════════════════════════════════════════════════════ */}
+              <div className="pt-2 flex flex-col items-center gap-3">
+                <div className="flex items-center justify-center gap-3 text-white/40">
+                  {/* Badge Visa */}
+                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-widest text-white/70 italic">
+                    VISA
+                  </div>
+                  {/* Badge Mastercard */}
+                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-wider text-white/70 flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/80 -mr-1.5" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                    <span className="text-[8px] font-bold uppercase ml-1">Mastercard</span>
+                  </div>
+                  {/* Badge Elo */}
+                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-wider text-white/70 flex items-center gap-1">
+                    <span className="text-yellow-400 text-[10px]">●</span>
+                    <span className="text-blue-400 text-[10px] -ml-1">●</span>
+                    <span className="text-red-400 text-[10px] -ml-1">●</span>
+                    <span className="text-[8px] font-bold uppercase ml-0.5">Elo</span>
+                  </div>
+                  {/* Badge Pix */}
+                  <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 flex items-center gap-1">
+                    <QrCode size={10} />
+                    <span>PIX</span>
+                  </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* PROVA SOCIAL: DEPOIMENTO E AVATARES DE USUÁRIOS        */}
+                {/* ══════════════════════════════════════════════════════ */}
+                <div className="w-full pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/[0.02] p-3 rounded-2xl">
+                  {/* Avatares sobrepostos */}
+                  <div className="flex items-center">
+                    <div className="flex -space-x-2 overflow-hidden shrink-0">
+                      <img
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[#121216] object-cover"
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&fit=crop&crop=face"
+                        alt="Criador"
+                      />
+                      <img
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[#121216] object-cover"
+                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face"
+                        alt="Criador"
+                      />
+                      <img
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[#121216] object-cover"
+                        src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=64&h=64&fit=crop&crop=face"
+                        alt="Criador"
+                      />
+                      <img
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[#121216] object-cover"
+                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face"
+                        alt="Criador"
+                      />
+                      <img
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[#121216] object-cover"
+                        src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=64&h=64&fit=crop&crop=face"
+                        alt="Criador"
+                      />
+                    </div>
+                    <div className="flex items-center gap-0.5 ml-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={10} className="text-amber-400 fill-amber-400" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Texto de Depoimento / Métricas */}
+                  <div className="text-center sm:text-right">
+                    <p className="text-[11px] font-extrabold text-white">
+                      Mais de 500 contas cadastradas
+                    </p>
+                    <p className="text-[9px] font-bold text-amber-400/90">
+                      +50.000 aves registradas no sistema
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5 text-[9px] text-white/40 pb-1">
+                  <ShieldCheck size={11} className="text-emerald-400" />
+                  <span>Acesso liberado imediatamente após a confirmação</span>
+                </div>
               </div>
             </div>
           )}
@@ -666,9 +1072,9 @@ export function LandingCheckoutModal({
           {step === 'pix' && pixData && (
             <div className="space-y-4 text-center animate-fade-in">
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
-                <p className="text-xs font-black text-emerald-400">PIX Gerado com Sucesso!</p>
+                <p className="text-xs font-black text-emerald-400">Código PIX Gerado com Sucesso!</p>
                 <p className="text-[11px] text-white/70 mt-0.5">
-                  Pague com seu aplicativo de banco e a sua conta será liberada na hora.
+                  Copie o código ou escaneie o QR Code no app do seu banco. A liberação ocorre em segundos.
                 </p>
               </div>
 
@@ -707,7 +1113,7 @@ export function LandingCheckoutModal({
               {/* Status ao vivo */}
               <div className="flex items-center justify-center gap-2 text-xs text-amber-400 py-1 font-bold">
                 <Loader2 size={15} className="animate-spin" />
-                <span>Aguardando confirmação do pagamento...</span>
+                <span>Aguardando identificação do pagamento...</span>
               </div>
 
               <div className="space-y-2 pt-2">
@@ -715,7 +1121,7 @@ export function LandingCheckoutModal({
                   type="button"
                   disabled={verifying}
                   onClick={handleVerificarManual}
-                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-500/10 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-500/10 cursor-pointer disabled:opacity-50"
                 >
                   {verifying ? <Loader2 size={15} className="animate-spin text-black" /> : <Check size={15} />}
                   <span>Já fiz o pagamento</span>
