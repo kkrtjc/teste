@@ -1077,28 +1077,80 @@ export function LandingCheckoutModal({
                     </span>
                   </div>
 
-                  {/* O que o cliente está levando */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-black text-white">
-                        Plano {planInfo.title}
-                      </span>
-                      <span className="text-xs font-bold text-white/80 font-mono">
-                        {planInfo.priceFormatted}/{planInfo.period}
-                      </span>
-                    </div>
+                  {/* Itens que o cliente está levando */}
+                  <div className="space-y-2">
+                    {initialPlan === 'monthly' && selectedPlan === 'pro_monthly' ? (
+                      // CASO 1: Plano Mensal Comum + Upsell do Módulo de Lotes e Ovos
+                      <>
+                        <div className="flex items-start justify-between gap-2 text-xs">
+                          <div>
+                            <div className="flex items-center gap-1.5 font-bold text-white">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                              <span>Plano Mensal (Base)</span>
+                            </div>
+                            <p className="text-[11px] text-white/60 pl-3 leading-tight mt-0.5">
+                              Cadastro de Aves, Baias, Genealogia, Fotos em HD e Vitrine Digital
+                            </p>
+                          </div>
+                          <span className="font-mono text-white/80 shrink-0 font-bold">R$ 39,90/mês</span>
+                        </div>
 
-                    <p className="text-[11px] text-white/70 leading-relaxed">
-                      {selectedPlan === 'monthly' && (
-                        '✓ Acesso completo: Cadastro de Aves, Genealogia, Fotos em HD e Vitrine Digital.'
-                      )}
-                      {selectedPlan === 'pro_monthly' && (
-                        '✓ Acesso completo: Aves, Fotos e Vitrine + Módulo de Lotes, Ovos e Chocadeira.'
-                      )}
-                      {selectedPlan === 'yearly' && (
-                        '✓ Acesso Anual Irrestrito: 100% dos recursos liberados por 12 meses com desconto.'
-                      )}
-                    </p>
+                        <div className="flex items-start justify-between gap-2 text-xs bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
+                          <div>
+                            <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                              <span>+ Módulo de Lotes e Ovos (Upgrade)</span>
+                            </div>
+                            <p className="text-[11px] text-white/75 pl-3 leading-tight mt-0.5">
+                              Lotes de postura/engorda, ovos diários, chocadeira e pesagens
+                            </p>
+                          </div>
+                          <span className="font-mono text-amber-400 shrink-0 font-black">+ R$ 19,90/mês</span>
+                        </div>
+                      </>
+                    ) : selectedPlan === 'monthly' ? (
+                      // CASO 2: Apenas o Plano Mensal Comum
+                      <div className="flex items-start justify-between gap-2 text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                            <span>Plano Mensal Comum</span>
+                          </div>
+                          <p className="text-[11px] text-white/60 pl-3 leading-tight mt-0.5">
+                            Cadastro de Aves, Baias, Genealogia, Fotos em HD e Vitrine Digital
+                          </p>
+                        </div>
+                        <span className="font-mono text-white/80 shrink-0 font-bold">R$ 39,90/mês</span>
+                      </div>
+                    ) : selectedPlan === 'pro_monthly' ? (
+                      // CASO 3: Entrou direto pelo card Mensal Completo
+                      <div className="flex items-start justify-between gap-2 text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                            <span>Plano Mensal Completo</span>
+                          </div>
+                          <p className="text-[11px] text-white/60 pl-3 leading-tight mt-0.5">
+                            Aves, Vitrine + Módulo Completo de Lotes, Ovos, Chocadeira e Pesagem
+                          </p>
+                        </div>
+                        <span className="font-mono text-white/80 shrink-0 font-bold">R$ 59,80/mês</span>
+                      </div>
+                    ) : (
+                      // CASO 4: Plano Anual Completo
+                      <div className="flex items-start justify-between gap-2 text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                            <span>Plano Anual Completo (12 Meses)</span>
+                          </div>
+                          <p className="text-[11px] text-white/60 pl-3 leading-tight mt-0.5">
+                            Acesso 100% irrestrito a todos os recursos liberados com 21% OFF
+                          </p>
+                        </div>
+                        <span className="font-mono text-white/80 shrink-0 font-bold">R$ 567,90/ano</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Valor exato que está pagando */}
