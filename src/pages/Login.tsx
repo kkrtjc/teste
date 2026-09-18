@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, memo } from 'react';
 import { 
   Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
   TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint,
-  KeyRound, ArrowLeft, CheckCircle2, AlertCircle
+  KeyRound, ArrowLeft, CheckCircle2, AlertCircle, ArrowRight
 } from 'lucide-react';
-import { useAuth, isUserAdmin } from '../lib/AuthContext';
+import { useAuth, isUserAdmin, type SubscriptionPlan } from '../lib/AuthContext';
+import { LandingCheckoutModal } from '../components/LandingCheckoutModal';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import muraLogo from '../assets/mura_logo.jpg';
@@ -829,6 +830,13 @@ export function Login() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotInitialId, setForgotInitialId] = useState('');
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<SubscriptionPlan>('pro_monthly');
+
+  const handleOpenCheckout = (plan: SubscriptionPlan) => {
+    setCheckoutPlan(plan);
+    setShowCheckoutModal(true);
+  };
 
   // Detecção de biometria
   const [biometricAvailable, setBiometricAvailable] = useState(false);
@@ -923,19 +931,30 @@ export function Login() {
           Cadastre mais de 20 mil aves e tenha o controle completo sobre o seu plantel, nível de parentesco e gestão inteligente de lotes de postura e engorda.
         </p>
 
-        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-3 items-center relative z-10 w-full sm:w-auto">
-          <button
-            onClick={() => setShowRegisterForm(true)}
-            className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/25 cursor-pointer"
-          >
-            <Sparkles size={13} /> Criar Conta Grátis (7 Dias)
-          </button>
+        <div className="mt-4 sm:mt-5 flex flex-col items-center gap-3 relative z-10 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+            <button
+              onClick={() => setShowRegisterForm(true)}
+              className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/25 cursor-pointer"
+            >
+              <Sparkles size={13} /> Teste grátis durante 7 dias
+            </button>
+
+            <button
+              onClick={() => setShowLoginForm(true)}
+              className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 text-amber-400 border border-amber-500/30 bg-black/40 hover:bg-black/60 cursor-pointer"
+            >
+              <LogIn size={13} /> Acesse sua Conta
+            </button>
+          </div>
 
           <button
-            onClick={() => setShowLoginForm(true)}
-            className="w-full sm:w-auto px-7 py-3.5 text-xs font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 text-amber-400 border border-amber-500/30 bg-black/40 hover:bg-black/60 cursor-pointer"
+            type="button"
+            onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+            className="text-xs font-extrabold text-white/60 hover:text-amber-400 transition-colors flex items-center gap-1.5 py-1 px-3 rounded-full hover:bg-white/5 cursor-pointer"
           >
-            <LogIn size={13} /> Acesse sua Conta
+            <span>Conheça os planos</span>
+            <ArrowRight size={13} />
           </button>
         </div>
 
@@ -1029,12 +1048,22 @@ export function Login() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => setShowRegisterForm(true)}
-                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer"
-              >
-                Testar 7 Dias Grátis
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleOpenCheckout('monthly')}
+                  className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-amber-500 hover:bg-amber-400 shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>Assinar Mensal Comum</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterForm(true)}
+                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  ou teste grátis por 7 dias
+                </button>
+              </div>
             </div>
 
             {/* 2. MENSAL COMPLETO */}
@@ -1073,12 +1102,22 @@ export function Login() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => setShowRegisterForm(true)}
-                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-amber-300 border border-amber-400/50 bg-amber-500/20 hover:bg-amber-500/30 cursor-pointer shadow-md"
-              >
-                Testar 7 Dias Grátis
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleOpenCheckout('pro_monthly')}
+                  className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
+                >
+                  <span>Assinar Mensal Completo</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterForm(true)}
+                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  ou teste grátis por 7 dias
+                </button>
+              </div>
             </div>
 
             {/* 3. ANUAL COMPLETO */}
@@ -1118,12 +1157,22 @@ export function Login() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => setShowRegisterForm(true)}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-1 bg-gradient-to-r from-emerald-400 to-amber-400 hover:from-emerald-300 hover:to-amber-300 shadow-lg shadow-emerald-500/20 cursor-pointer"
-              >
-                Ativar 7 Dias Grátis
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleOpenCheckout('yearly')}
+                  className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-1 bg-gradient-to-r from-emerald-400 to-amber-400 hover:from-emerald-300 hover:to-amber-300 shadow-lg shadow-emerald-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>Assinar Anual Completo</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterForm(true)}
+                  className="w-full text-center text-[10px] font-bold text-white/40 hover:text-emerald-400 transition-colors cursor-pointer"
+                >
+                  ou teste grátis por 7 dias
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1185,6 +1234,13 @@ export function Login() {
         isOpen={isPasswordRecovery}
         onClose={() => setIsPasswordRecovery(false)}
         updatePassword={updatePassword}
+      />
+
+      <LandingCheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        initialPlan={checkoutPlan}
+        signIn={signIn}
       />
 
     </div>
