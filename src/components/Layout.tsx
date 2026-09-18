@@ -4,8 +4,8 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle, Egg, Sparkles, Copy, CheckCircle2,
-  CreditCard, QrCode, Zap, Store, ArrowLeft, Lock
+  Bell, MessageSquare, HelpCircle, Egg, Sparkles, RefreshCw,
+  Zap, Store, ArrowLeft, Lock
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
 
@@ -20,6 +20,8 @@ import { useAuth, ADMIN_CPF, type SubscriptionPlan } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import { useHaptics } from '../hooks/useHaptics';
+import { LandingCheckoutModal } from './LandingCheckoutModal';
+import { RenewalModal } from './modals/RenewalModal';
 
 export type AllowedCpf = {
   cpf: string;
@@ -230,344 +232,6 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
   );
 });
 
-const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
-  isOpen,
-  onClose,
-  initialPlan = 'yearly',
-  cpf,
-  farmPhone,
-  triggerWebhookPayment,
-  showToast,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  initialPlan?: SubscriptionPlan;
-  cpf?: string;
-  farmPhone?: string;
-  triggerWebhookPayment: (plan: SubscriptionPlan) => Promise<any>;
-  showToast: (msg: string, type?: any) => void;
-}) {
-  const [upgradePlan, setUpgradePlan] = useState<SubscriptionPlan>(initialPlan);
-  const [upgradeMethod, setUpgradeMethod] = useState<'card' | 'pix'>('card');
-  const [copiedPixUpgrade, setCopiedPixUpgrade] = useState(false);
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && initialPlan) {
-      setUpgradePlan(initialPlan);
-    }
-  }, [isOpen, initialPlan]);
-
-  if (!isOpen) return null;
-
-  const getUpgradeWhatsappLink = (method: 'card' | 'pix' = upgradeMethod) => {
-    const planText = upgradePlan === 'yearly'
-      ? 'Anual Completo (R$ 567,90 - 21% OFF - Economia de R$ 149,70)'
-      : upgradePlan === 'pro_monthly'
-      ? 'Mensal Completo com Lotes e Ovos (R$ 59,80/mês)'
-      : 'Mensal Comum - Aves e Vitrine (R$ 39,90/mês)';
-    const userIdent = cpf ? `CPF: ${cpf}` : '';
-    const methodText = method === 'card' 
-      ? 'Cartão de Crédito (com cobrança automática)' 
-      : 'PIX (à vista)';
-    const text = encodeURIComponent(
-      `Olá! Desejo ativar o plano ${planText} via ${methodText} no Mura Manager${userIdent ? ` (${userIdent})` : ''}. Por favor, me envie as instruções de liberação.`
-    );
-    const cleanPhone = (farmPhone || '').replace(/\D/g, '') || '5599999999999';
-    return `https://wa.me/55${cleanPhone}?text=${text}`;
-  };
-
-  const getPlanPriceText = (plan: SubscriptionPlan) => {
-    switch (plan) {
-      case 'yearly': return 'R$ 567,90/ano';
-      case 'pro_monthly': return 'R$ 59,80/mês';
-      case 'monthly': return 'R$ 39,90/mês';
-    }
-  };
-
-  return createPortal(
-    <div className="fixed inset-0 z-[999] bg-black/85 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
-      <div className="bg-theme-surface border border-theme-border rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl relative space-y-4 sm:space-y-5 animate-scale-up overflow-hidden my-auto">
-        <div className="flex items-center justify-between border-b border-theme-border pb-3 sm:pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <h3 className="font-black text-sm text-white">Escolha Seu Plano de Assinatura</h3>
-              <p className="text-[10px] text-theme-text-muted">Desbloqueio instantâneo e suporte contínuo</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Plan Selector (3 Planos) */}
-        <div className="grid grid-cols-3 gap-2">
-          {/* Mensal Comum */}
-          <div 
-            onClick={() => setUpgradePlan('monthly')}
-            className={`p-2.5 rounded-2xl border cursor-pointer transition-all ${
-              upgradePlan === 'monthly' ? 'border-amber-500 bg-amber-500/15 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
-            }`}
-          >
-            <p className="font-bold text-[11px] text-white">Mensal Comum</p>
-            <p className="text-sm font-black text-amber-400 mt-0.5">R$ 39,90<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
-            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Aves e Vitrine</p>
-          </div>
-
-          {/* Mensal Completo */}
-          <div 
-            onClick={() => setUpgradePlan('pro_monthly')}
-            className={`p-2.5 rounded-2xl border cursor-pointer transition-all ${
-              upgradePlan === 'pro_monthly' ? 'border-amber-400 bg-amber-500/20 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/30' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
-            }`}
-          >
-            <p className="font-bold text-[11px] text-white">Mensal Completo</p>
-            <p className="text-sm font-black text-amber-300 mt-0.5">R$ 59,80<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
-            <p className="text-[9px] text-amber-400/90 font-bold mt-1 leading-tight">+ Lotes e Ovos</p>
-          </div>
-
-          {/* Anual Completo (Hero) */}
-          <div 
-            onClick={() => setUpgradePlan('yearly')}
-            className={`p-2.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
-              upgradePlan === 'yearly' ? 'border-emerald-500 bg-emerald-500/20 shadow-xl shadow-emerald-500/20 ring-1 ring-emerald-400/50' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
-            }`}
-          >
-            <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-1.5 py-0.2 rounded-bl-md">21% OFF</span>
-            <p className="font-bold text-[11px] text-white">Anual Completo</p>
-            <p className="text-sm font-black text-emerald-400 mt-0.5">R$ 567,90<span className="text-[8px] text-theme-text-muted font-normal">/ano</span></p>
-            <p className="text-[9px] text-emerald-400 font-bold mt-1 leading-tight">R$ 47,32/mês</p>
-          </div>
-        </div>
-
-        {/* ── UPSELL INTERATIVO DE LOTES (QUANDO SELECIONA MENSAL COMUM) ── */}
-        {upgradePlan === 'monthly' && (
-          <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-[#181824] border border-amber-500/40 rounded-2xl p-2.5 flex items-center justify-between gap-2 animate-scale-up shadow-md">
-            <div className="min-w-0">
-              <span className="text-[8px] font-black uppercase px-1.5 py-0.2 bg-amber-500 text-black rounded font-mono">OPORTUNIDADE</span>
-              <p className="text-[11px] font-black text-amber-300 mt-0.5">Turbine com o Módulo de Lotes!</p>
-              <p className="text-[10px] text-zinc-300 leading-tight">
-                Lotes de cria e gestão de ovos por apenas <strong className="text-amber-400">+ R$ 19,90/mês</strong>.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setUpgradePlan('pro_monthly')}
-              className="py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 text-black font-black text-[10px] uppercase tracking-wide shrink-0 active:scale-95 transition-all shadow-md cursor-pointer"
-            >
-              Adicionar Lotes
-            </button>
-          </div>
-        )}
-
-        {/* Lista de Recursos / Benefícios do Plano Escolhido */}
-        <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs animate-fade-in">
-          <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-            {upgradePlan === 'yearly' 
-              ? '⭐ Vantagens Exclusivas do Plano Anual Completo (Economize R$ 149,70):' 
-              : upgradePlan === 'pro_monthly' 
-              ? '⚡ Recursos Inclusos no Plano Mensal Completo:' 
-              : '📋 Recursos Inclusos no Plano Mensal Comum:'}
-          </p>
-          <ul className="space-y-1.5 text-theme-text-muted text-[11px]">
-            {upgradePlan === 'yearly' ? (
-              <>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Tudo liberado sem limites: aves, vitrine, lotes e ovos</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Equivale a apenas <strong className="text-emerald-400 font-black">R$ 47,32/mês</strong> (21% de desconto!)</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Parcelamento facilitado em <strong className="text-emerald-400 font-black">até 12x no cartão</strong></span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Vitrine digital oficial ativada para divulgar suas aves no WhatsApp</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span><strong className="text-emerald-400 font-black">Economia de R$ 149,70</strong> garantida no ano</span>
-                </li>
-              </>
-            ) : upgradePlan === 'pro_monthly' ? (
-              <>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Tudo do Plano Mensal Comum de Aves incluso</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Módulo completo de lotes de engorda, postura e crescimento</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Controle total de ovos, chocadeira e taxa de eclosão</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Alertas de manejo, vacinação coletiva e pesagem</span>
-                </li>
-              </>
-            ) : (
-              <>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Cadastro completo de aves com fotos, anilhas e pedigree</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Vitrine digital comercial pública para divulgar no WhatsApp</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Fichas técnicas completas com fotos e árvore genealógica</span>
-                </li>
-                <li className="flex items-center gap-1.5 text-white font-medium">
-                  <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Controle de vacinas individuais, peso e baias</span>
-                </li>
-              </>
-            )}
-          </ul>
-        </div>
-
-        {/* Payment Method Selector */}
-        <div className="flex rounded-xl bg-theme-base/80 p-1 border border-theme-border/70 gap-1">
-          <button
-            type="button"
-            onClick={() => setUpgradeMethod('card')}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              upgradeMethod === 'card'
-                ? 'bg-amber-500 text-black shadow-md font-black'
-                : 'text-theme-text-muted hover:text-white'
-            }`}
-          >
-            <CreditCard size={13} />
-            <span>Cartão (Até 12x)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setUpgradeMethod('pix')}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              upgradeMethod === 'pix'
-                ? 'bg-amber-500 text-black shadow-md font-black'
-                : 'text-theme-text-muted hover:text-white'
-            }`}
-          >
-            <QrCode size={13} />
-            <span>PIX (À Vista)</span>
-          </button>
-        </div>
-
-        {/* Dynamic Payment Method Content */}
-        {upgradeMethod === 'card' ? (
-          <div className="bg-theme-base/60 border border-theme-border/60 rounded-2xl p-3.5 space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2.5 bg-theme-surface border border-theme-border/80 rounded-xl p-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
-                <CreditCard size={16} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white leading-tight">Cobrança no Cartão de Crédito</p>
-                <p className="text-[10px] text-theme-text-muted mt-0.5">
-                  {upgradePlan === 'yearly'
-                    ? 'Parcelamento em até 12x no cartão ou à vista no Pix. Liberação imediata.'
-                    : 'Cobrança mensal automática com total comodidade e cancelamento a qualquer momento.'}
-                </p>
-              </div>
-            </div>
-
-            <a
-              href={getUpgradeWhatsappLink('card')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-black bg-amber-500 hover:bg-amber-400 text-xs shadow-md cursor-pointer"
-            >
-              <CreditCard size={14} />
-              <span>Ativar Assinatura no Cartão ({getPlanPriceText(upgradePlan)})</span>
-            </a>
-          </div>
-        ) : (
-          <div className="bg-theme-base/60 border border-theme-border/60 rounded-2xl p-3.5 space-y-3 animate-fade-in">
-            <div className="space-y-1.5 text-center">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold text-white">Chave Pix Copia e Cola (À Vista)</p>
-                <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                  {getPlanPriceText(upgradePlan)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between bg-theme-surface border border-theme-border rounded-xl px-3 py-1.5 text-xs">
-                <span className="font-mono text-white text-[11px] truncate font-bold">mura.manager.pay@gmail.com</span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText('mura.manager.pay@gmail.com');
-                    setCopiedPixUpgrade(true);
-                    setTimeout(() => setCopiedPixUpgrade(false), 2500);
-                  }}
-                  className="p-1 text-amber-400 font-bold text-[10px] flex items-center gap-1 hover:text-white cursor-pointer"
-                >
-                  {copiedPixUpgrade ? <CheckCircle2 size={12} className="text-emerald-400"/> : <Copy size={12}/>}
-                  <span className={copiedPixUpgrade ? 'text-emerald-400' : ''}>{copiedPixUpgrade ? 'Copiado!' : 'Copiar'}</span>
-                </button>
-              </div>
-            </div>
-
-            <a
-              href={getUpgradeWhatsappLink('pix')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-2.5 rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all text-white bg-emerald-600 hover:bg-emerald-500 text-xs shadow-md cursor-pointer"
-            >
-              <MessageSquare size={14} />
-              <span>Enviar Comprovante Pix no WhatsApp</span>
-            </a>
-          </div>
-        )}
-
-        {/* Webhook Status Listener */}
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-center space-y-1">
-          <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
-            <Loader2 size={14} className="animate-spin" />
-            <span>Aguardando confirmação via Webhook...</span>
-          </div>
-          <p className="text-[10px] text-theme-text-muted">
-            Escutando a aprovação do gateway em tempo real.
-          </p>
-        </div>
-
-        {/* Simulated Webhook Button */}
-        <button
-          onClick={async () => {
-            setUpgradeLoading(true);
-            const { error } = await triggerWebhookPayment(upgradePlan);
-            setUpgradeLoading(false);
-            if (!error) {
-              showToast('Assinatura liberada com sucesso!', 'success');
-              onClose();
-            } else {
-              showToast('Erro ao acionar simulador de Webhook.', 'error');
-            }
-          }}
-          disabled={upgradeLoading}
-          className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
-        >
-          {upgradeLoading ? <Loader2 size={16} className="animate-spin text-black" /> : <><Sparkles size={16} /> Simular Liberação por Webhook (Teste)</>}
-        </button>
-      </div>
-    </div>,
-    document.body
-  );
-});
-
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { 
     farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
@@ -578,7 +242,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const navigate = useNavigate();
   const location = useLocation();
   const { triggerLight } = useHaptics();
-  const { isLocalMode, triggerWebhookPayment, isAdmin, trialInfo, cpf, hasModuleAccess } = useAuth();
+  const { isLocalMode, isAdmin, trialInfo, cpf, hasModuleAccess, user, activateSubscription, isExpired } = useAuth();
 
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
@@ -586,6 +250,11 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<SubscriptionPlan>('yearly');
   const [hideTrialBanner, setHideTrialBanner] = useState(false);
+  const [hideRenewalBanner, setHideRenewalBanner] = useState(false);
+  const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
+
+  const isPaidCustomer = Boolean((trialInfo?.isPaid || (!trialInfo?.isTrial && trialInfo?.expiresAt)) && !isAdmin);
+  const needsRenewal = isPaidCustomer && ((trialInfo?.remainingDays ?? 999) <= 10 || isExpired);
 
   const currentTrialDay = Math.max(1, Math.min(7, 7 - (trialInfo?.remainingDays ?? 7) + 1));
 
@@ -614,6 +283,10 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     }
     if (effectiveUpgradeModalOpen) {
       handleUpgradeModalClose();
+      return;
+    }
+    if (isRenewalModalOpen) {
+      setIsRenewalModalOpen(false);
       return;
     }
     if (window.history.state && window.history.state.idx > 0) {
@@ -1000,8 +673,76 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           </button>
         </header>
 
+        {/* ── AVISO INTELIGENTE DE RENOVAÇÃO (PARA CLIENTES PAGANTES PRÓXIMOS DO VENCIMENTO OU VENCIDOS) ── */}
+        {needsRenewal && !hideRenewalBanner && (
+          <div className={`border-b px-3 sm:px-4 py-2 flex items-center justify-between gap-3 text-xs z-20 shrink-0 animate-fade-in ${
+            isExpired 
+              ? 'bg-gradient-to-r from-red-500/20 via-[#1a1215] to-red-500/10 border-red-500/30' 
+              : (trialInfo?.remainingDays ?? 0) <= 3 
+              ? 'bg-gradient-to-r from-orange-500/20 via-[#1a1512] to-orange-500/10 border-orange-500/30' 
+              : 'bg-gradient-to-r from-amber-500/15 via-[#16161f] to-amber-500/10 border-amber-500/25'
+          }`}>
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border ${
+                isExpired 
+                  ? 'bg-red-500/20 text-red-400 border-red-500/30' 
+                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+              }`}>
+                <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '10s' }} />
+              </div>
+              <p 
+                onClick={() => setIsRenewalModalOpen(true)}
+                className="text-white text-xs leading-tight cursor-pointer hover:text-amber-200 transition-colors"
+                title="Clique para renovar sua assinatura"
+              >
+                {isExpired ? (
+                  <span>
+                    <span className="font-black text-red-400">Sua assinatura está vencida!</span>{' '}
+                    <span className="text-theme-text-muted">Renove agora para manter o acesso às informações do seu criatório.</span>
+                  </span>
+                ) : (trialInfo?.remainingDays ?? 0) === 0 ? (
+                  <span>
+                    <span className="font-black text-red-400">Sua assinatura vence HOJE!</span>{' '}
+                    <span className="text-theme-text-muted">Deseja renovar agora e continuar com tudo liberado?</span>
+                  </span>
+                ) : (trialInfo?.remainingDays ?? 0) === 1 ? (
+                  <span>
+                    <span className="font-black text-orange-400">Sua assinatura vence amanhã!</span>{' '}
+                    <span className="text-theme-text-muted">Deseja renovar com antecedência?</span>
+                  </span>
+                ) : (
+                  <span>
+                    Sua assinatura <span className="font-black text-amber-400">vai vencer em {trialInfo?.remainingDays} dias</span>.{' '}
+                    <span className="text-theme-text-muted">Deseja renovar?</span>
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsRenewalModalOpen(true)}
+                className={`px-3 py-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider active:scale-95 transition-all shadow-md flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  isExpired 
+                    ? 'bg-red-500 hover:bg-red-400 text-white shadow-red-500/20' 
+                    : 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/10'
+                }`}
+              >
+                <Zap size={11} />
+                <span>Renovar Agora</span>
+              </button>
+              <button
+                onClick={() => setHideRenewalBanner(true)}
+                className="p-1 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+                title="Ocultar aviso"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── AVISO INTELIGENTE DE TRIAL (DISCRETO, ELEGANTE E IMPECÁVEL COM LINKS CLICÁVEIS) ── */}
-        {trialInfo?.isTrial && !isAdmin && !hideTrialBanner && (
+        {!needsRenewal && trialInfo?.isTrial && !isAdmin && !hideTrialBanner && (
           <div className="bg-gradient-to-r from-amber-500/15 via-[#16161f] to-amber-500/10 border-b border-amber-500/25 px-3 sm:px-4 py-2 flex items-center justify-between gap-3 text-xs z-20 shrink-0 animate-fade-in">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
@@ -1291,15 +1032,39 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         document.body
       )}
 
-      {/* MODAL DE UPGRADE / LIBERAÇÃO AUTOMÁTICA DENTRO DO APP */}
-      <LayoutUpgradeModal
+      {/* CHECKOUT OFICIAL DENTRO DO APP (IDÊNTICO À PÁGINA INICIAL) */}
+      <LandingCheckoutModal
         isOpen={effectiveUpgradeModalOpen}
         onClose={handleUpgradeModalClose}
         initialPlan={effectiveUpgradePlan}
-        cpf={cpf}
-        farmPhone={farmSettings.phone}
-        triggerWebhookPayment={triggerWebhookPayment}
-        showToast={showToast}
+        currentUser={{
+          cpf,
+          nome: farmSettings.name,
+          email: user?.email,
+          whatsapp: farmSettings.phone,
+        }}
+        onSuccess={async () => {
+          await activateSubscription(effectiveUpgradePlan);
+          showToast('Assinatura ativada com sucesso! Seu criatório está liberado.', 'success');
+        }}
+      />
+
+      {/* MODAL DE RENOVAÇÃO SIMPLIFICADA COM UPSELL INTELIGENTE */}
+      <RenewalModal
+        isOpen={isRenewalModalOpen}
+        onClose={() => setIsRenewalModalOpen(false)}
+        currentPlan={trialInfo?.planType || 'monthly'}
+        daysRemaining={trialInfo?.remainingDays ?? 0}
+        currentUser={{
+          cpf,
+          nome: farmSettings.name,
+          email: user?.email,
+          whatsapp: farmSettings.phone,
+        }}
+        onRenewSuccess={async (renewedPlan) => {
+          await activateSubscription(renewedPlan);
+          showToast('Assinatura renovada com sucesso! Seu criatório está ativo.', 'success');
+        }}
       />
 
       {/* Modal Interativo de Instruções PWA */}

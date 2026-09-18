@@ -67,11 +67,18 @@ function getDetectedBrand(cleanCardDigits: string) {
   return null;
 }
 
-interface LandingCheckoutModalProps {
+export interface LandingCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPlan: SubscriptionPlan;
-  signIn: (identifier: string, pass: string) => Promise<{ error: any }>;
+  signIn?: (identifier: string, pass: string) => Promise<{ error: any }>;
+  currentUser?: {
+    cpf?: string;
+    nome?: string;
+    email?: string;
+    whatsapp?: string;
+  };
+  onSuccess?: () => void;
 }
 
 export function LandingCheckoutModal({
@@ -79,6 +86,8 @@ export function LandingCheckoutModal({
   onClose,
   initialPlan,
   signIn,
+  currentUser,
+  onSuccess,
 }: LandingCheckoutModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(initialPlan);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
@@ -128,7 +137,14 @@ export function LandingCheckoutModal({
     setTouched({});
     setInstallments(1);
     if (pollingRef.current) clearInterval(pollingRef.current);
-  }, [initialPlan, isOpen]);
+
+    if (currentUser) {
+      if (currentUser.nome) setNome(currentUser.nome);
+      if (currentUser.email) setEmail(currentUser.email);
+      if (currentUser.whatsapp) setWhatsapp(currentUser.whatsapp);
+      if (currentUser.cpf) setCpf(currentUser.cpf);
+    }
+  }, [initialPlan, isOpen, currentUser]);
 
   // Se o cliente já gerou um PIX e mudar de plano dentro do checkout, invalida o PIX anterior para forçar a geração de um novo com o valor correto
   useEffect(() => {
@@ -225,7 +241,7 @@ export function LandingCheckoutModal({
   const isEmailValid = isValidEmail(email);
   const isWhatsappValid = whatsapp.replace(/\D/g, '').length >= 10;
   const isCpfValid = isValidCPF(cpf);
-  const isSenhaValid = senha.length >= 6;
+  const isSenhaValid = Boolean(currentUser) || senha.length >= 6;
 
   // Validações do Cartão
   const cleanCardDigits = cardNumber.replace(/\s/g, '');
@@ -249,43 +265,53 @@ export function LandingCheckoutModal({
       const taggedNome = `${nome.trim()} ${planInfo.tag}`.trim();
 
       if (isSupabaseConfigured) {
+        const payload: any = {
+          cpf: cleanCpf,
+          nome: taggedNome,
+          email: cleanEmail,
+          whatsapp: whatsapp.replace(/\D/g, '') || null,
+          expires_at: expiresAt
+        };
+        if (userSenha && userSenha.length >= 6) {
+          payload.senha = userSenha;
+        }
+
         const { error: upsertErr } = await supabase!
           .from('allowed_cpfs')
-          .upsert({
-            cpf: cleanCpf,
-            nome: taggedNome,
-            email: cleanEmail,
-            whatsapp: whatsapp.replace(/\D/g, '') || null,
-            senha: userSenha,
-            expires_at: expiresAt
-          }, { onConflict: 'email' });
+          .upsert(payload, { onConflict: 'email' });
 
         if (upsertErr) {
           console.warn('Erro ao atualizar allowed_cpfs:', upsertErr);
         }
 
-        await supabase!.auth.signUp({
-          email: cleanEmail,
-          password: userSenha,
-          options: {
-            data: {
-              full_name: nome.trim(),
-              cpf: cleanCpf,
-              plan: selectedPlan
+        if (!currentUser && userSenha && userSenha.length >= 6) {
+          await supabase!.auth.signUp({
+            email: cleanEmail,
+            password: userSenha,
+            options: {
+              data: {
+                full_name: nome.trim(),
+                cpf: cleanCpf,
+                plan: selectedPlan
+              }
             }
-          }
-        }).catch(() => {});
+          }).catch(() => {});
+        }
       } else {
         const localList = (await localforage.getItem<any[]>('@mura-manager:local-allowed-cpfs')) || [];
         const idx = localList.findIndex(item => item.email === cleanEmail || item.cpf === cleanCpf);
+        const existingEntry = idx >= 0 ? localList[idx] : {};
         const entry = {
+          ...existingEntry,
           cpf: cleanCpf,
           nome: taggedNome,
           email: cleanEmail,
           whatsapp: whatsapp.replace(/\D/g, ''),
-          senha: userSenha,
           expires_at: expiresAt
         };
+        if (userSenha && userSenha.length >= 6) {
+          entry.senha = userSenha;
+        }
         if (idx >= 0) localList[idx] = entry;
         else localList.push(entry);
         await localforage.setItem('@mura-manager:local-allowed-cpfs', localList);
@@ -302,7 +328,11 @@ export function LandingCheckoutModal({
       setStep('success');
 
       setTimeout(async () => {
-        await signIn(cleanEmail, userSenha);
+        if (onSuccess) {
+          onSuccess();
+        } else if (signIn && userSenha) {
+          await signIn(cleanEmail, userSenha);
+        }
         onClose();
       }, 1800);
     } catch (e) {
@@ -812,7 +842,9 @@ export function LandingCheckoutModal({
 
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-white/50 uppercase">Criar Senha de Acesso</label>
+                      <label className="text-[10px] font-bold text-white/50 uppercase">
+                        {currentUser ? 'Senha de Acesso (Opcional)' : 'Criar Senha de Acesso'}
+                      </label>
                       {touched.senha && (
                         <span className={`text-[9px] font-bold ${isSenhaValid ? 'text-emerald-400' : 'text-amber-400'}`}>
                           {isSenhaValid ? '✓ Válida' : 'Mín. 6 dígitos'}
@@ -822,8 +854,8 @@ export function LandingCheckoutModal({
                     <div className="relative">
                       <input
                         type="password"
-                        required
-                        placeholder="Mínimo 6 caracteres"
+                        required={!currentUser}
+                        placeholder={currentUser ? 'Deixe em branco para manter a atual' : 'Mínimo 6 caracteres'}
                         value={senha}
                         onBlur={() => markTouched('senha')}
                         onChange={e => setSenha(e.target.value)}
