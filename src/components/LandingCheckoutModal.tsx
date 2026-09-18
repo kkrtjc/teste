@@ -8,6 +8,7 @@ import localforage from 'localforage';
 import type { SubscriptionPlan } from '../lib/AuthContext';
 import heroBg from '../assets/hero_bg.jpg';
 import roosterImg from '../assets/rooster_sticker.png';
+import muraLogo from '../assets/mura_logo.jpg';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
 const MP_PUBLIC_KEY = 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5';
@@ -524,18 +525,20 @@ export function LandingCheckoutModal({
 
         {/* Header do Checkout */}
         <div className="px-5 sm:px-6 py-4 border-b border-white/[0.1] flex justify-between items-center bg-[#15151c]/95 relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black shadow-sm">
-              M
-            </div>
+          <div className="flex items-center gap-3">
+            <img 
+              src={muraLogo} 
+              alt="Mura Manager" 
+              className="w-9 h-9 rounded-xl object-cover border border-amber-500/30 shadow-md shadow-amber-500/10" 
+            />
             <div>
               <h3 className="font-black text-sm text-white flex items-center gap-1.5">
-                <span>Checkout Oficial</span>
+                <span>Sistema de Gestão Mura</span>
                 <span className="text-[9px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full font-mono uppercase font-bold">
                   100% Seguro
                 </span>
               </h3>
-              <p className="text-[10px] text-white/50">Mercado Pago Gateway • Criptografia Bancária SSL</p>
+              <p className="text-[10px] text-white/50">Checkout Oficial • Criptografia Bancária SSL</p>
             </div>
           </div>
           <button 
@@ -605,34 +608,6 @@ export function LandingCheckoutModal({
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'form' && (
             <div className="space-y-4">
-              {/* Seletor PIX / Cartão */}
-              <div className="flex rounded-xl bg-black/50 p-1 border border-white/[0.12] gap-1">
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod('pix'); setError(''); }}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    paymentMethod === 'pix'
-                      ? 'bg-amber-500 text-black shadow-md font-black'
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  <QrCode size={14} />
-                  <span>PIX Instantâneo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setPaymentMethod('card'); setError(''); }}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    paymentMethod === 'card'
-                      ? 'bg-amber-500 text-black shadow-md font-black'
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  <CreditCard size={14} />
-                  <span>Cartão de Crédito</span>
-                </button>
-              </div>
-
               {/* Formulário Principal */}
               <form onSubmit={paymentMethod === 'pix' ? handleGerarPix : handlePagarCartao} className="space-y-3">
                 
@@ -795,6 +770,46 @@ export function LandingCheckoutModal({
                         <CheckCircle2 size={13} className="absolute right-3 top-3 text-emerald-400" />
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* ESCOLHA DA FORMA DE PAGAMENTO (APÓS PREENCHER DADOS) */}
+                {/* ══════════════════════════════════════════════════════ */}
+                <div className="pt-2 border-t border-white/[0.1] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider block">
+                      Como deseja pagar?
+                    </span>
+                    <span className="text-[9px] font-mono text-amber-400 font-bold">
+                      {paymentMethod === 'pix' ? 'Aprovação Instantânea' : 'Parcelamento no Cartão'}
+                    </span>
+                  </div>
+                  <div className="flex rounded-xl bg-black/50 p-1 border border-white/[0.15] gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('pix'); setError(''); }}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        paymentMethod === 'pix'
+                          ? 'bg-amber-500 text-black shadow-md font-black'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      <QrCode size={14} />
+                      <span>PIX Instantâneo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('card'); setError(''); }}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        paymentMethod === 'card'
+                          ? 'bg-amber-500 text-black shadow-md font-black'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      <CreditCard size={14} />
+                      <span>Cartão de Crédito</span>
+                    </button>
                   </div>
                 </div>
 
