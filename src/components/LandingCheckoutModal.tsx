@@ -52,12 +52,12 @@ function isValidCardExpiry(exp: string): boolean {
   return true;
 }
 
-// Detecção pura da bandeira do cartão (0 hooks)
+// Detecção pura da bandeira do cartão (0 hooks, ultra veloz)
 function getDetectedBrand(cleanCardDigits: string) {
-  if (cleanCardDigits.startsWith('4')) return { name: 'Visa', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
-  if (/^5[1-5]/.test(cleanCardDigits) || /^2[2-7]/.test(cleanCardDigits)) return { name: 'Mastercard', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
-  if (/^(4011|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(cleanCardDigits) || cleanCardDigits.startsWith('6')) return { name: 'Elo', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' };
-  if (/^3[47]/.test(cleanCardDigits)) return { name: 'Amex', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+  if (cleanCardDigits.startsWith('4')) return { name: 'Visa', color: 'text-sky-400 bg-sky-500/20 border-sky-500/40' };
+  if (/^5[1-5]/.test(cleanCardDigits) || /^2[2-7]/.test(cleanCardDigits)) return { name: 'Mastercard', color: 'text-amber-400 bg-amber-500/20 border-amber-500/40' };
+  if (/^(4011|4389|4514|4576|5041|5066|5067|509|6277|6362|6363|650|6516|6550)/.test(cleanCardDigits) || cleanCardDigits.startsWith('6')) return { name: 'Elo', color: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/40' };
+  if (/^3[47]/.test(cleanCardDigits)) return { name: 'Amex', color: 'text-emerald-400 bg-emerald-500/20 border-emerald-500/40' };
   return null;
 }
 
@@ -490,8 +490,8 @@ export function LandingCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#0e0e13] border border-white/15 my-auto animate-scale-up relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu">
         
         {/* ══════════════════════════════════════════════════════ */}
         {/* FOTO FIXA DE FUNDO: O GALO DA PÁGINA INICIAL          */}
@@ -505,20 +505,20 @@ export function LandingCheckoutModal({
             alt=""
             fetchPriority="high"
             decoding="async"
-            className="w-full h-full object-cover object-center opacity-[0.13] scale-105"
+            className="w-full h-full object-cover object-[center_20%] opacity-35 scale-105 transform-gpu"
           />
-          {/* Gradiente escuro com toque âmbar para garantir contraste e leitura impecável */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0e0e13]/92 via-[#0e0e13]/82 to-[#0e0e13]/96" />
+          {/* Máscara equilibrada: escurece o suficiente para leitura mas deixa o galo 100% visível */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#111116]/80 via-[#111116]/65 to-[#111116]/90" />
           <div 
             className="absolute inset-0"
             style={{
-              background: 'radial-gradient(ellipse 70% 50% at 50% 10%, rgba(245, 158, 11, 0.09) 0%, transparent 70%)'
+              background: 'radial-gradient(ellipse 70% 50% at 50% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 70%)'
             }}
           />
         </div>
 
         {/* Header do Checkout */}
-        <div className="px-5 sm:px-6 py-4 border-b border-white/[0.08] flex justify-between items-center bg-[#15151c]/90 backdrop-blur-sm relative z-10">
+        <div className="px-5 sm:px-6 py-4 border-b border-white/[0.1] flex justify-between items-center bg-[#15151c]/95 relative z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black shadow-sm">
               M
@@ -541,19 +541,19 @@ export function LandingCheckoutModal({
           </button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto smooth-scroll relative z-10">
+        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto relative z-10 overscroll-contain">
           
           {/* ══════════════════════════════════════════════════════ */}
           {/* CARD DE PLANO SELECIONADO (SOBREPOSIÇÃO + BENEFÍCIOS)  */}
           {/* ══════════════════════════════════════════════════════ */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-amber-500/[0.04] border border-amber-500/30 shadow-lg space-y-3 backdrop-blur-sm">
+          <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/40 shadow-lg space-y-3">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
                     Plano Selecionado
                   </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">
                     {planInfo.discountBadge}
                   </span>
                 </div>
@@ -575,9 +575,9 @@ export function LandingCheckoutModal({
             </div>
 
             {/* Lista resumida de benefícios */}
-            <div className="pt-2 border-t border-white/[0.08] space-y-1.5">
+            <div className="pt-2 border-t border-white/[0.1] space-y-1.5">
               {planInfo.benefits.map((b, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/85">
+                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/90">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
                     <Check size={8} className="text-emerald-400" />
                   </div>
@@ -589,7 +589,7 @@ export function LandingCheckoutModal({
 
           {/* MENSAGEM DE ERRO */}
           {error && (
-            <div className="p-3 rounded-xl text-xs font-bold flex items-center gap-2 bg-red-500/10 border border-red-500/25 text-red-400 animate-fade-in">
+            <div className="p-3 rounded-xl text-xs font-bold flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400">
               <AlertCircle size={15} className="shrink-0" />
               <span>{error}</span>
             </div>
@@ -601,7 +601,7 @@ export function LandingCheckoutModal({
           {step === 'form' && (
             <div className="space-y-4">
               {/* Seletor PIX / Cartão */}
-              <div className="flex rounded-xl bg-white/[0.04] p-1 border border-white/[0.08] gap-1">
+              <div className="flex rounded-xl bg-black/50 p-1 border border-white/[0.12] gap-1">
                 <button
                   type="button"
                   onClick={() => { setPaymentMethod('pix'); setError(''); }}
@@ -649,10 +649,10 @@ export function LandingCheckoutModal({
                       value={nome}
                       onBlur={() => markTouched('nome')}
                       onChange={e => setNome(e.target.value)}
-                      className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                      className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                         touched.nome 
                           ? isNomeValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                          : 'border-white/[0.1] focus:border-amber-500'
+                          : 'border-white/[0.15] focus:border-amber-500'
                       }`}
                     />
                     {isNomeValid && (
@@ -680,10 +680,10 @@ export function LandingCheckoutModal({
                         value={email}
                         onBlur={() => markTouched('email')}
                         onChange={e => setEmail(e.target.value)}
-                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.email 
                             ? isEmailValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                            : 'border-white/[0.1] focus:border-amber-500'
+                            : 'border-white/[0.15] focus:border-amber-500'
                         }`}
                       />
                       {isEmailValid && (
@@ -713,10 +713,10 @@ export function LandingCheckoutModal({
                           else if (clean.length <= 7) setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2)}`);
                           else setWhatsapp(`(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`);
                         }}
-                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.whatsapp 
                             ? isWhatsappValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                            : 'border-white/[0.1] focus:border-amber-500'
+                            : 'border-white/[0.15] focus:border-amber-500'
                         }`}
                       />
                       {isWhatsappValid && (
@@ -751,10 +751,10 @@ export function LandingCheckoutModal({
                           else if (clean.length <= 9) setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
                           else setCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
                         }}
-                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
                           touched.cpf 
                             ? isCpfValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-red-500/50 focus:border-red-500'
-                            : 'border-white/[0.1] focus:border-amber-500'
+                            : 'border-white/[0.15] focus:border-amber-500'
                         }`}
                       />
                       {isCpfValid && (
@@ -780,10 +780,10 @@ export function LandingCheckoutModal({
                         value={senha}
                         onBlur={() => markTouched('senha')}
                         onChange={e => setSenha(e.target.value)}
-                        className={`w-full bg-black/40 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
+                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none transition-colors ${
                           touched.senha 
                             ? isSenhaValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                            : 'border-white/[0.1] focus:border-amber-500'
+                            : 'border-white/[0.15] focus:border-amber-500'
                         }`}
                       />
                       {isSenhaValid && (
@@ -797,7 +797,7 @@ export function LandingCheckoutModal({
                 {/* CAMPOS ESPECÍFICOS DO CARTÃO + CPF DO TITULAR         */}
                 {/* ══════════════════════════════════════════════════════ */}
                 {paymentMethod === 'card' && (
-                  <div className="pt-3 border-t border-white/[0.08] space-y-3 animate-fade-in bg-black/40 p-3.5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                  <div className="pt-3 border-t border-white/[0.1] space-y-3 bg-black/60 p-3.5 rounded-2xl border border-white/15">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                         <CreditCard size={12} /> Dados do Cartão de Crédito
@@ -831,10 +831,10 @@ export function LandingCheckoutModal({
                             const parts = clean.match(/.{1,4}/g);
                             setCardNumber(parts ? parts.join(' ') : clean);
                           }}
-                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center tracking-wider transition-colors ${
+                          className={`w-full bg-black/75 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center tracking-wider transition-colors ${
                             touched.cardNumber 
                               ? isCardNumberValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                              : 'border-white/[0.1] focus:border-amber-500'
+                              : 'border-white/[0.15] focus:border-amber-500'
                           }`}
                         />
                         {isCardNumberValid && (
@@ -860,10 +860,10 @@ export function LandingCheckoutModal({
                         value={cardName}
                         onBlur={() => markTouched('cardName')}
                         onChange={e => setCardName(e.target.value)}
-                        className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none uppercase transition-colors ${
+                        className={`w-full bg-black/75 border rounded-xl p-2.5 text-xs text-white outline-none uppercase transition-colors ${
                           touched.cardName 
                             ? isCardNameValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                            : 'border-white/[0.1] focus:border-amber-500'
+                            : 'border-white/[0.15] focus:border-amber-500'
                         }`}
                       />
                     </div>
@@ -883,10 +883,10 @@ export function LandingCheckoutModal({
                             if (clean.length <= 2) setCardExpiry(clean);
                             else setCardExpiry(`${clean.slice(0, 2)}/${clean.slice(2)}`);
                           }}
-                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                          className={`w-full bg-black/75 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
                             touched.cardExpiry 
                               ? isCardExpiryValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                              : 'border-white/[0.1] focus:border-amber-500'
+                              : 'border-white/[0.15] focus:border-amber-500'
                           }`}
                         />
                       </div>
@@ -900,10 +900,10 @@ export function LandingCheckoutModal({
                           value={cardCvv}
                           onBlur={() => markTouched('cardCvv')}
                           onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
+                          className={`w-full bg-black/75 border rounded-xl p-2.5 text-xs text-white outline-none text-center font-mono transition-colors ${
                             touched.cardCvv 
                               ? isCardCvvValid ? 'border-emerald-500/50 focus:border-emerald-500' : 'border-amber-500/50 focus:border-amber-500'
-                              : 'border-white/[0.1] focus:border-amber-500'
+                              : 'border-white/[0.15] focus:border-amber-500'
                           }`}
                         />
                       </div>
@@ -912,7 +912,7 @@ export function LandingCheckoutModal({
                         <select
                           value={installments}
                           onChange={e => setInstallments(Number(e.target.value))}
-                          className="w-full bg-[#181822] border border-white/[0.15] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
+                          className="w-full bg-[#181822] border border-white/[0.2] rounded-xl p-2 text-xs text-white focus:border-amber-500 outline-none"
                         >
                           {installmentOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>
@@ -956,8 +956,8 @@ export function LandingCheckoutModal({
                             else if (clean.length <= 9) setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`);
                             else setCardCpf(`${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9)}`);
                           }}
-                          className={`w-full bg-black/60 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
-                            sameAsAccountCpf ? 'opacity-60 cursor-not-allowed border-white/[0.08]' : 'border-white/[0.1] focus:border-amber-500'
+                          className={`w-full bg-black/75 border rounded-xl p-2.5 text-xs text-white outline-none font-mono text-center font-bold tracking-wider transition-colors ${
+                            sameAsAccountCpf ? 'opacity-60 cursor-not-allowed border-white/[0.08]' : 'border-white/[0.15] focus:border-amber-500'
                           }`}
                         />
                         {(sameAsAccountCpf ? isCpfValid : isCardCpfValid) && (
@@ -972,7 +972,7 @@ export function LandingCheckoutModal({
                 {/* UPSELL APÓS FORMULÁRIO E ANTES DO BOTÃO DE LIBERAR    */}
                 {/* ══════════════════════════════════════════════════════ */}
                 {selectedPlan === 'monthly' && (
-                  <div className="bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-[#181824]/90 border-2 border-amber-500/50 rounded-2xl p-3.5 space-y-2.5 animate-scale-up shadow-xl shadow-amber-500/5 backdrop-blur-sm">
+                  <div className="bg-gradient-to-br from-amber-500/25 via-amber-500/10 to-[#181824] border-2 border-amber-500/60 rounded-2xl p-3.5 space-y-2.5 shadow-xl shadow-amber-500/10">
                     <div className="flex items-center justify-between">
                       <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded-md font-mono tracking-wider">
                         OPORTUNIDADE EXCLUSIVA
@@ -985,7 +985,7 @@ export function LandingCheckoutModal({
                         <Zap size={13} className="text-amber-400 fill-amber-400" />
                         <span>Turbine sua assinatura com o Módulo de Lotes e Ovos</span>
                       </h5>
-                      <p className="text-[11px] text-white/70 leading-relaxed mt-1">
+                      <p className="text-[11px] text-white/80 leading-relaxed mt-1">
                         Cadastre lotes inteiros de postura, engorda e crescimento. Tenha controle total de ovos, chocadeira e pesagem coletiva no seu aplicativo.
                       </p>
                     </div>
@@ -1066,7 +1066,7 @@ export function LandingCheckoutModal({
                 {/* ══════════════════════════════════════════════════════ */}
                 {/* PROVA SOCIAL: DEPOIMENTO E AVATARES DE USUÁRIOS        */}
                 {/* ══════════════════════════════════════════════════════ */}
-                <div className="w-full pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 p-3 rounded-2xl border border-white/10 backdrop-blur-sm">
+                <div className="w-full pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/60 p-3 rounded-2xl border border-white/15">
                   {/* Avatares sobrepostos */}
                   <div className="flex items-center">
                     <div className="flex -space-x-2 overflow-hidden shrink-0">
@@ -1127,10 +1127,10 @@ export function LandingCheckoutModal({
           {/* ETAPA 2: TELA DO PIX (QR CODE + COPIA E COLA)         */}
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'pix' && pixData && (
-            <div className="space-y-4 text-center animate-fade-in">
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
+            <div className="space-y-4 text-center">
+              <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl">
                 <p className="text-xs font-black text-emerald-400">Código PIX Gerado com Sucesso!</p>
-                <p className="text-[11px] text-white/70 mt-0.5">
+                <p className="text-[11px] text-white/80 mt-0.5">
                   Copie o código ou escaneie o QR Code no app do seu banco. A liberação ocorre em segundos.
                 </p>
               </div>
@@ -1154,7 +1154,7 @@ export function LandingCheckoutModal({
                     type="text"
                     readOnly
                     value={pixData.qr_code}
-                    className="w-full bg-black/60 border border-white/[0.1] rounded-xl p-2.5 text-xs text-white/80 font-mono select-all"
+                    className="w-full bg-black/60 border border-white/[0.15] rounded-xl p-2.5 text-xs text-white/90 font-mono select-all"
                   />
                   <button
                     type="button"
@@ -1199,12 +1199,12 @@ export function LandingCheckoutModal({
           {/* ETAPA 3: SUCESSO E LIBERAÇÃO IMEDIATA                  */}
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'success' && (
-            <div className="py-8 text-center space-y-3 animate-scale-up">
+            <div className="py-8 text-center space-y-3">
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
                 <CheckCircle2 size={36} />
               </div>
               <h4 className="text-xl font-black text-white">Pagamento Confirmado!</h4>
-              <p className="text-xs text-white/70 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-white/75 max-w-sm mx-auto leading-relaxed">
                 Sua conta com o plano <strong className="text-amber-400">{planInfo.title}</strong> foi ativada com sucesso. Entrando na plataforma...
               </p>
               <div className="pt-2 flex justify-center">
