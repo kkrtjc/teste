@@ -1,0 +1,9 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 36" fill="none">
+  <rect width="64" height="36" rx="6" fill="#18181E" stroke="#33333E" stroke-width="1"/>
+  <g transform="translate(6, 6)">
+    <circle cx="8" cy="12" r="5" fill="#EF4123" />
+    <circle cx="15" cy="12" r="5" fill="#FFCB05" />
+    <circle cx="22" cy="12" r="5" fill="#00A4E4" />
+    <text x="30" y="16" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="900" font-style="italic" letter-spacing="-0.5">elo</text>
+  </g>
+</svg>

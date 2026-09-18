@@ -9,6 +9,12 @@ import type { SubscriptionPlan } from '../lib/AuthContext';
 import heroBg from '../assets/hero_bg.jpg';
 import roosterImg from '../assets/rooster_sticker.png';
 import muraLogo from '../assets/mura_logo.jpg';
+import pixLogo from '../assets/payments/pix.png';
+import visaLogo from '../assets/payments/visa.png';
+import mastercardLogo from '../assets/payments/mastercard.png';
+import eloLogo from '../assets/payments/elo.svg';
+import hipercardLogo from '../assets/payments/hipercard.svg';
+import mercadoPagoLogo from '../assets/payments/mercado-pago.png';
 
 const WORKER_URL = 'https://mura-api.joaopaulojaguar.workers.dev';
 const MP_PUBLIC_KEY = 'APP_USR-2502a3c7-5f59-45b0-8365-1cfcad7b0fa5';
@@ -104,18 +110,37 @@ export function LandingCheckoutModal({
   const [error, setError] = useState('');
   const [step, setStep] = useState<'form' | 'pix' | 'success'>('form');
   const [pixData, setPixData] = useState<any>(null);
+  const [generatedPixDetails, setGeneratedPixDetails] = useState<{
+    plan: string;
+    title: string;
+    price: number;
+    priceFormatted: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const pollingRef = useRef<any>(null);
 
+  // Limpa estado quando modal abre/fecha ou troca de plano inicial
   useEffect(() => {
     setSelectedPlan(initialPlan);
     setStep('form');
     setError('');
     setPixData(null);
+    setGeneratedPixDetails(null);
     setTouched({});
     setInstallments(1);
+    if (pollingRef.current) clearInterval(pollingRef.current);
   }, [initialPlan, isOpen]);
+
+  // Se o cliente já gerou um PIX e mudar de plano dentro do checkout, invalida o PIX anterior para forçar a geração de um novo com o valor correto
+  useEffect(() => {
+    if (pixData) {
+      setPixData(null);
+      setGeneratedPixDetails(null);
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      setStep('form');
+    }
+  }, [selectedPlan]);
 
   useEffect(() => {
     return () => {
@@ -351,11 +376,16 @@ export function LandingCheckoutModal({
 
     const cleanCpf = cpf.replace(/\D/g, '');
     const cleanEmail = email.trim().toLowerCase();
+    // Chave única dinâmica por tentativa e por valor exato: impede cache de 30min no gateway caso mude de plano
+    const idempotencyKey = `pix-${cleanCpf}-${planInfo.price.toFixed(2)}-${Date.now()}`;
 
     try {
       const res = await fetch(`${WORKER_URL}/api/checkout/pix`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idempotencyKey
+        },
         body: JSON.stringify({
           items: [{
             id: `plano_${selectedPlan}`,
@@ -368,7 +398,8 @@ export function LandingCheckoutModal({
             cpf: cleanCpf,
             phone: whatsapp.replace(/\D/g, '') || ''
           },
-          site: 'mura_app'
+          site: 'mura_app',
+          idempotencyKey
         })
       });
 
@@ -380,6 +411,12 @@ export function LandingCheckoutModal({
       }
 
       setPixData(data);
+      setGeneratedPixDetails({
+        plan: selectedPlan,
+        title: planInfo.title,
+        price: planInfo.price,
+        priceFormatted: planInfo.priceFormatted,
+      });
       setStep('pix');
       startPolling(data.id, cleanCpf, cleanEmail, senha);
     } catch {
@@ -491,6 +528,15 @@ export function LandingCheckoutModal({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleCloseModal = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    setPixData(null);
+    setGeneratedPixDetails(null);
+    setStep('form');
+    setError('');
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 overflow-y-auto">
       <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu">
@@ -542,7 +588,7 @@ export function LandingCheckoutModal({
             </div>
           </div>
           <button 
-            onClick={onClose} 
+            onClick={handleCloseModal} 
             className="p-1.5 text-white/40 hover:text-white rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -1212,31 +1258,33 @@ export function LandingCheckoutModal({
               </form>
 
               {/* ══════════════════════════════════════════════════════ */}
-              {/* BANDEIRAS DE PAGAMENTO (MASTER, VISA, ELO, PIX)        */}
+              {/* BANDEIRAS OFICIAIS (PIX, VISA, MASTER, ELO, HIPER, MP) */}
               {/* ══════════════════════════════════════════════════════ */}
               <div className="pt-2 flex flex-col items-center gap-3">
-                <div className="flex items-center justify-center gap-3 text-white/40">
-                  {/* Badge Visa */}
-                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-widest text-white/70 italic">
-                    VISA
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+                  {/* Badge PIX Oficial */}
+                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="PIX Instantâneo">
+                    <img src={pixLogo} alt="PIX" className="h-3.5 w-auto object-contain" />
                   </div>
-                  {/* Badge Mastercard */}
-                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-wider text-white/70 flex items-center gap-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/80 -mr-1.5" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="text-[8px] font-bold uppercase ml-1">Mastercard</span>
+                  {/* Badge Visa Oficial */}
+                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Visa">
+                    <img src={visaLogo} alt="Visa" className="h-3 w-auto object-contain" />
                   </div>
-                  {/* Badge Elo */}
-                  <div className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black tracking-wider text-white/70 flex items-center gap-1">
-                    <span className="text-yellow-400 text-[10px]">●</span>
-                    <span className="text-blue-400 text-[10px] -ml-1">●</span>
-                    <span className="text-red-400 text-[10px] -ml-1">●</span>
-                    <span className="text-[8px] font-bold uppercase ml-0.5">Elo</span>
+                  {/* Badge Mastercard Oficial */}
+                  <div className="h-7 px-2 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Mastercard">
+                    <img src={mastercardLogo} alt="Mastercard" className="h-4.5 w-auto object-contain" />
                   </div>
-                  {/* Badge Pix */}
-                  <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] font-black text-emerald-400 flex items-center gap-1">
-                    <QrCode size={10} />
-                    <span>PIX</span>
+                  {/* Badge Elo Oficial */}
+                  <div className="h-7 px-1.5 py-0.5 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Elo">
+                    <img src={eloLogo} alt="Elo" className="h-5 w-auto object-contain" />
+                  </div>
+                  {/* Badge Hipercard Oficial */}
+                  <div className="h-7 px-1.5 py-0.5 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Hipercard">
+                    <img src={hipercardLogo} alt="Hipercard" className="h-5 w-auto object-contain" />
+                  </div>
+                  {/* Badge Mercado Pago Oficial */}
+                  <div className="h-7 px-2.5 py-1 rounded-lg bg-[#181822] border border-white/10 flex items-center justify-center shadow-sm" title="Mercado Pago Gateway Oficial">
+                    <img src={mercadoPagoLogo} alt="Mercado Pago" className="h-3.5 w-auto object-contain" />
                   </div>
                 </div>
 
@@ -1305,21 +1353,43 @@ export function LandingCheckoutModal({
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'pix' && pixData && (
             <div className="space-y-4 text-center">
-              <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl">
-                <p className="text-xs font-black text-emerald-400">Código PIX Gerado com Sucesso!</p>
-                <p className="text-[11px] text-white/80 mt-0.5">
-                  Copie o código ou escaneie o QR Code no app do seu banco. A liberação ocorre em segundos.
-                </p>
+              {/* Card de Detalhes do Pedido PIX */}
+              <div className="p-3.5 bg-[#161620] border border-amber-500/30 rounded-2xl text-left space-y-2 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-black text-white">PIX Gerado com Sucesso</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                    Expira em 30 min
+                  </span>
+                </div>
+                
+                <div className="pt-2 border-t border-white/[0.08] flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-white/50 uppercase font-bold block">Plano Selecionado:</span>
+                    <span className="text-xs font-black text-amber-400">
+                      {generatedPixDetails?.title || planInfo.title}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-white/50 uppercase font-bold block">Valor a Pagar:</span>
+                    <span className="text-base font-black text-white">
+                      {generatedPixDetails?.priceFormatted || planInfo.priceFormatted}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* QR Code Imagem */}
               {pixData.qr_code_base64 && (
-                <div className="p-3 bg-white rounded-2xl max-w-[190px] mx-auto shadow-xl">
+                <div className="p-3.5 bg-white rounded-2xl max-w-[200px] mx-auto shadow-2xl">
                   <img
                     src={`data:image/png;base64,${pixData.qr_code_base64}`}
                     alt="QR Code PIX"
                     className="w-full h-auto block rounded-lg"
                   />
+                  <p className="text-[10px] text-gray-500 font-bold mt-1.5">Aponte a câmera do seu app bancário</p>
                 </div>
               )}
 
@@ -1347,7 +1417,7 @@ export function LandingCheckoutModal({
               {/* Status ao vivo */}
               <div className="flex items-center justify-center gap-2 text-xs text-amber-400 py-1 font-bold">
                 <Loader2 size={15} className="animate-spin" />
-                <span>Aguardando identificação do pagamento...</span>
+                <span>Aguardando confirmação bancária em tempo real...</span>
               </div>
 
               <div className="space-y-2 pt-2">
@@ -1363,10 +1433,15 @@ export function LandingCheckoutModal({
 
                 <button
                   type="button"
-                  onClick={() => setStep('form')}
-                  className="text-xs text-white/50 hover:text-white transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (pollingRef.current) clearInterval(pollingRef.current);
+                    setPixData(null);
+                    setGeneratedPixDetails(null);
+                    setStep('form');
+                  }}
+                  className="text-xs text-white/50 hover:text-white transition-colors cursor-pointer py-1.5 block w-full text-center"
                 >
-                  ← Alterar dados ou forma de pagamento
+                  ← Alterar plano ou dados (Gera novo PIX)
                 </button>
               </div>
             </div>
