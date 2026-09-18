@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
-  CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap
+  CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap, ShoppingBag
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
@@ -1062,6 +1062,80 @@ export function LandingCheckoutModal({
                     </div>
                   </label>
                 )}
+
+                {/* ══════════════════════════════════════════════════════ */}
+                {/* RESUMO DO PEDIDO: O QUE ESTÁ LEVANDO E VALOR A PAGAR  */}
+                {/* ══════════════════════════════════════════════════════ */}
+                <div className="rounded-2xl p-3 sm:p-3.5 bg-black/60 border border-amber-500/30 space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <ShoppingBag size={13} className="text-amber-400" />
+                      <span>Resumo do Pedido</span>
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono uppercase">
+                      Ativação Imediata
+                    </span>
+                  </div>
+
+                  {/* O que o cliente está levando */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-white">
+                        Plano {planInfo.title}
+                      </span>
+                      <span className="text-xs font-bold text-white/80 font-mono">
+                        {planInfo.priceFormatted}/{planInfo.period}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-white/70 leading-relaxed">
+                      {selectedPlan === 'monthly' && (
+                        '✓ Acesso completo: Cadastro de Aves, Genealogia, Fotos em HD e Vitrine Digital.'
+                      )}
+                      {selectedPlan === 'pro_monthly' && (
+                        '✓ Acesso completo: Aves, Fotos e Vitrine + Módulo de Lotes, Ovos e Chocadeira.'
+                      )}
+                      {selectedPlan === 'yearly' && (
+                        '✓ Acesso Anual Irrestrito: 100% dos recursos liberados por 12 meses com desconto.'
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Valor exato que está pagando */}
+                  <div className="pt-2 border-t border-white/[0.08] flex items-end justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-white/50 block">
+                        Total a pagar hoje:
+                      </span>
+                      <span className="text-[10.5px] text-white/70 font-medium">
+                        {paymentMethod === 'pix' ? (
+                          'À vista no PIX Instantâneo'
+                        ) : installments > 1 ? (
+                          `${installments}x de R$ ${(planInfo.price / installments).toFixed(2).replace('.', ',')} no Cartão`
+                        ) : (
+                          'À vista no Cartão de Crédito'
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-lg font-black text-amber-400 tracking-tight leading-none">
+                        {paymentMethod === 'card' && installments > 1 ? (
+                          <span>
+                            {installments}x de R$ {(planInfo.price / installments).toFixed(2).replace('.', ',')}
+                          </span>
+                        ) : (
+                          <span>{planInfo.priceFormatted}</span>
+                        )}
+                      </div>
+                      {paymentMethod === 'card' && installments > 1 && (
+                        <span className="text-[9px] text-white/40 block mt-0.5 font-mono">
+                          Total: {planInfo.priceFormatted}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 {/* ══════════════════════════════════════════════════════ */}
                 {/* BOTÃO PRINCIPAL: LIBERAR MEU ACESSO                   */}
