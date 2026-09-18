@@ -987,95 +987,140 @@ export function Login() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="relative py-10 sm:py-14 px-6 mx-auto max-w-4xl z-10">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 sm:mb-8 space-y-2">
+      <section id="pricing" className="relative py-10 sm:py-14 px-4 sm:px-6 mx-auto max-w-5xl z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6 sm:mb-8 space-y-2 text-center sm:text-left">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500">Planos e Preços</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha seu plano</h2>
-            <p className="text-sm font-bold text-amber-400 mt-1">Experimente Grátis por 7 dias — Sem compromisso e sem precisar cadastrar cartão!</p>
+            <h2 className="text-3xl sm:text-4xl font-black text-white">Escolha o plano ideal para seu criatório</h2>
+            <p className="text-sm font-bold text-amber-400 mt-1">Experimente Grátis por 7 dias com TUDO liberado — Sem compromisso e sem cartão!</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {/* MENSAL */}
-            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 bg-white/[0.03] border border-white/[0.08]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {/* 1. MENSAL COMUM */}
+            <div className="rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-5 bg-white/[0.03] border border-white/[0.08] hover:border-white/20 transition-all">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-white/40">Mensal</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through text-white/30">R$ 59,90</span>
-                  <span className="text-base font-black text-white/50">R$</span>
-                  <span className="text-5xl font-black text-white tracking-tighter leading-none">39</span>
-                  <span className="text-lg font-black text-white/50">,90</span>
-                  <span className="text-xs font-bold ml-1 text-white/30">/mês</span>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-white/50">Mensal Comum</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-black text-white/50">R$</span>
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter leading-none">39</span>
+                  <span className="text-base font-black text-white/50">,90</span>
+                  <span className="text-xs font-bold text-white/40">/mês</span>
                 </div>
-                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-amber-400">
-                  <Sparkles size={9} /> Economia de R$ 20,00 no plano mensal
+                <p className="text-[10px] mt-1.5 font-bold text-amber-400">
+                  Ideal para controle individual e vendas
                 </p>
               </div>
 
-              <ul className="space-y-3">
+              <ul className="space-y-2.5 my-auto">
                 {[
-                  'Cadastre mais de 12 mil aves e até 3 fotos por ave',
-                  'Controle de lotes de engorda, postura e crescimento',
-                  'Alertas personalizados: vacina, ração e ovos',
-                  'Gere e compartilhe até 5 fichas técnicas completas de aves ou lotes',
+                  'Cadastro completo de aves com fotos e anilhas',
+                  'Genealogia e árvore genealógica de linhagens',
+                  'Vitrine digital pública para divulgar no WhatsApp',
+                  'Fichas técnicas completas para clientes',
+                  'Histórico sanitário e vacinas individuais',
                   'Backup automático e sincronização em nuvem',
                 ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-xs text-white/70">
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/15 border border-amber-500/30">
-                      <Check size={9} className="text-amber-400" />
+                  <li key={i} className="flex items-start gap-2 text-xs text-white/70">
+                    <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/15 border border-amber-500/30">
+                      <Check size={8} className="text-amber-400" />
                     </div>
-                    <span className="leading-snug">{item}</span>
+                    <span className="leading-snug text-[11px]">{item}</span>
                   </li>
                 ))}
               </ul>
 
               <button
                 onClick={() => setShowRegisterForm(true)}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all mt-2 text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer"
+                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-amber-400 border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer"
               >
-                Criar Conta Grátis
+                Testar 7 Dias Grátis
               </button>
             </div>
 
-            {/* ANUAL */}
-            <div className="rounded-2xl p-7 flex flex-col justify-between gap-6 relative overflow-hidden bg-amber-500/[0.06] border border-amber-500/30 shadow-2xl shadow-amber-500/5">
-              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-black bg-amber-500">
-                25% de Desconto • Melhor Valor
+            {/* 2. MENSAL COMPLETO */}
+            <div className="rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-5 relative overflow-hidden bg-white/[0.05] border border-amber-500/40 shadow-xl shadow-amber-500/5 hover:border-amber-500/60 transition-all">
+              <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest text-black bg-amber-400">
+                COMBO COMPLETO
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-amber-400/80">Anual</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs line-through text-white/30">R$ 478,80</span>
-                  <span className="text-base font-black text-white/50">R$</span>
-                  <span className="text-5xl font-black text-amber-400 tracking-tighter leading-none">359</span>
-                  <span className="text-lg font-black text-white/50">,10</span>
-                  <span className="text-xs font-bold ml-1 text-white/30">/ano</span>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-amber-400">Mensal Completo</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-black text-white/50">R$</span>
+                  <span className="text-4xl sm:text-5xl font-black text-amber-400 tracking-tighter leading-none">59</span>
+                  <span className="text-base font-black text-white/50">,80</span>
+                  <span className="text-xs font-bold text-white/40">/mês</span>
                 </div>
-                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-emerald-400">
-                  <Sparkles size={9} /> Equivale a R$ 29,92/mês — economize R$ 119,70 no ano
+                <p className="text-[10px] mt-1.5 font-bold text-zinc-300">
+                  Aves + Lotes inteiros e Gestão de Ovos
                 </p>
               </div>
 
-              <ul className="space-y-3">
+              <ul className="space-y-2.5 my-auto">
                 {[
-                  'Cadastre mais de 20 mil aves e até 10 fotos por ave',
-                  'Lotes ilimitados de engorda, postura e crescimento',
-                  'Gere e compartilhe fichas técnicas completas ilimitadas',
-                  'Alertas personalizados: vacina, ração e ovos',
-                  'Tudo do plano mensal incluso + Suporte prioritário VIP',
+                  'Tudo do Plano Mensal Comum incluso',
+                  'Módulo completo de lotes de cria e crescimento',
+                  'Controle de postura, engorda e peso coletivo',
+                  'Gestão de chocadeira, incubatório e eclosão',
+                  'Alertas de manejo, vacinação coletiva e ração',
+                  'Relatórios completos de produção de ovos',
                 ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-xs text-white/85">
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/25 border border-amber-500/50">
-                      <Check size={9} className="text-amber-400" />
+                  <li key={i} className="flex items-start gap-2 text-xs text-white/85">
+                    <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/25 border border-amber-500/50">
+                      <Check size={8} className="text-amber-400" />
                     </div>
-                    <span className="leading-snug">{item}</span>
+                    <span className="leading-snug text-[11px]">{item}</span>
                   </li>
                 ))}
               </ul>
 
               <button
                 onClick={() => setShowRegisterForm(true)}
-                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-2 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 cursor-pointer"
+                className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all text-amber-300 border border-amber-400/50 bg-amber-500/20 hover:bg-amber-500/30 cursor-pointer shadow-md"
+              >
+                Testar 7 Dias Grátis
+              </button>
+            </div>
+
+            {/* 3. ANUAL COMPLETO */}
+            <div className="rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-5 relative overflow-hidden bg-gradient-to-b from-amber-500/[0.12] to-amber-500/[0.03] border-2 border-emerald-400/80 shadow-2xl shadow-emerald-500/10">
+              <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest text-black bg-emerald-400 font-mono">
+                21% OFF • MAIS VANTAJOSO
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-emerald-400">Anual Completo</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xs line-through text-white/30">R$ 717,60</span>
+                  <span className="text-sm font-black text-white/50">R$</span>
+                  <span className="text-4xl sm:text-5xl font-black text-emerald-400 tracking-tighter leading-none">567</span>
+                  <span className="text-base font-black text-white/50">,90</span>
+                  <span className="text-xs font-bold text-white/40">/ano</span>
+                </div>
+                <p className="text-[10px] mt-1.5 flex items-center gap-1 font-bold text-emerald-300">
+                  <Sparkles size={9} /> Equivale a R$ 47,32/mês (Economize R$ 149,70)
+                </p>
+              </div>
+
+              <ul className="space-y-2.5 my-auto">
+                {[
+                  'Acesso total e irrestrito a todas as ferramentas',
+                  'Aves, fotos, fichas técnicas e vitrine ilimitadas',
+                  'Lotes e Gestão de Ovos completos inclusos',
+                  'Parcelamento facilitado em até 12x no cartão',
+                  'Economia de R$ 149,70 garantida no ano',
+                  'Suporte prioritário VIP direto com o desenvolvedor',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-white">
+                    <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-emerald-500/25 border border-emerald-500/50">
+                      <Check size={8} className="text-emerald-400" />
+                    </div>
+                    <span className="leading-snug text-[11px]">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => setShowRegisterForm(true)}
+                className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-widest text-black active:scale-95 transition-all mt-1 bg-gradient-to-r from-emerald-400 to-amber-400 hover:from-emerald-300 hover:to-amber-300 shadow-lg shadow-emerald-500/20 cursor-pointer"
               >
                 Ativar 7 Dias Grátis
               </button>

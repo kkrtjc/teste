@@ -194,10 +194,10 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
 
   const getUpgradeWhatsappLink = (method: 'card' | 'pix' = upgradeMethod) => {
     const planText = upgradePlan === 'yearly'
-      ? 'Anual PRO (R$ 459,90 em até 4x sem juros - Economia de R$ 378,90)'
+      ? 'Anual Completo (R$ 567,90 - 21% OFF - Economia de R$ 149,70)'
       : upgradePlan === 'pro_monthly'
-      ? 'Mensal PRO (R$ 69,90/mês)'
-      : 'Mensal Normal (R$ 49,90/mês)';
+      ? 'Mensal Completo com Lotes e Ovos (R$ 59,80/mês)'
+      : 'Mensal Comum - Aves e Vitrine (R$ 39,90/mês)';
     const userIdent = cpf ? `CPF: ${cpf}` : '';
     const methodText = method === 'card' 
       ? 'Cartão de Crédito (com cobrança automática)' 
@@ -211,9 +211,9 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
 
   const getPlanPriceText = (plan: SubscriptionPlan) => {
     switch (plan) {
-      case 'yearly': return 'R$ 459,90/ano';
-      case 'pro_monthly': return 'R$ 69,90/mês';
-      case 'monthly': return 'R$ 49,90/mês';
+      case 'yearly': return 'R$ 567,90/ano';
+      case 'pro_monthly': return 'R$ 59,80/mês';
+      case 'monthly': return 'R$ 39,90/mês';
     }
   };
 
@@ -240,113 +240,133 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
 
         {/* Plan Selector (3 Planos) */}
         <div className="grid grid-cols-3 gap-2">
-          {/* Normal */}
+          {/* Mensal Comum */}
           <div 
             onClick={() => setUpgradePlan('monthly')}
             className={`p-2.5 rounded-2xl border cursor-pointer transition-all ${
               upgradePlan === 'monthly' ? 'border-amber-500 bg-amber-500/15 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
             }`}
           >
-            <p className="font-bold text-[11px] text-white">Normal</p>
-            <p className="text-sm font-black text-amber-400 mt-0.5">R$ 49,90<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
-            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Até 100 aves</p>
+            <p className="font-bold text-[11px] text-white">Mensal Comum</p>
+            <p className="text-sm font-black text-amber-400 mt-0.5">R$ 39,90<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
+            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Aves e Vitrine</p>
           </div>
 
-          {/* Mensal PRO */}
+          {/* Mensal Completo */}
           <div 
             onClick={() => setUpgradePlan('pro_monthly')}
             className={`p-2.5 rounded-2xl border cursor-pointer transition-all ${
               upgradePlan === 'pro_monthly' ? 'border-amber-400 bg-amber-500/20 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/30' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
             }`}
           >
-            <p className="font-bold text-[11px] text-white">Mensal PRO</p>
-            <p className="text-sm font-black text-amber-300 mt-0.5">R$ 69,90<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
-            <p className="text-[9px] text-theme-text-muted mt-1 leading-tight">Sem limites</p>
+            <p className="font-bold text-[11px] text-white">Mensal Completo</p>
+            <p className="text-sm font-black text-amber-300 mt-0.5">R$ 59,80<span className="text-[8px] text-theme-text-muted font-normal">/mês</span></p>
+            <p className="text-[9px] text-amber-400/90 font-bold mt-1 leading-tight">+ Lotes e Ovos</p>
           </div>
 
-          {/* Anual PRO (Hero) */}
+          {/* Anual Completo (Hero) */}
           <div 
             onClick={() => setUpgradePlan('yearly')}
             className={`p-2.5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${
               upgradePlan === 'yearly' ? 'border-emerald-500 bg-emerald-500/20 shadow-xl shadow-emerald-500/20 ring-1 ring-emerald-400/50' : 'border-theme-border bg-theme-base/40 hover:border-theme-border/80'
             }`}
           >
-            <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-1.5 py-0.2 rounded-bl-md">MAIS POPULAR</span>
-            <p className="font-bold text-[11px] text-white">Anual PRO</p>
-            <p className="text-sm font-black text-emerald-400 mt-0.5">R$ 459,90<span className="text-[8px] text-theme-text-muted font-normal">/ano</span></p>
-            <p className="text-[9px] text-emerald-400 font-bold mt-1 leading-tight">R$ 38,32/mês</p>
+            <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-1.5 py-0.2 rounded-bl-md">21% OFF</span>
+            <p className="font-bold text-[11px] text-white">Anual Completo</p>
+            <p className="text-sm font-black text-emerald-400 mt-0.5">R$ 567,90<span className="text-[8px] text-theme-text-muted font-normal">/ano</span></p>
+            <p className="text-[9px] text-emerald-400 font-bold mt-1 leading-tight">R$ 47,32/mês</p>
           </div>
         </div>
+
+        {/* ── UPSELL INTERATIVO DE LOTES (QUANDO SELECIONA MENSAL COMUM) ── */}
+        {upgradePlan === 'monthly' && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-[#181824] border border-amber-500/40 rounded-2xl p-2.5 flex items-center justify-between gap-2 animate-scale-up shadow-md">
+            <div className="min-w-0">
+              <span className="text-[8px] font-black uppercase px-1.5 py-0.2 bg-amber-500 text-black rounded font-mono">OPORTUNIDADE</span>
+              <p className="text-[11px] font-black text-amber-300 mt-0.5">Turbine com o Módulo de Lotes!</p>
+              <p className="text-[10px] text-zinc-300 leading-tight">
+                Lotes de cria e gestão de ovos por apenas <strong className="text-amber-400">+ R$ 19,90/mês</strong>.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUpgradePlan('pro_monthly')}
+              className="py-1.5 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 text-black font-black text-[10px] uppercase tracking-wide shrink-0 active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              Adicionar Lotes
+            </button>
+          </div>
+        )}
 
         {/* Lista de Recursos / Benefícios do Plano Escolhido */}
         <div className="bg-theme-base/50 border border-theme-border/70 rounded-2xl p-3.5 space-y-2 text-xs animate-fade-in">
           <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
             {upgradePlan === 'yearly' 
-              ? '⭐ Vantagens Exclusivas do Plano Anual PRO (Economize R$ 378,90):' 
+              ? '⭐ Vantagens Exclusivas do Plano Anual Completo (Economize R$ 149,70):' 
               : upgradePlan === 'pro_monthly' 
-              ? '⚡ Recursos Inclusos no Plano Mensal PRO:' 
-              : '📋 Recursos Inclusos no Plano Mensal Normal:'}
+              ? '⚡ Recursos Inclusos no Plano Mensal Completo:' 
+              : '📋 Recursos Inclusos no Plano Mensal Comum:'}
           </p>
           <ul className="space-y-1.5 text-theme-text-muted text-[11px]">
             {upgradePlan === 'yearly' ? (
               <>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Tudo liberado sem limites: aves, fotos, fichas e lotes</span>
+                  <span>Tudo liberado sem limites: aves, vitrine, lotes e ovos</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Equivale a apenas <strong className="text-emerald-400 font-black">R$ 38,32/mês</strong> (mais barato que o básico!)</span>
+                  <span>Equivale a apenas <strong className="text-emerald-400 font-black">R$ 47,32/mês</strong> (21% de desconto!)</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Parcelamento facilitado em <strong className="text-emerald-400 font-black">até 4x sem juros</strong> de R$ 114,97</span>
+                  <span>Parcelamento facilitado em <strong className="text-emerald-400 font-black">até 12x no cartão</strong></span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span>Vitrine pública coletiva ativada para divulgar suas aves</span>
+                  <span>Vitrine digital oficial ativada para divulgar suas aves no WhatsApp</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                  <span><strong className="text-emerald-400 font-black">Economia de R$ 378,90</strong> em relação a 12 meses de PRO</span>
+                  <span><strong className="text-emerald-400 font-black">Economia de R$ 149,70</strong> garantida no ano</span>
                 </li>
               </>
             ) : upgradePlan === 'pro_monthly' ? (
               <>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Plantel sem limite de aves e fotos ilimitadas por ave</span>
+                  <span>Tudo do Plano Mensal Comum de Aves incluso</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Compartilhamento ilimitado de fichas técnicas na web e WhatsApp</span>
+                  <span>Módulo completo de lotes de engorda, postura e crescimento</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Vitrine pública liberada para divulgar aves para clientes</span>
+                  <span>Controle total de ovos, chocadeira e taxa de eclosão</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Histórico completo de vendas, faturamento e pedigree</span>
+                  <span>Alertas de manejo, vacinação coletiva e pesagem</span>
                 </li>
               </>
             ) : (
               <>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Gestão essencial: até <strong className="text-amber-400 font-bold">100 aves ativas</strong> no plantel</span>
+                  <span>Cadastro completo de aves com fotos, anilhas e pedigree</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Até <strong className="text-amber-400 font-bold">15 compartilhamentos</strong> de fichas por mês</span>
+                  <span>Vitrine digital comercial pública para divulgar no WhatsApp</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Fichas completas em PDF com pedigree inclusas</span>
+                  <span>Fichas técnicas completas com fotos e árvore genealógica</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-white font-medium">
                   <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                  <span>Controle de vacinas, pesagens e baias</span>
+                  <span>Controle de vacinas individuais, peso e baias</span>
                 </li>
               </>
             )}
@@ -365,7 +385,7 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
             }`}
           >
             <CreditCard size={13} />
-            <span>Cartão (Até 4x sem juros)</span>
+            <span>Cartão (Até 12x)</span>
           </button>
           <button
             type="button"
@@ -392,7 +412,7 @@ const LayoutUpgradeModal = memo(function LayoutUpgradeModal({
                 <p className="text-xs font-bold text-white leading-tight">Cobrança no Cartão de Crédito</p>
                 <p className="text-[10px] text-theme-text-muted mt-0.5">
                   {upgradePlan === 'yearly'
-                    ? 'Parcelamento em até 4x sem juros de R$ 114,97 ou em até 12x. Liberação imediata.'
+                    ? 'Parcelamento em até 12x no cartão ou à vista no Pix. Liberação imediata.'
                     : 'Cobrança mensal automática com total comodidade e cancelamento a qualquer momento.'}
                 </p>
               </div>

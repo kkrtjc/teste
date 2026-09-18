@@ -25,20 +25,20 @@ export function PaywallScreen() {
 
   const getPlanPriceDisplay = (plan: SubscriptionPlan) => {
     switch (plan) {
-      case 'yearly': return 'R$ 459,90/ano (em até 4x sem juros)';
-      case 'pro_monthly': return 'R$ 69,90/mês';
-      case 'monthly': return 'R$ 49,90/mês';
+      case 'yearly': return 'R$ 567,90/ano (em até 12x ou 4x s/ juros)';
+      case 'pro_monthly': return 'R$ 59,80/mês';
+      case 'monthly': return 'R$ 39,90/mês';
     }
   };
 
   const getWhatsappLink = (method: 'card' | 'pix' = paymentMethod) => {
     let planText = '';
     if (selectedPlan === 'yearly') {
-      planText = 'Anual PRO (R$ 459,90 em até 4x sem juros - Economia de R$ 378,90)';
+      planText = 'Anual Completo (R$ 567,90 - 21% OFF - Economia de R$ 149,70)';
     } else if (selectedPlan === 'pro_monthly') {
-      planText = 'Mensal PRO Ilimitado (R$ 69,90/mês)';
+      planText = 'Mensal Completo com Lotes e Ovos (R$ 59,80/mês)';
     } else {
-      planText = 'Mensal Normal (R$ 49,90/mês)';
+      planText = 'Mensal Comum - Aves e Vitrine (R$ 39,90/mês)';
     }
     const userIdent = paymentCpf ? `CPF: ${paymentCpf}` : `Usuário: ${cpf}`;
     const methodText = method === 'card' ? 'Cartão de Crédito (Automático)' : 'PIX (À Vista)';
@@ -84,7 +84,7 @@ export function PaywallScreen() {
         {/* ── OS 3 PLANOS EM GRID RESPONSIVA (COM ANCORAGEM DE PREÇO) ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 my-3">
           
-          {/* 1. PLANO MENSAL NORMAL */}
+          {/* 1. PLANO MENSAL COMUM */}
           <div 
             onClick={() => setSelectedPlan('monthly')}
             className={`p-3 rounded-2xl border-2 cursor-pointer transition-all relative flex flex-col justify-between ${
@@ -95,30 +95,30 @@ export function PaywallScreen() {
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-black text-xs text-white">Mensal Normal</span>
+                <span className="font-black text-xs text-white">Mensal Comum</span>
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                   selectedPlan === 'monthly' ? 'border-theme-primary bg-theme-primary' : 'border-theme-border'
                 }`}>
                   {selectedPlan === 'monthly' && <Check size={10} className="text-black font-black" />}
                 </div>
               </div>
-              <p className="text-[9px] text-theme-text-muted mt-0.5">Criatórios menores</p>
+              <p className="text-[9px] text-theme-text-muted mt-0.5">Aves e Vitrine</p>
             </div>
 
             <div className="mt-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-base sm:text-lg font-black text-white">R$ 49,90</span>
+                <span className="text-base sm:text-lg font-black text-white">R$ 39,90</span>
                 <span className="text-[9px] text-theme-text-muted">/mês</span>
               </div>
               <ul className="mt-2 space-y-1 text-[9px] text-theme-text-muted">
-                <li>• Até 100 aves ativas</li>
-                <li>• Até 15 fichas/mês</li>
-                <li>• Sem vitrine pública</li>
+                <li>• Cadastro de aves e fotos</li>
+                <li>• Vitrine digital pública</li>
+                <li>• Fichas técnicas completas</li>
               </ul>
             </div>
           </div>
 
-          {/* 2. PLANO MENSAL PRO */}
+          {/* 2. PLANO MENSAL COMPLETO */}
           <div 
             onClick={() => setSelectedPlan('pro_monthly')}
             className={`p-3 rounded-2xl border-2 cursor-pointer transition-all relative flex flex-col justify-between ${
@@ -129,33 +129,33 @@ export function PaywallScreen() {
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="font-black text-xs text-white">Mensal PRO</span>
+                <span className="font-black text-xs text-white">Mensal Completo</span>
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                   selectedPlan === 'pro_monthly' ? 'border-amber-400 bg-amber-400' : 'border-theme-border'
                 }`}>
                   {selectedPlan === 'pro_monthly' && <Check size={10} className="text-black font-black" />}
                 </div>
               </div>
-              <p className="text-[9px] text-theme-text-muted mt-0.5">Sem limites</p>
+              <p className="text-[9px] text-amber-400/90 font-bold mt-0.5">Aves + Lotes & Ovos</p>
             </div>
 
             <div className="mt-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-base sm:text-lg font-black text-amber-400">R$ 69,90</span>
+                <span className="text-base sm:text-lg font-black text-amber-400">R$ 59,80</span>
                 <span className="text-[9px] text-theme-text-muted">/mês</span>
               </div>
               <ul className="mt-2 space-y-1 text-[9px] text-zinc-300">
-                <li>• Aves e fotos ilimitadas</li>
-                <li>• Vitrine pública liberada</li>
-                <li>• Faturamento & métricas</li>
+                <li>• Tudo do plano de aves</li>
+                <li>• Gestão de Lotes de Cria</li>
+                <li>• Controle de Ovos & Chocadeira</li>
               </ul>
               <span className="inline-block mt-2 text-[8px] text-theme-text-muted">
-                (12 meses = R$ 838,80)
+                (Apenas + R$ 19,90 pelos lotes)
               </span>
             </div>
           </div>
 
-          {/* 3. PLANO ANUAL PRO (HERO / DECOY ANCHOR) */}
+          {/* 3. PLANO ANUAL COMPLETO (HERO / DECOY ANCHOR) */}
           <div 
             onClick={() => setSelectedPlan('yearly')}
             className={`p-3 rounded-2xl border-2 cursor-pointer transition-all relative flex flex-col justify-between overflow-hidden ${
@@ -165,13 +165,13 @@ export function PaywallScreen() {
             }`}
           >
             <div className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-emerald-400 text-black text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-bl-lg shadow-sm">
-              MAIS ESCOLHIDO
+              21% OFF • RECOMENDADO
             </div>
 
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  <span className="font-black text-xs text-white">Anual PRO</span>
+                  <span className="font-black text-xs text-white">Anual Completo</span>
                   <Zap size={12} className="text-emerald-400 fill-emerald-400" />
                 </div>
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
@@ -180,25 +180,47 @@ export function PaywallScreen() {
                   {selectedPlan === 'yearly' && <Check size={10} className="text-black font-black" />}
                 </div>
               </div>
-              <p className="text-[9px] text-emerald-400 font-bold mt-0.5">Economia de R$ 378,90</p>
+              <p className="text-[9px] text-emerald-400 font-bold mt-0.5">Economia de R$ 149,70</p>
             </div>
 
             <div className="mt-2">
               <div className="flex items-baseline gap-1">
-                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 838,80</span>
-                <span className="text-base sm:text-lg font-black text-emerald-400">R$ 459,90</span>
+                <span className="text-[10px] line-through text-theme-text-muted/60">R$ 717,60</span>
+                <span className="text-base sm:text-lg font-black text-emerald-400">R$ 567,90</span>
                 <span className="text-[9px] text-theme-text-muted">/ano</span>
               </div>
               <p className="text-[10px] font-black text-white mt-0.5">
-                ou até 4x sem juros
+                ou até 12x no cartão
               </p>
               <span className="inline-block mt-1 text-[9px] font-black text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                Apenas R$ 38,32/mês!
+                Apenas R$ 47,32/mês!
               </span>
             </div>
           </div>
 
         </div>
+
+        {/* ── UPSELL INTERATIVO DE LOTES (QUANDO SELECIONA MENSAL COMUM) ── */}
+        {selectedPlan === 'monthly' && (
+          <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-[#181824] border border-amber-500/40 rounded-2xl p-3 my-1 flex items-center justify-between gap-2.5 animate-scale-up shadow-lg">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[8px] font-black uppercase px-1.5 py-0.2 bg-amber-500 text-black rounded font-mono">OPORTUNIDADE</span>
+                <span className="text-[11px] font-black text-amber-300">Turbine com o Módulo de Lotes!</span>
+              </div>
+              <p className="text-[10px] text-zinc-300 mt-0.5 leading-tight">
+                Adicione <strong>Lotes de Cria</strong> e <strong>Gestão de Ovos/Chocadeira</strong> por apenas <strong className="text-amber-400">+ R$ 19,90/mês</strong> (Total: R$ 59,80/mês).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedPlan('pro_monthly')}
+              className="py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-[10px] uppercase tracking-wide shrink-0 active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              Adicionar Lotes (+ R$ 19,90)
+            </button>
+          </div>
+        )}
 
         {/* ── SELETOR DE FORMA DE PAGAMENTO (CARTÃO AUTOMÁTICO OU PIX À VISTA) ── */}
         <div className="flex rounded-xl bg-theme-base/80 p-1 border border-theme-border/70 gap-1 my-1">
@@ -240,7 +262,7 @@ export function PaywallScreen() {
                 <p className="text-[11px] font-bold text-white leading-tight">Cobrança no Cartão de Crédito</p>
                 <p className="text-[9px] text-theme-text-muted mt-0.5">
                   {selectedPlan === 'yearly' 
-                    ? 'Parcelamento em até 4x sem juros de R$ 114,97 ou em até 12x. Liberação imediata.'
+                    ? 'Parcelamento em até 12x no cartão ou à vista no Pix. Liberação imediata.'
                     : 'Cobrança mensal recorrente com total comodidade. Cancele quando quiser a 1 clique.'}
                 </p>
               </div>
@@ -296,7 +318,7 @@ export function PaywallScreen() {
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-bold text-theme-text-muted block uppercase">Chave Pix Copia e Cola (À Vista)</span>
                   <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                    {selectedPlan === 'yearly' ? 'R$ 459,90' : selectedPlan === 'pro_monthly' ? 'R$ 69,90' : 'R$ 49,90'}
+                    {selectedPlan === 'yearly' ? 'R$ 567,90' : selectedPlan === 'pro_monthly' ? 'R$ 59,80' : 'R$ 39,90'}
                   </span>
                 </div>
                 <span className="font-mono text-white text-xs truncate font-bold block mt-0.5" title={pixKey}>{pixKey}</span>

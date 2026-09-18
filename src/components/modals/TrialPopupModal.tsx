@@ -196,27 +196,37 @@ export function TrialPopupModal({
               </button>
             </div>
             {/* Mini planos clicáveis */}
-            <div className="grid grid-cols-2 gap-2 pt-0.5">
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
               <button
                 type="button"
                 onClick={handleUpgrade}
-                className="bg-black/30 hover:bg-black/60 border border-white/[0.08] hover:border-amber-500/50 rounded-xl p-2.5 text-center cursor-pointer active:scale-95 transition-all group"
-                title="Clique para ver o Plano Mensal"
+                className="bg-black/30 hover:bg-black/60 border border-white/[0.08] hover:border-amber-500/50 rounded-xl p-2 text-center cursor-pointer active:scale-95 transition-all group"
+                title="Clique para ver o Plano Mensal Comum"
               >
-                <p className="text-[9px] text-theme-text-muted font-bold uppercase group-hover:text-amber-300">Plano Mensal</p>
-                <p className="text-base font-black text-white mt-0.5">R$ 39,90</p>
-                <p className="text-[8px] text-amber-400/80 group-hover:text-amber-300 underline mt-0.5 font-bold">Ver no App →</p>
+                <p className="text-[8px] text-theme-text-muted font-bold uppercase group-hover:text-amber-300">Comum</p>
+                <p className="text-xs sm:text-sm font-black text-white mt-0.5">R$ 39,90</p>
+                <p className="text-[7px] text-amber-400/80 group-hover:text-amber-300 underline mt-0.5 font-bold">Ver →</p>
               </button>
               <button
                 type="button"
                 onClick={handleUpgrade}
-                className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/70 rounded-xl p-2.5 text-center relative overflow-hidden cursor-pointer active:scale-95 transition-all group"
-                title="Clique para ver o Plano Anual (25% OFF)"
+                className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/70 rounded-xl p-2 text-center cursor-pointer active:scale-95 transition-all group"
+                title="Clique para ver o Plano Mensal Completo"
               >
-                <span className="absolute top-0 right-0 bg-amber-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded-bl-lg">25% OFF</span>
-                <p className="text-[9px] text-amber-400 font-bold uppercase group-hover:text-amber-300">Plano Anual</p>
-                <p className="text-base font-black text-amber-400 mt-0.5">R$ 359,10</p>
-                <p className="text-[8px] text-emerald-400 group-hover:text-emerald-300 underline mt-0.5 font-bold">Ver no App →</p>
+                <p className="text-[8px] text-amber-300 font-bold uppercase group-hover:text-amber-200">Completo</p>
+                <p className="text-xs sm:text-sm font-black text-amber-300 mt-0.5">R$ 59,80</p>
+                <p className="text-[7px] text-amber-400/80 group-hover:text-amber-300 underline mt-0.5 font-bold">Ver →</p>
+              </button>
+              <button
+                type="button"
+                onClick={handleUpgrade}
+                className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/70 rounded-xl p-2 text-center relative overflow-hidden cursor-pointer active:scale-95 transition-all group"
+                title="Clique para ver o Plano Anual (21% OFF)"
+              >
+                <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[6px] font-black px-1 py-0.2 rounded-bl-md">21% OFF</span>
+                <p className="text-[8px] text-emerald-400 font-bold uppercase group-hover:text-emerald-300">Anual</p>
+                <p className="text-xs sm:text-sm font-black text-emerald-400 mt-0.5">R$ 567,90</p>
+                <p className="text-[7px] text-emerald-400 group-hover:text-emerald-300 underline mt-0.5 font-bold">Ver →</p>
               </button>
             </div>
           </div>
