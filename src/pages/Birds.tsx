@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { 
   Plus, Edit2, Camera, Search, X, ChevronRight, Trash2,
-  DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye
+  DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye, Bell
 } from 'lucide-react';
-import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
+import { useAppContext, type Bird, type Breed, type BirdAlarm } from '../lib/AppContext';
 import { compressImage } from '../lib/imageCompression';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 
@@ -112,6 +112,9 @@ const BirdItemCard = memo(function BirdItemCard({
   bird: Bird; 
   onSelect: (id: string) => void;
 }) {
+  const todayDayOfWeek = new Date().getDay();
+  const activeTodayAlarm = (bird.alarmes || []).find(a => a.ativo && a.diasSemana.includes(todayDayOfWeek));
+
   return (
     <div
       onClick={() => onSelect(bird.id)}
@@ -143,6 +146,16 @@ const BirdItemCard = memo(function BirdItemCard({
           </span>
         </div>
 
+        {/* Badge de Alarme Ativo Hoje no Canto Superior Esquerdo */}
+        {activeTodayAlarm && (
+          <div className="absolute top-2 left-2 z-10 animate-fade-in">
+            <span className="text-[9px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-wider animate-pulse">
+              <Bell size={10} className="fill-black" />
+              {activeTodayAlarm.hora || 'Alarme'}
+            </span>
+          </div>
+        )}
+
         {/* Badge Baia no Canto Inferior Esquerdo (se houver) */}
         {bird.baia && bird.baia !== 'ND' && (
           <div className="absolute bottom-2 left-2 z-10">
@@ -166,6 +179,14 @@ const BirdItemCard = memo(function BirdItemCard({
             {bird.raca}
           </p>
         </div>
+
+        {/* Observação do Alarme de Hoje */}
+        {activeTodayAlarm && (
+          <div className="bg-amber-500/15 border border-amber-500/40 rounded-lg px-2 py-1 flex items-center gap-1.5 text-[10px] text-amber-200 shadow-sm">
+            <Bell size={11} className="text-amber-400 shrink-0" />
+            <span className="truncate font-semibold">{activeTodayAlarm.texto}</span>
+          </div>
+        )}
 
         {/* Status Badge + Indicador */}
         <div className="pt-2 border-t border-theme-border/30 flex items-center justify-between mt-auto">
@@ -537,6 +558,21 @@ export function Birds() {
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda' | 'Vendido' | 'Faleceu'>('Todos');
   const [deleteBreedConfirm, setDeleteBreedConfirm] = useState<{ id: string; nome: string; message: string } | null>(null);
 
+  const todayDayOfWeek = new Date().getDay();
+  const todayBirdAlarms = useMemo(() => {
+    const results: Array<{ bird: Bird; alarm: BirdAlarm }> = [];
+    birds.forEach(b => {
+      if (b.status !== 'Vendido' && b.status !== 'Faleceu') {
+        (b.alarmes || []).forEach(a => {
+          if (a.ativo && a.diasSemana.includes(todayDayOfWeek)) {
+            results.push({ bird: b, alarm: a });
+          }
+        });
+      }
+    });
+    return results;
+  }, [birds, todayDayOfWeek]);
+
   // Calcula a contagem de aves por raça em complexidade O(N) linear
   const birdCountByBreed = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -898,6 +934,55 @@ export function Birds() {
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
         <div className="space-y-3">
+          {/* Banner de Lembretes de Hoje para as Aves */}
+          {todayBirdAlarms.length > 0 && (
+            <div className="bg-amber-500/15 border border-amber-500/40 rounded-2xl p-4 shadow-lg flex flex-col gap-2.5 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={18} className="text-amber-400 animate-bounce" />
+                  <h3 className="text-sm font-black text-white">
+                    Lembretes de Hoje para suas Aves ({todayBirdAlarms.length})
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold text-amber-300 uppercase bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+                  Atenção Necessária
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {todayBirdAlarms.map(({ bird: b, alarm: a }) => (
+                  <div
+                    key={a.id}
+                    onClick={() => openBirdProfile(b.id)}
+                    className="bg-theme-surface hover:bg-theme-surface-hover border border-amber-500/30 hover:border-amber-400 rounded-xl p-2.5 flex items-center gap-2.5 cursor-pointer transition-all group shadow-sm"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-theme-base border border-theme-border flex items-center justify-center shrink-0 text-xs overflow-hidden">
+                      {b.imagem ? (
+                        <img src={b.imagem} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        b.sexo === 'Macho' ? '🐓' : '🐔'
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-black text-white group-hover:text-theme-primary transition-colors truncate">
+                          {b.anilha} {b.nome ? `(${b.nome})` : ''}
+                        </p>
+                        {a.hora && (
+                          <span className="text-[9px] font-black text-amber-400 bg-amber-500/20 px-1.5 py-0.2 rounded shrink-0">
+                            {a.hora}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-amber-200 truncate font-medium">
+                        {a.texto}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Botão no Início da Aba (Compacto e Proporcional) */}
           <div className="sm:hidden flex items-center">
             <button

@@ -21,6 +21,15 @@ export type Breed = {
   conversaoAlimentar?: number; // Taxa de conversão alimentar (ex: 2.2)
 };
 
+export type BirdAlarm = {
+  id: string;
+  texto: string;           // observação que irá aparecer quando o alarme soar
+  hora?: string;           // hora programada (ex: "08:00")
+  diasSemana: number[];    // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  ativo: boolean;
+  criadoEm: string;
+};
+
 export type Bird = {
   id: string;
   anilha: string;
@@ -52,6 +61,7 @@ export type Bird = {
   compradorContato?: string;
   motivoBaixa?: string;
   dataCadastro?: string;
+  alarmes?: BirdAlarm[];
 };
 
 export type VitrineMeta = {
@@ -1193,7 +1203,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataVenda: localBird?.dataVenda,
             compradorNome: localBird?.compradorNome,
             compradorContato: localBird?.compradorContato,
-            motivoBaixa: localBird?.motivoBaixa
+            motivoBaixa: localBird?.motivoBaixa,
+            alarmes: localBird?.alarmes || b.alarmes || []
           };
         });
 

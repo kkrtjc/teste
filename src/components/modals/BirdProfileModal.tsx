@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { 
   Camera, GitBranch, Activity, Info, Edit2, Syringe, 
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
-  AlertCircle, UserPlus, X, Share2, DollarSign, RotateCcw
+  AlertCircle, UserPlus, X, Share2, DollarSign, RotateCcw, Bell
 } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 import { ShareBirdModal } from './ShareBirdModal';
 import { SellBirdModal } from './SellBirdModal';
+import { BirdAlarmModal } from './BirdAlarmModal';
 
 function PedigreeTreeNode({
   label,
@@ -119,6 +120,7 @@ export function BirdProfileModal() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -167,6 +169,12 @@ export function BirdProfileModal() {
 
   const pai = useMemo(() => bird?.paiId ? birds.find(b => b.id === bird.paiId) || null : null, [bird?.paiId, birds]);
   const mae = useMemo(() => bird?.maeId ? birds.find(b => b.id === bird.maeId) || null : null, [bird?.maeId, birds]);
+
+  const todayDayOfWeek = new Date().getDay();
+  const activeTodayAlarm = useMemo(() => {
+    if (!bird?.alarmes) return null;
+    return bird.alarmes.find(a => a.ativo && a.diasSemana.includes(todayDayOfWeek)) || null;
+  }, [bird?.alarmes, todayDayOfWeek]);
 
 
 
@@ -319,6 +327,21 @@ export function BirdProfileModal() {
               <span className="hidden sm:inline">Compartilhar</span>
             </button>
             <button
+              onClick={() => setIsAlarmModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                activeTodayAlarm
+                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 font-black shadow-md shadow-amber-500/20'
+                  : 'bg-theme-surface hover:bg-theme-surface-hover border-theme-border/70 text-white'
+              }`}
+              title="Gerenciar Alarmes & Lembretes desta Ave"
+            >
+              <Bell size={15} className={activeTodayAlarm ? 'text-amber-400 animate-bounce' : 'text-theme-text-muted'} />
+              <span>Alarmes</span>
+              <span className="bg-theme-base px-1.5 py-0.2 rounded-md border border-theme-border/60 text-[10px] font-black text-theme-text-muted">
+                {bird.alarmes?.length || 0}
+              </span>
+            </button>
+            <button
               onClick={() => {
                 if (confirm(`Deseja excluir permanentemente a ave ${bird.anilha} do plantel?`)) {
                   removeBird(bird.id);
@@ -420,6 +443,35 @@ export function BirdProfileModal() {
           </div>
 
           <div className="p-5 pt-14 space-y-5">
+            {/* Banner de Lembrete Ativo Hoje */}
+            {activeTodayAlarm && (
+              <div className="bg-amber-500/15 border border-amber-500/40 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                    <Bell size={18} className="text-amber-400 animate-bounce" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-white uppercase tracking-wider">Lembrete de Hoje</span>
+                      {activeTodayAlarm.hora && (
+                        <span className="bg-amber-500 text-black px-1.5 py-0.2 rounded font-black text-[10px]">
+                          {activeTodayAlarm.hora}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-amber-200 mt-0.5 break-words font-medium">{activeTodayAlarm.texto}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAlarmModalOpen(true)}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl text-xs transition-all shrink-0 cursor-pointer"
+                >
+                  Ver Alarmes
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {/* Anilha */}
               <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
@@ -1055,6 +1107,19 @@ export function BirdProfileModal() {
           isOpen={isSellModalOpen}
           onClose={() => setIsSellModalOpen(false)}
           onSuccess={() => closeModals()}
+        />
+      )}
+
+      {/* Modal de Alarmes & Lembretes da Ave */}
+      {isAlarmModalOpen && bird && (
+        <BirdAlarmModal
+          isOpen={isAlarmModalOpen}
+          bird={bird}
+          onClose={() => setIsAlarmModalOpen(false)}
+          onSaveAlarms={(newAlarms) => {
+            editBird(bird.id, { alarmes: newAlarms });
+          }}
+          showToast={showToast}
         />
       )}
     </div>,
