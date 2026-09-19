@@ -208,6 +208,7 @@ export type MeatLot = {
   raca?: string;
   racaId?: string;
   observacao?: string;
+  vacinas?: string;            // Vacinas aplicadas ou previstas no lote
   movimentacoes?: LotMovementRecord[];
   ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
   consumoRacaoAve?: number;    // Consumo de ração g/ave/dia (ex: 130g)
@@ -1390,6 +1391,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           raca: l.raca || local?.raca || '',
           racaId: l.raca_id || l.racaId || local?.racaId || undefined,
           observacao: l.observacao || local?.observacao || '',
+          vacinas: l.vacinas || local?.vacinas || undefined,
           pesoMeta: l.peso_meta || l.pesoMeta || local?.pesoMeta || '',
           qtdAves: l.qtd_aves !== undefined ? l.qtd_aves : (l.qtdAves || local?.qtdAves || 0),
           ganhoGramasDia: l.ganho_gramas_dia !== undefined ? l.ganho_gramas_dia : (l.ganhoGramasDia || local?.ganhoGramasDia || undefined),

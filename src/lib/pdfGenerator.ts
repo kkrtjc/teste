@@ -488,6 +488,22 @@ export async function generateLotPdf({
     drawField(doc, 'STATUS DO LOTE', lot.status || 'Em andamento', margin + contentWidth / 2, currentY + 18);
 
     currentY += 34;
+
+    if (lot.vacinas) {
+      drawSectionHeader(doc, 'VACINAS DO LOTE', margin, currentY, contentWidth);
+      currentY += 8;
+      const vacText = String(lot.vacinas).trim();
+      doc.setFillColor(cardBg[0], cardBg[1], cardBg[2]);
+      doc.roundedRect(margin, currentY, contentWidth, 16, 2.5, 2.5, 'F');
+      doc.setDrawColor(borderGrey[0], borderGrey[1], borderGrey[2]);
+      doc.roundedRect(margin, currentY, contentWidth, 16, 2.5, 2.5, 'S');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(50, 55, 65);
+      const lines = doc.splitTextToSize(vacText, contentWidth - 8);
+      doc.text(lines, margin + 4, currentY + 6);
+      currentY += 24;
+    }
   } else {
     // engorda, crescimento
     const labelHeader = lotType === 'crescimento' 

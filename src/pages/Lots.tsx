@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2
+  CheckCircle, Sparkles, Send, Loader2, Syringe
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -577,6 +577,7 @@ export function Lots() {
   const [piPaiNome, setPiPaiNome] = useState('');
   const [piMaeNome, setPiMaeNome] = useState('');
   const [piQtd, setPiQtd] = useState('');
+  const [piVacinas, setPiVacinas] = useState('');
   const [piObs, setPiObs] = useState('');
 
   // Confirmation Modal state for Lot Quantity Verification
@@ -807,7 +808,7 @@ export function Lots() {
     setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataNascimento(todayISO());
     setPiOrigem('');
     setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
-    setPiQtd(''); setPiObs('');
+    setPiQtd(''); setPiVacinas(''); setPiObs('');
   };
 
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
@@ -844,6 +845,7 @@ export function Lots() {
       status: 'Crescimento',
       raca: piRaca.trim() || undefined,
       observacao: piObs.trim() || undefined,
+      vacinas: piVacinas.trim() || undefined,
       pesagens: [],
     });
 
@@ -1688,6 +1690,18 @@ export function Lots() {
                       </div>
                     )}
 
+                    {/* Vacinas informadas */}
+                    {lote.vacinas && (
+                      <div className="bg-theme-base/60 p-2.5 rounded-xl border border-theme-border/50 text-[11px] space-y-1">
+                        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                          <Syringe size={12} className="text-emerald-400" /> Vacinas do Lote:
+                        </span>
+                        <p className="text-white font-medium">
+                          {lote.vacinas}
+                        </p>
+                      </div>
+                    )}
+
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-1 italic">Obs: {lote.observacao}</p>}
                   </div>
 
@@ -2310,10 +2324,25 @@ export function Lots() {
                   />
                 </div>
 
+                {/* Vacinas do Lote */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <SectionLabel>Vacinas do Lote (opcional)</SectionLabel>
+                    <span className="text-[10px] text-theme-text-muted">Preencha o que souber</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ex: Marek, Newcastle, Gumboro, Bouba..."
+                    value={piVacinas}
+                    onChange={e => setPiVacinas(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+
                 {/* Observação */}
                 <div className="space-y-1">
                   <SectionLabel>Observação (opcional)</SectionLabel>
-                  <textarea rows={2} placeholder="Ex: Nascidos na chocadora..." value={piObs} onChange={e => setPiObs(e.target.value)} className={inputCls + " resize-none"} />
+                  <textarea rows={2} placeholder="Ex: Nascidos na chocadeira..." value={piObs} onChange={e => setPiObs(e.target.value)} className={inputCls + " resize-none"} />
                 </div>
 
               </div>
