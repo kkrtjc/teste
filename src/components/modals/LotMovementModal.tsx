@@ -245,23 +245,33 @@ export function LotMovementModal({
     }
 
     if (loteType === 'postura') {
-      const updatedFemeas = isAddingRegistered
-        ? Array.from(new Set([...(lote.femeasIds || []), ...selectedBirdIds]))
-        : (lote.femeasIds || []);
+      let updatedFemeas = lote.femeasIds || [];
+      if (isAddingRegistered) {
+        updatedFemeas = Array.from(new Set([...updatedFemeas, ...selectedBirdIds]));
+      } else if (tipo === 'saida') {
+        if (updatedFemeas.length > newTotal) {
+          updatedFemeas = updatedFemeas.slice(0, newTotal);
+        }
+      }
 
       editEggLot(lote.id, {
         qtdFemeas: newTotal,
-        ...(isAddingRegistered ? { femeasIds: updatedFemeas } : {}),
+        femeasIds: updatedFemeas,
         movimentacoes: updatedMovimentacoes
       });
     } else {
-      const updatedAves = isAddingRegistered
-        ? Array.from(new Set([...(lote.avesIds || []), ...selectedBirdIds]))
-        : (lote.avesIds || []);
+      let updatedAves = lote.avesIds || [];
+      if (isAddingRegistered) {
+        updatedAves = Array.from(new Set([...updatedAves, ...selectedBirdIds]));
+      } else if (tipo === 'saida') {
+        if (updatedAves.length > newTotal) {
+          updatedAves = updatedAves.slice(0, newTotal);
+        }
+      }
 
       editMeatLot(lote.id, {
         qtdAves: newTotal,
-        ...(isAddingRegistered ? { avesIds: updatedAves } : {}),
+        avesIds: updatedAves,
         movimentacoes: updatedMovimentacoes
       });
     }
@@ -294,13 +304,23 @@ export function LotMovementModal({
       : currentCount + targetMov.quantidade;
 
     if (loteType === 'postura') {
+      let updatedFemeas = lote.femeasIds || [];
+      if (targetMov.tipo === 'entrada' && updatedFemeas.length > newTotal) {
+        updatedFemeas = updatedFemeas.slice(0, newTotal);
+      }
       editEggLot(lote.id, {
         qtdFemeas: newTotal,
+        femeasIds: updatedFemeas,
         movimentacoes: updatedMovimentacoes
       });
     } else {
+      let updatedAves = lote.avesIds || [];
+      if (targetMov.tipo === 'entrada' && updatedAves.length > newTotal) {
+        updatedAves = updatedAves.slice(0, newTotal);
+      }
       editMeatLot(lote.id, {
         qtdAves: newTotal,
+        avesIds: updatedAves,
         movimentacoes: updatedMovimentacoes
       });
     }

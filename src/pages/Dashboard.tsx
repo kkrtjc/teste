@@ -58,7 +58,7 @@ export function Dashboard() {
     let avulsasPostura = 0;
     (eggLots || []).forEach(l => {
       if (l.status !== 'Encerrado') {
-        const t = Math.max(l.qtdFemeas || 0, l.femeasIds?.length || 0);
+        const t = (l.qtdFemeas !== undefined && l.qtdFemeas !== null) ? Number(l.qtdFemeas) : (l.femeasIds?.length || 0);
         const cad = l.femeasIds?.length || 0;
         avulsasPostura += Math.max(0, t - cad);
       }
@@ -68,7 +68,7 @@ export function Dashboard() {
     let avulsasPintinhos = 0;
     (meatLots || []).forEach(l => {
       if (l.status !== 'Abatido') {
-        const t = Math.max(l.qtdAves || 0, l.avesIds?.length || 0);
+        const t = (l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0);
         const cad = l.avesIds?.length || 0;
         const diff = Math.max(0, t - cad);
         if (l.id.startsWith('chick-')) {

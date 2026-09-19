@@ -997,7 +997,7 @@ export function Lots() {
               { 
                 label: 'Total de Fêmeas em Postura', 
                 value: eggLots.filter(l => l.status !== 'Encerrado').reduce((a, l) => {
-                  return a + Math.max(l.qtdFemeas || 0, l.femeasIds?.length || 0);
+                  return a + ((l.qtdFemeas !== undefined && l.qtdFemeas !== null) ? Number(l.qtdFemeas) : (l.femeasIds?.length || 0));
                 }, 0) 
               },
             ].map(s => (
@@ -1011,7 +1011,7 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedEggLots.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const totalF = Math.max(lote.qtdFemeas || 0, lote.femeasIds?.length || 0);
+              const totalF = (lote.qtdFemeas !== undefined && lote.qtdFemeas !== null) ? Number(lote.qtdFemeas) : (lote.femeasIds?.length || 0);
               const cadastradasF = lote.femeasIds?.length || 0;
               const avulsasF = Math.max(0, totalF - cadastradasF);
               return (
@@ -1157,7 +1157,7 @@ export function Lots() {
               { label: 'Lotes Ativos', value: filterEngorda.filter(l => l.status !== 'Abatido').length },
               { 
                 label: 'Aves em Engorda', 
-                value: filterEngorda.reduce((a, l) => a + (l.status !== 'Abatido' ? Math.max(l.qtdAves || 0, l.avesIds?.length || 0) : 0), 0) 
+                value: filterEngorda.reduce((a, l) => a + (l.status !== 'Abatido' ? ((l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0)) : 0), 0) 
               },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
@@ -1170,7 +1170,7 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedEngorda.map(lote => {
               const dias = calcDays(lote.dataInicio);
-              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const totalA = (lote.qtdAves !== undefined && lote.qtdAves !== null) ? Number(lote.qtdAves) : (lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
               const avulsasA = Math.max(0, totalA - cadastradasA);
 
@@ -1577,7 +1577,7 @@ export function Lots() {
               { label: 'Lotes Ativos', value: filterPintinhos.filter(l => l.status !== 'Abatido').length },
               { 
                 label: 'Total de Pintinhos', 
-                value: filterPintinhos.filter(l => l.status !== 'Abatido').reduce((a, l) => a + Math.max(l.qtdAves || 0, l.avesIds?.length || 0), 0) 
+                value: filterPintinhos.filter(l => l.status !== 'Abatido').reduce((a, l) => a + ((l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0)), 0) 
               },
             ].map(s => (
               <div key={s.label} className="premium-card p-4">
@@ -1590,7 +1590,7 @@ export function Lots() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedPintinhos.map(lote => {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
-              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const totalA = (lote.qtdAves !== undefined && lote.qtdAves !== null) ? Number(lote.qtdAves) : (lote.avesIds?.length || 0);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -2530,17 +2530,26 @@ export function Lots() {
       />
 
       {/* ── MODAL DE MOVIMENTAÇÕES & BAIXAS DE AVES DO LOTE ── */}
-      <LotMovementModal
-        isOpen={movementModal.isOpen}
-        onClose={() => setMovementModal({ isOpen: false, lote: null, loteType: 'engorda' })}
-        lote={movementModal.lote}
-        loteType={movementModal.loteType}
-        birds={birds}
-        editBird={editBird}
-        editEggLot={editEggLot}
-        editMeatLot={editMeatLot}
-        showToast={showToast}
-      />
+      {(() => {
+        const liveModalLot = movementModal.lote
+          ? (movementModal.loteType === 'postura'
+              ? eggLots.find(l => l.id === movementModal.lote?.id)
+              : meatLots.find(l => l.id === movementModal.lote?.id)) || movementModal.lote
+          : null;
+        return (
+          <LotMovementModal
+            isOpen={movementModal.isOpen}
+            onClose={() => setMovementModal({ isOpen: false, lote: null, loteType: 'engorda' })}
+            lote={liveModalLot}
+            loteType={movementModal.loteType}
+            birds={birds}
+            editBird={editBird}
+            editEggLot={editEggLot}
+            editMeatLot={editMeatLot}
+            showToast={showToast}
+          />
+        );
+      })()}
 
       {/* ── CONFIRMAÇÃO DE EXCLUSÃO DE LOTE (SEM WINDOW.CONFIRM) ── */}
       <ConfirmDialog
