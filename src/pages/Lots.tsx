@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
-  DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
+  Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
   CheckCircle, Sparkles, Send, Loader2, Syringe
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
@@ -530,8 +530,6 @@ export function Lots() {
   const [pQtd, setPQtd] = useState('');
   const [pSearch, setPSearch] = useState('');
   const [pExpectativa, setPExpectativa] = useState('');
-  const [pPreco, setPPreco] = useState('');
-  const [pCusto, setPCusto] = useState('');
   const [pObs, setPObs] = useState('');
 
   // Engorda Lot states
@@ -704,7 +702,7 @@ export function Lots() {
   const resetPostura = () => {
     setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
     setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
-    setPExpectativa(''); setPPreco(''); setPCusto(''); setPObs('');
+    setPExpectativa(''); setPObs('');
   };
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
@@ -725,8 +723,6 @@ export function Lots() {
         dataInicio: pDataInicio,
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
-        precoVendaPadrao: pPreco.trim() ? (parseFloat(pPreco) || undefined) : undefined,
-        custoProdPadrao: pCusto.trim() ? (parseFloat(pCusto) || undefined) : undefined,
         observacao: pObs.trim() || undefined,
       });
       resetPostura();
@@ -1844,28 +1840,6 @@ export function Lots() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <SectionLabel>Preços Padrão para aba Ovos (Opcional)</SectionLabel>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className={labelCls}>Preço/Dúzia (R$)</label>
-                      <div className="relative">
-                        <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 10.00" value={pPreco} onKeyDown={onlyNumericKeyDown} onChange={e => setPPreco(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className={labelCls}>Custo/Ovo (R$)</label>
-                      <div className="relative">
-                        <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 0.40" value={pCusto} onKeyDown={onlyNumericKeyDown} onChange={e => setPCusto(e.target.value.replace(/[^0-9.]/g, ''))} className={inputCls + " pl-8"} />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-theme-text-muted">
-                    Se não informados, o faturamento e margens serão calculados a partir dos preços das vendas reais.
-                  </p>
-                </div>
 
                 <div className="space-y-1">
                   <SectionLabel>Observação (opcional)</SectionLabel>
