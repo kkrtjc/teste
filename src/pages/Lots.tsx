@@ -4,16 +4,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   DollarSign, Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Bell
+  CheckCircle, Sparkles, Send, Loader2
 } from 'lucide-react';
-import { useAppContext, type LotAlarm } from '../lib/AppContext';
+import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
-import { LotAlarmModal } from '../components/modals/LotAlarmModal';
 import { generateLotPdf, sharePdfFile } from '../lib/pdfGenerator';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -558,30 +557,6 @@ export function Lots() {
     lote: null,
   });
 
-  // Modal de Alarmes & Lembretes do Lote
-  const [alarmModal, setAlarmModal] = useState<{
-    isOpen: boolean;
-    lote: any | null;
-    loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
-  }>({
-    isOpen: false,
-    lote: null,
-    loteType: 'engorda',
-  });
-
-  const handleSaveLotAlarms = (updatedAlarms: LotAlarm[]) => {
-    if (!alarmModal.lote) return;
-    if (alarmModal.loteType === 'postura') {
-      editEggLot(alarmModal.lote.id, { alarmes: updatedAlarms });
-    } else {
-      editMeatLot(alarmModal.lote.id, { alarmes: updatedAlarms });
-    }
-    setAlarmModal(prev => ({
-      ...prev,
-      lote: prev.lote ? { ...prev.lote, alarmes: updatedAlarms } : null
-    }));
-  };
-
   // Confirmação profissional de exclusão de lote
   const [deleteLotConfirm, setDeleteLotConfirm] = useState<{ id: string; title: string; message: string } | null>(null);
 
@@ -949,37 +924,6 @@ export function Lots() {
     }
   };
 
-  const todayDayOfWeek = new Date().getDay();
-
-  // Lembretes / Alarmes programados para hoje
-  const todayAlarms = useMemo(() => {
-    const alerts: { lotId: string; baia: string; type: string; texto: string; lote: any; loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento' }[] = [];
-    
-    (eggLots || []).forEach(l => {
-      if (l.status !== 'Encerrado' && l.alarmes) {
-        l.alarmes.forEach(a => {
-          if (a.ativo && a.diasSemana.includes(todayDayOfWeek)) {
-            alerts.push({ lotId: l.id, baia: l.baia, type: 'Postura', texto: a.texto, lote: l, loteType: 'postura' });
-          }
-        });
-      }
-    });
-
-    (meatLots || []).forEach(l => {
-      if (l.status !== 'Abatido' && l.alarmes) {
-        const type = l.id.startsWith('chick-') ? 'Pintinhos' : (l.status === 'Terminação' ? 'Abate' : 'Engorda');
-        const loteType: 'pintinhos' | 'engorda' = l.id.startsWith('chick-') ? 'pintinhos' : 'engorda';
-        l.alarmes.forEach(a => {
-          if (a.ativo && a.diasSemana.includes(todayDayOfWeek)) {
-            alerts.push({ lotId: l.id, baia: l.baia, type, texto: a.texto, lote: l, loteType });
-          }
-        });
-      }
-    });
-
-    return alerts;
-  }, [eggLots, meatLots, todayDayOfWeek]);
-
   // Lotes de engorda/crescimento que completaram 15 dias sem pesagem
   const lotsNeedingWeighing = useMemo(() => {
     return (meatLots || []).filter(l => {
@@ -1073,7 +1017,7 @@ export function Lots() {
         ))}
       </div>
 
-      {/* ── BANNERS DE ALERTA: PESAGEM PERIÓDICA (15 DIAS) E ALARMES DO DIA ── */}
+      {/* ── BANNER DE ALERTA: PESAGEM PERIÓDICA (15 DIAS) ── */}
       {lotsNeedingWeighing.length > 0 && (
         <div className="w-full bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-fade-in">
           <div className="flex items-center gap-3">
@@ -1100,28 +1044,6 @@ export function Lots() {
                 <Scale size={13} /> Pesar Baia {l.baia}
               </button>
             ))}
-          </div>
-        </div>
-      )}
-
-      {todayAlarms.length > 0 && (
-        <div className="w-full bg-blue-500/10 border border-blue-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-blue-950/20 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-500 text-white font-black shrink-0">
-              <Bell size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white">
-                Lembretes Programados para Hoje ({todayAlarms.length})
-              </p>
-              <div className="flex flex-wrap gap-2 mt-1.5">
-                {todayAlarms.map((item, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 bg-blue-500/20 text-blue-200 border border-blue-500/30 px-2.5 py-0.5 rounded-lg text-[11px] font-bold">
-                    <span className="text-white font-black">Baia {item.baia}:</span> {item.texto}
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1254,54 +1176,17 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
 
-                  {(() => {
-                    const lotActiveTodayAlarm = (lote.alarmes || []).find((a: any) => a.ativo && a.diasSemana.includes(todayDayOfWeek));
-                    return (
-                      <div className="pt-3 border-t border-theme-border/50 space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => setAlarmModal({ isOpen: true, lote, loteType: 'postura' })}
-                          className={`w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border rounded-xl text-xs font-bold flex items-center justify-between transition-all group shadow-sm cursor-pointer ${
-                            lotActiveTodayAlarm
-                              ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
-                              : 'border-theme-border/80 text-white'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2 font-bold">
-                            <Bell size={15} className={`shrink-0 ${lotActiveTodayAlarm ? 'text-amber-400' : 'text-theme-text-muted group-hover:text-amber-400'}`} />
-                            <span>Alarmes & Lembretes</span>
-                            {lotActiveTodayAlarm && (
-                              <span className="text-[10px] bg-amber-500/25 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-md font-extrabold">
-                                Ativo Hoje
-                              </span>
-                            )}
-                          </span>
-                          <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                            {lote.alarmes?.length || 0} {lote.alarmes?.length === 1 ? 'alarme' : 'alarmes'}
-                          </span>
-                        </button>
-
-                        {lotActiveTodayAlarm && (
-                          <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 flex items-start gap-2.5 text-xs text-amber-200">
-                            <Bell size={15} className="text-amber-400 shrink-0 mt-0.5 animate-bounce" />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-0.5">Lembrete para Hoje:</p>
-                              <p className="text-white text-xs font-medium break-words leading-relaxed">{lotActiveTodayAlarm.texto}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
-                          className="w-full py-2.5 px-3.5 bg-theme-primary/10 hover:bg-theme-primary/20 border border-theme-primary/40 hover:border-theme-primary/70 rounded-xl text-xs font-bold text-theme-primary flex items-center justify-center gap-2 transition-all cursor-pointer"
-                        >
-                          <Egg size={15} className="shrink-0" />
-                          <span>Acessar Aba Ovos do Lote</span>
-                        </button>
-                      </div>
-                    );
-                  })()}
+                  {/* Botão do Lote */}
+                  <div className="pt-3 border-t border-theme-border/50">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
+                      className="w-full py-2.5 px-3.5 bg-theme-primary/10 hover:bg-theme-primary/20 border border-theme-primary/40 hover:border-theme-primary/70 rounded-xl text-xs font-bold text-theme-primary flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Egg size={15} className="shrink-0" />
+                      <span>Acessar Aba Ovos do Lote</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -1434,7 +1319,6 @@ export function Lots() {
               const diasRefPesagem = temPesagemManual && ultimaPesagem ? calcDays(ultimaPesagem.data) : dias;
               const precisaPesar = diasRefPesagem >= 15;
               const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
-              const lotActiveTodayAlarm = (lote.alarmes || []).find((a: any) => a.ativo && a.diasSemana.includes(todayDayOfWeek));
 
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col space-y-4">
@@ -1689,56 +1573,21 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
 
-                  {/* Movimentações, Alarmes e Status */}
+                  {/* Movimentações e Status */}
                   <div className="pt-2 border-t border-theme-border/50">
-                    <div className="space-y-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
-                        className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2 text-theme-primary font-bold">
-                          <Activity size={15} className="shrink-0" />
-                          <span>Movimentações</span>
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAlarmModal({ isOpen: true, lote, loteType: 'engorda' })}
-                        className={`w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border rounded-xl text-xs font-bold flex items-center justify-between transition-all group shadow-sm cursor-pointer ${
-                          lotActiveTodayAlarm
-                            ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
-                            : 'border-theme-border/80 text-white'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-bold">
-                          <Bell size={15} className={`shrink-0 ${lotActiveTodayAlarm ? 'text-amber-400' : 'text-theme-text-muted group-hover:text-amber-400'}`} />
-                          <span>Alarmes & Lembretes</span>
-                          {lotActiveTodayAlarm && (
-                            <span className="text-[10px] bg-amber-500/25 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-md font-extrabold">
-                              Ativo Hoje
-                            </span>
-                          )}
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.alarmes?.length || 0} {lote.alarmes?.length === 1 ? 'alarme' : 'alarmes'}
-                        </span>
-                      </button>
-
-                      {lotActiveTodayAlarm && (
-                        <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 flex items-start gap-2.5 text-xs text-amber-200">
-                          <Bell size={15} className="text-amber-400 shrink-0 mt-0.5 animate-bounce" />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-0.5">Lembrete para Hoje:</p>
-                            <p className="text-white text-xs font-medium break-words leading-relaxed">{lotActiveTodayAlarm.texto}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <Activity size={15} className="shrink-0" />
+                        <span>Movimentações</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Alterar Status</p>
                     <div className="grid grid-cols-3 gap-2">
                       {(['Crescimento', 'Terminação', 'Abatido'] as const).map(st => (
@@ -1795,7 +1644,6 @@ export function Lots() {
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
               const avulsasA = Math.max(0, totalA - cadastradasA);
-              const lotActiveTodayAlarm = (lote.alarmes || []).find((a: any) => a.ativo && a.diasSemana.includes(todayDayOfWeek));
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1899,54 +1747,19 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
                   <div className="pt-3 border-t border-theme-border/50">
-                    <div className="space-y-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
-                        className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2 text-theme-primary font-bold">
-                          <Activity size={15} className="shrink-0" />
-                          <span>Movimentações</span>
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAlarmModal({ isOpen: true, lote, loteType: 'pintinhos' })}
-                        className={`w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border rounded-xl text-xs font-bold flex items-center justify-between transition-all group shadow-sm cursor-pointer ${
-                          lotActiveTodayAlarm
-                            ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
-                            : 'border-theme-border/80 text-white'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-bold">
-                          <Bell size={15} className={`shrink-0 ${lotActiveTodayAlarm ? 'text-amber-400' : 'text-theme-text-muted group-hover:text-amber-400'}`} />
-                          <span>Alarmes & Lembretes</span>
-                          {lotActiveTodayAlarm && (
-                            <span className="text-[10px] bg-amber-500/25 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-md font-extrabold">
-                              Ativo Hoje
-                            </span>
-                          )}
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.alarmes?.length || 0} {lote.alarmes?.length === 1 ? 'alarme' : 'alarmes'}
-                        </span>
-                      </button>
-
-                      {lotActiveTodayAlarm && (
-                        <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 flex items-start gap-2.5 text-xs text-amber-200">
-                          <Bell size={15} className="text-amber-400 shrink-0 mt-0.5 animate-bounce" />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-0.5">Lembrete para Hoje:</p>
-                            <p className="text-white text-xs font-medium break-words leading-relaxed">{lotActiveTodayAlarm.texto}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <Activity size={15} className="shrink-0" />
+                        <span>Movimentações</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Transferir Lote para</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={() => openTransferModal(lote, 'crescimento')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
@@ -2003,7 +1816,6 @@ export function Lots() {
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const cadastradasA = lote.avesIds?.length || 0;
               const avulsasA = Math.max(0, totalA - cadastradasA);
-              const lotActiveTodayAlarm = (lote.alarmes || []).find((a: any) => a.ativo && a.diasSemana.includes(todayDayOfWeek));
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Timer size={100} className="text-green-400" /></div>
@@ -2107,54 +1919,19 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
                   <div className="pt-3 border-t border-theme-border/50">
-                    <div className="space-y-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'crescimento' })}
-                        className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2 text-theme-primary font-bold">
-                          <Activity size={15} className="shrink-0" />
-                          <span>Movimentações</span>
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAlarmModal({ isOpen: true, lote, loteType: 'crescimento' })}
-                        className={`w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border rounded-xl text-xs font-bold flex items-center justify-between transition-all group shadow-sm cursor-pointer ${
-                          lotActiveTodayAlarm
-                            ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
-                            : 'border-theme-border/80 text-white'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-bold">
-                          <Bell size={15} className={`shrink-0 ${lotActiveTodayAlarm ? 'text-amber-400' : 'text-theme-text-muted group-hover:text-amber-400'}`} />
-                          <span>Alarmes & Lembretes</span>
-                          {lotActiveTodayAlarm && (
-                            <span className="text-[10px] bg-amber-500/25 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-md font-extrabold">
-                              Ativo Hoje
-                            </span>
-                          )}
-                        </span>
-                        <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                          {lote.alarmes?.length || 0} {lote.alarmes?.length === 1 ? 'alarme' : 'alarmes'}
-                        </span>
-                      </button>
-
-                      {lotActiveTodayAlarm && (
-                        <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 flex items-start gap-2.5 text-xs text-amber-200">
-                          <Bell size={15} className="text-amber-400 shrink-0 mt-0.5 animate-bounce" />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-0.5">Lembrete para Hoje:</p>
-                            <p className="text-white text-xs font-medium break-words leading-relaxed">{lotActiveTodayAlarm.texto}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'crescimento' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <Activity size={15} className="shrink-0" />
+                        <span>Movimentações</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
+                      </span>
+                    </button>
                     <p className={labelCls + " mb-2"}>Transferir Lote para</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={() => openTransferModal(lote, 'engorda')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
@@ -2939,16 +2716,6 @@ export function Lots() {
         editBird={editBird}
         editEggLot={editEggLot}
         editMeatLot={editMeatLot}
-        showToast={showToast}
-      />
-
-      {/* ── MODAL DE ALARMES & LEMBRETES PROGRAMADOS DO LOTE ── */}
-      <LotAlarmModal
-        isOpen={alarmModal.isOpen}
-        lote={alarmModal.lote}
-        loteType={alarmModal.loteType}
-        onClose={() => setAlarmModal({ isOpen: false, lote: null, loteType: 'engorda' })}
-        onSaveAlarms={handleSaveLotAlarms}
         showToast={showToast}
       />
 

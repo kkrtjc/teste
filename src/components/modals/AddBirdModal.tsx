@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search, Bell, Clock, Calendar, Check, Plus } from 'lucide-react';
-import { useAppContext, type BirdAlarm } from '../../lib/AppContext';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
+import { useAppContext } from '../../lib/AppContext';
 import { compressImage } from '../../lib/imageCompression';
 import { calculateExactAge } from '../../lib/utils';
 import { QuickBreedModal } from './QuickBreedModal';
@@ -227,14 +227,8 @@ export function AddBirdModal() {
   const [selectedVacs, setSelectedVacs] = useState<string[]>([]);
   const [outrasVacinas, setOutrasVacinas] = useState('');
 
-  // ── Alarms ──
-  const [birdAlarms, setBirdAlarms] = useState<BirdAlarm[]>([]);
-  const [alarmTexto, setAlarmTexto] = useState('');
-  const [alarmHora, setAlarmHora] = useState('08:00');
-  const [alarmDays, setAlarmDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 0]);
-
   // ── Steps ──
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 4;
   const [step, setStep] = useState(0);
 
   // ── Duplicate / Overlap state ──
@@ -283,10 +277,6 @@ export function AddBirdModal() {
 
         setSelectedVacs(matchedKnown);
         setOutrasVacinas(customVacs);
-        setBirdAlarms(b.alarmes || []);
-        setAlarmTexto('');
-        setAlarmHora('08:00');
-        setAlarmDays([1, 2, 3, 4, 5, 6, 0]);
       }
     } else {
       setAnilha(''); setNome(''); setSexo('Macho');
@@ -297,10 +287,6 @@ export function AddBirdModal() {
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
       setSelectedVacs([]);
       setOutrasVacinas('');
-      setBirdAlarms([]);
-      setAlarmTexto('');
-      setAlarmHora('08:00');
-      setAlarmDays([1, 2, 3, 4, 5, 6, 0]);
     }
   }, [isAddBirdModalOpen, birdToEditId]);
 
@@ -399,8 +385,7 @@ export function AddBirdModal() {
         valorEstimado: valorEstimado ? parseFloat(valorEstimado.replace(',', '.')) : undefined,
         imagem: imagesToSave[0] || undefined,
         imagens: imagesToSave,
-        observacoes: descricaoOrigem || undefined,
-        alarmes: birdAlarms
+        observacoes: descricaoOrigem || undefined
       };
 
       let targetId = birdToEditId;
@@ -1014,256 +999,6 @@ export function AddBirdModal() {
         </div>
       );
     }
-
-    // ── STEP 4: Alarmes & Lembretes da Ave ──────────────────────────────────
-    if (step === 4) {
-      const DIAS_DA_SEMANA_ADD = [
-        { id: 1, label: 'Seg', full: 'Segunda-feira' },
-        { id: 2, label: 'Ter', full: 'Terça-feira' },
-        { id: 3, label: 'Qua', full: 'Quarta-feira' },
-        { id: 4, label: 'Qui', full: 'Quinta-feira' },
-        { id: 5, label: 'Sex', full: 'Sexta-feira' },
-        { id: 6, label: 'Sáb', full: 'Sábado' },
-        { id: 0, label: 'Dom', full: 'Domingo' }
-      ];
-
-      const isAllDays = alarmDays.length === 7;
-      const todayDayOfWeek = new Date().getDay();
-
-      const handleToggleAll = () => {
-        if (isAllDays) {
-          setAlarmDays([]);
-        } else {
-          setAlarmDays([1, 2, 3, 4, 5, 6, 0]);
-        }
-      };
-
-      const handleToggleDayItem = (dayId: number) => {
-        setAlarmDays(prev => prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]);
-      };
-
-      const handleAddAlarmItem = () => {
-        if (!alarmTexto.trim()) {
-          showToast('Digite a observação do alarme.', 'warning');
-          return;
-        }
-        if (alarmDays.length === 0) {
-          showToast('Selecione ao menos um dia da semana para o alarme.', 'warning');
-          return;
-        }
-        const newAlarm: BirdAlarm = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-          texto: alarmTexto.trim(),
-          hora: alarmHora || '08:00',
-          diasSemana: [...alarmDays].sort((a, b) => a - b),
-          ativo: true,
-          criadoEm: new Date().toISOString()
-        };
-        setBirdAlarms(prev => [...prev, newAlarm]);
-        setAlarmTexto('');
-        showToast('Alarme adicionado à ave!', 'success');
-      };
-
-      const handleRemoveAlarmItem = (id: string) => {
-        setBirdAlarms(prev => prev.filter(a => a.id !== id));
-      };
-
-      const handleToggleAlarmActiveItem = (id: string) => {
-        setBirdAlarms(prev => prev.map(a => a.id === id ? { ...a, ativo: !a.ativo } : a));
-      };
-
-      return (
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <p className="font-bold text-white text-base flex items-center gap-2">
-              <Bell size={18} className="text-amber-400" />
-              Alarmes &amp; Lembretes da Ave
-            </p>
-            <p className="text-xs text-theme-text-muted">
-              Programe lembretes para medicação, pesagem, vacinação ou manejo desta ave (opcional).
-            </p>
-          </div>
-
-          {/* Form novo alarme */}
-          <div className="bg-theme-base/80 border border-theme-border rounded-2xl p-4 space-y-3 shadow-inner">
-            <p className="text-xs font-black text-white flex items-center gap-1.5">
-              <Plus size={14} className="text-theme-primary" />
-              Configurar Alarme
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Clock size={12} className="text-amber-400" /> Horário
-                </label>
-                <input
-                  type="time"
-                  value={alarmHora}
-                  onChange={e => setAlarmHora(e.target.value)}
-                  className="w-full bg-theme-surface border border-theme-border rounded-xl px-3 py-2 text-sm text-white font-bold focus:border-theme-primary outline-none [color-scheme:dark]"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Calendar size={12} className="text-theme-primary" /> Frequência
-                </label>
-                <button
-                  type="button"
-                  onClick={handleToggleAll}
-                  className={`w-full py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    isAllDays
-                      ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 font-black'
-                      : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
-                  }`}
-                >
-                  <Check size={13} className={isAllDays ? 'opacity-100 text-amber-400' : 'opacity-0'} />
-                  De Segunda a Segunda
-                </button>
-              </div>
-            </div>
-
-            {/* Chips dos dias */}
-            <div>
-              <label className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1.5 block">
-                Dias da Semana Selecionados:
-              </label>
-              <div className="grid grid-cols-7 gap-1.5">
-                {DIAS_DA_SEMANA_ADD.map(d => {
-                  const isSelected = alarmDays.includes(d.id);
-                  const isToday = todayDayOfWeek === d.id;
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => handleToggleDayItem(d.id)}
-                      title={d.full}
-                      className={`py-2 text-center rounded-xl text-xs font-black transition-all cursor-pointer relative ${
-                        isSelected
-                          ? 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
-                          : 'bg-theme-surface hover:bg-white/5 border border-theme-border/60 text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      {d.label}
-                      {isToday && (
-                        <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ring-2 ring-theme-surface ${isSelected ? 'bg-black' : 'bg-amber-400'}`} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Observação */}
-            <div>
-              <label className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider mb-1 block">
-                Observação do Alarme *
-              </label>
-              <input
-                type="text"
-                value={alarmTexto}
-                onChange={e => setAlarmTexto(e.target.value)}
-                placeholder="Ex: Aplicar vermífugo / Pesar ave / Separar para acasalamento..."
-                className="w-full bg-theme-surface border border-theme-border rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white placeholder-theme-text-muted/60 focus:border-theme-primary outline-none transition-colors"
-              />
-              <p className="text-[10px] text-theme-text-muted mt-1">
-                Esta mensagem aparecerá em destaque quando o alarme soar no dia e horário programados.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAddAlarmItem}
-              className="w-full py-2.5 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <Plus size={14} /> Adicionar Alarme à Ave
-            </button>
-          </div>
-
-          {/* Lista de alarmes já adicionados */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Bell size={13} className="text-theme-primary" />
-                Alarmes Cadastrados ({birdAlarms.length})
-              </p>
-            </div>
-
-            {birdAlarms.length === 0 ? (
-              <div className="text-center py-4 px-3 bg-theme-base/30 border border-theme-border/40 rounded-xl border-dashed">
-                <p className="text-xs text-theme-text-muted">Nenhum alarme adicionado ainda.</p>
-                <p className="text-[10px] text-theme-text-muted/60 mt-0.5">Se não precisar de lembretes para esta ave, basta clicar em Salvar Ave abaixo.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {birdAlarms.map(a => {
-                  const isScheduledToday = a.ativo && a.diasSemana.includes(todayDayOfWeek);
-                  return (
-                    <div
-                      key={a.id}
-                      className={`p-3 rounded-xl border flex items-start justify-between gap-3 ${
-                        !a.ativo
-                          ? 'bg-theme-base/40 border-theme-border/40 opacity-60'
-                          : isScheduledToday
-                          ? 'bg-amber-500/10 border-amber-500/50'
-                          : 'bg-theme-base border-theme-border/70'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAlarmActiveItem(a.id)}
-                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer shrink-0 mt-0.5 ${
-                            a.ativo
-                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                              : 'bg-theme-surface text-theme-text-muted border-theme-border'
-                          }`}
-                        >
-                          <Bell size={13} />
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`text-xs font-black break-words ${a.ativo ? 'text-white' : 'text-theme-text-muted line-through'}`}>
-                              {a.texto}
-                            </p>
-                            {isScheduledToday && (
-                              <span className="text-[9px] font-black uppercase bg-amber-500 text-black px-1.5 py-0.2 rounded shrink-0 animate-pulse">
-                                Ativo Hoje
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap text-[10px] text-theme-text-muted">
-                            {a.hora && (
-                              <span className="font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded flex items-center gap-1">
-                                <Clock size={10} /> {a.hora}
-                              </span>
-                            )}
-                            <span>
-                              {a.diasSemana.length === 7
-                                ? 'De Segunda a Segunda'
-                                : a.diasSemana.map(id => DIAS_DA_SEMANA_ADD.find(d => d.id === id)?.label).join(', ')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAlarmItem(a.id)}
-                        className="text-theme-text-muted hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-                        title="Remover alarme"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
   };
 
   const handleCardTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -1305,16 +1040,14 @@ export function AddBirdModal() {
               <X size={20} />
             </button>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-theme-text-muted mb-1 overflow-x-auto hide-scrollbar py-0.5">
+          <div className="flex items-center gap-2 text-xs text-theme-text-muted mb-1">
             <span className={step >= 0 ? 'text-theme-primary font-bold' : ''}>Identificação</span>
-            <ChevronRight size={12} className="shrink-0" />
+            <ChevronRight size={12} />
             <span className={step >= 1 ? 'text-theme-primary font-bold' : ''}>Características</span>
-            <ChevronRight size={12} className="shrink-0" />
+            <ChevronRight size={12} />
             <span className={step >= 2 ? 'text-theme-primary font-bold' : ''}>Pedigree</span>
-            <ChevronRight size={12} className="shrink-0" />
+            <ChevronRight size={12} />
             <span className={step >= 3 ? 'text-theme-primary font-bold' : ''}>Vacinas</span>
-            <ChevronRight size={12} className="shrink-0" />
-            <span className={step >= 4 ? 'text-theme-primary font-bold' : ''}>Alarmes</span>
           </div>
           <StepDots total={TOTAL_STEPS} current={step} />
         </div>

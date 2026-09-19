@@ -21,15 +21,6 @@ export type Breed = {
   conversaoAlimentar?: number; // Taxa de conversão alimentar (ex: 2.2)
 };
 
-export type BirdAlarm = {
-  id: string;
-  texto: string;           // observação que irá aparecer quando o alarme soar
-  hora?: string;           // hora programada (ex: "08:00")
-  diasSemana: number[];    // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-  ativo: boolean;
-  criadoEm: string;
-};
-
 export type Bird = {
   id: string;
   anilha: string;
@@ -61,7 +52,6 @@ export type Bird = {
   compradorContato?: string;
   motivoBaixa?: string;
   dataCadastro?: string;
-  alarmes?: BirdAlarm[];
 };
 
 export type VitrineMeta = {
@@ -187,7 +177,6 @@ export type EggLot = {
   observacao?: string;
   registros?: EggDailyRecord[];
   movimentacoes?: LotMovementRecord[];
-  alarmes?: LotAlarm[];
 };
 
 export type WeightRecord = {
@@ -196,14 +185,6 @@ export type WeightRecord = {
   pesoMedioG: number;     // peso médio em gramas (ex: 2450)
   observacao?: string;
   avesPesadas?: number;   // quantidade de aves pesadas na amostra (mín. 5)
-};
-
-export type LotAlarm = {
-  id: string;
-  texto: string;
-  diasSemana: number[];   // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-  ativo: boolean;
-  criadoEm: string;
 };
 
 export type MeatLot = {
@@ -219,7 +200,6 @@ export type MeatLot = {
   racaId?: string;
   observacao?: string;
   movimentacoes?: LotMovementRecord[];
-  alarmes?: LotAlarm[];
   ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
   consumoRacaoAve?: number;    // Consumo de ração g/ave/dia (ex: 130g)
   pesagens?: WeightRecord[];   // Registro histórico de pesagens periódicas
@@ -1203,8 +1183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataVenda: localBird?.dataVenda,
             compradorNome: localBird?.compradorNome,
             compradorContato: localBird?.compradorContato,
-            motivoBaixa: localBird?.motivoBaixa,
-            alarmes: localBird?.alarmes || b.alarmes || []
+            motivoBaixa: localBird?.motivoBaixa
           };
         });
 
@@ -1325,8 +1304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
           observacao: l.observacao || local?.observacao || '',
           registros: finalRegs,
-          movimentacoes: finalMovs,
-          alarmes: Array.isArray(l.alarmes) ? l.alarmes : (local?.alarmes || [])
+          movimentacoes: finalMovs
         };
       });
 
@@ -1393,8 +1371,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ganhoGramasDia: l.ganho_gramas_dia !== undefined ? l.ganho_gramas_dia : (l.ganhoGramasDia || local?.ganhoGramasDia || undefined),
           consumoRacaoAve: l.consumo_racao_ave !== undefined ? l.consumo_racao_ave : (l.consumoRacaoAve || local?.consumoRacaoAve || undefined),
           pesagens: Array.isArray(l.pesagens) ? l.pesagens : (local?.pesagens || []),
-          movimentacoes: finalMovs,
-          alarmes: Array.isArray(l.alarmes) ? l.alarmes : (local?.alarmes || [])
+          movimentacoes: finalMovs
         };
       });
 
