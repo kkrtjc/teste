@@ -218,6 +218,7 @@ export type FarmSettings = {
 
 type AppContextType = {
   isReady: boolean;
+  isInitialSyncDone: boolean;
   breeds: Breed[];
   addBreed: (breed: Breed) => void;
   editBreed: (id: string, updatedBreed: Partial<Breed>) => void;
@@ -466,6 +467,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, isCurrentUserAdmin]);
 
   const [isReady, setIsReady] = useState(false);
+  const [isInitialSyncDone, setIsInitialSyncDone] = useState(false);
 
   const [breeds, setBreeds] = useState<Breed[]>([]);
   const [birds, setBirds] = useState<Bird[]>([]);
@@ -615,9 +617,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Helper para carregar o cache offline (usado como fallback quando offline)
   const loadFromLocalForage = useCallback(async () => {
-    if (!user) return;
+    if (!user) return 0;
     // Usa o getter assíncrono para ler tombstones do IndexedDB (fonte primária no iOS)
     const deletedBirdIds = await getDeletedBirdIdsAsync();
+    let loadedBirdsCount = 0;
 
     const storageItems = [
       {
@@ -648,6 +651,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setter: (d: any) => {
           const list = Array.isArray(d) ? (d as Bird[]) : [];
           const filtered = list.filter(b => b && b.id && !deletedBirdIds.has(b.id));
+          loadedBirdsCount = filtered.length;
           const mapped = filtered.map(b => {
             const parsed = parseBirdVitrine(b.observacoes);
             const inVit = b.inVitrine !== undefined ? b.inVitrine : parsed.inVitrine;
@@ -718,6 +722,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
     }));
+    return loadedBirdsCount;
   }, [user, isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync]);
 
   const isSyncingRef = useRef(false);
@@ -1531,22 +1536,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
         setActiveBreed('');
         setIsReady(true);
+        setIsInitialSyncDone(true);
         return;
       }
 
-      // ── Carrega cache local imediatamente → tela nunca aparece zerada ──
-      // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
-      await loadFromLocalForage();
-      setIsReady(true);
+      setIsInitialSyncDone(false);
 
-      // ── Sincroniza com a nuvem em background (sem bloquear a tela) ──
+      // ── Carrega cache local imediatamente → tela nunca aparece zerada se já houver dados ──
+      // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
+      const localBirdsCount = await loadFromLocalForage();
+      if (localBirdsCount > 0) {
+        setIsReady(true);
+        setIsInitialSyncDone(true);
+      }
+
+      // ── Sincroniza com a nuvem em background ──
       // Isso corrige dados desatualizados silenciosamente após o app já estar visível
       if (isSupabaseConfigured && navigator.onLine) {
         processSyncQueue().catch(() => {});
-        syncWithSupabaseBackground(true).catch(err => {
+        const syncPromise = syncWithSupabaseBackground(true).catch(err => {
           console.warn('[LoadData] Falha na sync background:', err);
         });
+
+        // Se o cache local ainda não tinha aves, aguarda a nuvem terminar
+        // ou até 2.5s de timeout de segurança para não travar a interface
+        if (localBirdsCount === 0) {
+          await Promise.race([
+            syncPromise,
+            new Promise(resolve => setTimeout(resolve, 2500))
+          ]);
+        }
       }
+
+      setIsReady(true);
+      setIsInitialSyncDone(true);
     }
 
     loadData();
@@ -2864,6 +2887,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const contextValue = useMemo(() => ({
     isReady,
+    isInitialSyncDone,
     breeds, addBreed, editBreed, removeBreed,
     birds, addBird, editBird, removeBird,
     couples, addCouple, editCouple, removeCouple,
@@ -2887,7 +2911,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
   }), [
-    isReady, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
+    isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
     isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen,
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,

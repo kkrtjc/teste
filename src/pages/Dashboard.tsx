@@ -1,15 +1,35 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bird, Baby, Sparkles, Heart, Award, Layers 
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
+import { useAuth } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots, isReady } = useAppContext();
+  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots, isReady, isInitialSyncDone } = useAppContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
+
+  // Snapshot síncrono do localStorage para carregamento instantâneo a 0ms
+  const [cachedStats, setCachedStats] = useState<{
+    totalAves: number;
+    totalMachos: number;
+    totalFemeas: number;
+    totalPintinhos: number;
+    totalLotes: number;
+    totalRacas: number;
+  } | null>(() => {
+    try {
+      const u = localStorage.getItem('@mura-manager:cached-user');
+      const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
+      const raw = localStorage.getItem(`@mura-manager:dashboard-stats:${uid}`);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  });
 
   const stats = useMemo(() => {
     let total = 0;
@@ -60,9 +80,29 @@ export function Dashboard() {
       totalMachos: machos,
       totalFemeas: femeas + avulsasPostura,
       totalPintinhos: pintinhos + avulsasPintinhos,
-      totalLotes: totalLotes
+      totalLotes: totalLotes,
+      totalRacas: breeds.length
     };
-  }, [birds, eggLots, meatLots, incubationLots]);
+  }, [birds, eggLots, meatLots, incubationLots, breeds.length]);
+
+  // Persiste snapshot no localStorage assim que os dados reais são computados
+  useEffect(() => {
+    if (stats.totalAves > 0 || isInitialSyncDone) {
+      setCachedStats(stats);
+      try {
+        const uid = user?.id || 'guest';
+        localStorage.setItem(`@mura-manager:dashboard-stats:${uid}`, JSON.stringify(stats));
+      } catch {}
+    }
+  }, [stats, isInitialSyncDone, user?.id]);
+
+  // Estado de carregamento: ainda não terminou a sincronização inicial e não temos nem cache nem aves
+  const isLoading = (!isReady || !isInitialSyncDone) && !cachedStats && stats.totalAves === 0;
+
+  // Estatísticas consolidadas para exibição
+  const displayStats = (stats.totalAves > 0 || isInitialSyncDone)
+    ? stats
+    : (cachedStats || stats);
 
   return (
     <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden pb-6">
@@ -81,12 +121,12 @@ export function Dashboard() {
       </div>
 
       {/* ── Stats grid ── */}
-      {!isReady ? (
+      {!isReady && !cachedStats ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="p-4 rounded-2xl bg-theme-surface/70 border border-theme-border/40 flex flex-col justify-between h-[100px] animate-pulse">
               <div className="flex justify-between items-start">
-                <div className="w-10 h-7 bg-white/10 rounded-lg" />
+                <div className="w-12 h-7 bg-white/10 rounded-lg" />
                 <div className="w-7 h-7 bg-white/5 rounded-lg" />
               </div>
               <div className="w-20 h-3 bg-white/10 rounded" />
@@ -101,7 +141,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{stats.totalAves}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-12 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalAves}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
                 <Bird size={16} />
               </div>
@@ -115,7 +159,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{breeds.length}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-10 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalRacas ?? breeds.length}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
                 <Award size={16} />
               </div>
@@ -129,7 +177,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{stats.totalMachos}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-10 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalMachos}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
                 <Sparkles size={16} />
               </div>
@@ -143,7 +195,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{stats.totalFemeas}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-10 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalFemeas}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
                 <Heart size={16} />
               </div>
@@ -157,7 +213,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{stats.totalPintinhos}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-10 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalPintinhos}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
                 <Baby size={16} />
               </div>
@@ -171,7 +231,11 @@ export function Dashboard() {
             className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{stats.totalLotes}</span>
+              {isLoading ? (
+                <span className="inline-block h-7 w-10 bg-white/10 rounded-lg animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">{displayStats.totalLotes}</span>
+              )}
               <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
                 <Layers size={16} />
               </div>
