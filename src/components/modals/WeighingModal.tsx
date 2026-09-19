@@ -42,10 +42,31 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
   const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
   const [wPeso, setWPeso] = useState('');
   const [wObs, setWObs] = useState('');
+  const [useCalculator, setUseCalculator] = useState(false);
+  const [sampleWeights, setSampleWeights] = useState<string[]>(['', '', '', '', '']);
 
   if (!isOpen || !lote) return null;
 
   const currentPesagens = lote.pesagens || [];
+
+  const handleSampleWeightChange = (index: number, val: string) => {
+    const updated = [...sampleWeights];
+    updated[index] = val;
+    setSampleWeights(updated);
+
+    // Auto-calcula média quando houver valores válidos
+    const validGrams = updated
+      .map(v => parseWeightG(v))
+      .filter(g => g > 0);
+
+    if (validGrams.length > 0) {
+      const avg = Math.round(validGrams.reduce((a, b) => a + b, 0) / validGrams.length);
+      setWPeso(formatWeightG(avg));
+      if (!wObs) {
+        setWObs(`Média de amostragem (${validGrams.length} aves pesadas)`);
+      }
+    }
+  };
 
   const handleSaveWeightRecord = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,14 +80,18 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2),
       data: wData,
       pesoMedioG: pesoG,
-      observacao: wObs.trim() || undefined
+      observacao: wObs.trim() || undefined,
+      avesPesadas: useCalculator ? sampleWeights.filter(w => parseWeightG(w) > 0).length : 5
     };
 
     const updatedPesagens = [...currentPesagens, newRecord].sort((a, b) => a.data.localeCompare(b.data));
     editMeatLot(lote.id, { pesagens: updatedPesagens });
     setWPeso('');
     setWObs('');
-    showToast('Pesagem registrada com sucesso!', 'success');
+    setSampleWeights(['', '', '', '', '']);
+    setUseCalculator(false);
+    showToast('Pesagem registrada com sucesso! Próxima aferição em 15 dias.', 'success');
+    onClose();
   };
 
   const handleDeleteWeightRecord = (recordId: string) => {
@@ -111,14 +136,63 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
         </div>
 
         <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
-          {/* Formulário de Nova Pesagem */}
-          <form onSubmit={handleSaveWeightRecord} className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-4 space-y-3">
-            <p className="text-xs font-black text-white flex items-center gap-1.5">
-              <Plus size={14} className="text-theme-primary" />
-              Nova Aferição de Peso
-            </p>
+          {/* Alerta de 15 dias e amostragem de 5 aves */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+            <Scale className="text-amber-400 shrink-0 mt-0.5" size={18} />
+            <div className="text-xs text-amber-200 leading-snug">
+              <p className="font-bold text-white text-xs">Pesagem periódica (a cada 15 dias)</p>
+              <p className="text-[11px] text-amber-200/90 mt-0.5">
+                Pese <strong>pelo menos 5 aves</strong> representativas deste lote para calcular o peso médio real. Isso calibra com precisão a curva de ganho diário e a data estimada de abate.
+              </p>
+            </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
+          {/* Formulário de Nova Pesagem */}
+          <form onSubmit={handleSaveWeightRecord} className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-4 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-black text-white flex items-center gap-1.5">
+                <Plus size={14} className="text-theme-primary" />
+                Nova Aferição de Peso
+              </p>
+              <button
+                type="button"
+                onClick={() => setUseCalculator(!useCalculator)}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                  useCalculator
+                    ? 'bg-theme-primary text-black border-theme-primary'
+                    : 'bg-theme-surface text-theme-primary border-theme-primary/40 hover:bg-theme-primary/10'
+                }`}
+              >
+                {useCalculator ? '✓ Calculadora de 5 Aves Ativa' : 'Calcular média de 5 aves'}
+              </button>
+            </div>
+
+            {/* Calculadora de 5 aves */}
+            {useCalculator && (
+              <div className="bg-theme-surface/70 border border-theme-primary/30 rounded-xl p-3 space-y-2.5">
+                <p className="text-[11px] font-bold text-theme-primary">
+                  Digite o peso de pelo menos 5 aves (ex: 2.1kg ou 2100g):
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {sampleWeights.map((w, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <label className="text-[9px] font-extrabold text-theme-text-muted block text-center">
+                        Ave {idx + 1}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="kg / g"
+                        value={w}
+                        onChange={e => handleSampleWeightChange(idx, e.target.value)}
+                        className="w-full bg-theme-base border border-theme-border rounded-lg p-1.5 text-xs text-center text-white focus:border-theme-primary outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className={labelCls}>Data da Pesagem</label>
                 <input
@@ -147,7 +221,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
               <label className={labelCls}>Observações (opcional)</label>
               <input
                 type="text"
-                placeholder="Ex: Amostragem de 10 aves na balança"
+                placeholder="Ex: Amostragem de 5 aves na balança digital"
                 value={wObs}
                 onChange={e => setWObs(e.target.value)}
                 className={inputCls}
@@ -156,7 +230,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5"
             >
               <Check size={14} /> Salvar Registro de Peso
             </button>

@@ -136,7 +136,6 @@ export function LotMovementModal({
   const [birdSearch, setBirdSearch] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [motivo, setMotivo] = useState('Mortalidade / Óbito');
-  const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
   const [data, setData] = useState(todayISO());
   const [observacao, setObservacao] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -169,7 +168,6 @@ export function LotMovementModal({
   const handleTipoChange = (newTipo: 'saida' | 'entrada') => {
     setTipo(newTipo);
     setMotivo(newTipo === 'saida' ? 'Mortalidade / Óbito' : 'Introdução / Nova Ave');
-    setMotivoPersonalizado('');
     if (newTipo === 'entrada') {
       setIsRegistered('yes');
       setSelectedBirdIds([]);
@@ -218,7 +216,7 @@ export function LotMovementModal({
       }
     }
 
-    const finalMotivo = motivo === 'Outro' ? (motivoPersonalizado.trim() || 'Outro') : motivo;
+    const finalMotivo = motivo === 'Outro' ? (observacao.trim() || 'Outro') : motivo;
 
     const newRecord: any = {
       id: uid(),
@@ -278,7 +276,6 @@ export function LotMovementModal({
     setQuantidade('');
     setSelectedBirdIds([]);
     setObservacao('');
-    setMotivoPersonalizado('');
     setActiveSubTab('historico');
   };
 
@@ -344,7 +341,7 @@ export function LotMovementModal({
                 </span>
                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                   <Activity size={18} className="text-theme-primary" />
-                  Ajuste & Baixas de Aves
+                  Movimentações do Lote
                 </h2>
               </div>
               <button
@@ -357,23 +354,23 @@ export function LotMovementModal({
             </div>
 
             {/* Info Card current count */}
-            <div className="bg-theme-base border border-theme-border rounded-2xl p-3.5 flex items-center justify-between">
+            <div className="bg-theme-base/80 border border-theme-border rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-inner">
               <div>
-                <p className="text-[10px] font-bold text-theme-text-muted uppercase">Quantidade Atual no Lote</p>
-                <p className="text-2xl font-black text-white">{currentCount} <span className="text-xs font-bold text-theme-text-muted">aves</span></p>
+                <p className="text-[10px] font-extrabold text-theme-text-muted uppercase tracking-wider">Quantidade Atual no Lote</p>
+                <p className="text-2xl font-black text-white leading-tight mt-0.5">{currentCount} <span className="text-xs font-bold text-theme-text-muted">aves</span></p>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('novo')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'novo' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${activeSubTab === 'novo' ? 'bg-theme-primary text-black font-black shadow-md' : 'bg-theme-surface text-theme-text-muted border border-theme-border hover:text-white'}`}
                 >
                   <Plus size={13} /> Nova Movimentação
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('historico')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === 'historico' ? 'bg-theme-primary text-black' : 'bg-theme-surface text-theme-text-muted border border-theme-border'}`}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${activeSubTab === 'historico' ? 'bg-theme-primary text-black font-black shadow-md' : 'bg-theme-surface text-theme-text-muted border border-theme-border hover:text-white'}`}
                 >
                   <History size={13} /> Histórico ({lote.movimentacoes?.length || 0})
                 </button>
@@ -473,7 +470,7 @@ export function LotMovementModal({
                     </div>
                   ) : (
                     /* Quantidade & Data Manual */
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <SectionLabel>Quantidade de Aves</SectionLabel>
                         <input
@@ -514,26 +511,12 @@ export function LotMovementModal({
                     </select>
                   </div>
 
-                  {motivo === 'Outro' && (
-                    <div>
-                      <SectionLabel>Especifique o Motivo</SectionLabel>
-                      <input
-                        type="text"
-                        placeholder="Descreva o motivo..."
-                        value={motivoPersonalizado}
-                        onChange={e => setMotivoPersonalizado(e.target.value)}
-                        className={inputCls}
-                        required
-                      />
-                    </div>
-                  )}
-
                   {/* Observações */}
                   <div>
                     <SectionLabel>Observações Adicionais (Opcional)</SectionLabel>
                     <textarea
                       rows={2}
-                      placeholder="Ex: 2 morreram de frio e 1 foi separada por machucado..."
+                      placeholder={motivo === 'Outro' ? "Especifique o motivo ou detalhes da ocorrência..." : "Ex: 2 morreram de frio e 1 foi separada por machucado..."}
                       value={observacao}
                       onChange={e => setObservacao(e.target.value)}
                       className={inputCls + " resize-none"}
@@ -542,7 +525,7 @@ export function LotMovementModal({
 
                   {/* Preview de Resultado */}
                   {effectiveQty > 0 && (
-                    <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
+                    <div className={`p-3.5 rounded-xl border text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 ${
                       tipo === 'saida' ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                     }`}>
                       <span>Saldo estimado do lote após registrar:</span>
@@ -559,14 +542,14 @@ export function LotMovementModal({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="flex-1 py-3 bg-theme-base border border-theme-border rounded-xl text-xs font-bold text-theme-text-muted hover:text-white transition-colors"
+                      className="flex-1 py-3 bg-theme-base border border-theme-border rounded-xl text-xs font-bold text-theme-text-muted hover:text-white transition-colors cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${
-                        tipo === 'saida' ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-emerald-500 text-black hover:bg-emerald-400'
+                      className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg ${
+                        tipo === 'saida' ? 'bg-red-500 text-white hover:bg-red-600 shadow-red-900/30' : 'bg-theme-primary text-black hover:opacity-90 shadow-theme-primary/30'
                       }`}
                     >
                       {tipo === 'saida' ? 'Confirmar Baixa' : 'Confirmar Entrada'}

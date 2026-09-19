@@ -177,6 +177,7 @@ export type EggLot = {
   observacao?: string;
   registros?: EggDailyRecord[];
   movimentacoes?: LotMovementRecord[];
+  alarmes?: LotAlarm[];
 };
 
 export type WeightRecord = {
@@ -184,6 +185,15 @@ export type WeightRecord = {
   data: string;           // YYYY-MM-DD
   pesoMedioG: number;     // peso médio em gramas (ex: 2450)
   observacao?: string;
+  avesPesadas?: number;   // quantidade de aves pesadas na amostra (mín. 5)
+};
+
+export type LotAlarm = {
+  id: string;
+  texto: string;
+  diasSemana: number[];   // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+  ativo: boolean;
+  criadoEm: string;
 };
 
 export type MeatLot = {
@@ -199,6 +209,7 @@ export type MeatLot = {
   racaId?: string;
   observacao?: string;
   movimentacoes?: LotMovementRecord[];
+  alarmes?: LotAlarm[];
   ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
   consumoRacaoAve?: number;    // Consumo de ração g/ave/dia (ex: 130g)
   pesagens?: WeightRecord[];   // Registro histórico de pesagens periódicas
@@ -1303,7 +1314,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           custoProdPadrao: l.custo_prod_padrao || l.custoProdPadrao || local?.custoProdPadrao || 0.30,
           observacao: l.observacao || local?.observacao || '',
           registros: finalRegs,
-          movimentacoes: finalMovs
+          movimentacoes: finalMovs,
+          alarmes: Array.isArray(l.alarmes) ? l.alarmes : (local?.alarmes || [])
         };
       });
 
@@ -1370,7 +1382,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ganhoGramasDia: l.ganho_gramas_dia !== undefined ? l.ganho_gramas_dia : (l.ganhoGramasDia || local?.ganhoGramasDia || undefined),
           consumoRacaoAve: l.consumo_racao_ave !== undefined ? l.consumo_racao_ave : (l.consumoRacaoAve || local?.consumoRacaoAve || undefined),
           pesagens: Array.isArray(l.pesagens) ? l.pesagens : (local?.pesagens || []),
-          movimentacoes: finalMovs
+          movimentacoes: finalMovs,
+          alarmes: Array.isArray(l.alarmes) ? l.alarmes : (local?.alarmes || [])
         };
       });
 
