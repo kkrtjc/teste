@@ -54,38 +54,13 @@ export function Dashboard() {
       }
     });
 
-    // Soma as aves avulsas / não cadastradas presentes em lotes ativos
-    let avulsasPostura = 0;
-    (eggLots || []).forEach(l => {
-      if (l.status !== 'Encerrado') {
-        const t = (l.qtdFemeas !== undefined && l.qtdFemeas !== null) ? Number(l.qtdFemeas) : (l.femeasIds?.length || 0);
-        const cad = l.femeasIds?.length || 0;
-        avulsasPostura += Math.max(0, t - cad);
-      }
-    });
-
-    let avulsasOutros = 0;
-    let avulsasPintinhos = 0;
-    (meatLots || []).forEach(l => {
-      if (l.status !== 'Abatido') {
-        const t = (l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0);
-        const cad = l.avesIds?.length || 0;
-        const diff = Math.max(0, t - cad);
-        if (l.id.startsWith('chick-')) {
-          avulsasPintinhos += diff;
-        } else {
-          avulsasOutros += diff;
-        }
-      }
-    });
-
     const totalLotes = (eggLots?.length || 0) + (meatLots?.length || 0) + (incubationLots?.length || 0);
 
     return {
-      totalAves: total + avulsasPostura + avulsasOutros + avulsasPintinhos,
+      totalAves: total,
       totalMachos: machos,
-      totalFemeas: femeas + avulsasPostura,
-      totalPintinhos: pintinhos + avulsasPintinhos,
+      totalFemeas: femeas,
+      totalPintinhos: pintinhos,
       totalLotes: totalLotes,
       totalRacas: breeds.length
     };
@@ -158,7 +133,7 @@ export function Dashboard() {
                 <Bird size={16} />
               </div>
             </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Aves</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Aves Cadastradas</p>
           </div>
 
           {/* Raças Card */}
