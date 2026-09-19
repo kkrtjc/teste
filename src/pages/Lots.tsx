@@ -472,10 +472,10 @@ export function Lots() {
     return <ModuleLockedPaywall module="lots" />;
   }
 
-  const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'|'crescimento'>('postura');
+  const [activeTab, setActiveTab] = useState<'postura'|'engorda'|'pintinhos'>('postura');
   const [generatingLotId, setGeneratingLotId] = useState<string | null>(null);
 
-  const handleShareLotPdf = async (lote: any, lotType: 'cruzador' | 'incubacao' | 'engorda' | 'postura' | 'pintinhos' | 'crescimento') => {
+  const handleShareLotPdf = async (lote: any, lotType: 'cruzador' | 'incubacao' | 'engorda' | 'postura' | 'pintinhos') => {
     setGeneratingLotId(lote.id);
     try {
       const blob = await generateLotPdf({
@@ -508,7 +508,11 @@ export function Lots() {
     if (location.state) {
       const stateObj = location.state as any;
       if (stateObj.tab) {
-        setActiveTab(stateObj.tab);
+        if (stateObj.tab === 'crescimento') {
+          setActiveTab('engorda');
+        } else {
+          setActiveTab(stateObj.tab);
+        }
       }
     }
     window.scrollTo(0, 0);
@@ -535,6 +539,7 @@ export function Lots() {
   const [eBaia, setEBaia] = useState('');
   const [eRaca, setERaca] = useState('');
   const [eDataInicio, setEDataInicio] = useState(todayISO());
+  const [eIdadeDias, setEIdadeDias] = useState('');
   const [eMode, setEMode] = useState<'select'|'qty'>('select');
   const [eAves, setEAves] = useState<string[]>([]);
   const [eQtd, setEQtd] = useState('');
@@ -564,30 +569,21 @@ export function Lots() {
   const [showPintinhos, setShowPintinhos] = useState(false);
   const [piBaia, setPiBaia] = useState('');
   const [piRaca, setPiRaca] = useState('');
-  const [piDataInicio, setPiDataInicio] = useState(todayISO());
-  const [piMode, setPiMode] = useState<'select'|'qty'>('select');
-  const [piAves, setPiAves] = useState<string[]>([]);
-  const [piQtd, setPiQtd] = useState('');
-  const [piSearch, setPiSearch] = useState('');
+  const [piDataNascimento, setPiDataNascimento] = useState(todayISO());
   const [piPesoInicial, setPiPesoInicial] = useState('');
+  const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo'>('Criatório');
+  const [piOrigemPais, setPiOrigemPais] = useState<'nenhum' | 'criatorio' | 'externo'>('nenhum');
+  const [piPaiId, setPiPaiId] = useState('');
+  const [piMaeId, setPiMaeId] = useState('');
+  const [piPaiNome, setPiPaiNome] = useState('');
+  const [piMaeNome, setPiMaeNome] = useState('');
+  const [piQtd, setPiQtd] = useState('');
   const [piObs, setPiObs] = useState('');
-
-  // Crescimento Lot states
-  const [showCrescimento, setShowCrescimento] = useState(false);
-  const [crBaia, setCrBaia] = useState('');
-  const [crRaca, setCrRaca] = useState('');
-  const [crDataInicio, setCrDataInicio] = useState(todayISO());
-  const [crMode, setCrMode] = useState<'select'|'qty'>('select');
-  const [crAves, setCrAves] = useState<string[]>([]);
-  const [crQtd, setCrQtd] = useState('');
-  const [crSearch, setCrSearch] = useState('');
-  const [crPesoInicial, setCrPesoInicial] = useState('');
-  const [crObs, setCrObs] = useState('');
 
   // Confirmation Modal state for Lot Quantity Verification
   const [confirmLotModal, setConfirmLotModal] = useState<{
     isOpen: boolean;
-    lotType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
+    lotType: 'postura' | 'engorda';
     selectedCount: number;
     extraCount: number;
     sumTotal: number;
@@ -607,11 +603,9 @@ export function Lots() {
 
   const activeFemales = birds.filter(b=>b.sexo==='Fêmea'&&b.status!=='Vendido'&&b.status!=='Faleceu');
   const activeBirds = birds.filter(b=>b.status!=='Vendido'&&b.status!=='Faleceu');
-  const activeChicks = birds.filter(b=>b.status==='Crescimento');
 
-  const filterEngorda = meatLots.filter(l => !l.id.startsWith('chick-') && !l.id.startsWith('growth-'));
+  const filterEngorda = meatLots.filter(l => !l.id.startsWith('chick-'));
   const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
-  const filterCrescimento = meatLots.filter(l => l.id.startsWith('growth-'));
 
   // ── Filtro de Status dos Lotes (Ativos / Encerrados / Todos) ──
   const [lotStatusFilter, setLotStatusFilter] = useState<'ativos' | 'encerrados' | 'todos'>('ativos');
@@ -634,33 +628,25 @@ export function Lots() {
     return filterPintinhos;
   }, [filterPintinhos, lotStatusFilter]);
 
-  const displayedCrescimento = useMemo(() => {
-    if (lotStatusFilter === 'ativos') return filterCrescimento.filter(l => l.status !== 'Abatido');
-    if (lotStatusFilter === 'encerrados') return filterCrescimento.filter(l => l.status === 'Abatido');
-    return filterCrescimento;
-  }, [filterCrescimento, lotStatusFilter]);
-
   const [confirmTransfer, setConfirmTransfer] = useState<{
     isOpen: boolean;
     lote: any | null;
-    target: 'engorda' | 'crescimento';
   }>({
     isOpen: false,
     lote: null,
-    target: 'engorda',
   });
 
   const [movementModal, setMovementModal] = useState<{
     isOpen: boolean;
     lote: any | null;
-    loteType: 'postura' | 'engorda' | 'pintinhos' | 'crescimento';
+    loteType: 'postura' | 'engorda' | 'pintinhos';
   }>({
     isOpen: false,
     lote: null,
     loteType: 'engorda',
   });
 
-  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || showCrescimento || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || showQuickBreedModal || weighModal.isOpen;
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || showQuickBreedModal || weighModal.isOpen;
   useEffect(() => {
     if (isAnyModalOpen) {
       document.body.classList.add('modal-open-lock');
@@ -672,24 +658,26 @@ export function Lots() {
     };
   }, [isAnyModalOpen]);
 
-  const openTransferModal = (lote: any, target: 'engorda' | 'crescimento') => {
-    setConfirmTransfer({ isOpen: true, lote, target });
+  const openTransferModal = (lote: any) => {
+    setConfirmTransfer({ isOpen: true, lote });
   };
 
   const executeTransfer = () => {
     if (!confirmTransfer.lote) return;
-    const { lote, target } = confirmTransfer;
+    const { lote } = confirmTransfer;
 
     removeMeatLot(lote.id);
 
-    const newId = target === 'engorda' ? 'meat-' + uid() : 'growth-' + uid();
+    const newId = 'meat-' + uid();
+    const idadeDias = calcDays(lote.dataNascimento || lote.dataInicio);
 
     addMeatLot({
       id: newId,
       baia: lote.baia,
       avesIds: lote.avesIds || [],
       qtdAves: lote.qtdAves || 0,
-      dataInicio: lote.dataInicio,
+      dataInicio: todayISO(),
+      idadeInicialDias: idadeDias,
       pesoMedioInicial: lote.pesoMedioInicial || undefined,
       pesoMeta: lote.pesoMeta,
       status: 'Crescimento',
@@ -697,8 +685,9 @@ export function Lots() {
       observacao: lote.observacao,
     });
 
-    setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' });
-    setActiveTab(target);
+    setConfirmTransfer({ isOpen: false, lote: null });
+    setActiveTab('engorda');
+    showToast?.('Lote transferido para Engorda / Abate com sucesso!', 'success');
   };
 
   // ── Handlers de Seleção sem Perder Estado ──
@@ -765,7 +754,7 @@ export function Lots() {
 
   const resetEngorda = () => {
     setShowEngorda(false); setEBaia(''); setERaca(''); setEDataInicio(todayISO());
-    setEMode('select'); setEAves([]); setEQtd(''); setESearch('');
+    setEIdadeDias(''); setEMode('select'); setEAves([]); setEQtd(''); setESearch('');
     setEPesoInicial(''); setEPesoMeta(''); setEObs('');
     setEGanhoGramasDia(''); setEConsumoRacaoAve('');
   };
@@ -785,6 +774,7 @@ export function Lots() {
         avesIds: eAves,
         qtdAves: finalTotal,
         dataInicio: eDataInicio,
+        idadeInicialDias: eIdadeDias.trim() ? (parseInt(eIdadeDias) || 0) : undefined,
         pesoMedioInicial: ePesoInicial.trim() || undefined,
         pesoMeta: ePesoMeta.trim() || undefined,
         status: 'Crescimento',
@@ -814,97 +804,44 @@ export function Lots() {
   };
 
   // Pintinhos methods
-  const handlePintinhoToggle = (id: string) => {
-    setPiAves(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
-  };
-  const handlePintinhoSelectAll = (ids: string[]) => {
-    const allSel = ids.every(id=>piAves.includes(id));
-    setPiAves(allSel ? piAves.filter(id=>!ids.includes(id)) : Array.from(new Set([...piAves,...ids])));
-  };
   const resetPintinhos = () => {
-    setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataInicio(todayISO());
-    setPiMode('select'); setPiAves([]); setPiQtd(''); setPiSearch(''); setPiPesoInicial(''); setPiObs('');
+    setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataNascimento(todayISO());
+    setPiPesoInicial(''); setPiOrigem('Criatório'); setPiOrigemPais('nenhum');
+    setPiPaiId(''); setPiMaeId(''); setPiPaiNome(''); setPiMaeNome('');
+    setPiQtd(''); setPiObs('');
   };
+
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!piBaia.trim()) return;
 
-    const numSel = piAves.length;
-    const numExtra = parseInt(piQtd) || 0;
-    const sumTotal = numSel + numExtra;
+    const qtd = parseInt(piQtd) || 0;
+    if (qtd <= 0) {
+      showToast?.('Informe a quantidade de pintinhos no lote.', 'warning');
+      return;
+    }
 
-    const doSave = (finalTotal: number) => {
-      addMeatLot({
-        id: 'chick-' + uid(),
-        baia: piBaia.trim(),
-        avesIds: piAves,
-        qtdAves: finalTotal,
-        dataInicio: piDataInicio,
-        pesoMedioInicial: piPesoInicial.trim() || undefined,
-        status: 'Crescimento',
-        raca: piRaca.trim() || undefined,
-        observacao: piObs.trim() || undefined,
-      });
-      resetPintinhos();
-    };
-
-    setConfirmLotModal({
-      isOpen: true,
-      lotType: 'pintinhos',
-      selectedCount: numSel,
-      extraCount: numExtra,
-      sumTotal,
-      customTotalInput: String(sumTotal),
-      isAskingCustom: false,
-      pendingSaveFn: doSave,
+    addMeatLot({
+      id: 'chick-' + uid(),
+      baia: piBaia.trim(),
+      avesIds: [],
+      qtdAves: qtd,
+      dataInicio: piDataNascimento,
+      dataNascimento: piDataNascimento,
+      origem: piOrigem,
+      origemPais: piOrigemPais,
+      paiId: piOrigemPais === 'criatorio' && piPaiId ? piPaiId : undefined,
+      maeId: piOrigemPais === 'criatorio' && piMaeId ? piMaeId : undefined,
+      paiNome: piOrigemPais === 'externo' && piPaiNome.trim() ? piPaiNome.trim() : undefined,
+      maeNome: piOrigemPais === 'externo' && piMaeNome.trim() ? piMaeNome.trim() : undefined,
+      pesoMedioInicial: piPesoInicial.trim() || undefined,
+      status: 'Crescimento',
+      raca: piRaca.trim() || undefined,
+      observacao: piObs.trim() || undefined,
     });
-  };
 
-  // Crescimento methods
-  const handleCrescimentoToggle = (id: string) => {
-    setCrAves(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
-  };
-  const handleCrescimentoSelectAll = (ids: string[]) => {
-    const allSel = ids.every(id=>crAves.includes(id));
-    setCrAves(allSel ? crAves.filter(id=>!ids.includes(id)) : Array.from(new Set([...crAves,...ids])));
-  };
-  const resetCrescimento = () => {
-    setShowCrescimento(false); setCrBaia(''); setCrRaca(''); setCrDataInicio(todayISO());
-    setCrMode('select'); setCrAves([]); setCrQtd(''); setCrSearch(''); setCrPesoInicial(''); setCrObs('');
-  };
-  const handleSaveCrescimentoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!crBaia.trim()) return;
-
-    const numSel = crAves.length;
-    const numExtra = parseInt(crQtd) || 0;
-    const sumTotal = numSel + numExtra;
-
-    const doSave = (finalTotal: number) => {
-      addMeatLot({
-        id: 'growth-' + uid(),
-        baia: crBaia.trim(),
-        avesIds: crAves,
-        qtdAves: finalTotal,
-        dataInicio: crDataInicio,
-        pesoMedioInicial: crPesoInicial.trim() || undefined,
-        status: 'Crescimento',
-        raca: crRaca.trim() || undefined,
-        observacao: crObs.trim() || undefined,
-      });
-      resetCrescimento();
-    };
-
-    setConfirmLotModal({
-      isOpen: true,
-      lotType: 'crescimento',
-      selectedCount: numSel,
-      extraCount: numExtra,
-      sumTotal,
-      customTotalInput: String(sumTotal),
-      isAskingCustom: false,
-      pendingSaveFn: doSave,
-    });
+    resetPintinhos();
+    showToast?.('Lote de pintinhos criado com sucesso!', 'success');
   };
 
   // Detecta aves já cadastradas na Baia informada
@@ -924,16 +861,16 @@ export function Lots() {
     }
   };
 
-  // Lotes de engorda/crescimento que completaram 15 dias sem pesagem
+  // Lotes de engorda que completaram 15 dias sem pesagem
   const lotsNeedingWeighing = useMemo(() => {
-    return (meatLots || []).filter(l => {
+    return (filterEngorda || []).filter(l => {
       if (l.status === 'Abatido') return false;
       const pesagens = [...(l.pesagens || [])].sort((a, b) => a.data.localeCompare(b.data));
       const lastPesagem = pesagens.length > 0 ? pesagens[pesagens.length - 1] : null;
       const daysSince = lastPesagem ? calcDays(lastPesagem.data) : calcDays(l.dataInicio || '');
       return daysSince >= 15;
     });
-  }, [meatLots]);
+  }, [filterEngorda]);
 
   return (
     <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto overflow-x-hidden">
@@ -943,7 +880,7 @@ export function Lots() {
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             Gestão de Lotes
           </h1>
-          <p className="text-xs text-theme-text-muted">Acompanhe postura, engorda, pintinhos e recria do seu criatório</p>
+          <p className="text-xs text-theme-text-muted">Acompanhe postura, engorda e pintinhos do seu criatório</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -962,11 +899,6 @@ export function Lots() {
               <Plus size={16} /> Novo Lote de Pintinhos
             </button>
           )}
-          {activeTab === 'crescimento' && (
-            <button onClick={() => setShowCrescimento(true)} className="btn-primary flex items-center gap-2">
-              <Plus size={16} /> Novo Lote de Crescimento
-            </button>
-          )}
         </div>
       </div>
 
@@ -976,7 +908,6 @@ export function Lots() {
           { id: 'postura', label: 'Lotes de Postura', icon: Egg, count: eggLots.length },
           { id: 'engorda', label: 'Engorda / Abate', icon: Beef, count: filterEngorda.length },
           { id: 'pintinhos', label: 'Pintinhos', icon: Baby, count: filterPintinhos.length },
-          { id: 'crescimento', label: 'Crescimento / Recria', icon: Timer, count: filterCrescimento.length },
         ].map(t => (
           <button
             key={t.id}
@@ -1365,7 +1296,16 @@ export function Lots() {
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
                         <Timer size={11} /> Idade
                       </p>
-                      <p className="text-base font-black text-white">{dias} dias</p>
+                      <p className="text-base font-black text-white">{(lote.idadeInicialDias || 0) + dias} dias</p>
+                      {lote.idadeInicialDias ? (
+                        <p className="text-[9px] text-theme-text-muted truncate">
+                          {lote.idadeInicialDias}d inic. + {dias}d no lote
+                        </p>
+                      ) : (
+                        <p className="text-[9px] text-theme-text-muted truncate">
+                          {dias} dias no lote
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1640,10 +1580,8 @@ export function Lots() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedPintinhos.map(lote => {
-              const dias = calcDays(lote.dataInicio);
+              const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
-              const cadastradasA = lote.avesIds?.length || 0;
-              const avulsasA = Math.max(0, totalA - cadastradasA);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1682,6 +1620,7 @@ export function Lots() {
                         <Timer size={11} /> Idade
                       </p>
                       <p className="text-base font-black text-white">{dias} dias</p>
+                      <p className="text-[9px] text-theme-text-muted">Nasc: {fmtDate(lote.dataNascimento || lote.dataInicio)}</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1697,7 +1636,7 @@ export function Lots() {
                         <Activity size={11} className="text-yellow-400" /> Pintinhos
                       </p>
                       <p className="text-base font-black text-white">{totalA}</p>
-                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasA} cad. + {avulsasA} av.</p>
+                      <p className="text-[9px] text-theme-text-muted truncate">{lote.origem === 'Externo' ? 'Origem externa' : 'Do criatório'}</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1708,49 +1647,56 @@ export function Lots() {
                       <p className="text-[9px] text-theme-text-muted">Até 30 dias</p>
                     </div>
                   </div>
-                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
-                    <div className="flex justify-between items-center mb-2">
+                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4 space-y-2">
+                    <div className="flex justify-between items-center">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase">
-                        Aves no Lote ({totalA})
+                        Origem & Genealogia
                       </p>
-                      <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        lote.origem === 'Externo' 
+                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      }`}>
+                        {lote.origem === 'Externo' ? 'De fora (Externo)' : 'Do meu criatório'}
+                      </span>
                     </div>
-                    {cadastradasA > 0 ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                          {lote.avesIds.map(id => {
-                            const b = birds.find(x => x.id === id);
-                            return b ? (
-                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
-                              </span>
-                            ) : null;
-                          })}
-                          {avulsasA > 0 && (
-                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
-                              +{avulsasA} pintinhos não cadastrados
-                            </span>
-                          )}
+
+                    {/* Pais do criatório */}
+                    {(() => {
+                      const pai = birds.find(b => b.id === lote.paiId);
+                      const mae = birds.find(b => b.id === lote.maeId);
+                      if (pai || mae) {
+                        return (
+                          <div className="bg-theme-base/60 p-2.5 rounded-xl border border-theme-border/50 text-[11px] space-y-1">
+                            <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider block">Pais do Plantel:</span>
+                            <div className="flex flex-wrap gap-2 text-white">
+                              {pai && <span>🐓 Pai: <strong>{pai.anilha}{pai.nome ? ` (${pai.nome})` : ''}</strong></span>}
+                              {mae && <span>🐔 Mãe: <strong>{mae.anilha}{mae.nome ? ` (${mae.nome})` : ''}</strong></span>}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Pais externos */}
+                    {(lote.paiNome || lote.maeNome) && (
+                      <div className="bg-theme-base/60 p-2.5 rounded-xl border border-theme-border/50 text-[11px] space-y-1">
+                        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider block">Pais Externos:</span>
+                        <div className="flex flex-wrap gap-2 text-white">
+                          {lote.paiNome && <span>🐓 Pai: <strong>{lote.paiNome}</strong></span>}
+                          {lote.maeNome && <span>🐔 Mãe: <strong>{lote.maeNome}</strong></span>}
                         </div>
-                        {avulsasA > 0 && (
-                          <p className="text-[10px] text-theme-text-muted">
-                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
-                          </p>
-                        )}
                       </div>
-                    ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">
-                        {totalA > 0 ? `${totalA} pintinhos registrados (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhum pintinho vinculado.'}
-                      </p>
                     )}
-                    {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
+
+                    {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-1 italic">Obs: {lote.observacao}</p>}
                   </div>
-                  <div className="pt-3 border-t border-theme-border/50">
+                  <div className="pt-3 border-t border-theme-border/50 space-y-2">
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
-                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
                     >
                       <span className="flex items-center gap-2 text-theme-primary font-bold">
                         <Activity size={15} className="shrink-0" />
@@ -1760,15 +1706,13 @@ export function Lots() {
                         {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
                       </span>
                     </button>
-                    <p className={labelCls + " mb-2"}>Transferir Lote para</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => openTransferModal(lote, 'crescimento')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                        <Timer size={14} className="text-green-400" /> Crescimento / Recria
-                      </button>
-                      <button onClick={() => openTransferModal(lote, 'engorda')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                        <Beef size={14} className="text-orange-400" /> Engorda / Abate
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openTransferModal(lote)}
+                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Beef size={15} className="text-orange-400" /> Transferir para Engorda / Abate
+                    </button>
                   </div>
                 </div>
               );
@@ -1784,175 +1728,6 @@ export function Lots() {
                 <p className="text-sm">
                   {filterPintinhos.length === 0 
                     ? 'Cadastre um lote para gerenciar o nascimento e primeiros dias dos pintinhos.' 
-                    : 'Alterne o filtro acima para ver outros lotes.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB CONTENT: CRESCIMENTO */}
-      {activeTab === 'crescimento' && (
-        <div className="flex-1 flex flex-col space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Lotes Ativos', value: filterCrescimento.filter(l => l.status !== 'Abatido').length },
-              { 
-                label: 'Aves em Crescimento', 
-                value: filterCrescimento.filter(l => l.status !== 'Abatido').reduce((a, l) => a + Math.max(l.qtdAves || 0, l.avesIds?.length || 0), 0) 
-              },
-            ].map(s => (
-              <div key={s.label} className="premium-card p-4">
-                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
-                <h3 className="text-2xl font-black text-white">{s.value}</h3>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {displayedCrescimento.map(lote => {
-              const dias = calcDays(lote.dataInicio);
-              const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
-              const cadastradasA = lote.avesIds?.length || 0;
-              const avulsasA = Math.max(0, totalA - cadastradasA);
-              return (
-                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Timer size={100} className="text-green-400" /></div>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
-                      <h3 className="font-black text-lg text-white">Lote de Crescimento</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleShareLotPdf(lote, 'crescimento')}
-                        disabled={generatingLotId === lote.id}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                        title="Gerar e compartilhar Ficha Técnica do lote"
-                      >
-                        {generatingLotId === lote.id ? <Loader2 size={13} className="animate-spin text-amber-400" /> : <Send size={13} />}
-                        <span className="hidden sm:inline">Ficha</span>
-                      </button>
-                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
-                      <button 
-                        onClick={() => setDeleteLotConfirm({
-                          id: lote.id,
-                          title: `Apagar Lote de Crescimento (Baia ${lote.baia})?`,
-                          message: 'Deseja realmente apagar este lote de crescimento permanentemente?'
-                        })}
-                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg transition-all cursor-pointer" 
-                        title="Apagar Lote"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Timer size={11} /> Idade
-                      </p>
-                      <p className="text-base font-black text-white">{dias} dias</p>
-                    </div>
-
-                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Scale size={11} className="text-amber-400" /> Peso Inicial
-                      </p>
-                      <p className="text-base font-black text-white truncate">{lote.pesoMedioInicial || '—'}</p>
-                      <p className="text-[9px] text-theme-text-muted">Entrada</p>
-                    </div>
-
-                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Users size={11} /> Aves
-                      </p>
-                      <p className="text-base font-black text-white">{totalA}</p>
-                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasA} cad. + {avulsasA} av.</p>
-                    </div>
-
-                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Activity size={11} className="text-theme-primary" /> Destino
-                      </p>
-                      <p className="text-base font-black text-theme-primary truncate">Plantel / Reprod.</p>
-                      <p className="text-[9px] text-theme-text-muted">Desenvolvimento</p>
-                    </div>
-                  </div>
-                  <div className="pt-3 border-t border-theme-border/50 mt-auto mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase">
-                        Aves no Lote ({totalA})
-                      </p>
-                      <p className="text-[10px] text-theme-text-muted">Início: {fmtDate(lote.dataInicio)}</p>
-                    </div>
-                    {cadastradasA > 0 ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                          {lote.avesIds.map(id => {
-                            const b = birds.find(x => x.id === id);
-                            return b ? (
-                              <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                                {b.anilha}{b.nome ? ` (${b.nome})` : ''}
-                              </span>
-                            ) : null;
-                          })}
-                          {avulsasA > 0 && (
-                            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-1 rounded-md font-bold flex items-center gap-1">
-                              +{avulsasA} aves não cadastradas
-                            </span>
-                          )}
-                        </div>
-                        {avulsasA > 0 && (
-                          <p className="text-[10px] text-theme-text-muted">
-                            Total: <strong className="text-white">{totalA} aves</strong> (<strong className="text-white">{cadastradasA}</strong> cadastradas no plantel + <strong className="text-amber-400">{avulsasA}</strong> avulsas).
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-theme-text-muted italic">
-                        {totalA > 0 ? `${totalA} aves registradas (aves avulsas / não cadastradas individualmente no plantel)` : 'Nenhuma ave vinculada.'}
-                      </p>
-                    )}
-                    {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
-                  </div>
-                  <div className="pt-3 border-t border-theme-border/50">
-                    <button
-                      type="button"
-                      onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'crescimento' })}
-                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
-                    >
-                      <span className="flex items-center gap-2 text-theme-primary font-bold">
-                        <Activity size={15} className="shrink-0" />
-                        <span>Movimentações</span>
-                      </span>
-                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                        {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
-                      </span>
-                    </button>
-                    <p className={labelCls + " mb-2"}>Transferir Lote para</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => openTransferModal(lote, 'engorda')} className="py-2 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                        <Beef size={14} className="text-orange-400" /> Engorda / Abate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {displayedCrescimento.length === 0 && (
-              <div className="col-span-full text-center p-12 bg-theme-surface/30 rounded-xl border-dashed border border-theme-border text-theme-text-muted">
-                <Timer size={40} className="mx-auto mb-3 opacity-50 text-green-400" />
-                <p className="font-bold text-white mb-1">
-                  {filterCrescimento.length === 0 
-                    ? 'Nenhum lote de crescimento cadastrado' 
-                    : `Nenhum lote de crescimento com status "${lotStatusFilter === 'ativos' ? 'Ativo' : lotStatusFilter === 'encerrados' ? 'Encerrado / Transferido' : 'selecionado'}"`}
-                </p>
-                <p className="text-sm">
-                  {filterCrescimento.length === 0 
-                    ? 'Cadastre um lote para gerenciar a recria e crescimento das aves.' 
                     : 'Alterne o filtro acima para ver outros lotes.'}
                 </p>
               </div>
@@ -2200,9 +1975,26 @@ export function Lots() {
                   showToast={showToast}
                 />
 
-                <div className="space-y-1">
-                  <SectionLabel>Data de Início</SectionLabel>
-                  <input type="date" required value={eDataInicio} onChange={e => setEDataInicio(e.target.value)} className={inputCls} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Data de Início *</SectionLabel>
+                    <input type="date" required value={eDataInicio} onChange={e => setEDataInicio(e.target.value)} className={inputCls} />
+                  </div>
+                  <div className="space-y-1">
+                    <SectionLabel>Idade das Aves (em dias) *</SectionLabel>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      inputMode="numeric"
+                      placeholder="Ex: 30"
+                      value={eIdadeDias}
+                      onKeyDown={onlyNumericKeyDown}
+                      onChange={e => setEIdadeDias(sanitizeNumeric(e.target.value))}
+                      className={inputCls}
+                    />
+                    <p className="text-[9px] text-theme-text-muted">Idade inicial ao compor o lote.</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -2367,13 +2159,23 @@ export function Lots() {
             <form onSubmit={handleSavePintinhosSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
+                {/* Baia e Raça */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Baia / Identificação *</SectionLabel>
                     <input required type="text" value={piBaia} onChange={e => setPiBaia(e.target.value)} placeholder="Ex: Baia 05" className={inputCls} />
                   </div>
                   <div className="space-y-1">
-                    <SectionLabel>Raça (opcional)</SectionLabel>
+                    <div className="flex items-center justify-between">
+                      <SectionLabel>Raça (opcional)</SectionLabel>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickBreedModal(true)}
+                        className="text-[10px] text-theme-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        + Nova Raça
+                      </button>
+                    </div>
                     <div className="relative">
                       <select value={piRaca} onChange={e => setPiRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
                         <option value="">-- Selecionar --</option>
@@ -2384,45 +2186,187 @@ export function Lots() {
                   </div>
                 </div>
 
-                {/* 📍 GESTÃO DE FÊMEAS E MACHOS DETECTADOS NA MESMA BAIA */}
-                <BaiaBirdsManagementCard
-                  baia={piBaia}
-                  birds={birds}
-                  selectedBirdIds={piAves}
-                  onIncludeBirds={ids => setPiAves(prev => Array.from(new Set([...prev, ...ids])))}
-                  editBird={editBird}
-                  showToast={showToast}
-                />
-
-                <div className="space-y-1">
-                  <SectionLabel>Data de Início</SectionLabel>
-                  <input type="date" required value={piDataInicio} onChange={e => setPiDataInicio(e.target.value)} className={inputCls} />
-                </div>
-                <div className="space-y-1">
-                  <SectionLabel>Peso Médio Inicial</SectionLabel>
-                  <input type="text" placeholder="Ex: 45g" value={piPesoInicial} onChange={e => setPiPesoInicial(e.target.value)} className={inputCls} />
-                </div>
-
-                <div className="space-y-2">
-                  <SectionLabel>Aves no Lote</SectionLabel>
-                  <ModeToggle mode={piMode} onChange={m => setPiMode(m)} label1="Selecionar pintinhos" label2="Quantidade Adicional" />
-                  {piMode === 'select' ? (
-                    <BirdPicker birds={activeChicks} selected={piAves} onToggle={handlePintinhoToggle} onSelectAll={handlePintinhoSelectAll} search={piSearch} onSearch={setPiSearch} emptyMsg="Nenhum pintinho em crescimento disponível." />
-                  ) : (
-                    <div className="space-y-1">
-                      <SectionLabel>Quantidade Adicional de Pintinhos</SectionLabel>
-                      <input type="number" min="0" inputMode="numeric" placeholder="Ex: 25" value={piQtd} onChange={e => setPiQtd(sanitizeNumeric(e.target.value))} className={inputCls + " text-2xl font-black text-center py-3"} />
+                {/* Data de Nascimento e Peso Inicial */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <SectionLabel>Data de Nascimento *</SectionLabel>
+                    <input type="date" required value={piDataNascimento} onChange={e => setPiDataNascimento(e.target.value)} className={inputCls} />
+                  </div>
+                  <div className="space-y-1">
+                    <SectionLabel>Peso Médio Inicial</SectionLabel>
+                    <input type="text" placeholder="Ex: 40g" value={piPesoInicial} onChange={e => setPiPesoInicial(e.target.value)} className={inputCls} />
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {['35g', '40g', '45g', '50g'].map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPiPesoInicial(p)}
+                          className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                            piPesoInicial === p
+                              ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
+                              : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
                     </div>
-                  )}
-
-                  <div className="bg-theme-base/80 border border-theme-border/60 rounded-xl p-3 flex items-center justify-between text-xs">
-                    <span className="text-theme-text-muted">Total de pintinhos:</span>
-                    <span className="font-black text-white text-sm bg-theme-primary/10 border border-theme-primary/30 px-2.5 py-0.5 rounded-lg text-theme-primary">
-                      {piAves.length} selecionados + {parseInt(piQtd) || 0} adicionais = {piAves.length + (parseInt(piQtd) || 0)} pintinhos
-                    </span>
                   </div>
                 </div>
 
+                {/* Origem dos Pintinhos */}
+                <div className="space-y-1.5">
+                  <SectionLabel>Origem dos Pintinhos *</SectionLabel>
+                  <div className="flex bg-theme-base border border-theme-border rounded-xl p-1 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPiOrigem('Criatório')}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        piOrigem === 'Criatório' ? 'bg-theme-primary text-black shadow-sm font-black' : 'text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      <Home size={14} /> Do meu criatório
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPiOrigem('Externo')}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        piOrigem === 'Externo' ? 'bg-theme-primary text-black shadow-sm font-black' : 'text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      De fora (externo)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pais dos Pintinhos (Opcional) */}
+                <div className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-3.5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>🧬</span> Pais dos Pintinhos (Opcional)
+                    </span>
+                    <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded-lg border border-theme-border">
+                      Opcional
+                    </span>
+                  </div>
+
+                  {/* Escolha do tipo de pais: Nenhum / Criatório / Fora */}
+                  <div className="grid grid-cols-3 gap-1 bg-theme-surface p-1 rounded-xl border border-theme-border/50 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setPiOrigemPais('nenhum')}
+                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
+                        piOrigemPais === 'nenhum' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      Não informar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPiOrigemPais('criatorio')}
+                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
+                        piOrigemPais === 'criatorio' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      Do criatório
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPiOrigemPais('externo')}
+                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
+                        piOrigemPais === 'externo' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
+                      }`}
+                    >
+                      Pais de fora
+                    </button>
+                  </div>
+
+                  {piOrigemPais === 'criatorio' && (
+                    <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Galo / Pai (opcional)</label>
+                        <div className="relative">
+                          <select
+                            value={piPaiId}
+                            onChange={e => setPiPaiId(e.target.value)}
+                            className={inputCls + " appearance-none pr-8 text-xs"}
+                          >
+                            <option value="">-- Selecionar Pai --</option>
+                            {birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(m => (
+                              <option key={m.id} value={m.id}>
+                                {m.anilha}{m.nome ? ` - ${m.nome}` : ''} ({m.raca})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Galinha / Mãe (opcional)</label>
+                        <div className="relative">
+                          <select
+                            value={piMaeId}
+                            onChange={e => setPiMaeId(e.target.value)}
+                            className={inputCls + " appearance-none pr-8 text-xs"}
+                          >
+                            <option value="">-- Selecionar Mãe --</option>
+                            {birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(f => (
+                              <option key={f.id} value={f.id}>
+                                {f.anilha}{f.nome ? ` - ${f.nome}` : ''} ({f.raca})
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {piOrigemPais === 'externo' && (
+                    <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome do Pai (opcional)</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Galo Shamo X"
+                          value={piPaiNome}
+                          onChange={e => setPiPaiNome(e.target.value)}
+                          className={inputCls + " text-xs"}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome da Mãe (opcional)</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Matriz 04"
+                          value={piMaeNome}
+                          onChange={e => setPiMaeNome(e.target.value)}
+                          className={inputCls + " text-xs"}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quantidade de Pintinhos */}
+                <div className="space-y-1">
+                  <SectionLabel>Quantos pintinhos são? (Quantidade) *</SectionLabel>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    inputMode="numeric"
+                    placeholder="Ex: 30"
+                    value={piQtd}
+                    onKeyDown={onlyNumericKeyDown}
+                    onChange={e => setPiQtd(sanitizeNumeric(e.target.value))}
+                    className={inputCls + " text-2xl font-black text-center py-3 text-white"}
+                  />
+                </div>
+
+                {/* Observação */}
                 <div className="space-y-1">
                   <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Nascidos na chocadora..." value={piObs} onChange={e => setPiObs(e.target.value)} className={inputCls + " resize-none"} />
@@ -2430,102 +2374,8 @@ export function Lots() {
 
               </div>
               <div className="p-4 sm:p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
-                <button type="button" onClick={resetPintinhos} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
-                <button type="submit" disabled={!piBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95 cursor-pointer">Criar Lote</button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ── MODAL CRESCIMENTO ── */}
-      {showCrescimento && createPortal(
-        <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
-          onClick={resetCrescimento}
-          onTouchMove={e => {
-            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
-          }}
-        >
-          <div 
-            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
-            onClick={e => e.stopPropagation()}
-            onTouchMove={e => e.stopPropagation()}
-          >
-            <div className="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mt-3 mb-1 shrink-0" />
-            <div className="px-5 pt-3 pb-4 border-b border-theme-border flex items-center justify-between shrink-0">
-              <h3 className="font-black text-lg text-white flex items-center gap-2"><Timer className="text-theme-primary" size={20} />Novo Lote de Crescimento</h3>
-              <button type="button" onClick={resetCrescimento} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSaveCrescimentoSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
-              <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <SectionLabel>Baia / Identificação *</SectionLabel>
-                    <input required type="text" value={crBaia} onChange={e => setCrBaia(e.target.value)} placeholder="Ex: Baia 06" className={inputCls} />
-                  </div>
-                  <div className="space-y-1">
-                    <SectionLabel>Raça (opcional)</SectionLabel>
-                    <div className="relative">
-                      <select value={crRaca} onChange={e => setCrRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
-                        <option value="">-- Selecionar --</option>
-                        {breeds.map(br => <option key={br.id} value={br.nome}>{br.nome}</option>)}
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 📍 GESTÃO DE FÊMEAS E MACHOS DETECTADOS NA MESMA BAIA */}
-                <BaiaBirdsManagementCard
-                  baia={crBaia}
-                  birds={birds}
-                  selectedBirdIds={crAves}
-                  onIncludeBirds={ids => setCrAves(prev => Array.from(new Set([...prev, ...ids])))}
-                  editBird={editBird}
-                  showToast={showToast}
-                />
-
-                <div className="space-y-1">
-                  <SectionLabel>Data de Início</SectionLabel>
-                  <input type="date" required value={crDataInicio} onChange={e => setCrDataInicio(e.target.value)} className={inputCls} />
-                </div>
-                <div className="space-y-1">
-                  <SectionLabel>Peso Médio Inicial</SectionLabel>
-                  <input type="text" placeholder="Ex: 500g" value={crPesoInicial} onChange={e => setCrPesoInicial(e.target.value)} className={inputCls} />
-                </div>
-
-                <div className="space-y-2">
-                  <SectionLabel>Aves no Lote</SectionLabel>
-                  <ModeToggle mode={crMode} onChange={m => setCrMode(m)} label1="Selecionar aves" label2="Quantidade Adicional" />
-                  {crMode === 'select' ? (
-                    <BirdPicker birds={activeChicks} selected={crAves} onToggle={handleCrescimentoToggle} onSelectAll={handleCrescimentoSelectAll} search={crSearch} onSearch={setCrSearch} emptyMsg="Nenhuma ave em crescimento disponível." />
-                  ) : (
-                    <div className="space-y-1">
-                      <SectionLabel>Quantidade Adicional de Aves</SectionLabel>
-                      <input type="number" min="0" inputMode="numeric" placeholder="Ex: 30" value={crQtd} onChange={e => setCrQtd(sanitizeNumeric(e.target.value))} className={inputCls + " text-2xl font-black text-center py-3"} />
-                    </div>
-                  )}
-
-                  <div className="bg-theme-base/80 border border-theme-border/60 rounded-xl p-3 flex items-center justify-between text-xs">
-                    <span className="text-theme-text-muted">Total de crescimento:</span>
-                    <span className="font-black text-white text-sm bg-theme-primary/10 border border-theme-primary/30 px-2.5 py-0.5 rounded-lg text-theme-primary">
-                      {crAves.length} selecionados + {parseInt(crQtd) || 0} adicionais = {crAves.length + (parseInt(crQtd) || 0)} aves
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <SectionLabel>Observação (opcional)</SectionLabel>
-                  <textarea rows={2} placeholder="Ex: Lote de recria..." value={crObs} onChange={e => setCrObs(e.target.value)} className={inputCls + " resize-none"} />
-                </div>
-
-              </div>
-              <div className="p-4 sm:p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
-                <button type="button" onClick={resetCrescimento} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
-                <button type="submit" disabled={!crBaia.trim()} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95 cursor-pointer">Criar Lote</button>
+                <button type="button" onClick={resetPintinhos} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all cursor-pointer">Cancelar</button>
+                <button type="submit" disabled={!piBaia.trim() || !piQtd || parseInt(piQtd) <= 0} className="flex-1 py-3 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-sm font-black transition-all active:scale-95 cursor-pointer">Criar Lote</button>
               </div>
             </form>
           </div>
@@ -2640,7 +2490,7 @@ export function Lots() {
 
       {/* ── MODAL DE CONFIRMAÇÃO DE TRANSFERÊNCIA DE LOTE ── */}
       {confirmTransfer.isOpen && confirmTransfer.lote && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in overflow-x-hidden touch-pan-y" onClick={() => setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' })}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in overflow-x-hidden touch-pan-y" onClick={() => setConfirmTransfer({ isOpen: false, lote: null })}>
           <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5 animate-scale-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-lg">
@@ -2648,12 +2498,12 @@ export function Lots() {
               </div>
               <div>
                 <h3 className="font-black text-base text-white">Confirmar Transferência de Lote</h3>
-                <p className="text-xs text-theme-text-muted">Confirmação de ação</p>
+                <p className="text-xs text-theme-text-muted">Transferência para Engorda</p>
               </div>
             </div>
 
             <p className="text-sm text-theme-text-muted leading-relaxed">
-              Você realmente deseja transferir o lote da <strong className="text-white">Baia {confirmTransfer.lote.baia}</strong> para a aba de <strong className="text-theme-primary uppercase">{confirmTransfer.target}</strong>?
+              Você realmente deseja transferir o lote da <strong className="text-white">Baia {confirmTransfer.lote.baia}</strong> para a aba de <strong className="text-theme-primary uppercase">Engorda / Abate</strong>?
             </p>
 
             <div className="bg-theme-base p-3.5 rounded-xl border border-theme-border/50 text-xs space-y-1">
@@ -2666,15 +2516,15 @@ export function Lots() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setConfirmTransfer({ isOpen: false, lote: null, target: 'engorda' })}
-                className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all active:scale-95"
+                onClick={() => setConfirmTransfer({ isOpen: false, lote: null })}
+                className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-xs font-bold text-white hover:border-theme-primary transition-all active:scale-95 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={executeTransfer}
-                className="flex-1 py-3 bg-theme-primary text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20"
+                className="flex-1 py-3 bg-theme-primary text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer"
               >
                 Sim, Transferir
               </button>

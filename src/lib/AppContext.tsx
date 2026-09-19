@@ -193,6 +193,14 @@ export type MeatLot = {
   avesIds: string[];
   qtdAves?: number;            // quantidade manual (quando não se vincula aves individuais)
   dataInicio: string;
+  idadeInicialDias?: number;   // Idade das aves que compõem o lote em dias na data de início (engorda)
+  dataNascimento?: string;     // Data de nascimento (para lotes de pintinhos)
+  origem?: 'Criatório' | 'Externo'; // Origem dos pintinhos
+  origemPais?: 'criatorio' | 'externo' | 'nenhum';
+  paiId?: string;
+  maeId?: string;
+  paiNome?: string;
+  maeNome?: string;
   pesoMedioInicial?: string;
   pesoMeta?: string;           // peso alvo de abate
   status: 'Crescimento' | 'Terminação' | 'Abatido';
@@ -1361,6 +1369,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           baia: l.baia || '',
           avesIds: l.aves_ids || l.avesIds || [],
           dataInicio: l.data_inicio || l.dataInicio || '',
+          idadeInicialDias: l.idade_inicial_dias !== undefined ? l.idade_inicial_dias : (l.idadeInicialDias || local?.idadeInicialDias || undefined),
+          dataNascimento: l.data_nascimento || l.dataNascimento || local?.dataNascimento || undefined,
+          origem: l.origem || local?.origem || undefined,
+          origemPais: l.origem_pais || local?.origemPais || undefined,
+          paiId: l.pai_id || l.paiId || local?.paiId || undefined,
+          maeId: l.mae_id || l.maeId || local?.maeId || undefined,
+          paiNome: l.pai_nome || l.paiNome || local?.paiNome || undefined,
+          maeNome: l.mae_nome || l.maeNome || local?.maeNome || undefined,
           pesoMedioInicial: l.peso_medio_inicial || l.pesoMedioInicial || '',
           status: l.status || 'Crescimento',
           raca: l.raca || local?.raca || '',
