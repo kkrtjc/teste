@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Scale, History, Check, Trash2, X, Calculator, Calendar } from 'lucide-react';
+import { Scale, History, Check, Trash2, X, Calculator } from 'lucide-react';
 import { useAppContext, type MeatLot, type WeightRecord } from '../../lib/AppContext';
 
 interface WeighingModalProps {
@@ -49,8 +49,6 @@ function fmtDate(iso: string) {
 export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
   const { editMeatLot, showToast } = useAppContext();
 
-  const isChick = lote?.id?.startsWith('chick-') || lote?.status === 'Crescimento';
-
   const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
   const [wPesoMedio, setWPesoMedio] = useState('');
   const [wPesoTotal5, setWPesoTotal5] = useState('');
@@ -60,10 +58,10 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
   const currentPesagens = lote.pesagens || [];
 
-  // Se digitar a soma dos 5 pintinhos na balança, auto-calcula a divisão por 5 na hora!
+  // Se digitar a soma das 5 aves na balança, auto-calcula a divisão por 5 na hora!
   const handleTotal5Change = (val: string) => {
     setWPesoTotal5(val);
-    const totalG = parseWeightG(val, isChick);
+    const totalG = parseWeightG(val);
     if (totalG > 0) {
       const avg = Math.round(totalG / 5);
       setWPesoMedio(formatWeightG(avg));
@@ -72,9 +70,9 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
   const handleSaveWeightRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    const pesoG = parseWeightG(wPesoMedio, isChick);
+    const pesoG = parseWeightG(wPesoMedio);
     if (pesoG <= 0) {
-      showToast(isChick ? 'Informe o peso médio dos 5 pintinhos (ex: 45g)' : 'Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
+      showToast('Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
       return;
     }
 
@@ -91,7 +89,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
     setWPesoMedio('');
     setWPesoTotal5('');
     setWObs('');
-    showToast('Pesagem registrada com sucesso! Próxima aferição em 15 dias.', 'success');
+    showToast('Pesagem registrada com sucesso!', 'success');
     onClose();
   };
 
@@ -121,11 +119,11 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
-              {isChick ? 'Lote de Pintinhos' : 'Lote de Engorda'} · Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}
+              Lote de Engorda · Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}
             </span>
             <h3 className="font-black text-lg text-white flex items-center gap-2">
               <Scale className="text-theme-primary" size={20} />
-              {isChick ? 'Pesagem dos Pintinhos' : 'Acompanhamento de Pesagem'}
+              Acompanhamento de Pesagem
             </h3>
           </div>
           <button 
@@ -139,20 +137,16 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
         <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
           
-          {/* Instrução simples e direta: 5 pintinhos divididos por 5 e a cada 15 dias */}
+          {/* Instrução simples */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
             <Scale className="text-amber-400 shrink-0 mt-0.5" size={20} />
             <div className="text-xs text-amber-200 leading-relaxed">
               <p className="font-black text-white text-sm">
-                Instruções de Pesagem {isChick ? 'dos Pintinhos' : ''}:
+                Aferição de Peso do Lote:
               </p>
               <p className="mt-1 text-white/90">
-                Pese <strong>5 {isChick ? 'pintinhos' : 'aves'}</strong>, divida o peso por <strong>5</strong> e informe abaixo a média de peso.
+                Pese uma amostra de aves (ex: 5 aves), tire a média e informe abaixo para acompanhar o ganho diário e estimativa de abate.
               </p>
-              <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[11px]">
-                <Calendar size={13} />
-                <span>Necessário realizar essa pesagem a cada 15 dias</span>
-              </div>
             </div>
           </div>
 
@@ -172,11 +166,13 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
               </div>
 
               <div className="space-y-1">
-                <label className={labelCls}>Peso Médio (Dividido por 5) *</label>
+                <label className={labelCls}>
+                  Peso Médio <span className="text-theme-primary">*</span>
+                </label>
                 <input
                   required
                   type="text"
-                  placeholder={isChick ? "Ex: 45g" : "Ex: 2.1kg ou 2100g"}
+                  placeholder="Ex: 2.1kg ou 2100g"
                   value={wPesoMedio}
                   onChange={e => setWPesoMedio(e.target.value)}
                   className={inputCls + " text-base font-bold text-white"}
@@ -188,10 +184,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
             <div className="flex items-center justify-between text-[11px] text-theme-text-muted pt-0.5">
               <span>Atalhos rápidos:</span>
               <div className="flex flex-wrap gap-1">
-                {(isChick 
-                  ? ['35g', '40g', '45g', '50g', '60g', '80g', '120g'] 
-                  : ['1.5kg', '1.8kg', '2.0kg', '2.2kg', '2.5kg', '2.8kg']
-                ).map(p => (
+                {['1.5kg', '1.8kg', '2.0kg', '2.2kg', '2.5kg', '2.8kg'].map(p => (
                   <button
                     key={p}
                     type="button"
@@ -208,26 +201,26 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
               </div>
             </div>
 
-            {/* Opção prática: Colocar os 5 juntos na balança e o sistema divide automaticamente */}
+            {/* Opção prática: Colocar as aves juntas na balança e o sistema divide automaticamente */}
             <div className="p-3 rounded-xl bg-theme-surface/70 border border-theme-border/60 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-theme-text-muted">
                 <Calculator size={13} className="text-theme-primary" />
-                <span>Quer pesar os 5 juntos na balança? (Opcional)</span>
+                <span>Quer pesar 5 aves juntas na balança? (Opcional)</span>
               </div>
               <p className="text-[11px] text-theme-text-muted">
-                Digite o peso total dos 5 {isChick ? 'pintinhos' : 'aves'} que o sistema divide por 5 para você:
+                Digite o peso total das 5 aves que o sistema divide por 5 para você:
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="text"
-                  placeholder={isChick ? "Ex: 225g (total dos 5)" : "Ex: 11kg"}
+                  placeholder="Ex: 11kg (total das 5 aves)"
                   value={wPesoTotal5}
                   onChange={e => handleTotal5Change(e.target.value)}
                   className="flex-1 bg-theme-base border border-theme-border rounded-lg p-2 text-xs text-white focus:border-theme-primary outline-none"
                 />
                 <span className="text-xs text-theme-text-muted font-bold">÷ 5 =</span>
                 <span className="bg-theme-primary/10 border border-theme-primary/30 text-theme-primary font-black px-3 py-2 rounded-lg text-xs min-w-[70px] text-center">
-                  {wPesoMedio || '0g'}
+                  {wPesoMedio || '0kg'}
                 </span>
               </div>
             </div>

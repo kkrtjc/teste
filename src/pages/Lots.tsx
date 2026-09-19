@@ -570,7 +570,6 @@ export function Lots() {
   const [piBaia, setPiBaia] = useState('');
   const [piRaca, setPiRaca] = useState('');
   const [piDataNascimento, setPiDataNascimento] = useState(todayISO());
-  const [piPesoInicial, setPiPesoInicial] = useState('');
   const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo' | ''>('');
   const [piPaiId, setPiPaiId] = useState('');
   const [piMaeId, setPiMaeId] = useState('');
@@ -806,7 +805,7 @@ export function Lots() {
   // Pintinhos methods
   const resetPintinhos = () => {
     setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataNascimento(todayISO());
-    setPiPesoInicial(''); setPiOrigem('');
+    setPiOrigem('');
     setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
     setPiQtd(''); setPiObs('');
   };
@@ -828,18 +827,6 @@ export function Lots() {
 
     const isCriatorio = piOrigem === 'Criatório';
     const isExterno = piOrigem === 'Externo';
-    const initialG = parseWeightG(piPesoInicial);
-
-    const initialPesagens: any[] = [];
-    if (initialG > 0) {
-      initialPesagens.push({
-        id: uid(),
-        data: piDataNascimento,
-        pesoMedioG: initialG,
-        avesPesadas: 5,
-        observacao: 'Pesagem média inicial (amostragem de 5 pintinhos ÷ 5)'
-      });
-    }
 
     addMeatLot({
       id: 'chick-' + uid(),
@@ -854,11 +841,10 @@ export function Lots() {
       paiNome: isExterno && piPaisTexto.trim() ? piPaisTexto.trim() : (piPaiNome.trim() || undefined),
       maeNome: isExterno ? undefined : (piMaeNome.trim() || undefined),
       paisTexto: isExterno && piPaisTexto.trim() ? piPaisTexto.trim() : undefined,
-      pesoMedioInicial: piPesoInicial.trim() || undefined,
       status: 'Crescimento',
       raca: piRaca.trim() || undefined,
       observacao: piObs.trim() || undefined,
-      pesagens: initialPesagens,
+      pesagens: [],
     });
 
     resetPintinhos();
@@ -1603,11 +1589,6 @@ export function Lots() {
             {displayedPintinhos.map(lote => {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
-              const pesagens = lote.pesagens || [];
-              const ultimaPesagem = pesagens.length > 0 ? [...pesagens].sort((a, b) => b.data.localeCompare(a.data))[0] : null;
-              const diasRefPesagem = ultimaPesagem ? calcDays(ultimaPesagem.data) : dias;
-              const precisaPesar = diasRefPesagem >= 15;
-              const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1640,25 +1621,13 @@ export function Lots() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
                         <Timer size={11} /> Idade
                       </p>
                       <p className="text-base font-black text-white">{dias} dias</p>
                       <p className="text-[9px] text-theme-text-muted">Nasc: {fmtDate(lote.dataNascimento || lote.dataInicio)}</p>
-                    </div>
-
-                    <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
-                      <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Scale size={11} className="text-amber-400" /> {ultimaPesagem ? 'Peso Médio' : 'Peso Inicial'}
-                      </p>
-                      <p className="text-base font-black text-white truncate">
-                        {ultimaPesagem ? formatWeightG(ultimaPesagem.pesoMedioG) : (lote.pesoMedioInicial || '—')}
-                      </p>
-                      <p className="text-[9px] text-theme-text-muted truncate">
-                        {ultimaPesagem ? `Aferido (${fmtDate(ultimaPesagem.data)})` : 'Gramas/unid.'}
-                      </p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1722,100 +1691,7 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-1 italic">Obs: {lote.observacao}</p>}
                   </div>
 
-                  {/* ⚖️ REGISTRO E ACOMPANHAMENTO DE PESAGENS */}
-                  <div className="pt-3 border-t border-theme-border/50 space-y-2.5 mb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Scale size={14} className="text-theme-primary" />
-                        <p className="text-xs font-black text-white">Pesagens do Lote</p>
-                        <span className="text-[10px] text-theme-text-muted bg-theme-base px-2 py-0.5 rounded-md border border-theme-border/60">
-                          {pesagens.length} {pesagens.length === 1 ? 'pesagem' : 'pesagens'}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => openWeighModal(lote)}
-                        className="py-1.5 px-3 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all shadow cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 active:scale-95"
-                      >
-                        <Scale size={13} /> Registrar Pesagem
-                      </button>
-                    </div>
 
-                    {/* Banner de ciclo de 15 dias e instrução simples */}
-                    {precisaPesar ? (
-                      <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 flex items-start gap-2.5">
-                        <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                        <div className="text-xs flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-black text-amber-300">Dia de Pesar o Lote! (A cada 15 dias)</p>
-                            {ultimaPesagem && (
-                              <span className="text-[10px] text-theme-text-muted">
-                                Última: {fmtDate(ultimaPesagem.data)} ({diasRefPesagem}d atrás)
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-white/90 text-[11px] mt-0.5">
-                            Pese <strong>5 pintinhos</strong>, divida por <strong>5</strong> e informe o peso médio.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-theme-base/60 border border-theme-border/60 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle size={15} className="text-emerald-400 shrink-0" />
-                          <span className="text-[11px] text-white/90">
-                            Pesagem em dia · Próxima aferição em <strong>{diasParaPesar} {diasParaPesar === 1 ? 'dia' : 'dias'}</strong>
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
-                          A cada 15 dias
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Registro das pesagens (histórico) */}
-                    {pesagens.length > 0 ? (
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                        {[...pesagens]
-                          .sort((a, b) => b.data.localeCompare(a.data))
-                          .map((p, idx, arr) => {
-                            const nextOldest = arr[idx + 1];
-                            const diff = nextOldest ? p.pesoMedioG - nextOldest.pesoMedioG : null;
-                            return (
-                              <div key={p.id} className="p-2 bg-theme-base/80 border border-theme-border/60 rounded-xl flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-white text-[11px]">{fmtDate(p.data)}</span>
-                                  <span className="font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/20 text-[11px]">
-                                    {formatWeightG(p.pesoMedioG)}
-                                  </span>
-                                  {diff !== null && (
-                                    <span className={`text-[10px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      {diff >= 0 ? `+${formatWeightG(diff)}` : `-${formatWeightG(Math.abs(diff))}`}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-theme-text-muted">
-                                    Média (5 pintinhos ÷ 5)
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => openWeighModal(lote)}
-                                    className="text-[10px] text-theme-primary hover:underline font-bold cursor-pointer"
-                                  >
-                                    Histórico
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    ) : (
-                      <div className="p-2.5 bg-theme-base/40 rounded-xl border border-dashed border-theme-border/60 text-center text-[11px] text-theme-text-muted">
-                        Nenhuma pesagem registrada. Clique em "Registrar Pesagem" e informe a média de 5 pintinhos.
-                      </div>
-                    )}
-                  </div>
                   <div className="pt-3 border-t border-theme-border/50 space-y-2">
                     <button
                       type="button"
@@ -2310,44 +2186,10 @@ export function Lots() {
                   </div>
                 </div>
 
-                {/* Data de Nascimento e Peso Inicial */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <SectionLabel>Data de Nascimento *</SectionLabel>
-                    <input type="date" required value={piDataNascimento} onChange={e => setPiDataNascimento(e.target.value)} className={inputCls} />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <SectionLabel>Peso Médio Inicial</SectionLabel>
-                      <span className="text-[10px] text-theme-text-muted">Pese 5 pintinhos ÷ 5</span>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Ex: 40g (média dos 5 pintinhos)"
-                      value={piPesoInicial}
-                      onChange={e => setPiPesoInicial(e.target.value)}
-                      className={inputCls}
-                    />
-                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
-                      <div className="flex flex-wrap gap-1">
-                        {['35g', '40g', '45g', '50g'].map(p => (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => setPiPesoInicial(p)}
-                            className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-                              piPesoInicial === p
-                                ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
-                                : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                      </div>
-                      <span className="text-[9px] text-amber-300">Aferir a cada 15 dias</span>
-                    </div>
-                  </div>
+                {/* Data de Nascimento */}
+                <div className="space-y-1">
+                  <SectionLabel>Data de Nascimento *</SectionLabel>
+                  <input type="date" required value={piDataNascimento} onChange={e => setPiDataNascimento(e.target.value)} className={inputCls} />
                 </div>
 
                 {/* Origem dos Pintinhos */}

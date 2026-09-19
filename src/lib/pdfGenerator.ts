@@ -471,11 +471,26 @@ export async function generateLotPdf({
     drawField(doc, 'CUSTO ESTIMADO DÚZIA', lot.custoDuzia ? `R$ ${Number(lot.custoDuzia).toFixed(2)}` : 'Não informado', margin + contentWidth / 2, currentY + 18);
 
     currentY += 34;
+  } else if (lotType === 'pintinhos') {
+    drawSectionHeader(doc, 'INFORMAÇÕES DO LOTE DE PINTINHOS', margin, currentY, contentWidth);
+    currentY += 8;
+
+    doc.setFillColor(cardBg[0], cardBg[1], cardBg[2]);
+    doc.roundedRect(margin, currentY, contentWidth, 26, 2.5, 2.5, 'F');
+    doc.setDrawColor(borderGrey[0], borderGrey[1], borderGrey[2]);
+    doc.roundedRect(margin, currentY, contentWidth, 26, 2.5, 2.5, 'S');
+
+    const totalAves = lot.avesIds?.length || lot.qtdAves || 0;
+    const origemTexto = lot.origem === 'Externo' ? 'De fora (Externo)' : 'Do meu criatório';
+    drawField(doc, 'QUANTIDADE DE PINTINHOS', `${totalAves} aves`, margin + 4, currentY + 8);
+    drawField(doc, 'FASE DO LOTE', 'Inicial (Até 30 dias)', margin + contentWidth / 2, currentY + 8);
+    drawField(doc, 'ORIGEM', origemTexto, margin + 4, currentY + 18);
+    drawField(doc, 'STATUS DO LOTE', lot.status || 'Em andamento', margin + contentWidth / 2, currentY + 18);
+
+    currentY += 34;
   } else {
-    // engorda, pintinhos, crescimento
-    const labelHeader = lotType === 'pintinhos' 
-      ? 'DESEMPENHO DO LOTE DE PINTINHOS' 
-      : lotType === 'crescimento' 
+    // engorda, crescimento
+    const labelHeader = lotType === 'crescimento' 
       ? 'DESEMPENHO DO LOTE DE CRESCIMENTO' 
       : 'DESEMPENHO ZOOTÉCNICO & PESAGENS';
     drawSectionHeader(doc, labelHeader, margin, currentY, contentWidth);
