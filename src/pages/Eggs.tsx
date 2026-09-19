@@ -9,7 +9,7 @@ import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
-  AlertTriangle, ShoppingCart, Sparkles, Activity
+  AlertTriangle, ShoppingCart, Sparkles, Activity, Search
 } from 'lucide-react';
 import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -17,6 +17,14 @@ import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { calculateLotProduction } from '../lib/lotProduction';
 
 // helpers
+function normalizeSearch(str?: string | null): string {
+  if (!str) return '';
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function formatDate(iso: string) {
@@ -127,6 +135,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [raca, setRaca] = useState('');
   const [observacao, setObservacao] = useState('');
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
+  const [searchFemeas, setSearchFemeas] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -137,8 +146,32 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   }, []);
 
   const availableFemeas = useMemo(() => {
-    return birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu');
+    return birds.filter(b => {
+      const s = normalizeSearch(b.sexo);
+      const isFemale = s === 'femea' || s === 'f' || s.startsWith('fem');
+      const stat = normalizeSearch(b.status);
+      const isExcluded = ['vendido', 'faleceu', 'morto', 'abatido'].includes(stat);
+      return isFemale && !isExcluded;
+    });
   }, [birds]);
+
+  const qFemeas = normalizeSearch(searchFemeas);
+  const hasSearchFemeas = qFemeas.length > 0;
+
+  const filteredFemeas = useMemo(() => {
+    if (!hasSearchFemeas) return [];
+    return availableFemeas.filter(b => {
+      const nomeNorm = normalizeSearch(b.nome);
+      const anilhaNorm = normalizeSearch(b.anilha);
+      const racaNorm = normalizeSearch(b.raca);
+      const baiaNorm = normalizeSearch(b.baia);
+      return nomeNorm.includes(qFemeas) || anilhaNorm.includes(qFemeas) || racaNorm.includes(qFemeas) || baiaNorm.includes(qFemeas);
+    });
+  }, [availableFemeas, qFemeas, hasSearchFemeas]);
+
+  const selectedFemeasBirds = useMemo(() => {
+    return selectedFemeas.map(id => birds.find(b => b.id === id)).filter(Boolean);
+  }, [birds, selectedFemeas]);
 
   const handleSave = () => {
     if (!baia.trim()) {
@@ -252,34 +285,147 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
 
 
           {availableFemeas.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-theme-border">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Vincular Galinhas Cadastradas ({selectedFemeas.length} selecionadas)</label>
+            <div className="space-y-2.5 pt-2 border-t border-theme-border">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted block">
+                Vincular Galinhas Cadastradas
+              </label>
+
+              {/* Barra de Busca de Fêmeas */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13} />
+                <input
+                  type="text"
+                  placeholder="Digite o nome (ex: Pérola), anilha ou raça..."
+                  value={searchFemeas}
+                  onChange={e => setSearchFemeas(e.target.value)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors"
+                />
+                {searchFemeas && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchFemeas('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-1 cursor-pointer"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
               </div>
-              <div className="border border-theme-border rounded-xl max-h-32 overflow-y-auto p-2 divide-y divide-theme-border/50">
-                {availableFemeas.map(f => {
-                  const isChecked = selectedFemeas.includes(f.id);
-                  return (
-                    <div
-                      key={f.id}
-                      onClick={() => {
-                        setSelectedFemeas(prev => {
-                          return isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
-                        });
-                      }}
-                      className="py-1.5 px-2 flex items-center justify-between cursor-pointer hover:bg-theme-base/50 rounded-lg transition-colors"
+
+              {/* Fêmeas já Selecionadas (chips informativos) */}
+              {selectedFemeasBirds.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-theme-base/60 border border-theme-border/60 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-amber-400 flex items-center gap-1">
+                      <Check size={12} strokeWidth={3} /> {selectedFemeasBirds.length} fêmea(s) selecionada(s)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFemeas([])}
+                      className="text-[10px] text-theme-text-muted hover:text-rose-400 font-bold transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-xs">{f.nome || f.anilha}</span>
-                        <span className="text-[10px] text-theme-text-muted">Anilha: {f.anilha}</span>
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                    {selectedFemeasBirds.map(f => f && (
+                      <span
+                        key={f.id}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-theme-primary/15 text-theme-primary border border-theme-primary/30 text-[11px] font-bold"
+                      >
+                        <span>{f.nome ? `${f.nome} (${f.anilha})` : `Anilha ${f.anilha}`}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFemeas(prev => prev.filter(id => id !== f.id))}
+                          className="hover:text-white text-theme-primary/70 ml-0.5 cursor-pointer"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Se não digitou: NÃO mostra pré-visualização de 3 aves */}
+              {!hasSearchFemeas ? (
+                <div className="py-2.5 px-3 rounded-xl bg-theme-base/30 border border-dashed border-theme-border/70 text-center">
+                  <p className="text-[11px] text-theme-text-muted">
+                    🔍 Digite o nome (ex: <strong className="text-white font-semibold">Pérola</strong>), anilha ou raça para buscar fêmeas cadastradas.
+                  </p>
+                  <p className="text-[10px] text-theme-text-muted/70 mt-0.5">
+                    {availableFemeas.length} fêmea(s) disponível(is) no criatório
+                  </p>
+                </div>
+              ) : (
+                /* Exibe lista de fêmeas encontradas */
+                <div className="space-y-1.5 animate-fade-in">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] text-theme-text-muted font-bold">
+                      {filteredFemeas.length} encontrada(s) para "{searchFemeas}"
+                    </span>
+                    {filteredFemeas.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allChecked = filteredFemeas.every(f => selectedFemeas.includes(f.id));
+                          if (allChecked) {
+                            setSelectedFemeas(prev => prev.filter(id => !filteredFemeas.some(f => f.id === id)));
+                          } else {
+                            const newIds = filteredFemeas.map(f => f.id);
+                            setSelectedFemeas(prev => Array.from(new Set([...prev, ...newIds])));
+                          }
+                        }}
+                        className="text-[10px] text-theme-primary font-bold hover:underline cursor-pointer"
+                      >
+                        {filteredFemeas.every(f => selectedFemeas.includes(f.id)) ? 'Desmarcar' : 'Selecionar todas'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="border border-theme-border rounded-xl max-h-40 overflow-y-auto divide-y divide-theme-border/40 bg-theme-base/40">
+                    {filteredFemeas.map(f => {
+                      const isChecked = selectedFemeas.includes(f.id);
+                      return (
+                        <div
+                          key={f.id}
+                          onClick={() => {
+                            setSelectedFemeas(prev => {
+                              return isChecked ? prev.filter(id => id !== f.id) : [...prev, f.id];
+                            });
+                          }}
+                          className={`py-2 px-2.5 flex items-center justify-between cursor-pointer transition-colors ${
+                            isChecked ? 'bg-theme-primary/10 hover:bg-theme-primary/15' : 'hover:bg-theme-base/50'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <p className="font-bold text-white text-xs flex items-center gap-1.5">
+                              <span>Anilha: {f.anilha}</span>
+                              {f.nome && <span className="text-amber-400 font-black">· {f.nome}</span>}
+                            </p>
+                            <p className="text-[10px] text-theme-text-muted truncate">
+                              {f.raca || 'Sem raça'} · {f.sexo} · {f.baia ? `Baia: ${f.baia}` : (f.status || 'Ativo')}
+                            </p>
+                          </div>
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0 ${
+                            isChecked ? 'border-amber-400 bg-amber-400 text-black' : 'border-theme-border bg-theme-surface'
+                          }`}>
+                            {isChecked && <Check size={10} strokeWidth={3} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {filteredFemeas.length === 0 && (
+                      <div className="p-3 text-center space-y-0.5">
+                        <p className="text-xs font-bold text-amber-400">Nenhuma fêmea encontrada</p>
+                        <p className="text-[10px] text-theme-text-muted italic">
+                          Nenhuma ave cadastrada encontrada com "{searchFemeas}".
+                        </p>
                       </div>
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked ? 'border-amber-400 bg-amber-400 text-black' : 'border-theme-border'}`}>
-                        {isChecked && <Check size={10} />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

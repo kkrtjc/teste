@@ -26,6 +26,15 @@ function calcDays(start: string) {
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('pt-BR'); }
 function normalizeBaia(str: string) { return str.toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
+function normalizeSearch(str?: string | null): string {
+  if (!str) return '';
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 function parseWeightG(val: string | number | undefined): number {
   if (val === undefined || val === null || val === '') return 0;
   if (typeof val === 'number') return val;
@@ -86,53 +95,190 @@ function ModeToggle({ mode, onChange, label1, label2 }: {
   );
 }
 
-function BirdPicker({ birds, selected, onToggle, onSelectAll, search, onSearch, emptyMsg }: {
-  birds:{id:string;anilha:string;nome:string;raca:string;sexo:string;status:string}[];
-  selected:string[]; onToggle:(id:string)=>void; onSelectAll:(ids:string[])=>void;
-  search:string; onSearch:(v:string)=>void; emptyMsg:string;
+function BirdPicker({
+  birds,
+  selected,
+  onToggle,
+  onSelectAll,
+  search,
+  onSearch,
+  emptyMsg,
+  placeholder = "Digite o nome (ex: Pérola), anilha ou raça para buscar..."
+}: {
+  birds: { id: string; anilha: string; nome?: string; raca?: string; sexo?: string; status?: string; baia?: string }[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  onSelectAll: (ids: string[]) => void;
+  search: string;
+  onSearch: (v: string) => void;
+  emptyMsg: string;
+  placeholder?: string;
 }) {
-  const filtered = birds.filter(b =>
-    b.anilha.toLowerCase().includes(search.toLowerCase()) ||
-    b.raca.toLowerCase().includes(search.toLowerCase()) ||
-    b.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const q = normalizeSearch(search);
+  const hasSearch = q.length > 0;
+
+  // Busca insensível a maiúsculas/minúsculas e acentos
+  const filtered = useMemo(() => {
+    if (!hasSearch) return [];
+    return birds.filter(b => {
+      const nomeNorm = normalizeSearch(b.nome);
+      const anilhaNorm = normalizeSearch(b.anilha);
+      const racaNorm = normalizeSearch(b.raca);
+      const baiaNorm = normalizeSearch(b.baia);
+      return nomeNorm.includes(q) || anilhaNorm.includes(q) || racaNorm.includes(q) || baiaNorm.includes(q);
+    });
+  }, [birds, q, hasSearch]);
+
+  const selectedBirds = useMemo(() => {
+    return selected.map(id => birds.find(b => b.id === id)).filter(Boolean) as typeof birds;
+  }, [birds, selected]);
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className={labelCls}>{selected.length} selecionada(s)</span>
-        {filtered.length>0&&(
-          <button type="button" onClick={()=>onSelectAll(filtered.map(b=>b.id))}
-            className="text-[10px] text-theme-primary font-bold hover:underline">
-            {filtered.every(b=>selected.includes(b.id))?'Desmarcar todas':'Selecionar filtradas'}
+    <div className="space-y-2.5">
+      {/* Barra de Busca */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14}/>
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={search}
+          onChange={e => onSearch(e.target.value)}
+          className="w-full bg-theme-base border border-theme-border rounded-xl py-2.5 pl-10 pr-9 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => onSearch('')}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-1 transition-colors cursor-pointer"
+            title="Limpar busca"
+          >
+            <X size={13} />
           </button>
         )}
       </div>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13}/>
-        <input type="text" placeholder="Buscar por anilha, raça ou nome..."
-          value={search} onChange={e=>onSearch(e.target.value)}
-          className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:border-theme-primary outline-none"/>
-      </div>
-      <div className="border border-theme-border rounded-xl max-h-44 overflow-y-auto divide-y divide-theme-border/40 bg-theme-base/30">
-        {filtered.map(b=>{
-          const sel = selected.includes(b.id);
-          return (
-            <div key={b.id} onClick={()=>onToggle(b.id)}
-              className="flex items-center justify-between p-2.5 cursor-pointer hover:bg-white/5 transition-colors">
-              <div>
-                <p className="text-xs font-bold text-white">Anilha: {b.anilha}{b.nome?` - ${b.nome}`:''}</p>
-                <p className="text-[10px] text-theme-text-muted">{b.raca} | {b.sexo} | {b.status}</p>
+
+      {/* Aves selecionadas (chips informativos) */}
+      {selectedBirds.length > 0 && (
+        <div className="p-2.5 rounded-xl bg-theme-base/60 border border-theme-border/60 space-y-2">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-bold text-amber-400 flex items-center gap-1.5">
+              <Check size={12} strokeWidth={3} />
+              <span>{selectedBirds.length} ave(s) selecionada(s)</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => onSelectAll([])}
+              className="text-[10px] text-theme-text-muted hover:text-rose-400 font-bold transition-colors cursor-pointer"
+            >
+              Desmarcar todas
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+            {selectedBirds.map(b => (
+              <span
+                key={b.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-theme-primary/15 text-theme-primary border border-theme-primary/30 text-[11px] font-bold"
+              >
+                <span>{b.nome ? `${b.nome} (${b.anilha})` : `Anilha ${b.anilha}`}</span>
+                <button
+                  type="button"
+                  onClick={() => onToggle(b.id)}
+                  className="hover:text-white text-theme-primary/70 cursor-pointer"
+                  title="Remover do lote"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Se não digitou na barra: não pré-visualiza lista com 3 aves */}
+      {!hasSearch ? (
+        <div className="py-3 px-4 rounded-xl bg-theme-base/30 border border-dashed border-theme-border/70 text-center">
+          {birds.length === 0 ? (
+            <p className="text-[11px] text-theme-text-muted italic">{emptyMsg}</p>
+          ) : (
+            <>
+              <p className="text-[11px] text-theme-text-muted leading-relaxed">
+                🔍 Digite o nome (ex: <strong className="text-white font-semibold">Pérola</strong>), anilha ou raça para buscar e adicionar ao lote.
+              </p>
+              <p className="text-[10px] text-theme-text-muted/70 mt-1">
+                {birds.length} ave(s) disponível(is) no criatório
+              </p>
+            </>
+          )}
+        </div>
+      ) : (
+        /* Quando digitou: exibe os resultados encontrados */
+        <div className="space-y-2 animate-fade-in">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] text-theme-text-muted font-bold">
+              {filtered.length} ave(s) encontrada(s) para "{search}"
+            </span>
+            {filtered.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const allSel = filtered.every(b => selected.includes(b.id));
+                  if (allSel) {
+                    onSelectAll(selected.filter(id => !filtered.some(b => b.id === id)));
+                  } else {
+                    const newIds = filtered.map(b => b.id);
+                    onSelectAll(Array.from(new Set([...selected, ...newIds])));
+                  }
+                }}
+                className="text-[10px] text-theme-primary font-bold hover:underline cursor-pointer"
+              >
+                {filtered.every(b => selected.includes(b.id)) ? 'Desmarcar encontradas' : 'Selecionar todas encontradas'}
+              </button>
+            )}
+          </div>
+
+          <div className="border border-theme-border rounded-xl max-h-52 overflow-y-auto divide-y divide-theme-border/40 bg-theme-base/40">
+            {filtered.map(b => {
+              const sel = selected.includes(b.id);
+              return (
+                <div
+                  key={b.id}
+                  onClick={() => onToggle(b.id)}
+                  className={`flex items-center justify-between p-2.5 cursor-pointer transition-colors ${
+                    sel ? 'bg-theme-primary/10 hover:bg-theme-primary/15' : 'hover:bg-white/5'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                      <span>Anilha: {b.anilha}</span>
+                      {b.nome && (
+                        <span className="text-amber-400 font-black">· {b.nome}</span>
+                      )}
+                    </p>
+                    <p className="text-[10px] text-theme-text-muted truncate">
+                      {b.raca || 'Sem raça'} · {b.sexo} · {b.status || 'Ativo'}
+                      {b.baia ? ` · Baia: ${b.baia}` : ''}
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${
+                    sel ? 'bg-theme-primary border-theme-primary text-black' : 'border-theme-border bg-theme-surface'
+                  }`}>
+                    {sel && <Check size={11} strokeWidth={3} />}
+                  </div>
+                </div>
+              );
+            })}
+
+            {filtered.length === 0 && (
+              <div className="p-4 text-center space-y-1">
+                <p className="text-xs font-bold text-amber-400">Nenhuma ave encontrada</p>
+                <p className="text-[11px] text-theme-text-muted italic">
+                  Não encontramos nenhuma ave cadastrada com o termo "{search}". Verifique a digitação ou anilha.
+                </p>
               </div>
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${sel?'bg-theme-primary border-theme-primary text-black':'border-theme-border bg-theme-surface'}`}>
-                {sel&&<Check size={11} strokeWidth={3}/>}
-              </div>
-            </div>
-          );
-        })}
-        {filtered.length===0&&(
-          <p className="p-4 text-center text-xs text-theme-text-muted italic">{emptyMsg}</p>
-        )}
-      </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -599,8 +745,22 @@ export function Lots() {
     pendingSaveFn: () => {},
   });
 
-  const activeFemales = birds.filter(b=>b.sexo==='Fêmea'&&b.status!=='Vendido'&&b.status!=='Faleceu');
-  const activeBirds = birds.filter(b=>b.status!=='Vendido'&&b.status!=='Faleceu');
+  const activeFemales = useMemo(() => {
+    return birds.filter(b => {
+      const s = normalizeSearch(b.sexo);
+      const isFemale = s === 'femea' || s === 'f' || s.startsWith('fem');
+      const stat = normalizeSearch(b.status);
+      const isExcluded = ['vendido', 'faleceu', 'morto', 'abatido'].includes(stat);
+      return isFemale && !isExcluded;
+    });
+  }, [birds]);
+
+  const activeBirds = useMemo(() => {
+    return birds.filter(b => {
+      const stat = normalizeSearch(b.status);
+      return !['vendido', 'faleceu', 'morto', 'abatido'].includes(stat);
+    });
+  }, [birds]);
 
   const filterEngorda = meatLots.filter(l => !l.id.startsWith('chick-'));
   const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
