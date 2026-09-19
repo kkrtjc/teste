@@ -201,6 +201,7 @@ export type MeatLot = {
   maeId?: string;
   paiNome?: string;
   maeNome?: string;
+  paisTexto?: string;
   pesoMedioInicial?: string;
   pesoMeta?: string;           // peso alvo de abate
   status: 'Crescimento' | 'Terminação' | 'Abatido';

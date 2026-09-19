@@ -571,14 +571,16 @@ export function Lots() {
   const [piRaca, setPiRaca] = useState('');
   const [piDataNascimento, setPiDataNascimento] = useState(todayISO());
   const [piPesoInicial, setPiPesoInicial] = useState('');
-  const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo'>('Criatório');
-  const [piOrigemPais, setPiOrigemPais] = useState<'nenhum' | 'criatorio' | 'externo'>('nenhum');
+  const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo' | ''>('');
   const [piPaiId, setPiPaiId] = useState('');
   const [piMaeId, setPiMaeId] = useState('');
+  const [piPaisTexto, setPiPaisTexto] = useState('');
   const [piPaiNome, setPiPaiNome] = useState('');
   const [piMaeNome, setPiMaeNome] = useState('');
   const [piQtd, setPiQtd] = useState('');
   const [piObs, setPiObs] = useState('');
+  const [showChickSampleCalc, setShowChickSampleCalc] = useState(false);
+  const [chickSampleWeights, setChickSampleWeights] = useState<string[]>(['', '', '', '', '']);
 
   // Confirmation Modal state for Lot Quantity Verification
   const [confirmLotModal, setConfirmLotModal] = useState<{
@@ -806,9 +808,26 @@ export function Lots() {
   // Pintinhos methods
   const resetPintinhos = () => {
     setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataNascimento(todayISO());
-    setPiPesoInicial(''); setPiOrigem('Criatório'); setPiOrigemPais('nenhum');
-    setPiPaiId(''); setPiMaeId(''); setPiPaiNome(''); setPiMaeNome('');
+    setPiPesoInicial(''); setPiOrigem('');
+    setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
     setPiQtd(''); setPiObs('');
+    setShowChickSampleCalc(false);
+    setChickSampleWeights(['', '', '', '', '']);
+  };
+
+  const handleChickSampleWeightChange = (index: number, val: string) => {
+    const updated = [...chickSampleWeights];
+    updated[index] = val;
+    setChickSampleWeights(updated);
+
+    const validGrams = updated
+      .map(v => parseWeightG(v))
+      .filter(g => g > 0);
+
+    if (validGrams.length > 0) {
+      const avg = Math.round(validGrams.reduce((a, b) => a + b, 0) / validGrams.length);
+      setPiPesoInicial(formatWeightG(avg));
+    }
   };
 
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
@@ -821,6 +840,38 @@ export function Lots() {
       return;
     }
 
+    if (!piOrigem) {
+      showToast?.('Selecione a origem dos pintinhos (Do criatório ou Externo).', 'warning');
+      return;
+    }
+
+    const isCriatorio = piOrigem === 'Criatório';
+    const isExterno = piOrigem === 'Externo';
+    const initialG = parseWeightG(piPesoInicial);
+
+    const validSampleGrams = chickSampleWeights
+      .map(w => parseWeightG(w))
+      .filter(g => g > 0);
+
+    const initialPesagens: any[] = [];
+    if (validSampleGrams.length >= 5) {
+      initialPesagens.push({
+        id: uid(),
+        data: piDataNascimento,
+        pesoMedioG: Math.round(validSampleGrams.reduce((a, b) => a + b, 0) / validSampleGrams.length),
+        avesPesadas: validSampleGrams.length,
+        observacao: `Amostragem inicial no nascimento (${validSampleGrams.length} pintinhos)`
+      });
+    } else if (initialG > 0) {
+      initialPesagens.push({
+        id: uid(),
+        data: piDataNascimento,
+        pesoMedioG: initialG,
+        avesPesadas: 5,
+        observacao: 'Peso inicial informado'
+      });
+    }
+
     addMeatLot({
       id: 'chick-' + uid(),
       baia: piBaia.trim(),
@@ -829,15 +880,16 @@ export function Lots() {
       dataInicio: piDataNascimento,
       dataNascimento: piDataNascimento,
       origem: piOrigem,
-      origemPais: piOrigemPais,
-      paiId: piOrigemPais === 'criatorio' && piPaiId ? piPaiId : undefined,
-      maeId: piOrigemPais === 'criatorio' && piMaeId ? piMaeId : undefined,
-      paiNome: piOrigemPais === 'externo' && piPaiNome.trim() ? piPaiNome.trim() : undefined,
-      maeNome: piOrigemPais === 'externo' && piMaeNome.trim() ? piMaeNome.trim() : undefined,
+      paiId: isCriatorio && piPaiId ? piPaiId : undefined,
+      maeId: isCriatorio && piMaeId ? piMaeId : undefined,
+      paiNome: isExterno && piPaisTexto.trim() ? piPaisTexto.trim() : (piPaiNome.trim() || undefined),
+      maeNome: isExterno ? undefined : (piMaeNome.trim() || undefined),
+      paisTexto: isExterno && piPaisTexto.trim() ? piPaisTexto.trim() : undefined,
       pesoMedioInicial: piPesoInicial.trim() || undefined,
       status: 'Crescimento',
       raca: piRaca.trim() || undefined,
       observacao: piObs.trim() || undefined,
+      pesagens: initialPesagens,
     });
 
     resetPintinhos();
@@ -1582,6 +1634,8 @@ export function Lots() {
             {displayedPintinhos.map(lote => {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
+              const pesagens = lote.pesagens || [];
+              const ultimaPesagem = pesagens.length > 0 ? [...pesagens].sort((a, b) => b.data.localeCompare(a.data))[0] : null;
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1625,10 +1679,14 @@ export function Lots() {
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Scale size={11} className="text-amber-400" /> Peso Inicial
+                        <Scale size={11} className="text-amber-400" /> {ultimaPesagem ? 'Peso Médio' : 'Peso Inicial'}
                       </p>
-                      <p className="text-base font-black text-white truncate">{lote.pesoMedioInicial || '—'}</p>
-                      <p className="text-[9px] text-theme-text-muted">Gramas/unid.</p>
+                      <p className="text-base font-black text-white truncate">
+                        {ultimaPesagem ? formatWeightG(ultimaPesagem.pesoMedioG) : (lote.pesoMedioInicial || '—')}
+                      </p>
+                      <p className="text-[9px] text-theme-text-muted truncate">
+                        {ultimaPesagem ? `Aferido (${fmtDate(ultimaPesagem.data)})` : 'Gramas/unid.'}
+                      </p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1680,17 +1738,91 @@ export function Lots() {
                     })()}
 
                     {/* Pais externos */}
-                    {(lote.paiNome || lote.maeNome) && (
+                    {(lote.paisTexto || lote.paiNome || lote.maeNome) && (
                       <div className="bg-theme-base/60 p-2.5 rounded-xl border border-theme-border/50 text-[11px] space-y-1">
                         <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider block">Pais Externos:</span>
-                        <div className="flex flex-wrap gap-2 text-white">
-                          {lote.paiNome && <span>🐓 Pai: <strong>{lote.paiNome}</strong></span>}
-                          {lote.maeNome && <span>🐔 Mãe: <strong>{lote.maeNome}</strong></span>}
-                        </div>
+                        <p className="text-white font-medium">
+                          {lote.paisTexto || [lote.paiNome, lote.maeNome].filter(Boolean).join(' · ')}
+                        </p>
                       </div>
                     )}
 
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-1 italic">Obs: {lote.observacao}</p>}
+                  </div>
+
+                  {/* ⚖️ REGISTRO E ACOMPANHAMENTO DE PESAGENS */}
+                  <div className="pt-3 border-t border-theme-border/50 space-y-2.5 mb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Scale size={14} className="text-theme-primary" />
+                        <p className="text-xs font-black text-white">Pesagens do Lote</p>
+                        <span className="text-[10px] text-theme-text-muted bg-theme-base px-2 py-0.5 rounded-md border border-theme-border/60">
+                          {pesagens.length} {pesagens.length === 1 ? 'pesagem' : 'pesagens'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openWeighModal(lote)}
+                        className="py-1.5 px-3 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl transition-all shadow cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        <Scale size={13} /> Registrar Pesagem
+                      </button>
+                    </div>
+
+                    {/* Dica de amostragem de pelo menos 5 pintinhos */}
+                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-amber-200">
+                        💡 Pese <strong>pelo menos 5 pintinhos</strong> para fazer a média e estimar o peso geral do lote.
+                      </span>
+                      {ultimaPesagem && (
+                        <span className="text-[10px] font-bold text-white shrink-0 ml-2">
+                          Média: <strong className="text-theme-primary">{formatWeightG(ultimaPesagem.pesoMedioG)}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Registro das pesagens (histórico) */}
+                    {pesagens.length > 0 ? (
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                        {[...pesagens]
+                          .sort((a, b) => b.data.localeCompare(a.data))
+                          .map((p, idx, arr) => {
+                            const nextOldest = arr[idx + 1];
+                            const diff = nextOldest ? p.pesoMedioG - nextOldest.pesoMedioG : null;
+                            return (
+                              <div key={p.id} className="p-2 bg-theme-base/80 border border-theme-border/60 rounded-xl flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-white text-[11px]">{fmtDate(p.data)}</span>
+                                  <span className="font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/20 text-[11px]">
+                                    {formatWeightG(p.pesoMedioG)}
+                                  </span>
+                                  {diff !== null && (
+                                    <span className={`text-[10px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {diff >= 0 ? `+${formatWeightG(diff)}` : `-${formatWeightG(Math.abs(diff))}`}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-theme-text-muted">
+                                    {p.avesPesadas ? `${p.avesPesadas} aves pesadas` : '5 aves pesadas'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => openWeighModal(lote)}
+                                    className="text-[10px] text-theme-primary hover:underline font-bold cursor-pointer"
+                                  >
+                                    Ver histórico
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-theme-base/40 rounded-xl border border-dashed border-theme-border/60 text-center text-[11px] text-theme-text-muted">
+                        Nenhuma pesagem registrada. Clique em "Registrar Pesagem" e pese 5 pintinhos para calibrar a média do lote.
+                      </div>
+                    )}
                   </div>
                   <div className="pt-3 border-t border-theme-border/50 space-y-2">
                     <button
@@ -2187,30 +2319,73 @@ export function Lots() {
                 </div>
 
                 {/* Data de Nascimento e Peso Inicial */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Data de Nascimento *</SectionLabel>
                     <input type="date" required value={piDataNascimento} onChange={e => setPiDataNascimento(e.target.value)} className={inputCls} />
                   </div>
                   <div className="space-y-1">
-                    <SectionLabel>Peso Médio Inicial</SectionLabel>
-                    <input type="text" placeholder="Ex: 40g" value={piPesoInicial} onChange={e => setPiPesoInicial(e.target.value)} className={inputCls} />
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {['35g', '40g', '45g', '50g'].map(p => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setPiPesoInicial(p)}
-                          className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-                            piPesoInicial === p
-                              ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
-                              : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between">
+                      <SectionLabel>Peso Médio Inicial</SectionLabel>
+                      <button
+                        type="button"
+                        onClick={() => setShowChickSampleCalc(!showChickSampleCalc)}
+                        className="text-[10px] text-theme-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        <Scale size={11} /> {showChickSampleCalc ? 'Digitar direto' : 'Pesar 5 pintinhos'}
+                      </button>
                     </div>
+
+                    {!showChickSampleCalc ? (
+                      <>
+                        <input type="text" placeholder="Ex: 40g" value={piPesoInicial} onChange={e => setPiPesoInicial(e.target.value)} className={inputCls} />
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {['35g', '40g', '45g', '50g'].map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setPiPesoInicial(p)}
+                              className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                                piPesoInicial === p
+                                  ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
+                                  : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-theme-base border border-theme-primary/40 rounded-xl p-2.5 space-y-2 animate-fade-in">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-amber-300 text-[10px]">
+                            Pese 5 pintinhos para tirar a média:
+                          </span>
+                          {piPesoInicial && (
+                            <span className="font-black text-theme-primary bg-theme-primary/15 px-2 py-0.5 rounded border border-theme-primary/30 text-[10px]">
+                              Média: {piPesoInicial}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {chickSampleWeights.map((w, idx) => (
+                            <div key={idx} className="space-y-0.5">
+                              <label className="text-[8px] font-extrabold text-theme-text-muted block text-center">
+                                P{idx + 1}
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="g"
+                                value={w}
+                                onChange={e => handleChickSampleWeightChange(idx, e.target.value)}
+                                className="w-full bg-theme-surface border border-theme-border rounded-lg p-1 text-[11px] text-center text-white focus:border-theme-primary outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2239,50 +2414,19 @@ export function Lots() {
                   </div>
                 </div>
 
-                {/* Pais dos Pintinhos (Opcional) */}
-                <div className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-3.5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span>🧬</span> Pais dos Pintinhos (Opcional)
-                    </span>
-                    <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded-lg border border-theme-border">
-                      Opcional
-                    </span>
-                  </div>
+                {/* PAIS DOS PINTINHOS: TOTALMENTE OCULTO ATÉ CLICAR NA ORIGEM */}
+                {piOrigem === 'Criatório' && (
+                  <div className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-3.5 space-y-3 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>🧬</span> Selecionar Pais do Criatório
+                      </span>
+                      <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded-lg border border-theme-border">
+                        Opcional
+                      </span>
+                    </div>
 
-                  {/* Escolha do tipo de pais: Nenhum / Criatório / Fora */}
-                  <div className="grid grid-cols-3 gap-1 bg-theme-surface p-1 rounded-xl border border-theme-border/50 text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => setPiOrigemPais('nenhum')}
-                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
-                        piOrigemPais === 'nenhum' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      Não informar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPiOrigemPais('criatorio')}
-                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
-                        piOrigemPais === 'criatorio' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      Do criatório
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPiOrigemPais('externo')}
-                      className={`py-1.5 px-2 rounded-lg font-bold transition-all text-center cursor-pointer ${
-                        piOrigemPais === 'externo' ? 'bg-theme-primary text-black font-black' : 'text-theme-text-muted hover:text-white'
-                      }`}
-                    >
-                      Pais de fora
-                    </button>
-                  </div>
-
-                  {piOrigemPais === 'criatorio' && (
-                    <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-theme-text-muted uppercase">Galo / Pai (opcional)</label>
                         <div className="relative">
@@ -2291,7 +2435,7 @@ export function Lots() {
                             onChange={e => setPiPaiId(e.target.value)}
                             className={inputCls + " appearance-none pr-8 text-xs"}
                           >
-                            <option value="">-- Selecionar Pai --</option>
+                            <option value="">-- Selecionar Pai do Plantel --</option>
                             {birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.anilha}{m.nome ? ` - ${m.nome}` : ''} ({m.raca})
@@ -2310,7 +2454,7 @@ export function Lots() {
                             onChange={e => setPiMaeId(e.target.value)}
                             className={inputCls + " appearance-none pr-8 text-xs"}
                           >
-                            <option value="">-- Selecionar Mãe --</option>
+                            <option value="">-- Selecionar Mãe do Plantel --</option>
                             {birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(f => (
                               <option key={f.id} value={f.id}>
                                 {f.anilha}{f.nome ? ` - ${f.nome}` : ''} ({f.raca})
@@ -2321,34 +2465,31 @@ export function Lots() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {piOrigemPais === 'externo' && (
-                    <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome do Pai (opcional)</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: Galo Shamo X"
-                          value={piPaiNome}
-                          onChange={e => setPiPaiNome(e.target.value)}
-                          className={inputCls + " text-xs"}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-theme-text-muted uppercase">Nome da Mãe (opcional)</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: Matriz 04"
-                          value={piMaeNome}
-                          onChange={e => setPiMaeNome(e.target.value)}
-                          className={inputCls + " text-xs"}
-                        />
-                      </div>
+                {piOrigem === 'Externo' && (
+                  <div className="bg-theme-base/60 border border-theme-border/70 rounded-2xl p-3.5 space-y-2.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>🧬</span> Quem são os pais?
+                      </span>
+                      <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded-lg border border-theme-border">
+                        Opcional
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-theme-text-muted uppercase">Escreva quem são os pais (opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Galo Shamo X e Matriz 04..."
+                        value={piPaisTexto}
+                        onChange={e => setPiPaisTexto(e.target.value)}
+                        className={inputCls + " text-xs"}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Quantidade de Pintinhos */}
                 <div className="space-y-1">

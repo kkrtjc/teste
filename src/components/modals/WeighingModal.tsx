@@ -9,7 +9,7 @@ interface WeighingModalProps {
   onClose: () => void;
 }
 
-function parseWeightG(val: string | number | undefined): number {
+function parseWeightG(val: string | number | undefined, isChick?: boolean): number {
   if (val === undefined || val === null || val === '') return 0;
   if (typeof val === 'number') return val;
   const clean = String(val).toLowerCase().replace(',', '.').trim();
@@ -17,7 +17,17 @@ function parseWeightG(val: string | number | undefined): number {
   if (!match) return 0;
   const num = parseFloat(match[1]);
   if (isNaN(num)) return 0;
-  if (clean.includes('kg') || (!clean.includes('g') && num < 20)) {
+  if (clean.includes('kg')) {
+    return Math.round(num * 1000);
+  }
+  if (clean.includes('g')) {
+    return Math.round(num);
+  }
+  if (isChick) {
+    if (num < 1) return Math.round(num * 1000);
+    return Math.round(num);
+  }
+  if (num < 20) {
     return Math.round(num * 1000);
   }
   return Math.round(num);
@@ -39,10 +49,12 @@ function fmtDate(iso: string) {
 export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
   const { editMeatLot, showToast } = useAppContext();
 
+  const isChick = lote?.id?.startsWith('chick-') || lote?.status === 'Crescimento';
+
   const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
   const [wPeso, setWPeso] = useState('');
   const [wObs, setWObs] = useState('');
-  const [useCalculator, setUseCalculator] = useState(false);
+  const [useCalculator, setUseCalculator] = useState(true);
   const [sampleWeights, setSampleWeights] = useState<string[]>(['', '', '', '', '']);
 
   if (!isOpen || !lote) return null;
@@ -56,23 +68,33 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
     // Auto-calcula média quando houver valores válidos
     const validGrams = updated
-      .map(v => parseWeightG(v))
+      .map(v => parseWeightG(v, isChick))
       .filter(g => g > 0);
 
     if (validGrams.length > 0) {
       const avg = Math.round(validGrams.reduce((a, b) => a + b, 0) / validGrams.length);
       setWPeso(formatWeightG(avg));
-      if (!wObs) {
-        setWObs(`Média de amostragem (${validGrams.length} aves pesadas)`);
+      if (!wObs || wObs.startsWith('Média de amostragem')) {
+        setWObs(`Média de amostragem (${validGrams.length} ${isChick ? 'pintinhos' : 'aves'} pesadas)`);
       }
     }
   };
 
+  const handleAddSampleSlot = () => {
+    setSampleWeights(prev => [...prev, '']);
+  };
+
   const handleSaveWeightRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    const pesoG = parseWeightG(wPeso);
+    const pesoG = parseWeightG(wPeso, isChick);
     if (pesoG <= 0) {
-      showToast('Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
+      showToast(isChick ? 'Informe um peso válido (ex: 45g)' : 'Informe um peso válido (ex: 2.1kg ou 2100g)', 'warning');
+      return;
+    }
+
+    const validCount = sampleWeights.filter(w => parseWeightG(w, isChick) > 0).length;
+    if (useCalculator && validCount < 5) {
+      showToast('Pese pelo menos 5 aves para calcular a média e estimar o peso geral do lote.', 'warning');
       return;
     }
 
@@ -81,7 +103,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
       data: wData,
       pesoMedioG: pesoG,
       observacao: wObs.trim() || undefined,
-      avesPesadas: useCalculator ? sampleWeights.filter(w => parseWeightG(w) > 0).length : 5
+      avesPesadas: useCalculator ? validCount : 5
     };
 
     const updatedPesagens = [...currentPesagens, newRecord].sort((a, b) => a.data.localeCompare(b.data));
@@ -89,8 +111,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
     setWPeso('');
     setWObs('');
     setSampleWeights(['', '', '', '', '']);
-    setUseCalculator(false);
-    showToast('Pesagem registrada com sucesso! Próxima aferição em 15 dias.', 'success');
+    showToast('Pesagem registrada com sucesso!', 'success');
     onClose();
   };
 
@@ -119,11 +140,11 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] font-bold text-theme-primary uppercase tracking-wider block">
-              Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}
+              {isChick ? 'Lote de Pintinhos' : 'Lote de Engorda'} · Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}
             </span>
             <h3 className="font-black text-lg text-white flex items-center gap-2">
               <Scale className="text-theme-primary" size={18} />
-              Acompanhamento de Pesagem
+              {isChick ? 'Acompanhamento de Pesagem dos Pintinhos' : 'Acompanhamento de Pesagem'}
             </h3>
           </div>
           <button 
@@ -136,13 +157,15 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
         </div>
 
         <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
-          {/* Alerta de 15 dias e amostragem de 5 aves */}
+          {/* Alerta e recomendação de amostragem de pelo menos 5 aves */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3">
             <Scale className="text-amber-400 shrink-0 mt-0.5" size={18} />
             <div className="text-xs text-amber-200 leading-snug">
-              <p className="font-bold text-white text-xs">Pesagem periódica (a cada 15 dias)</p>
+              <p className="font-bold text-white text-xs">
+                {isChick ? 'Pesagem e Estimativa de Peso do Lote' : 'Pesagem periódica (a cada 15 dias)'}
+              </p>
               <p className="text-[11px] text-amber-200/90 mt-0.5">
-                Pese <strong>pelo menos 5 aves</strong> representativas deste lote para calcular o peso médio real. Isso calibra com precisão a curva de ganho diário e a data estimada de abate.
+                Pese <strong>pelo menos 5 {isChick ? 'pintinhos' : 'aves'}</strong> representativos deste lote para calcular a média e estimar com precisão o peso geral.
               </p>
             </div>
           </div>
@@ -170,18 +193,37 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
             {/* Calculadora de 5 aves */}
             {useCalculator && (
               <div className="bg-theme-surface/70 border border-theme-primary/30 rounded-xl p-3 space-y-2.5">
-                <p className="text-[11px] font-bold text-theme-primary">
-                  Digite o peso de pelo menos 5 aves (ex: 2.1kg ou 2100g):
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-theme-primary">
+                    Pese pelo menos 5 {isChick ? 'pintinhos' : 'aves'} (amostragem):
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
+                      sampleWeights.filter(w => parseWeightG(w, isChick) > 0).length >= 5
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                        : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                    }`}>
+                      {sampleWeights.filter(w => parseWeightG(w, isChick) > 0).length}/5 pesadas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddSampleSlot}
+                      className="text-[10px] bg-theme-base hover:bg-theme-base/80 border border-theme-border px-2 py-0.5 rounded-md text-theme-text-muted hover:text-white transition-colors cursor-pointer"
+                      title="Adicionar mais um campo para amostragem"
+                    >
+                      + Ave
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {sampleWeights.map((w, idx) => (
                     <div key={idx} className="space-y-1">
                       <label className="text-[9px] font-extrabold text-theme-text-muted block text-center">
-                        Ave {idx + 1}
+                        {isChick ? 'Pintinho' : 'Ave'} {idx + 1}
                       </label>
                       <input
                         type="text"
-                        placeholder="kg / g"
+                        placeholder={isChick ? 'ex: 45g' : 'kg / g'}
                         value={w}
                         onChange={e => handleSampleWeightChange(idx, e.target.value)}
                         className="w-full bg-theme-base border border-theme-border rounded-lg p-1.5 text-xs text-center text-white focus:border-theme-primary outline-none"
@@ -209,7 +251,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
                 <input
                   required
                   type="text"
-                  placeholder="Ex: 2.1kg ou 2100g"
+                  placeholder={isChick ? "Ex: 45g ou selecione gramas" : "Ex: 2.1kg ou 2100g"}
                   value={wPeso}
                   onChange={e => setWPeso(e.target.value)}
                   className={inputCls}
