@@ -79,6 +79,9 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
         <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden mt-4 relative">
           <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full animate-[loading_1.5s_ease-in-out_infinite] w-full" />
         </div>
+        <p className="text-[11px] text-amber-300/80 font-medium tracking-wide animate-pulse">
+          Carregando informações do criatório...
+        </p>
       </div>
     </div>
   );

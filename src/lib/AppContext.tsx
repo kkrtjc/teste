@@ -1065,15 +1065,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         });
 
-        // Se houver aves novas (ex: cadastradas em outro aparelho ou primeiro login), busca fotos apenas para elas
+        // Se houver aves novas (ex: cadastradas em outro aparelho ou primeiro login), busca fotos em paralelo de alta velocidade
         if (missingPhotoBirdIds.length > 0 && isSupabaseConfigured) {
           try {
-            for (let i = 0; i < missingPhotoBirdIds.length; i += 10) {
-              const chunkIds = missingPhotoBirdIds.slice(i, i + 10);
-              const { data: pData } = await supabase!
-                .from('birds')
-                .select('id,imagem,imagens')
-                .in('id', chunkIds);
+            const chunks: string[][] = [];
+            for (let i = 0; i < missingPhotoBirdIds.length; i += 25) {
+              chunks.push(missingPhotoBirdIds.slice(i, i + 25));
+            }
+            const chunkResults = await Promise.all(
+              chunks.map(chunkIds =>
+                supabase!
+                  .from('birds')
+                  .select('id,imagem,imagens')
+                  .in('id', chunkIds)
+              )
+            );
+            chunkResults.forEach(({ data: pData }) => {
               if (pData) {
                 pData.forEach((pb: any) => {
                   cloudPhotoMap[pb.id] = {
@@ -1082,7 +1089,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   };
                 });
               }
-            }
+            });
           } catch (pErr) {
             console.warn('[Sync Otimizado] Falha ao buscar fotos sob demanda:', pErr);
           }
@@ -1577,11 +1584,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
         // Se o cache local ainda não tinha aves, aguarda a nuvem terminar
-        // ou até 2.5s de timeout de segurança para não travar a interface
+        // para que o usuário veja as informações completas de primeira, sem passar pelo zero
         if (localBirdsCount === 0) {
           await Promise.race([
             syncPromise,
-            new Promise(resolve => setTimeout(resolve, 2500))
+            new Promise(resolve => setTimeout(resolve, 8000))
           ]);
         }
       }
@@ -1692,24 +1699,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeBreed, setActiveBreed] = useState('');
 
   useEffect(() => {
-    if (isReady) {
-      const lsGlobal = localStorage.getItem('@mura-manager:has-seen-tutorial') === 'true';
-      const lsUser = user ? localStorage.getItem(`@mura-manager:${user.id}:has-seen-tutorial`) === 'true' : false;
-
-      if (lsGlobal || lsUser) {
-        setIsTutorialOpen(false);
-        return;
+    // Nunca abre o tutorial ou instruções automaticamente no login
+    setIsTutorialOpen(false);
+    try {
+      localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
+      localStorage.setItem('@mura-manager:has-seen-tutorial', 'true');
+      if (user) {
+        localStorage.setItem(`@mura-manager:${user.id}:has-seen-tutorial`, 'true');
       }
-
-      localforage.getItem(getStorageKey('has-seen-tutorial')).then(val => {
-        if (!val) {
-          setIsTutorialOpen(true);
-        } else {
-          setIsTutorialOpen(false);
-        }
-      }).catch(() => setIsTutorialOpen(false));
-    }
-  }, [isReady, user]);
+    } catch {}
+  }, [user]);
 
   // Autopromoção de 'Crescimento' para 'Adulto' e migração de status obsoletos ('Ativo') — Executa 1x ao carregar
   useEffect(() => {
@@ -2817,19 +2816,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [getStorageKey, user]);
 
-  const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
-    return localStorage.getItem('@mura-manager:hasSeenTour_v1') !== 'true';
-  });
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
 
   const startTour = useCallback(() => setIsTourOpen(true), []);
   const closeTour = useCallback(() => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
+    try {
+      localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
+    } catch {}
   }, []);
   const finishTour = useCallback(() => {
     setIsTourOpen(false);
-    localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
+    try {
+      localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
+    } catch {}
   }, []);
 
   const { triggerSuccess, triggerWarning, triggerError, triggerLight } = useHaptics();

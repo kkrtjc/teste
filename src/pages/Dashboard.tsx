@@ -26,7 +26,13 @@ export function Dashboard() {
       const u = localStorage.getItem('@mura-manager:cached-user');
       const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
       const raw = localStorage.getItem(`@mura-manager:dashboard-stats:${uid}`);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Só aceita cache se tiver dados reais (evita exibir 00000 de cache vazio)
+        if (parsed && (parsed.totalAves > 0 || parsed.totalLotes > 0)) {
+          return parsed;
+        }
+      }
     } catch {}
     return null;
   });
@@ -85,22 +91,24 @@ export function Dashboard() {
     };
   }, [birds, eggLots, meatLots, incubationLots, breeds.length]);
 
-  // Persiste snapshot no localStorage assim que os dados reais são computados
+  // Persiste snapshot no localStorage APENAS quando há números concretos (> 0)
   useEffect(() => {
-    if (stats.totalAves > 0 || isInitialSyncDone) {
+    if (stats.totalAves > 0 || stats.totalLotes > 0) {
       setCachedStats(stats);
       try {
         const uid = user?.id || 'guest';
         localStorage.setItem(`@mura-manager:dashboard-stats:${uid}`, JSON.stringify(stats));
       } catch {}
     }
-  }, [stats, isInitialSyncDone, user?.id]);
+  }, [stats, user?.id]);
 
-  // Estado de carregamento: ainda não terminou a sincronização inicial e não temos nem cache nem aves
-  const isLoading = (!isReady || !isInitialSyncDone) && !cachedStats && stats.totalAves === 0;
+  // Estado de carregamento: ainda sincronizando e sem cache com aves
+  const hasRealData = stats.totalAves > 0 || stats.totalLotes > 0;
+  const isSyncFinished = isReady && isInitialSyncDone;
+  const isLoading = !isSyncFinished && !cachedStats && !hasRealData;
 
-  // Estatísticas consolidadas para exibição
-  const displayStats = (stats.totalAves > 0 || isInitialSyncDone)
+  // Estatísticas consolidadas para exibição: nunca mostra 0 enquanto ainda estiver carregando
+  const displayStats = hasRealData
     ? stats
     : (cachedStats || stats);
 
@@ -120,8 +128,8 @@ export function Dashboard() {
         </h2>
       </div>
 
-      {/* ── Stats grid ── */}
-      {!isReady && !cachedStats ? (
+      {/* ── Stats grid: Se ainda estiver carregando e sem dados reais, exibe esqueleto elegante ── */}
+      {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="p-4 rounded-2xl bg-theme-surface/70 border border-theme-border/40 flex flex-col justify-between h-[100px] animate-pulse">
