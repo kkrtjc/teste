@@ -579,8 +579,6 @@ export function Lots() {
   const [piMaeNome, setPiMaeNome] = useState('');
   const [piQtd, setPiQtd] = useState('');
   const [piObs, setPiObs] = useState('');
-  const [showChickSampleCalc, setShowChickSampleCalc] = useState(false);
-  const [chickSampleWeights, setChickSampleWeights] = useState<string[]>(['', '', '', '', '']);
 
   // Confirmation Modal state for Lot Quantity Verification
   const [confirmLotModal, setConfirmLotModal] = useState<{
@@ -811,23 +809,6 @@ export function Lots() {
     setPiPesoInicial(''); setPiOrigem('');
     setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
     setPiQtd(''); setPiObs('');
-    setShowChickSampleCalc(false);
-    setChickSampleWeights(['', '', '', '', '']);
-  };
-
-  const handleChickSampleWeightChange = (index: number, val: string) => {
-    const updated = [...chickSampleWeights];
-    updated[index] = val;
-    setChickSampleWeights(updated);
-
-    const validGrams = updated
-      .map(v => parseWeightG(v))
-      .filter(g => g > 0);
-
-    if (validGrams.length > 0) {
-      const avg = Math.round(validGrams.reduce((a, b) => a + b, 0) / validGrams.length);
-      setPiPesoInicial(formatWeightG(avg));
-    }
   };
 
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
@@ -849,26 +830,14 @@ export function Lots() {
     const isExterno = piOrigem === 'Externo';
     const initialG = parseWeightG(piPesoInicial);
 
-    const validSampleGrams = chickSampleWeights
-      .map(w => parseWeightG(w))
-      .filter(g => g > 0);
-
     const initialPesagens: any[] = [];
-    if (validSampleGrams.length >= 5) {
-      initialPesagens.push({
-        id: uid(),
-        data: piDataNascimento,
-        pesoMedioG: Math.round(validSampleGrams.reduce((a, b) => a + b, 0) / validSampleGrams.length),
-        avesPesadas: validSampleGrams.length,
-        observacao: `Amostragem inicial no nascimento (${validSampleGrams.length} pintinhos)`
-      });
-    } else if (initialG > 0) {
+    if (initialG > 0) {
       initialPesagens.push({
         id: uid(),
         data: piDataNascimento,
         pesoMedioG: initialG,
         avesPesadas: 5,
-        observacao: 'Peso inicial informado'
+        observacao: 'Pesagem média inicial (amostragem de 5 pintinhos ÷ 5)'
       });
     }
 
@@ -1636,6 +1605,9 @@ export function Lots() {
               const totalA = Math.max(lote.qtdAves || 0, lote.avesIds?.length || 0);
               const pesagens = lote.pesagens || [];
               const ultimaPesagem = pesagens.length > 0 ? [...pesagens].sort((a, b) => b.data.localeCompare(a.data))[0] : null;
+              const diasRefPesagem = ultimaPesagem ? calcDays(ultimaPesagem.data) : dias;
+              const precisaPesar = diasRefPesagem >= 15;
+              const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
@@ -1769,17 +1741,37 @@ export function Lots() {
                       </button>
                     </div>
 
-                    {/* Dica de amostragem de pelo menos 5 pintinhos */}
-                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                      <span className="text-[11px] text-amber-200">
-                        💡 Pese <strong>pelo menos 5 pintinhos</strong> para fazer a média e estimar o peso geral do lote.
-                      </span>
-                      {ultimaPesagem && (
-                        <span className="text-[10px] font-bold text-white shrink-0 ml-2">
-                          Média: <strong className="text-theme-primary">{formatWeightG(ultimaPesagem.pesoMedioG)}</strong>
+                    {/* Banner de ciclo de 15 dias e instrução simples */}
+                    {precisaPesar ? (
+                      <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 flex items-start gap-2.5">
+                        <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                        <div className="text-xs flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-black text-amber-300">Dia de Pesar o Lote! (A cada 15 dias)</p>
+                            {ultimaPesagem && (
+                              <span className="text-[10px] text-theme-text-muted">
+                                Última: {fmtDate(ultimaPesagem.data)} ({diasRefPesagem}d atrás)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-white/90 text-[11px] mt-0.5">
+                            Pese <strong>5 pintinhos</strong>, divida por <strong>5</strong> e informe o peso médio.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-theme-base/60 border border-theme-border/60 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle size={15} className="text-emerald-400 shrink-0" />
+                          <span className="text-[11px] text-white/90">
+                            Pesagem em dia · Próxima aferição em <strong>{diasParaPesar} {diasParaPesar === 1 ? 'dia' : 'dias'}</strong>
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-theme-text-muted bg-theme-surface px-2 py-0.5 rounded border border-theme-border/50">
+                          A cada 15 dias
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Registro das pesagens (histórico) */}
                     {pesagens.length > 0 ? (
@@ -1804,14 +1796,14 @@ export function Lots() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] text-theme-text-muted">
-                                    {p.avesPesadas ? `${p.avesPesadas} aves pesadas` : '5 aves pesadas'}
+                                    Média (5 pintinhos ÷ 5)
                                   </span>
                                   <button
                                     type="button"
                                     onClick={() => openWeighModal(lote)}
                                     className="text-[10px] text-theme-primary hover:underline font-bold cursor-pointer"
                                   >
-                                    Ver histórico
+                                    Histórico
                                   </button>
                                 </div>
                               </div>
@@ -1820,7 +1812,7 @@ export function Lots() {
                       </div>
                     ) : (
                       <div className="p-2.5 bg-theme-base/40 rounded-xl border border-dashed border-theme-border/60 text-center text-[11px] text-theme-text-muted">
-                        Nenhuma pesagem registrada. Clique em "Registrar Pesagem" e pese 5 pintinhos para calibrar a média do lote.
+                        Nenhuma pesagem registrada. Clique em "Registrar Pesagem" e informe a média de 5 pintinhos.
                       </div>
                     )}
                   </div>
@@ -2327,65 +2319,34 @@ export function Lots() {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <SectionLabel>Peso Médio Inicial</SectionLabel>
-                      <button
-                        type="button"
-                        onClick={() => setShowChickSampleCalc(!showChickSampleCalc)}
-                        className="text-[10px] text-theme-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
-                      >
-                        <Scale size={11} /> {showChickSampleCalc ? 'Digitar direto' : 'Pesar 5 pintinhos'}
-                      </button>
+                      <span className="text-[10px] text-theme-text-muted">Pese 5 pintinhos ÷ 5</span>
                     </div>
-
-                    {!showChickSampleCalc ? (
-                      <>
-                        <input type="text" placeholder="Ex: 40g" value={piPesoInicial} onChange={e => setPiPesoInicial(e.target.value)} className={inputCls} />
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {['35g', '40g', '45g', '50g'].map(p => (
-                            <button
-                              key={p}
-                              type="button"
-                              onClick={() => setPiPesoInicial(p)}
-                              className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
-                                piPesoInicial === p
-                                  ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
-                                  : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="bg-theme-base border border-theme-primary/40 rounded-xl p-2.5 space-y-2 animate-fade-in">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-amber-300 text-[10px]">
-                            Pese 5 pintinhos para tirar a média:
-                          </span>
-                          {piPesoInicial && (
-                            <span className="font-black text-theme-primary bg-theme-primary/15 px-2 py-0.5 rounded border border-theme-primary/30 text-[10px]">
-                              Média: {piPesoInicial}
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          {chickSampleWeights.map((w, idx) => (
-                            <div key={idx} className="space-y-0.5">
-                              <label className="text-[8px] font-extrabold text-theme-text-muted block text-center">
-                                P{idx + 1}
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="g"
-                                value={w}
-                                onChange={e => handleChickSampleWeightChange(idx, e.target.value)}
-                                className="w-full bg-theme-surface border border-theme-border rounded-lg p-1 text-[11px] text-center text-white focus:border-theme-primary outline-none"
-                              />
-                            </div>
-                          ))}
-                        </div>
+                    <input
+                      type="text"
+                      placeholder="Ex: 40g (média dos 5 pintinhos)"
+                      value={piPesoInicial}
+                      onChange={e => setPiPesoInicial(e.target.value)}
+                      className={inputCls}
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
+                      <div className="flex flex-wrap gap-1">
+                        {['35g', '40g', '45g', '50g'].map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setPiPesoInicial(p)}
+                            className={`text-[9px] px-1.5 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                              piPesoInicial === p
+                                ? 'bg-theme-primary/20 border-theme-primary text-theme-primary font-bold'
+                                : 'bg-theme-base border-theme-border text-theme-text-muted hover:text-white'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
                       </div>
-                    )}
+                      <span className="text-[9px] text-amber-300">Aferir a cada 15 dias</span>
+                    </div>
                   </div>
                 </div>
 
