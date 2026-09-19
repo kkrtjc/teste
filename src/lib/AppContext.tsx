@@ -168,7 +168,7 @@ export type EggLot = {
   baia: string;
   femeasIds: string[];
   qtdFemeas?: number;          // quantidade manual (quando não se vincula aves individuais)
-  expectativaDiaria: number;
+  expectativaDiaria?: number;
   dataInicio: string;
   status: 'Ativo' | 'Encerrado';
   raca?: string;

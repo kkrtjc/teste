@@ -14,6 +14,7 @@ import {
 import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
+import { calculateLotProduction } from '../lib/lotProduction';
 
 // helpers
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -123,10 +124,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const { birds, breeds } = useAppContext();
   const [baia, setBaia] = useState('');
   const [qtdFemeas, setQtdFemeas] = useState('');
-  const [expectativaDiaria, setExpectativaDiaria] = useState('');
   const [raca, setRaca] = useState('');
-  const [precoVendaPadrao, setPrecoVendaPadrao] = useState('');
-  const [custoProdPadrao, setCustoProdPadrao] = useState('');
   const [observacao, setObservacao] = useState('');
   const [selectedFemeas, setSelectedFemeas] = useState<string[]>([]);
   const [error, setError] = useState('');
@@ -157,19 +155,15 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       return;
     }
 
-    const exp = expectativaDiaria.trim() ? (parseInt(expectativaDiaria) || 0) : 0;
-
     const newLot: EggLot = {
       id: uid(),
       baia: baia.trim(),
       femeasIds: selectedFemeas,
       qtdFemeas: countFemeas,
-      expectativaDiaria: exp,
+      expectativaDiaria: 0,
       dataInicio: todayISO(),
       status: 'Ativo',
       raca: raca || undefined,
-      precoVendaPadrao: precoVendaPadrao.trim() ? (parseFloat(precoVendaPadrao) || undefined) : undefined,
-      custoProdPadrao: custoProdPadrao.trim() ? (parseFloat(custoProdPadrao) || undefined) : undefined,
       observacao: observacao.trim() || undefined,
       registros: []
     };
@@ -256,33 +250,6 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
             </span>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Expectativa Diária (Opcional)</label>
-            <input
-              type="number"
-              min="1"
-              inputMode="numeric"
-              placeholder="Ex: 20 (ovos/dia)"
-              value={expectativaDiaria}
-              onChange={e => setExpectativaDiaria(e.target.value)}
-              onKeyDown={onlyNumericKeyDown}
-              className={inputCls}
-            />
-            <p className="text-[10px] text-theme-text-muted">
-              Necessário para calcular a taxa de eficiência de postura nos relatórios.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço Padrão / Dúzia (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" placeholder="Ex: 10.00 (Opcional)" value={precoVendaPadrao} onChange={e => setPrecoVendaPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo Padrão / Ovo (R$)</label>
-              <input type="number" step="0.01" inputMode="decimal" placeholder="Ex: 0.40 (Opcional)" value={custoProdPadrao} onChange={e => setCustoProdPadrao(e.target.value.replace(/[^0-9.]/g, ''))} onKeyDown={onlyNumericKeyDown} className={inputCls} />
-            </div>
-          </div>
 
           {availableFemeas.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-theme-border">
@@ -776,14 +743,12 @@ function LotCard({
   const custo = records.reduce((s, r) => s + r.vendidos * r.custoProd, 0);
   const lucro = receita - custo;
   const dias = daysBetween(lot.dataInicio, todayISO());
-  const mediaReal = records.length > 0 ? (total / records.length) : 0;
-  const eficiencia = lot.expectativaDiaria > 0 ? Math.min(100, (mediaReal / lot.expectativaDiaria) * 100) : 0;
   const totalFemeas = Math.max(lot.qtdFemeas || 0, lot.femeasIds?.length || 0);
+  const prodStats = calculateLotProduction(records, totalFemeas);
   const cadastradasCount = lot.femeasIds?.length || 0;
   const avulsasCount = Math.max(0, totalFemeas - cadastradasCount);
   const femeaNomes = lot.femeasIds.map(id => birds.find(b => b.id === id)).filter(Boolean).map(b => b!.nome || b!.anilha).join(', ');
   const isAtivo = lot.status === 'Ativo';
-  const efBar = Math.min(100, eficiencia);
 
   // ── DETECTOR DE ANOMALIA / QUEDA DE POSTURA ──
   // Compara a média recente (últimos 3 lançamentos) com a média histórica da baia (últimos 14)
@@ -851,7 +816,7 @@ function LotCard({
             </div>
           </div>
           <p className="text-xs text-theme-text-muted mt-0.5 truncate">
-            <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; {lot.expectativaDiaria > 0 ? `Exp. ${lot.expectativaDiaria}/dia` : 'Exp. não definida'} &bull; Desde {formatDate(lot.dataInicio)}
+            <strong className="text-white">{totalFemeas} fêmea(s)</strong> {cadastradasCount > 0 && avulsasCount > 0 ? `(${cadastradasCount} cadastradas + ${avulsasCount} avulsas)` : ''} &bull; {prodStats.hasRecords ? `Média: ${prodStats.mediaFormatada} ovos/dia` : 'Sem registros'} &bull; Desde {formatDate(lot.dataInicio)}
           </p>
           {femeaNomes ? (
             <p className="text-[10px] text-theme-text-muted/80 mt-0.5 truncate">
@@ -896,23 +861,54 @@ function LotCard({
         ))}
       </div>
 
-      <div className="px-4 py-2 border-t border-theme-border flex items-center gap-3">
-        <span className="text-[10px] text-theme-text-muted font-bold whitespace-nowrap">Eficiência de Postura</span>
-        {lot.expectativaDiaria <= 0 ? (
-          <span className="text-[10px] text-amber-400 font-medium italic">
-            Defina a expectativa diária para calcular a taxa real
-          </span>
-        ) : records.length === 0 ? (
-          <span className="text-[10px] text-theme-text-muted font-medium italic">
-            Nenhuma coleta registrada ainda
-          </span>
-        ) : (
-          <>
-            <div className="flex-1 h-1.5 rounded-full bg-theme-base overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${efBar >= 80 ? 'bg-green-400' : efBar >= 50 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${efBar}%` }} />
+      <div className="px-4 py-2.5 border-t border-theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-theme-base/20">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400 shrink-0">
+            <BarChart2 size={13} />
+          </div>
+          <div>
+            <span className="text-[10px] text-theme-text-muted font-bold uppercase tracking-wider block">
+              Média de Produção
+            </span>
+            {prodStats.hasRecords ? (
+              <p className="text-[11px] text-theme-text-muted">
+                Diferença de <strong className="text-white">{prodStats.diasProducao} {prodStats.diasProducao === 1 ? 'dia' : 'dias'} de produção</strong> ({prodStats.totalOvos} ovos)
+              </p>
+            ) : (
+              <p className="text-[11px] text-theme-text-muted italic">
+                Nenhuma coleta registrada para cálculo
+              </p>
+            )}
+          </div>
+        </div>
+
+        {prodStats.hasRecords ? (
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <div className="text-right">
+              <span className="text-xs sm:text-sm font-black text-amber-400">
+                {prodStats.mediaFormatada} <span className="text-[10px] font-bold text-white/80">ovos/dia</span>
+              </span>
+              {totalFemeas > 0 && (
+                <span className="text-[10px] text-emerald-400 font-bold block">
+                  {prodStats.taxaPostura}% de postura
+                </span>
+              )}
             </div>
-            <span className={`text-[10px] font-black ${efBar >= 80 ? 'text-green-400' : efBar >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{eficiencia.toFixed(0)}%</span>
-          </>
+            {totalFemeas > 0 && (
+              <div className="w-16 sm:w-20 h-2 rounded-full bg-theme-base overflow-hidden border border-theme-border/40">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    prodStats.taxaPostura >= 70 ? 'bg-emerald-400' : prodStats.taxaPostura >= 40 ? 'bg-amber-400' : 'bg-blue-400'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(8, prodStats.taxaPostura))}%` }}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-[10px] text-theme-text-muted font-medium italic">
+            Sem registros ainda
+          </span>
         )}
       </div>
 
@@ -997,7 +993,7 @@ function LotCard({
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {[{ label: 'Dias ativos', value: `${dias}d` }, { label: 'Lançamentos', value: records.length }, { label: 'Média/dia', value: mediaReal.toFixed(1) }].map(m => (
+            {[{ label: 'Dias ativos', value: `${dias}d` }, { label: 'Lançamentos', value: records.length }, { label: 'Média/dia', value: prodStats.hasRecords ? prodStats.mediaFormatada : '0' }].map(m => (
               <div key={m.label} className="rounded-xl bg-theme-surface border border-theme-border p-2 text-center">
                 <p className="text-sm font-black text-white">{m.value}</p>
                 <p className="text-[9px] text-theme-text-muted uppercase font-bold">{m.label}</p>

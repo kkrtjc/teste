@@ -14,6 +14,7 @@ import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { generateLotPdf, sharePdfFile } from '../lib/pdfGenerator';
+import { calculateLotProduction } from '../lib/lotProduction';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -529,7 +530,6 @@ export function Lots() {
   const [pFemeas, setPFemeas] = useState<string[]>([]);
   const [pQtd, setPQtd] = useState('');
   const [pSearch, setPSearch] = useState('');
-  const [pExpectativa, setPExpectativa] = useState('');
   const [pObs, setPObs] = useState('');
 
   // Engorda Lot states
@@ -702,7 +702,7 @@ export function Lots() {
   const resetPostura = () => {
     setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
     setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
-    setPExpectativa(''); setPObs('');
+    setPObs('');
   };
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
@@ -719,7 +719,6 @@ export function Lots() {
         baia: pBaia.trim(),
         femeasIds: pFemeas,
         qtdFemeas: finalTotal,
-        expectativaDiaria: pExpectativa.trim() ? (parseInt(pExpectativa) || 0) : 0,
         dataInicio: pDataInicio,
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
@@ -1010,6 +1009,7 @@ export function Lots() {
               const totalF = (lote.qtdFemeas !== undefined && lote.qtdFemeas !== null) ? Number(lote.qtdFemeas) : (lote.femeasIds?.length || 0);
               const cadastradasF = lote.femeasIds?.length || 0;
               const avulsasF = Math.max(0, totalF - cadastradasF);
+              const prodStats = calculateLotProduction(lote.registros, totalF);
               return (
                 <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Egg size={100} /></div>
@@ -1051,17 +1051,22 @@ export function Lots() {
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Egg size={11} className="text-amber-400" /> Meta Diária
+                        <Egg size={11} className="text-amber-400" /> Média Diária
                       </p>
-                      {lote.expectativaDiaria && lote.expectativaDiaria > 0 ? (
+                      {prodStats.hasRecords ? (
                         <>
-                          <p className="text-base font-black text-white truncate">{lote.expectativaDiaria} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
-                          <p className="text-[9px] text-theme-text-muted">Produção/dia</p>
+                          <p className="text-base font-black text-white truncate">
+                            {prodStats.mediaFormatada} <span className="text-xs font-normal text-theme-text-muted">ovos/dia</span>
+                          </p>
+                          <p className="text-[9px] text-theme-text-muted truncate">
+                            {prodStats.totalOvos} ovos em {prodStats.diasProducao} {prodStats.diasProducao === 1 ? 'dia' : 'dias'}
+                            {totalF > 0 && ` (${prodStats.taxaPostura}%)`}
+                          </p>
                         </>
                       ) : (
                         <>
-                          <p className="text-sm font-bold text-theme-text-muted">Não definida</p>
-                          <p className="text-[9px] text-theme-text-muted">Informe nas configs</p>
+                          <p className="text-sm font-bold text-theme-text-muted">Sem registros</p>
+                          <p className="text-[9px] text-theme-text-muted">Lance na aba Ovos</p>
                         </>
                       )}
                     </div>
@@ -1829,16 +1834,7 @@ export function Lots() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <SectionLabel>Expectativa de Ovos por Dia (Opcional)</SectionLabel>
-                  <div className="relative">
-                    <input type="number" min="0" inputMode="numeric" value={pExpectativa} onKeyDown={onlyNumericKeyDown} onChange={e => setPExpectativa(sanitizeNumeric(e.target.value))} placeholder="Ex: 25 (ovos/dia)" className={inputCls} />
-                  </div>
-                  <p className="text-[10px] text-theme-text-muted flex items-center gap-1">
-                    <Info size={10} />
-                    Necessário para calcular a taxa de eficiência de postura nos relatórios.
-                  </p>
-                </div>
+
 
 
                 <div className="space-y-1">
