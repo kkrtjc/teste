@@ -295,7 +295,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={13} />
                 <input
                   type="text"
-                  placeholder="Digite o nome (ex: Pérola), anilha ou raça..."
+                  placeholder="Buscar por nome (ex: Pérola), anilha ou raça..."
                   value={searchFemeas}
                   onChange={e => setSearchFemeas(e.target.value)}
                   className="w-full bg-theme-base border border-theme-border rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors"
@@ -346,18 +346,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
                 </div>
               )}
 
-              {/* Se não digitou: NÃO mostra pré-visualização de 3 aves */}
-              {!hasSearchFemeas ? (
-                <div className="py-2.5 px-3 rounded-xl bg-theme-base/30 border border-dashed border-theme-border/70 text-center">
-                  <p className="text-[11px] text-theme-text-muted">
-                    🔍 Digite o nome (ex: <strong className="text-white font-semibold">Pérola</strong>), anilha ou raça para buscar fêmeas cadastradas.
-                  </p>
-                  <p className="text-[10px] text-theme-text-muted/70 mt-0.5">
-                    {availableFemeas.length} fêmea(s) disponível(is) no criatório
-                  </p>
-                </div>
-              ) : (
-                /* Exibe lista de fêmeas encontradas */
+              {/* Quando digitou: exibe lista de fêmeas encontradas */}
+              {hasSearchFemeas && (
                 <div className="space-y-1.5 animate-fade-in">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[10px] text-theme-text-muted font-bold">

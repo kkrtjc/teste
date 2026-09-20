@@ -102,8 +102,8 @@ function BirdPicker({
   onSelectAll,
   search,
   onSearch,
-  emptyMsg,
-  placeholder = "Digite o nome (ex: Pérola), anilha ou raça para buscar..."
+  emptyMsg: _emptyMsg,
+  placeholder = "Buscar por nome (ex: Pérola), anilha ou raça..."
 }: {
   birds: { id: string; anilha: string; nome?: string; raca?: string; sexo?: string; status?: string; baia?: string }[];
   selected: string[];
@@ -111,7 +111,7 @@ function BirdPicker({
   onSelectAll: (ids: string[]) => void;
   search: string;
   onSearch: (v: string) => void;
-  emptyMsg: string;
+  emptyMsg?: string;
   placeholder?: string;
 }) {
   const q = normalizeSearch(search);
@@ -194,24 +194,8 @@ function BirdPicker({
         </div>
       )}
 
-      {/* Se não digitou na barra: não pré-visualiza lista com 3 aves */}
-      {!hasSearch ? (
-        <div className="py-3 px-4 rounded-xl bg-theme-base/30 border border-dashed border-theme-border/70 text-center">
-          {birds.length === 0 ? (
-            <p className="text-[11px] text-theme-text-muted italic">{emptyMsg}</p>
-          ) : (
-            <>
-              <p className="text-[11px] text-theme-text-muted leading-relaxed">
-                🔍 Digite o nome (ex: <strong className="text-white font-semibold">Pérola</strong>), anilha ou raça para buscar e adicionar ao lote.
-              </p>
-              <p className="text-[10px] text-theme-text-muted/70 mt-1">
-                {birds.length} ave(s) disponível(is) no criatório
-              </p>
-            </>
-          )}
-        </div>
-      ) : (
-        /* Quando digitou: exibe os resultados encontrados */
+      {/* Se digitou na barra: exibe os resultados encontrados */}
+      {hasSearch && (
         <div className="space-y-2 animate-fade-in">
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] text-theme-text-muted font-bold">
