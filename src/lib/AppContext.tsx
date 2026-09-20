@@ -163,6 +163,12 @@ export type LotMovementRecord = {
   observacao?: string;
 };
 
+export type LotNote = {
+  id: string;
+  data: string;           // YYYY-MM-DD
+  texto: string;
+};
+
 export type EggLot = {
   id: string;
   baia: string;
@@ -175,6 +181,7 @@ export type EggLot = {
   precoVendaPadrao?: number;   // R$ por dúzia — padrão para aba Ovos
   custoProdPadrao?: number;    // R$ por ovo — padrão para aba Ovos
   observacao?: string;
+  observacoesAdicionais?: LotNote[];
   registros?: EggDailyRecord[];
   movimentacoes?: LotMovementRecord[];
 };
@@ -208,6 +215,7 @@ export type MeatLot = {
   raca?: string;
   racaId?: string;
   observacao?: string;
+  observacoesAdicionais?: LotNote[];
   vacinas?: string;            // Vacinas aplicadas ou previstas no lote
   movimentacoes?: LotMovementRecord[];
   ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
@@ -1359,6 +1367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           precoVendaPadrao: local?.precoVendaPadrao || 6.0,
           custoProdPadrao: local?.custoProdPadrao || 0.30,
           observacao: local?.observacao || '',
+          observacoesAdicionais: local?.observacoesAdicionais || [],
           registros: finalRegs,
           movimentacoes: finalMovs
         };
@@ -1426,6 +1435,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           raca: local?.raca || '',
           racaId: local?.racaId,
           observacao: local?.observacao || '',
+          observacoesAdicionais: local?.observacoesAdicionais || [],
           vacinas: local?.vacinas,
           pesoMeta: local?.pesoMeta || '',
           qtdAves: finalQtdAves,

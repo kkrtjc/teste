@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Syringe
+  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
+import { LotNotesModal } from '../components/modals/LotNotesModal';
 import { generateLotPdf, sharePdfFile } from '../lib/pdfGenerator';
 import { calculateLotProduction } from '../lib/lotProduction';
 
@@ -788,7 +789,17 @@ export function Lots() {
     loteType: 'engorda',
   });
 
-  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || showQuickBreedModal || weighModal.isOpen;
+  const [notesModal, setNotesModal] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+    lotType: 'postura' | 'engorda' | 'pintinhos';
+  }>({
+    isOpen: false,
+    lote: null,
+    lotType: 'postura',
+  });
+
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || notesModal.isOpen || showQuickBreedModal || weighModal.isOpen;
   useEffect(() => {
     if (isAnyModalOpen) {
       document.body.classList.add('modal-open-lock');
@@ -1277,8 +1288,21 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
 
-                  {/* Botão do Lote */}
-                  <div className="pt-3 border-t border-theme-border/50">
+                  {/* Botões do Lote */}
+                  <div className="pt-3 border-t border-theme-border/50 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setNotesModal({ isOpen: true, lote, lotType: 'postura' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <FileText size={15} className="shrink-0" />
+                        <span>Observações Adicionais</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0)} {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0) === 1 ? 'nota' : 'notas'}
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
@@ -1688,7 +1712,7 @@ export function Lots() {
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
-                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-2"
                     >
                       <span className="flex items-center gap-2 text-theme-primary font-bold">
                         <Activity size={15} className="shrink-0" />
@@ -1696,6 +1720,19 @@ export function Lots() {
                       </span>
                       <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
                         {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotesModal({ isOpen: true, lote, lotType: 'engorda' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer mb-3"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <FileText size={15} className="shrink-0" />
+                        <span>Observações Adicionais</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0)} {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0) === 1 ? 'nota' : 'notas'}
                       </span>
                     </button>
                     <p className={labelCls + " mb-2"}>Alterar Status</p>
@@ -1879,6 +1916,19 @@ export function Lots() {
                       </span>
                       <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
                         {lote.movimentacoes?.length || 0} {lote.movimentacoes?.length === 1 ? 'registro' : 'registros'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotesModal({ isOpen: true, lote, lotType: 'pintinhos' })}
+                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2 text-theme-primary font-bold">
+                        <FileText size={15} className="shrink-0" />
+                        <span>Observações Adicionais</span>
+                      </span>
+                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
+                        {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0)} {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0) === 1 ? 'nota' : 'notas'}
                       </span>
                     </button>
                     <button
@@ -2728,6 +2778,26 @@ export function Lots() {
             loteType={movementModal.loteType}
             birds={birds}
             editBird={editBird}
+            editEggLot={editEggLot}
+            editMeatLot={editMeatLot}
+            showToast={showToast}
+          />
+        );
+      })()}
+
+      {/* ── MODAL DE OBSERVAÇÕES ADICIONAIS DO LOTE ── */}
+      {(() => {
+        const liveNotesLot = notesModal.lote
+          ? (notesModal.lotType === 'postura'
+              ? eggLots.find(l => l.id === notesModal.lote?.id)
+              : meatLots.find(l => l.id === notesModal.lote?.id)) || notesModal.lote
+          : null;
+        return (
+          <LotNotesModal
+            isOpen={notesModal.isOpen}
+            onClose={() => setNotesModal({ isOpen: false, lote: null, lotType: 'postura' })}
+            lote={liveNotesLot}
+            lotType={notesModal.lotType}
             editEggLot={editEggLot}
             editMeatLot={editMeatLot}
             showToast={showToast}

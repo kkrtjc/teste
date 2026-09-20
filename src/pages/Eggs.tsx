@@ -9,11 +9,12 @@ import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
-  AlertTriangle, ShoppingCart, Sparkles, Activity, Search
+  AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText
 } from 'lucide-react';
 import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
+import { LotNotesModal } from '../components/modals/LotNotesModal';
 import { calculateLotProduction } from '../lib/lotProduction';
 
 // helpers
@@ -850,6 +851,7 @@ function LotCard({
   onToggleStatus,
   onDeleteLot,
   onOpenMovement,
+  onOpenNotes,
   onRequestDeleteRecord,
   isExpandedInitial = false,
 }: {
@@ -863,6 +865,7 @@ function LotCard({
   onToggleStatus?: (lot: EggLot) => void;
   onDeleteLot?: (lot: EggLot) => void;
   onOpenMovement?: (lot: EggLot) => void;
+  onOpenNotes?: (lot: EggLot) => void;
   onRequestDeleteRecord?: (lot: EggLot, recordId: string, date: string) => void;
   isExpandedInitial?: boolean;
 }) {
@@ -1091,6 +1094,23 @@ function LotCard({
           </button>
         )}
 
+        {onOpenNotes && (
+          <button
+            type="button"
+            onClick={() => onOpenNotes(lot)}
+            className="px-2.5 py-2 rounded-xl border border-theme-border/70 bg-theme-surface hover:bg-theme-surface-hover text-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95 cursor-pointer"
+            title="Ver e adicionar observações adicionais deste lote"
+          >
+            <FileText size={13} />
+            <span>Observações</span>
+            {((lot.observacoesAdicionais?.length || 0) + (lot.observacao ? 1 : 0)) > 0 && (
+              <span className="ml-0.5 text-[10px] px-1 rounded-full bg-theme-primary/20 text-theme-primary font-bold">
+                {(lot.observacoesAdicionais?.length || 0) + (lot.observacao ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        )}
+
         <button onClick={() => setExpanded(v => !v)} className="px-2.5 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
           <BarChart2 size={13} />
           <span>Análise</span>
@@ -1208,6 +1228,7 @@ export function Eggs() {
   const [deleteLotConfirm, setDeleteLotConfirm] = useState<EggLot | null>(null);
   const [deleteRecordConfirm, setDeleteRecordConfirm] = useState<{ lot: EggLot; recordId: string; date: string } | null>(null);
   const [movementModal, setMovementModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
+  const [notesModal, setNotesModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
 
   // Modais de Destino dos Ovos
   const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
@@ -1441,6 +1462,7 @@ export function Eggs() {
               onToggleStatus={handleToggleLotStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
               onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
+              onOpenNotes={l => setNotesModal({ isOpen: true, lote: l })}
               onRequestDeleteRecord={(l, recId, dt) => setDeleteRecordConfirm({ lot: l, recordId: recId, date: dt })}
             />
           ))}
@@ -1467,6 +1489,7 @@ export function Eggs() {
               onToggleStatus={handleToggleLotStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
               onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
+              onOpenNotes={l => setNotesModal({ isOpen: true, lote: l })}
               onRequestDeleteRecord={(l, recId, dt) => setDeleteRecordConfirm({ lot: l, recordId: recId, date: dt })}
             />
           ))}
@@ -1525,6 +1548,22 @@ export function Eggs() {
           showToast={showToast}
         />
       )}
+
+      {/* Modal de Observações Adicionais do Lote de Postura */}
+      {(() => {
+        const liveLot = notesModal.lote ? eggLots.find(l => l.id === notesModal.lote?.id) || notesModal.lote : null;
+        return (
+          <LotNotesModal
+            isOpen={notesModal.isOpen && !!liveLot}
+            onClose={() => setNotesModal({ isOpen: false, lote: null })}
+            lote={liveLot}
+            lotType="postura"
+            editEggLot={editEggLot}
+            editMeatLot={editMeatLot}
+            showToast={showToast}
+          />
+        );
+      })()}
 
       {/* Confirmação de Exclusão do Lote de Postura */}
       <ConfirmDialog
