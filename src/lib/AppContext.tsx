@@ -235,6 +235,117 @@ export type FarmSettings = {
   whatsapp?: string;
 };
 
+/**
+ * Empacota metadados completos do lote de postura dentro do campo JSONB 'registros' do Supabase.
+ * Isso garante que observações, observações adicionais, movimentações, raça e custos sejam 100% persistidos na nuvem sem erro de coluna.
+ */
+export function packageEggLotRegistros(lot: Partial<EggLot>): any[] {
+  const cleanRecords = (lot.registros || []).filter((r: any) => !r?.__isLotMeta);
+  const metaEntry = {
+    __isLotMeta: true,
+    observacao: lot.observacao || '',
+    observacoesAdicionais: Array.isArray(lot.observacoesAdicionais) ? lot.observacoesAdicionais : [],
+    movimentacoes: Array.isArray(lot.movimentacoes) ? lot.movimentacoes : [],
+    raca: lot.raca || '',
+    qtdFemeas: lot.qtdFemeas || 0,
+    precoVendaPadrao: lot.precoVendaPadrao,
+    custoProdPadrao: lot.custoProdPadrao
+  };
+  return [...cleanRecords, metaEntry];
+}
+
+export function unpackEggLotRegistros(rawRegistros: any[]): {
+  registros: EggDailyRecord[];
+  meta?: Partial<EggLot>;
+} {
+  if (!Array.isArray(rawRegistros)) return { registros: [] };
+  const metaEntry = rawRegistros.find((r: any) => r && r.__isLotMeta);
+  const registros: EggDailyRecord[] = rawRegistros.filter((r: any) => r && !r.__isLotMeta);
+  return {
+    registros,
+    meta: metaEntry ? {
+      observacao: metaEntry.observacao || '',
+      observacoesAdicionais: Array.isArray(metaEntry.observacoesAdicionais) ? metaEntry.observacoesAdicionais : [],
+      movimentacoes: Array.isArray(metaEntry.movimentacoes) ? metaEntry.movimentacoes : [],
+      raca: metaEntry.raca || '',
+      qtdFemeas: metaEntry.qtdFemeas,
+      precoVendaPadrao: metaEntry.precoVendaPadrao,
+      custoProdPadrao: metaEntry.custoProdPadrao
+    } : undefined
+  };
+}
+
+/**
+ * Empacota metadados completos do lote de corte (engorda/pintinhos) dentro do campo de texto 'peso_medio_inicial' do Supabase.
+ * Isso garante que observações, observações adicionais, movimentações, vacinas e pesagens sejam 100% persistidos na nuvem sem erro de coluna.
+ */
+export function packageMeatLotWeight(lot: Partial<MeatLot>): string {
+  const baseWeight = (lot.pesoMedioInicial || '').replace(/\n?\[\[LOT_META:.*?\]\]/gs, '').trim();
+  const meta = {
+    observacao: lot.observacao || '',
+    observacoesAdicionais: Array.isArray(lot.observacoesAdicionais) ? lot.observacoesAdicionais : [],
+    movimentacoes: Array.isArray(lot.movimentacoes) ? lot.movimentacoes : [],
+    vacinas: lot.vacinas || '',
+    raca: lot.raca || '',
+    racaId: lot.racaId,
+    idadeInicialDias: lot.idadeInicialDias,
+    dataNascimento: lot.dataNascimento,
+    origem: lot.origem,
+    origemPais: lot.origemPais,
+    paiId: lot.paiId,
+    maeId: lot.maeId,
+    paiNome: lot.paiNome,
+    maeNome: lot.maeNome,
+    paisTexto: lot.paisTexto,
+    pesoMeta: lot.pesoMeta,
+    qtdAves: lot.qtdAves,
+    ganhoGramasDia: lot.ganhoGramasDia,
+    consumoRacaoAve: lot.consumoRacaoAve,
+    pesagens: Array.isArray(lot.pesagens) ? lot.pesagens : []
+  };
+  return `${baseWeight}\n[[LOT_META:${JSON.stringify(meta)}]]`.trim();
+}
+
+export function unpackMeatLotWeight(rawWeight?: string | null): {
+  cleanWeight: string;
+  meta?: Partial<MeatLot>;
+} {
+  if (!rawWeight) return { cleanWeight: '' };
+  const match = rawWeight.match(/\[\[LOT_META:(.*?)\]\]/s);
+  if (!match) return { cleanWeight: rawWeight };
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanWeight = rawWeight.replace(/\n?\[\[LOT_META:.*?\]\]/gs, '').trim();
+    return {
+      cleanWeight,
+      meta: {
+        observacao: meta.observacao || '',
+        observacoesAdicionais: Array.isArray(meta.observacoesAdicionais) ? meta.observacoesAdicionais : [],
+        movimentacoes: Array.isArray(meta.movimentacoes) ? meta.movimentacoes : [],
+        vacinas: meta.vacinas,
+        raca: meta.raca,
+        racaId: meta.racaId,
+        idadeInicialDias: meta.idadeInicialDias,
+        dataNascimento: meta.dataNascimento,
+        origem: meta.origem,
+        origemPais: meta.origemPais,
+        paiId: meta.paiId,
+        maeId: meta.maeId,
+        paiNome: meta.paiNome,
+        maeNome: meta.maeNome,
+        paisTexto: meta.paisTexto,
+        pesoMeta: meta.pesoMeta,
+        qtdAves: meta.qtdAves,
+        ganhoGramasDia: meta.ganhoGramasDia,
+        consumoRacaoAve: meta.consumoRacaoAve,
+        pesagens: Array.isArray(meta.pesagens) ? meta.pesagens : []
+      }
+    };
+  } catch {
+    return { cleanWeight: rawWeight };
+  }
+}
+
 type AppContextType = {
   isReady: boolean;
   isInitialSyncDone: boolean;
@@ -638,9 +749,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Helper para carregar o cache offline (usado como fallback quando offline)
+  // ── Migração de Dados de Convidado/Local para a Conta do Usuário ao Logar ──
+  const migrateGuestAndLocalDataToUser = useCallback(async (targetUserId: string) => {
+    if (!targetUserId) return;
+    const suffixes = [
+      'breeds',
+      'birds',
+      'couples',
+      'couple-eggs',
+      'egglots',
+      'meatlots',
+      'incubation-lots',
+      'settings',
+      'vitrine-config'
+    ];
+
+    for (const s of suffixes) {
+      try {
+        const userKey = `@mura-manager:${targetUserId}:${s}`;
+        const guestKey = `@mura-manager:guest:${s}`;
+        const legacyKey = `@mura-manager:${s}`;
+
+        const [userVal, guestVal, legacyVal] = await Promise.all([
+          localforage.getItem<any>(userKey),
+          localforage.getItem<any>(guestKey),
+          localforage.getItem<any>(legacyKey)
+        ]);
+
+        // Migração de coleções em array (aves, lotes, casais, etc.)
+        if (Array.isArray(guestVal) && guestVal.length > 0) {
+          const existingArr = Array.isArray(userVal) ? userVal : [];
+          const existingIds = new Set(existingArr.map((x: any) => x?.id).filter(Boolean));
+          const merged = [...existingArr];
+          for (const item of guestVal) {
+            if (item && item.id && !existingIds.has(item.id)) {
+              merged.push(item);
+              existingIds.add(item.id);
+              if (s === 'birds') {
+                await markPendingOfflineBird(item.id);
+              }
+            }
+          }
+          await localforage.setItem(userKey, merged);
+        } else if (!userVal && guestVal) {
+          await localforage.setItem(userKey, guestVal);
+        }
+
+        // Se ainda não tinha nada no userKey mas tem dados legados (@mura-manager:${s})
+        const currUserVal = await localforage.getItem<any>(userKey);
+        if ((!currUserVal || (Array.isArray(currUserVal) && currUserVal.length === 0)) && Array.isArray(legacyVal) && legacyVal.length > 0) {
+          const existingArr = Array.isArray(currUserVal) ? currUserVal : [];
+          const existingIds = new Set(existingArr.map((x: any) => x?.id).filter(Boolean));
+          const merged = [...existingArr];
+          for (const item of legacyVal) {
+            if (item && item.id && !existingIds.has(item.id)) {
+              merged.push(item);
+              existingIds.add(item.id);
+              if (s === 'birds') {
+                await markPendingOfflineBird(item.id);
+              }
+            }
+          }
+          await localforage.setItem(userKey, merged);
+        } else if (!currUserVal && legacyVal) {
+          await localforage.setItem(userKey, legacyVal);
+        }
+      } catch (err) {
+        console.warn(`[Migrate] Erro ao migrar ${s} para o usuário:`, err);
+      }
+    }
+  }, [markPendingOfflineBird]);
+
+  // Helper para carregar o cache offline (usado como fallback quando offline ou visitante)
   const loadFromLocalForage = useCallback(async () => {
-    if (!user) return 0;
     // Usa o getter assíncrono para ler tombstones do IndexedDB (fonte primária no iOS)
     const deletedBirdIds = await getDeletedBirdIdsAsync();
     let loadedBirdsCount = 0;
@@ -735,6 +916,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           data = await localforage.getItem(`@mura-manager:admin:${item.suffix}`);
         }
         if (!data) {
+          data = await localforage.getItem(`@mura-manager:guest:${item.suffix}`);
+        }
+        if (!data) {
           data = await localforage.getItem(`@mura-manager:${item.suffix}`);
         }
 
@@ -746,7 +930,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }));
     return loadedBirdsCount;
-  }, [user, isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync]);
+  }, [isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync]);
 
   const isSyncingRef = useRef(false);
   const lastSyncTimeRef = useRef(0);
@@ -917,7 +1101,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (sbEggLots.length === 0 && localEggLots.length > 0) {
         console.log(`[Sync Defensivo] Enviando ${localEggLots.length} lotes de postura locais para o Supabase...`);
         try {
-          // Apenas colunas que existem na tabela egg_lots do Supabase
+          // Apenas colunas que existem na tabela egg_lots do Supabase com metadados empacotados em registros
           const eggLotsToInsert = localEggLots.map((l: any) => ({
             id: l.id,
             user_id: targetUserId,
@@ -926,7 +1110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             expectativa_diaria: l.expectativaDiaria || 0,
             data_inicio: l.dataInicio || '',
             status: l.status || 'Ativo',
-            registros: l.registros || []
+            registros: packageEggLotRegistros(l)
           }));
           await supabase!.from('egg_lots').upsert(eggLotsToInsert, { onConflict: 'id' });
           sbEggLots = eggLotsToInsert;
@@ -938,14 +1122,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (sbMeatLots.length === 0 && localMeatLots.length > 0) {
         console.log(`[Sync Defensivo] Enviando ${localMeatLots.length} lotes de engorda locais para o Supabase...`);
         try {
-          // Apenas colunas que existem na tabela meat_lots do Supabase
+          // Apenas colunas que existem na tabela meat_lots do Supabase com metadados empacotados em peso_medio_inicial
           const meatLotsToInsert = localMeatLots.map((l: any) => ({
             id: l.id,
             user_id: targetUserId,
             baia: l.baia,
             aves_ids: l.avesIds || [],
             data_inicio: l.dataInicio || '',
-            peso_medio_inicial: l.pesoMedioInicial || '',
+            peso_medio_inicial: packageMeatLotWeight(l),
             status: l.status || 'Crescimento'
           }));
           await supabase!.from('meat_lots').upsert(meatLotsToInsert, { onConflict: 'id' });
@@ -1317,7 +1501,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await localforage.setItem(getStorageKey('couples'), mappedCouples);
 
       // ── LOTES DE OVOS: Mapeamento e preservação ──
-      // ── LOTES DE OVOS: Mapeamento e preservação ──
       const mappedEggLots = sbEggLots.map((l: any) => {
         const local = (localEggLots || []).find((x: any) => x.id === l.id);
         
@@ -1328,56 +1511,68 @@ export function AppProvider({ children }: { children: ReactNode }) {
           try { sbRegs = JSON.parse(l.registros); } catch { sbRegs = []; }
         }
 
-        const localRegs: any[] = local?.registros || [];
-        let finalRegs = sbRegs;
-        if (localRegs.length > sbRegs.length) {
-          finalRegs = localRegs;
-          if (isSupabaseConfigured && user) {
-            supabase!
-              .from('egg_lots')
-              .update({ registros: localRegs })
-              .eq('id', l.id)
-              .then(({ error }) => { if (error) console.error('Erro registros ovos:', error); });
-          }
-        }
+        const unpacked = unpackEggLotRegistros(sbRegs);
+        const cloudDailyRegs = unpacked.registros;
+        const cloudMeta = unpacked.meta;
 
-        let sbMovs: any[] = [];
-        if (Array.isArray(l.movimentacoes)) {
-          sbMovs = l.movimentacoes;
-        } else if (typeof l.movimentacoes === 'string' && l.movimentacoes.trim()) {
-          try { sbMovs = JSON.parse(l.movimentacoes); } catch { sbMovs = []; }
-        }
+        const localDailyRegs: any[] = (local?.registros || []).filter((r: any) => !r?.__isLotMeta);
+        const finalDailyRegs = localDailyRegs.length > cloudDailyRegs.length ? localDailyRegs : cloudDailyRegs;
+
+        // Combina movimentações
+        const cloudMovs: any[] = cloudMeta?.movimentacoes || [];
         const localMovs: any[] = local?.movimentacoes || [];
-        // Como o Supabase não persiste movimentações na tabela egg_lots, o histórico local é a autoridade máxima
-        let finalMovs = sbMovs.length > localMovs.length ? sbMovs : localMovs;
+        const finalMovs = localMovs.length > cloudMovs.length ? localMovs : cloudMovs;
+
+        // Combina observações adicionais
+        const cloudObsAdd: any[] = cloudMeta?.observacoesAdicionais || [];
+        const localObsAdd: any[] = local?.observacoesAdicionais || [];
+        const finalObsAdd = localObsAdd.length > cloudObsAdd.length ? localObsAdd : cloudObsAdd;
+
+        const finalObservacao = (local?.observacao !== undefined && local.observacao !== '') ? local.observacao : (cloudMeta?.observacao || '');
+        const finalRaca = (local?.raca !== undefined && local.raca !== '') ? local.raca : (cloudMeta?.raca || '');
+        const finalPrecoVendaPadrao = local?.precoVendaPadrao ?? cloudMeta?.precoVendaPadrao ?? 6.0;
+        const finalCustoProdPadrao = local?.custoProdPadrao ?? cloudMeta?.custoProdPadrao ?? 0.30;
 
         const finalQtdFemeas = (local?.qtdFemeas !== undefined && local?.qtdFemeas !== null)
           ? local.qtdFemeas
-          : (l.femeas_ids?.length || 0);
+          : (cloudMeta?.qtdFemeas !== undefined ? cloudMeta.qtdFemeas : (l.femeas_ids?.length || 0));
 
-        return {
+        const lotObj: EggLot = {
           id: l.id,
           baia: l.baia || local?.baia || '',
           femeasIds: (local?.femeasIds && Array.isArray(local.femeasIds)) ? local.femeasIds : (l.femeas_ids || []),
           expectativaDiaria: l.expectativa_diaria !== undefined ? l.expectativa_diaria : (local?.expectativaDiaria || 0),
           dataInicio: l.data_inicio || local?.dataInicio || '',
           status: l.status || local?.status || 'Ativo',
-          raca: local?.raca || '',
+          raca: finalRaca,
           qtdFemeas: finalQtdFemeas,
-          precoVendaPadrao: local?.precoVendaPadrao || 6.0,
-          custoProdPadrao: local?.custoProdPadrao || 0.30,
-          observacao: local?.observacao || '',
-          observacoesAdicionais: local?.observacoesAdicionais || [],
-          registros: finalRegs,
+          precoVendaPadrao: finalPrecoVendaPadrao,
+          custoProdPadrao: finalCustoProdPadrao,
+          observacao: finalObservacao,
+          observacoesAdicionais: finalObsAdd,
+          registros: finalDailyRegs,
           movimentacoes: finalMovs
         };
+
+        // Se o local tinha dados mais novos ou a nuvem ainda não continha os metadados empacotados, atualiza o Supabase
+        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalDailyRegs.length > cloudDailyRegs.length);
+        if (isCloudMissingMeta && isSupabaseConfigured && user) {
+          const packaged = packageEggLotRegistros(lotObj);
+          supabase!
+            .from('egg_lots')
+            .update({ registros: packaged })
+            .eq('id', l.id)
+            .then(({ error }) => { if (error) console.error('Erro registros ovos:', error); });
+        }
+
+        return lotObj;
       });
 
       // Lotes que existem localmente mas ainda não foram para a nuvem
       const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
       const pendingEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
       if (pendingEggLots.length > 0 && isSupabaseConfigured && user) {
-        // Envia apenas colunas suportadas pelo Supabase
+        // Envia apenas colunas suportadas pelo Supabase com metadados empacotados em registros
         const eggLotsToPush = pendingEggLots.map((l: any) => ({
           id: l.id,
           user_id: targetUserId,
@@ -1386,7 +1581,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: l.status || 'Ativo',
           femeas_ids: l.femeasIds || [],
           expectativa_diaria: l.expectativaDiaria || 0,
-          registros: l.registros || []
+          registros: packageEggLotRegistros(l)
         }));
         supabase!.from('egg_lots').upsert(eggLotsToPush, { onConflict: 'id' }).then(({ error }) => {
           if (error) console.error('Erro lotes ovos pendentes:', error);
@@ -1403,61 +1598,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const mappedMeatLots = sbMeatLots.map((l: any) => {
         const local = (localMeatLots || []).find((x: any) => x.id === l.id);
 
-        let sbMovs: any[] = [];
-        if (Array.isArray(l.movimentacoes)) {
-          sbMovs = l.movimentacoes;
-        } else if (typeof l.movimentacoes === 'string' && l.movimentacoes.trim()) {
-          try { sbMovs = JSON.parse(l.movimentacoes); } catch { sbMovs = []; }
-        }
+        const unpacked = unpackMeatLotWeight(l.peso_medio_inicial);
+        const cloudCleanWeight = unpacked.cleanWeight;
+        const cloudMeta = unpacked.meta;
+
+        const cloudMovs: any[] = cloudMeta?.movimentacoes || [];
         const localMovs: any[] = local?.movimentacoes || [];
-        // Como o Supabase não persiste movimentações na tabela meat_lots, o histórico local é a autoridade máxima
-        let finalMovs = sbMovs.length > localMovs.length ? sbMovs : localMovs;
+        const finalMovs = localMovs.length > cloudMovs.length ? localMovs : cloudMovs;
+
+        const cloudObsAdd: any[] = cloudMeta?.observacoesAdicionais || [];
+        const localObsAdd: any[] = local?.observacoesAdicionais || [];
+        const finalObsAdd = localObsAdd.length > cloudObsAdd.length ? localObsAdd : cloudObsAdd;
+
+        const cloudPesagens: any[] = cloudMeta?.pesagens || [];
+        const localPesagens: any[] = local?.pesagens || [];
+        const finalPesagens = localPesagens.length > cloudPesagens.length ? localPesagens : cloudPesagens;
+
+        const finalObservacao = (local?.observacao !== undefined && local.observacao !== '') ? local.observacao : (cloudMeta?.observacao || '');
+        const finalVacinas = (local?.vacinas !== undefined && local.vacinas !== '') ? local.vacinas : (cloudMeta?.vacinas || '');
+        const finalRaca = (local?.raca !== undefined && local.raca !== '') ? local.raca : (cloudMeta?.raca || '');
+        const finalPesoMedioInicial = local?.pesoMedioInicial || cloudCleanWeight || '';
 
         const finalQtdAves = (local?.qtdAves !== undefined && local?.qtdAves !== null)
           ? local.qtdAves
-          : (l.aves_ids?.length || 0);
+          : (cloudMeta?.qtdAves !== undefined ? cloudMeta.qtdAves : (l.aves_ids?.length || 0));
 
-        return {
+        const lotObj: MeatLot = {
           id: l.id,
           baia: l.baia || local?.baia || '',
           avesIds: (local?.avesIds && Array.isArray(local.avesIds)) ? local.avesIds : (l.aves_ids || []),
           dataInicio: l.data_inicio || local?.dataInicio || '',
-          idadeInicialDias: local?.idadeInicialDias,
-          dataNascimento: local?.dataNascimento,
-          origem: local?.origem,
-          origemPais: local?.origemPais,
-          paiId: local?.paiId,
-          maeId: local?.maeId,
-          paiNome: local?.paiNome,
-          maeNome: local?.maeNome,
-          pesoMedioInicial: l.peso_medio_inicial || local?.pesoMedioInicial || '',
+          idadeInicialDias: local?.idadeInicialDias ?? cloudMeta?.idadeInicialDias,
+          dataNascimento: local?.dataNascimento || cloudMeta?.dataNascimento,
+          origem: local?.origem || cloudMeta?.origem,
+          origemPais: local?.origemPais || cloudMeta?.origemPais,
+          paiId: local?.paiId || cloudMeta?.paiId,
+          maeId: local?.maeId || cloudMeta?.maeId,
+          paiNome: local?.paiNome || cloudMeta?.paiNome,
+          maeNome: local?.maeNome || cloudMeta?.maeNome,
+          paisTexto: local?.paisTexto || cloudMeta?.paisTexto,
+          pesoMedioInicial: finalPesoMedioInicial,
           status: l.status || local?.status || 'Crescimento',
-          raca: local?.raca || '',
-          racaId: local?.racaId,
-          observacao: local?.observacao || '',
-          observacoesAdicionais: local?.observacoesAdicionais || [],
-          vacinas: local?.vacinas,
-          pesoMeta: local?.pesoMeta || '',
+          raca: finalRaca,
+          racaId: local?.racaId || cloudMeta?.racaId,
+          observacao: finalObservacao,
+          observacoesAdicionais: finalObsAdd,
+          vacinas: finalVacinas,
+          pesoMeta: local?.pesoMeta || cloudMeta?.pesoMeta || '',
           qtdAves: finalQtdAves,
-          ganhoGramasDia: local?.ganhoGramasDia,
-          consumoRacaoAve: local?.consumoRacaoAve,
-          pesagens: local?.pesagens || [],
+          ganhoGramasDia: local?.ganhoGramasDia ?? cloudMeta?.ganhoGramasDia,
+          consumoRacaoAve: local?.consumoRacaoAve ?? cloudMeta?.consumoRacaoAve,
+          pesagens: finalPesagens,
           movimentacoes: finalMovs
         };
+
+        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalPesagens.length > cloudPesagens.length);
+        if (isCloudMissingMeta && isSupabaseConfigured && user) {
+          const packagedWeight = packageMeatLotWeight(lotObj);
+          supabase!
+            .from('meat_lots')
+            .update({ peso_medio_inicial: packagedWeight })
+            .eq('id', l.id)
+            .then(({ error }) => { if (error) console.error('Erro lotes carne:', error); });
+        }
+
+        return lotObj;
       });
 
       // Lotes que existem localmente mas ainda não estão na nuvem (ex: lotes de pintinhos chick-*)
       const sbMeatLotIds = new Set<string>(sbMeatLots.map((l: any) => l.id));
       const pendingMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
       if (pendingMeatLots.length > 0 && isSupabaseConfigured && user) {
-        // Envia apenas colunas suportadas pelo Supabase
+        // Envia apenas colunas suportadas pelo Supabase com metadados em peso_medio_inicial
         const meatLotsToPush = pendingMeatLots.map((l: any) => ({
           id: l.id,
           user_id: targetUserId,
           baia: l.baia,
           aves_ids: l.avesIds || [],
           data_inicio: l.dataInicio || '',
-          peso_medio_inicial: l.pesoMedioInicial || '',
+          peso_medio_inicial: packageMeatLotWeight(l),
           status: l.status || 'Crescimento'
         }));
         supabase!.from('meat_lots').upsert(meatLotsToPush, { onConflict: 'id' }).then(({ error }) => {
@@ -1497,8 +1716,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setCoupleEggs(mappedCoupleEggs);
-      await localforage.setItem(getStorageKey('couple-eggs'), mappedCoupleEggs);
+      const finalCoupleEggs = [...mappedCoupleEggs, ...pendingCoupleEggs];
+      setCoupleEggs(finalCoupleEggs);
+      await localforage.setItem(getStorageKey('couple-eggs'), finalCoupleEggs);
 
       // ── LOTES DE INCUBAÇÃO: Mapeamento e preservação ──
       const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
@@ -1538,8 +1758,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      setIncubationLots(mappedIncubationLots);
-      await localforage.setItem(getStorageKey('incubation-lots'), mappedIncubationLots);
+      const finalIncubationLots = [...mappedIncubationLots, ...pendingIncubationLots];
+      setIncubationLots(finalIncubationLots);
+      await localforage.setItem(getStorageKey('incubation-lots'), finalIncubationLots);
 
       // ── CONFIGURAÇÕES DA FAZENDA ──
       const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
@@ -1591,26 +1812,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setBreeds([]);
-        setBirds([]);
-        setCouples([]);
-        setCoupleEggs([]);
-        setEggLots([]);
-        setMeatLots([]);
-        setIncubationLots([]);
-        setFarmSettings({
-          name: '',
-          photo: '',
-          email: '',
-          phone: ''
-        });
-        setActiveBreed('');
+        // Usuário deslogado / visitante: carrega dados locais preservados
+        await loadFromLocalForage();
         setIsReady(true);
         setIsInitialSyncDone(true);
         return;
       }
 
       setIsInitialSyncDone(false);
+
+      // ── Migra dados cadastrados offline / como visitante para a conta do usuário que acabou de logar ──
+      await migrateGuestAndLocalDataToUser(user.id);
 
       // ── Carrega cache local imediatamente → tela nunca aparece zerada se já houver dados ──
       // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
@@ -1643,7 +1855,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     loadData();
-  }, [user, loadFromLocalForage, syncWithSupabaseBackground]);
+  }, [user, loadFromLocalForage, syncWithSupabaseBackground, migrateGuestAndLocalDataToUser]);
 
   // Efeito de reconexão automática e sincronização contínua (Online / Focus / Timer 60s)
   useEffect(() => {
@@ -2476,19 +2688,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: lot.id,
+          user_id: targetUserId,
+          baia: lot.baia,
+          femeas_ids: lot.femeasIds || [],
+          expectativa_diaria: lot.expectativaDiaria || 0,
+          data_inicio: lot.dataInicio,
+          status: lot.status,
+          registros: packageEggLotRegistros(lot)
+        };
         supabase!
           .from('egg_lots')
-          .insert({
-            id: lot.id,
-            user_id: targetUserId,
-            baia: lot.baia,
-            femeas_ids: lot.femeasIds || [],
-            expectativa_diaria: lot.expectativaDiaria || 0,
-            data_inicio: lot.dataInicio,
-            status: lot.status,
-            registros: lot.registros || []
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addEggLot:', error); });
+          .insert(payload)
+          .then(
+            ({ error }) => {
+              if (error) {
+                console.warn('Erro Supabase addEggLot, enfileirando offline:', error);
+                enqueueMutation('egg_lots', 'insert', payload);
+              }
+            },
+            () => { enqueueMutation('egg_lots', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -2501,6 +2722,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        const fullLot = next.find(l => l.id === id);
         // Constrói estritamente os campos snake_case válidos para o Supabase (somente colunas existentes na tabela)
         const dbUpdate: any = {};
         if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;
@@ -2508,16 +2730,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (updatedLot.femeasIds !== undefined) dbUpdate.femeas_ids = updatedLot.femeasIds;
         if (updatedLot.expectativaDiaria !== undefined) dbUpdate.expectativa_diaria = updatedLot.expectativaDiaria;
         if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
-        if (updatedLot.registros !== undefined) dbUpdate.registros = updatedLot.registros;
+        if (
+          fullLot && (
+            updatedLot.registros !== undefined ||
+            updatedLot.observacao !== undefined ||
+            updatedLot.observacoesAdicionais !== undefined ||
+            updatedLot.movimentacoes !== undefined ||
+            updatedLot.raca !== undefined ||
+            updatedLot.qtdFemeas !== undefined ||
+            updatedLot.precoVendaPadrao !== undefined ||
+            updatedLot.custoProdPadrao !== undefined
+          )
+        ) {
+          dbUpdate.registros = packageEggLotRegistros(fullLot);
+        }
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!
             .from('egg_lots')
             .update(dbUpdate)
             .eq('id', id)
-            .then(({ error }) => {
-              if (error) console.error('Erro Supabase editEggLot:', error);
-            });
+            .then(
+              ({ error }) => {
+                if (error) {
+                  console.warn('Erro Supabase editEggLot, enfileirando offline:', error);
+                  enqueueMutation('egg_lots', 'update', dbUpdate, { column: 'id', value: id });
+                }
+              },
+              () => { enqueueMutation('egg_lots', 'update', dbUpdate, { column: 'id', value: id }); }
+            );
         }
       }
       return next;
@@ -2532,18 +2773,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: lot.id,
+          user_id: targetUserId,
+          baia: lot.baia,
+          aves_ids: lot.avesIds || [],
+          data_inicio: lot.dataInicio,
+          peso_medio_inicial: packageMeatLotWeight(lot),
+          status: lot.status
+        };
         supabase!
           .from('meat_lots')
-          .insert({
-            id: lot.id,
-            user_id: targetUserId,
-            baia: lot.baia,
-            aves_ids: lot.avesIds || [],
-            data_inicio: lot.dataInicio,
-            peso_medio_inicial: lot.pesoMedioInicial || '',
-            status: lot.status
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addMeatLot:', error); });
+          .insert(payload)
+          .then(
+            ({ error }) => {
+              if (error) {
+                console.warn('Erro Supabase addMeatLot, enfileirando offline:', error);
+                enqueueMutation('meat_lots', 'insert', payload);
+              }
+            },
+            () => { enqueueMutation('meat_lots', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -2556,20 +2806,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('meatlots'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        const fullLot = next.find(l => l.id === id);
         // Constrói estritamente os campos válidos para a tabela meat_lots do Supabase
         const dbUpdate: any = {};
         if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;
         if (updatedLot.avesIds !== undefined) dbUpdate.aves_ids = updatedLot.avesIds;
         if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
-        if (updatedLot.pesoMedioInicial !== undefined) dbUpdate.peso_medio_inicial = updatedLot.pesoMedioInicial;
         if (updatedLot.status !== undefined) dbUpdate.status = updatedLot.status;
+        if (
+          fullLot && (
+            updatedLot.pesoMedioInicial !== undefined ||
+            updatedLot.observacao !== undefined ||
+            updatedLot.observacoesAdicionais !== undefined ||
+            updatedLot.movimentacoes !== undefined ||
+            updatedLot.vacinas !== undefined ||
+            updatedLot.pesagens !== undefined ||
+            updatedLot.raca !== undefined ||
+            updatedLot.racaId !== undefined ||
+            updatedLot.pesoMeta !== undefined ||
+            updatedLot.qtdAves !== undefined ||
+            updatedLot.ganhoGramasDia !== undefined ||
+            updatedLot.consumoRacaoAve !== undefined ||
+            updatedLot.idadeInicialDias !== undefined ||
+            updatedLot.dataNascimento !== undefined ||
+            updatedLot.origem !== undefined ||
+            updatedLot.origemPais !== undefined ||
+            updatedLot.paiId !== undefined ||
+            updatedLot.maeId !== undefined ||
+            updatedLot.paiNome !== undefined ||
+            updatedLot.maeNome !== undefined ||
+            updatedLot.paisTexto !== undefined
+          )
+        ) {
+          dbUpdate.peso_medio_inicial = packageMeatLotWeight(fullLot);
+        }
 
         if (Object.keys(dbUpdate).length > 0) {
           supabase!
             .from('meat_lots')
             .update(dbUpdate)
             .eq('id', id)
-            .then(({ error }) => { if (error) console.error('Erro Supabase editMeatLot:', error); });
+            .then(
+              ({ error }) => {
+                if (error) {
+                  console.warn('Erro Supabase editMeatLot, enfileirando offline:', error);
+                  enqueueMutation('meat_lots', 'update', dbUpdate, { column: 'id', value: id });
+                }
+              },
+              () => { enqueueMutation('meat_lots', 'update', dbUpdate, { column: 'id', value: id }); }
+            );
         }
       }
       return next;
@@ -2739,11 +3024,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           expectativa_diaria: l.expectativaDiaria || 0,
           data_inicio: l.dataInicio || '',
           status: l.status || 'Ativo',
-          raca: l.raca || '',
-          qtd_femeas: l.qtdFemeas || 0,
-          preco_venda_padrao: l.precoVendaPadrao || 6.0,
-          custo_prod_padrao: l.custoProdPadrao || 0.30,
-          observacao: l.observacao || ''
+          registros: packageEggLotRegistros(l)
         }));
         await supabase!.from('egg_lots').insert(toInsert);
       }
@@ -2759,12 +3040,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           baia: l.baia,
           aves_ids: l.avesIds || [],
           data_inicio: l.dataInicio || '',
-          peso_medio_inicial: l.pesoMedioInicial || '',
-          status: l.status || 'Crescimento',
-          raca: l.raca || '',
-          observacao: l.observacao || '',
-          peso_meta: l.pesoMeta || '',
-          qtd_aves: l.qtdAves || 0
+          peso_medio_inicial: packageMeatLotWeight(l),
+          status: l.status || 'Crescimento'
         }));
         await supabase!.from('meat_lots').insert(toInsert);
       }
