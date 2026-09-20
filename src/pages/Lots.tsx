@@ -851,11 +851,19 @@ export function Lots() {
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pBaia.trim()) return;
+    if (!pBaia.trim()) {
+      showToast('Informe a identificação da Baia.', 'warning');
+      return;
+    }
 
     const numSel = pFemeas.length;
     const numExtra = parseInt(pQtd) || 0;
     const sumTotal = numSel + numExtra;
+
+    if (sumTotal <= 0) {
+      showToast('Selecione pelo menos uma fêmea ou informe a quantidade adicional no lote.', 'warning');
+      return;
+    }
 
     const doSave = (finalTotal: number) => {
       addEggLot({
@@ -900,11 +908,19 @@ export function Lots() {
 
   const handleSaveEngordaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eBaia.trim()) return;
+    if (!eBaia.trim()) {
+      showToast('Informe a identificação da Baia.', 'warning');
+      return;
+    }
 
     const numSel = eAves.length;
     const numExtra = parseInt(eQtd) || 0;
     const sumTotal = numSel + numExtra;
+
+    if (sumTotal <= 0) {
+      showToast('Selecione pelo menos uma ave ou informe a quantidade adicional no lote.', 'warning');
+      return;
+    }
 
     const doSave = (finalTotal: number) => {
       addMeatLot({
@@ -1914,13 +1930,31 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Egg className="text-theme-primary" size={20} />Novo Lote de Postura</h3>
               <button type="button" onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSavePosturaSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+            <form
+              onSubmit={handleSavePosturaSubmit}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
+            >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Baia / Identificação *</SectionLabel>
-                    <input required type="text" value={pBaia} onChange={e => setPBaia(e.target.value)} placeholder="Ex: Baia 04" className={inputCls} />
+                    <input
+                      required
+                      type="text"
+                      value={pBaia}
+                      onChange={e => setPBaia(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                      placeholder="Ex: Baia 04"
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1">
                     <SectionLabel>Raça (opcional)</SectionLabel>
@@ -2017,13 +2051,31 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Beef className="text-theme-primary" size={20} />Novo Lote de Engorda</h3>
               <button type="button" onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSaveEngordaSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+            <form
+              onSubmit={handleSaveEngordaSubmit}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
+            >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Baia / Identificação *</SectionLabel>
-                    <input required type="text" value={eBaia} onChange={e => setEBaia(e.target.value)} placeholder="Ex: Baia 08" className={inputCls} />
+                    <input
+                      required
+                      type="text"
+                      value={eBaia}
+                      onChange={e => setEBaia(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                      placeholder="Ex: Baia 08"
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
@@ -2284,14 +2336,32 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Baby className="text-theme-primary" size={20} />Novo Lote de Pintinhos</h3>
               <button type="button" onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSavePintinhosSubmit} className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full">
+            <form
+              onSubmit={handleSavePintinhosSubmit}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
+            >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
                 
                 {/* Baia e Raça */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Baia / Identificação *</SectionLabel>
-                    <input required type="text" value={piBaia} onChange={e => setPiBaia(e.target.value)} placeholder="Ex: Baia 05" className={inputCls} />
+                    <input
+                      required
+                      type="text"
+                      value={piBaia}
+                      onChange={e => setPiBaia(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                      placeholder="Ex: Baia 05"
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
