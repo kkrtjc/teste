@@ -521,6 +521,7 @@ export function Birds() {
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEdit, setBreedToEdit] = useState<Breed | null>(null);
   const [breedSearch, setBreedSearch] = useState('');
+  const [breedFocusFilter, setBreedFocusFilter] = useState<string>('Todos');
   const [birdSearch, setBirdSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const PAGE_SIZE = 30;
@@ -689,9 +690,12 @@ export function Birds() {
 
   const filteredBreeds = useMemo(() => {
     const q = breedSearch.toLowerCase().trim();
-    if (!q) return breeds;
-    return breeds.filter(b => b.nome.toLowerCase().includes(q));
-  }, [breeds, breedSearch]);
+    return breeds.filter(b => {
+      const matchSearch = !q || b.nome.toLowerCase().includes(q) || (b.descricao && b.descricao.toLowerCase().includes(q));
+      const matchFocus = breedFocusFilter === 'Todos' || (b.foco && b.foco.toLowerCase().includes(breedFocusFilter.toLowerCase()));
+      return matchSearch && matchFocus;
+    });
+  }, [breeds, breedSearch, breedFocusFilter]);
 
   const currentBirds = useMemo(() => {
     let list = birds;
@@ -789,7 +793,7 @@ export function Birds() {
             <>
               <h2 className="text-base sm:text-lg font-black text-white leading-none">Plantel de Aves</h2>
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
-                {activeBreed || sexFilter !== 'Todos' || statusFilter !== 'Todos'
+                {activeBreed || sexFilter !== 'Todos' || statusFilter !== 'Todos' || birdSearch
                   ? `Filtrado (${filteredBirds.length} ave${filteredBirds.length !== 1 ? 's' : ''})`
                   : `Total: ${activeBirdsCount} aves ativas`
                 }
@@ -799,7 +803,10 @@ export function Birds() {
             <>
               <h2 className="text-base sm:text-lg font-black text-white leading-none">Raças &amp; Linhagens</h2>
               <p className="text-[10px] sm:text-xs text-theme-text-muted mt-1 leading-none">
-                {breeds.length} raça{breeds.length !== 1 ? 's' : ''}
+                {breedSearch || breedFocusFilter !== 'Todos'
+                  ? `Filtrado (${filteredBreeds.length} raça${filteredBreeds.length !== 1 ? 's' : ''})`
+                  : `Total: ${breeds.length} raças cadastradas`
+                }
               </p>
             </>
           ) : (
@@ -812,51 +819,40 @@ export function Birds() {
           )}
         </div>
         
-        <div className="flex items-center gap-1.5 shrink-0">
-          {activeTab === 'aves' && (
-            <div className="flex items-center gap-1 shrink-0">
-              <select
-                value={activeBreed}
-                onChange={e => setActiveBreed(e.target.value)}
-                className="bg-theme-surface border border-theme-border/50 text-white px-2.5 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-[10px] sm:text-xs outline-none font-bold max-w-[90px] sm:max-w-[120px] truncate"
-              >
-                <option value="" className="bg-theme-surface">Raças</option>
-                {breeds.map(b => (
-                  <option key={b.id} value={b.nome} className="bg-theme-surface">{b.nome}</option>
-                ))}
-              </select>
-
-              {activeBreed && (
-                <button
-                  onClick={() => setActiveBreed('')}
-                  className="p-1 bg-red-500/10 hover:bg-red-500/25 border border-red-500/30 text-red-400 rounded-full transition-all shrink-0 animate-fade-in"
-                  title="Limpar Filtro"
-                >
-                  <X size={10} />
-                </button>
-              )}
-            </div>
-          )}
-
+        {/* Botão de Ação Primária Padronizado (Mesmo local, tamanho e estilo em todas as abas) */}
+        <div className="flex items-center gap-2 shrink-0">
           {activeTab === 'aves' ? (
             <button 
+              type="button"
               onClick={() => openAddBirdModal(activeBreed)} 
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all shrink-0 cursor-pointer border border-amber-300/40"
             >
-              <Plus size={14} strokeWidth={3} /> Cadastrar Ave
+              <Plus size={15} strokeWidth={3} />
+              <span>Cadastrar Ave</span>
             </button>
           ) : activeTab === 'racas' ? (
             <button 
+              type="button"
               onClick={() => openBreedModal()} 
-              className="btn-primary !px-3.5 !py-1.5 !text-xs flex items-center gap-1.5 shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all shrink-0 cursor-pointer border border-amber-300/40"
             >
-              <Plus size={14} strokeWidth={3} /> Cadastrar Raça
+              <Plus size={15} strokeWidth={3} />
+              <span>Cadastrar Raça</span>
             </button>
-          ) : null}
+          ) : (
+            <button 
+              type="button"
+              onClick={() => openAddBirdModal()} 
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all shrink-0 cursor-pointer border border-amber-300/40"
+            >
+              <Plus size={15} strokeWidth={3} />
+              <span>Cadastrar Ave</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ── Tabs (Glassmorphic Pill Bar) ── */}
+      {/* ── Tabs (Glassmorphic Pill Bar Padronizada) ── */}
       <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-lg self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
@@ -876,7 +872,7 @@ export function Birds() {
               : 'text-theme-text-muted hover:text-white hover:bg-white/5'
           }`}
         >
-          Raças &amp; Linhagens
+          Raças &amp; Linhagens ({breeds.length})
         </button>
         <button 
           onClick={() => { setActiveTab('historico'); }}
@@ -898,28 +894,16 @@ export function Birds() {
       {/* ── Tab Content: Aves ── */}
       {activeTab === 'aves' && (
         <div className="space-y-3">
-          {/* Botão no Início da Aba (Compacto e Proporcional) */}
-          <div className="sm:hidden flex items-center">
-            <button
-              type="button"
-              onClick={() => openAddBirdModal(activeBreed)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 hover:from-theme-primary-hover hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-theme-primary/20 active:scale-95 transition-all border border-amber-300/40 cursor-pointer"
-            >
-              <Plus size={15} strokeWidth={3} />
-              <span>Cadastrar Ave</span>
-            </button>
-          </div>
-
-          {/* Search Row */}
+          {/* Search Row Padronizada */}
           <div className="w-full shrink-0">
             <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={14} />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
               <input
                 type="text"
                 placeholder="Pesquisar por anilha, nome ou baia..."
                 value={birdSearch}
                 onChange={e => setBirdSearch(e.target.value)}
-                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-9 py-1.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-9 py-2.5 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
               />
               {birdSearch && (
                 <button
@@ -928,19 +912,39 @@ export function Birds() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
                   title="Limpar pesquisa"
                 >
-                  <X size={13} />
+                  <X size={14} />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Quick Filter Chips (Status & Sex) */}
+          {/* Quick Filter Chips (Raça, Status & Sexo) */}
           <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
+            {/* Seletor de Raça Harmonizado dentro da barra de filtros */}
+            <div className="relative shrink-0">
+              <select
+                value={activeBreed}
+                onChange={e => setActiveBreed(e.target.value)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all border outline-none cursor-pointer ${
+                  activeBreed
+                    ? 'bg-theme-primary text-black border-theme-primary font-black shadow-md shadow-amber-500/20'
+                    : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border-theme-border/50'
+                }`}
+              >
+                <option value="" className="bg-theme-surface text-white">Todas as Raças ({breeds.length})</option>
+                {breeds.map(b => (
+                  <option key={b.id} value={b.nome} className="bg-theme-surface text-white">{b.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="h-4 w-px bg-theme-border/60 shrink-0 mx-1" />
+
             {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Engorda', 'Vendido', 'Faleceu'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
                   statusFilter === st
                     ? st === 'Vendido'
                       ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
@@ -960,7 +964,7 @@ export function Birds() {
               <button
                 key={sx}
                 onClick={() => setSexFilter(sx)}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
                   sexFilter === sx
                     ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
                     : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
@@ -972,30 +976,36 @@ export function Birds() {
           </div>
 
           {/* Active Filters Bar */}
-          {(sexFilter !== 'Todos' || statusFilter !== 'Todos' || activeBreed) && (
+          {(sexFilter !== 'Todos' || statusFilter !== 'Todos' || activeBreed || birdSearch) && (
             <div className="flex flex-wrap gap-1.5 items-center px-1 animate-fade-in shrink-0">
               <span className="text-[9px] font-bold text-theme-text-muted uppercase mr-1">Filtros ativos:</span>
               {activeBreed && (
-                <span className="text-[9px] font-black bg-theme-primary/10 border border-theme-primary/25 text-theme-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-[9px] font-black bg-theme-primary/10 border border-theme-primary/25 text-theme-primary px-2.5 py-1 rounded-full flex items-center gap-1">
                   Raça: {activeBreed}
                   <button onClick={() => setActiveBreed('')} className="hover:text-white ml-0.5 font-bold">✕</button>
                 </span>
               )}
               {sexFilter !== 'Todos' && (
-                <span className="text-[9px] font-black bg-blue-500/10 border border-blue-500/25 text-blue-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-[9px] font-black bg-blue-500/10 border border-blue-500/25 text-blue-400 px-2.5 py-1 rounded-full flex items-center gap-1">
                   Sexo: {sexFilter}s
                   <button onClick={() => setSexFilter('Todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
                 </span>
               )}
               {statusFilter !== 'Todos' && (
-                <span className="text-[9px] font-black bg-green-500/10 border border-green-500/25 text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="text-[9px] font-black bg-green-500/10 border border-green-500/25 text-green-400 px-2.5 py-1 rounded-full flex items-center gap-1">
                   Status: {statusFilter}
                   <button onClick={() => setStatusFilter('Todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
                 </span>
               )}
+              {birdSearch && (
+                <span className="text-[9px] font-black bg-amber-500/10 border border-amber-500/25 text-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  Busca: "{birdSearch}"
+                  <button onClick={() => setBirdSearch('')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
               <button 
                 onClick={() => { setSexFilter('Todos'); setStatusFilter('Todos'); setActiveBreed(''); setBirdSearch(''); }} 
-                className="text-[9px] font-bold text-red-400 hover:underline ml-1"
+                className="text-[9px] font-bold text-red-400 hover:underline ml-1 cursor-pointer"
               >
                 Limpar Todos
               </button>
@@ -1059,27 +1069,107 @@ export function Birds() {
 
       {/* ── Tab Content: Raças ── */}
       {activeTab === 'racas' && (
-        <div className="space-y-4">
-          {/* Search Row */}
-          <div className="relative shrink-0">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-text-muted" size={18} />
-            <input
-              type="text"
-              placeholder="Pesquisar raça..."
-              value={breedSearch}
-              onChange={e => setBreedSearch(e.target.value)}
-              className="w-full bg-theme-surface border border-theme-border/50 text-white pl-11 pr-4 py-3.5 rounded-full focus:outline-none focus:border-theme-primary transition-colors text-sm shadow-inner"
-            />
+        <div className="space-y-3">
+          {/* Search Row Padronizada */}
+          <div className="w-full shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
+              <input
+                type="text"
+                placeholder="Pesquisar raça por nome ou característica..."
+                value={breedSearch}
+                onChange={e => setBreedSearch(e.target.value)}
+                className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-9 py-2.5 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+              />
+              {breedSearch && (
+                <button
+                  type="button"
+                  onClick={() => setBreedSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
+                  title="Limpar pesquisa"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Quick Filter Chips por Foco da Raça */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
+            {[
+              { id: 'Todos', label: 'Todos os Focos' },
+              { id: 'Misto', label: 'Misto' },
+              { id: 'Postura', label: 'Postura' },
+              { id: 'Corte', label: 'Corte' },
+              { id: 'Ornamental', label: 'Ornamental' },
+              { id: 'Combate', label: 'Combate' },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setBreedFocusFilter(f.id)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer ${
+                  breedFocusFilter === f.id
+                    ? 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
+                    : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Active Filters Bar */}
+          {(breedFocusFilter !== 'Todos' || breedSearch) && (
+            <div className="flex flex-wrap gap-1.5 items-center px-1 animate-fade-in shrink-0">
+              <span className="text-[9px] font-bold text-theme-text-muted uppercase mr-1">Filtros ativos:</span>
+              {breedFocusFilter !== 'Todos' && (
+                <span className="text-[9px] font-black bg-theme-primary/10 border border-theme-primary/25 text-theme-primary px-2.5 py-1 rounded-full flex items-center gap-1">
+                  Foco: {breedFocusFilter}
+                  <button onClick={() => setBreedFocusFilter('Todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
+              {breedSearch && (
+                <span className="text-[9px] font-black bg-amber-500/10 border border-amber-500/25 text-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  Busca: "{breedSearch}"
+                  <button onClick={() => setBreedSearch('')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                </span>
+              )}
+              <button 
+                onClick={() => { setBreedFocusFilter('Todos'); setBreedSearch(''); }} 
+                className="text-[9px] font-bold text-red-400 hover:underline ml-1 cursor-pointer"
+              >
+                Limpar Todos
+              </button>
+            </div>
+          )}
 
           {/* Breeds Grid */}
           <div className="w-full">
             {filteredBreeds.length === 0 ? (
-              <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-xl text-theme-text-muted">
-                {breedSearch ? 'Nenhuma raça encontrada correspondente à busca.' : 'Nenhuma raça cadastrada.'}
+              <div className="text-center p-8 sm:p-12 bg-theme-surface border border-theme-border/60 border-dashed rounded-3xl text-theme-text-muted flex flex-col items-center justify-center gap-3 animate-fade-in">
+                <span className="text-4xl">🐓</span>
+                <div className="max-w-xs space-y-1">
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight">
+                    {breedSearch || breedFocusFilter !== 'Todos' ? 'Nenhuma raça encontrada' : 'Nenhuma raça cadastrada'}
+                  </h4>
+                  <p className="text-xs text-theme-text-muted">
+                    {breedSearch || breedFocusFilter !== 'Todos' 
+                      ? 'Tente remover o filtro de busca ou foco selecionado.' 
+                      : 'Cadastre suas primeiras raças para organizar suas aves e linhagens.'}
+                  </p>
+                </div>
+                {(!breedSearch && breedFocusFilter === 'Todos') && (
+                  <button
+                    type="button"
+                    onClick={() => openBreedModal()}
+                    className="mt-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-theme-primary to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-theme-primary/20 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={16} strokeWidth={3} /> Cadastrar Primeira Raça
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                 {filteredBreeds.map(breed => (
                   <BreedItemCard
                     key={breed.id}
@@ -1107,7 +1197,7 @@ export function Birds() {
 
       {/* ── Tab Content: Histórico & Vendas ── */}
       {activeTab === 'historico' && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5">
           {/* 1. Cards de Balanço Financeiro & Zootécnico */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Total Faturado */}
@@ -1176,23 +1266,47 @@ export function Birds() {
             </div>
           </div>
 
-          {/* 2. Filtros e Busca do Histórico */}
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-            {/* Sub-filtros por tipo */}
-            <div className="flex bg-theme-surface p-1 rounded-xl border border-theme-border/50 gap-1 overflow-x-auto hide-scrollbar">
+          {/* 2. Filtros e Busca do Histórico Padronizados */}
+          <div className="space-y-3">
+            {/* Search Row Padronizada */}
+            <div className="w-full shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar histórico por anilha, nome, raça ou comprador..."
+                  value={historySearch}
+                  onChange={e => setHistorySearch(e.target.value)}
+                  className="w-full bg-theme-surface border border-theme-border/50 text-white pl-9 pr-9 py-2.5 rounded-xl focus:outline-none focus:border-theme-primary transition-colors text-xs shadow-inner"
+                />
+                {historySearch && (
+                  <button
+                    type="button"
+                    onClick={() => setHistorySearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white p-0.5"
+                    title="Limpar pesquisa"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
               {[
                 { id: 'todos', label: 'Todas Movimentações' },
-                { id: 'vendidas', label: `Vendidas (${salesMetrics.soldCount})` },
-                { id: 'obitos', label: `Óbitos / Baixas (${salesMetrics.deceasedCount})` },
-                { id: 'entradas', label: `Cadastros (${birds.length})` },
+                { id: 'vendidas', label: `🏷️ Vendidas (${salesMetrics.soldCount})` },
+                { id: 'obitos', label: `✝️ Óbitos / Baixas (${salesMetrics.deceasedCount})` },
+                { id: 'entradas', label: `📋 Cadastros (${birds.length})` },
               ].map(f => (
                 <button
                   key={f.id}
                   onClick={() => setHistoryFilter(f.id as any)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all whitespace-nowrap cursor-pointer ${
                     historyFilter === f.id
-                      ? 'bg-theme-primary text-black shadow-sm'
-                      : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+                      ? 'bg-theme-primary text-black shadow-md shadow-amber-500/20'
+                      : 'bg-theme-surface hover:bg-white/5 text-theme-text-muted hover:text-white border border-theme-border/50'
                   }`}
                 >
                   {f.label}
@@ -1200,28 +1314,44 @@ export function Birds() {
               ))}
             </div>
 
-            {/* Busca do Histórico */}
-            <div className="relative flex-1 sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
-              <input
-                type="text"
-                value={historySearch}
-                onChange={e => setHistorySearch(e.target.value)}
-                placeholder="Buscar anilha, comprador..."
-                className="w-full bg-theme-surface border border-theme-border/60 focus:border-theme-primary rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none transition-colors"
-              />
-              {historySearch && (
-                <button onClick={() => setHistorySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white">
-                  <X size={13} />
+            {/* Active Filters Bar do Histórico */}
+            {(historyFilter !== 'todos' || historySearch) && (
+              <div className="flex flex-wrap gap-1.5 items-center px-1 animate-fade-in shrink-0">
+                <span className="text-[9px] font-bold text-theme-text-muted uppercase mr-1">Filtros ativos:</span>
+                {historyFilter !== 'todos' && (
+                  <span className="text-[9px] font-black bg-theme-primary/10 border border-theme-primary/25 text-theme-primary px-2.5 py-1 rounded-full flex items-center gap-1">
+                    Tipo: {historyFilter === 'vendidas' ? 'Vendidas' : historyFilter === 'obitos' ? 'Óbitos' : 'Cadastros'}
+                    <button onClick={() => setHistoryFilter('todos')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                  </span>
+                )}
+                {historySearch && (
+                  <span className="text-[9px] font-black bg-amber-500/10 border border-amber-500/25 text-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    Busca: "{historySearch}"
+                    <button onClick={() => setHistorySearch('')} className="hover:text-white ml-0.5 font-bold">✕</button>
+                  </span>
+                )}
+                <button 
+                  onClick={() => { setHistoryFilter('todos'); setHistorySearch(''); }} 
+                  className="text-[9px] font-bold text-red-400 hover:underline ml-1 cursor-pointer"
+                >
+                  Limpar Todos
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* 3. Lista de Aves no Histórico */}
           {historyBirds.length === 0 ? (
-            <div className="text-center p-12 bg-theme-surface border border-theme-border border-dashed rounded-2xl text-theme-text-muted">
-              Nenhuma movimentação encontrada para o filtro selecionado.
+            <div className="text-center p-8 sm:p-12 bg-theme-surface border border-theme-border/60 border-dashed rounded-3xl text-theme-text-muted flex flex-col items-center justify-center gap-3 animate-fade-in">
+              <span className="text-4xl">📋</span>
+              <div className="max-w-xs space-y-1">
+                <h4 className="text-sm font-black text-white uppercase tracking-tight">
+                  Nenhuma movimentação encontrada
+                </h4>
+                <p className="text-xs text-theme-text-muted">
+                  Tente alterar o filtro ou termo de busca selecionado.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
