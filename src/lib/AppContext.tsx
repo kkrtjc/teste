@@ -1929,12 +1929,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     realtimeBroadcastChannelRef.current = channel;
 
-    // Timer de checagem periódica em segundo plano a cada 30 segundos
+    // Timer de checagem periódica defensiva em segundo plano a cada 60 segundos
     const syncInterval = setInterval(() => {
       if (navigator.onLine && !isSyncingRef.current) {
         syncWithSupabaseBackground(true);
       }
-    }, 30000);
+    }, 60000);
 
     return () => {
       window.removeEventListener('online', handleOnline);

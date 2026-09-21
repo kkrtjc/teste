@@ -2,7 +2,9 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
+import { useAuth } from '../../lib/AuthContext';
 import { compressImage } from '../../lib/imageCompression';
+import { uploadBirdPhoto } from '../../lib/storageService';
 import { calculateExactAge } from '../../lib/utils';
 import { QuickBreedModal } from './QuickBreedModal';
 
@@ -201,6 +203,7 @@ export function AddBirdModal() {
     isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
     preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple, openBirdProfile, showToast
   } = useAppContext();
+  const { user } = useAuth();
 
   // ── Form fields ──
   const [anilha, setAnilha] = useState('');
@@ -347,7 +350,7 @@ export function AddBirdModal() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
       if (!anilha.trim() || !raca.trim()) return;
 
@@ -365,6 +368,12 @@ export function AddBirdModal() {
       const finalVacinas = vacList.join(', ');
 
       const imagesToSave = previewImages.slice(0, 3);
+      const targetBirdId = birdToEditId || Date.now().toString();
+
+      // Upload de fotos para o Supabase Storage em paralelo (com fallback automático e defensivo para base64)
+      const uploadedImages = await Promise.all(
+        imagesToSave.map((img, idx) => uploadBirdPhoto(img, user?.id || 'default', targetBirdId, idx))
+      );
 
       const data = {
         anilha: anilha.trim(),
@@ -383,8 +392,8 @@ export function AddBirdModal() {
         dataNascimento: dataNasc || undefined,
         peso: peso || undefined,
         valorEstimado: valorEstimado ? parseFloat(valorEstimado.replace(',', '.')) : undefined,
-        imagem: imagesToSave[0] || undefined,
-        imagens: imagesToSave,
+        imagem: uploadedImages[0] || undefined,
+        imagens: uploadedImages,
         observacoes: descricaoOrigem || undefined
       };
 
@@ -394,7 +403,7 @@ export function AddBirdModal() {
         editBird(birdToEditId, data);
         showToast("Ave salva com sucesso!", "success");
       } else {
-        targetId = Date.now().toString();
+        targetId = targetBirdId;
         addBird({ id: targetId, ...data });
         showToast("Ave salva com sucesso!", "success");
 

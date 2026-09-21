@@ -7,6 +7,7 @@ import {
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, type TrialInfo } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
+import { uploadFarmLogo } from '../lib/storageService';
 import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LandingCheckoutModal } from '../components/LandingCheckoutModal';
@@ -337,12 +338,17 @@ export function Settings() {
     reader.readAsText(file);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    let finalPhoto = previewImage;
+    if (previewImage) {
+      finalPhoto = await uploadFarmLogo(previewImage, user?.id || 'default');
+    }
+
     updateFarmSettings({
       name,
       email,
       phone,
-      photo: previewImage
+      photo: finalPhoto
     });
     
     setIsSaved(true);

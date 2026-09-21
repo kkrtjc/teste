@@ -6,7 +6,9 @@ import {
   DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye
 } from 'lucide-react';
 import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
+import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
+import { uploadBreedPhoto } from '../lib/storageService';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 
 const BreedItemCard = memo(function BreedItemCard({
@@ -209,6 +211,7 @@ const BreedFormModal = memo(function BreedFormModal({
   breedToEdit,
   onSave,
 }: BreedFormModalProps) {
+  const { user } = useAuth();
   const [newBreedName, setNewBreedName] = useState('');
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
   const [newBreedDesc, setNewBreedDesc] = useState('');
@@ -294,16 +297,21 @@ const BreedFormModal = memo(function BreedFormModal({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newBreedName.trim()) return;
     const ganho = newBreedGanhoGramasDia ? parseFloat(newBreedGanhoGramasDia) : undefined;
     const conv = newBreedConversaoAlimentar ? parseFloat(newBreedConversaoAlimentar) : undefined;
+
+    let finalImage = previewImage || undefined;
+    if (previewImage) {
+      finalImage = await uploadBreedPhoto(previewImage, user?.id || 'default', breedToEdit?.id || Date.now().toString());
+    }
 
     onSave({
       nome: newBreedName.trim(),
       descricao: newBreedDesc.trim() || undefined,
       foco: newBreedFocus,
-      imagem: previewImage || undefined,
+      imagem: finalImage,
       tempoCrescimento: newBreedTempoCrescimento,
       pesoMedio: newBreedPesoMedio,
       ganhoGramasDia: ganho,
