@@ -89,6 +89,17 @@ export function LotNotesModal({
   };
 
   const handleDeleteNote = (noteId: string) => {
+    if (noteId === '__initial_obs__') {
+      if (lotType === 'postura') {
+        editEggLot(lote.id, { observacao: '' });
+      } else {
+        editMeatLot(lote.id, { observacao: '' });
+      }
+      showToast('Observação inicial excluída com sucesso!', 'info');
+      setDeleteConfirm(null);
+      return;
+    }
+
     const updatedNotes = adicNotes.filter(n => n.id !== noteId);
 
     if (lotType === 'postura') {
@@ -177,18 +188,29 @@ export function LotNotesModal({
                 <div className="space-y-3">
                   {/* Observação Inicial do Cadastro (se houver) */}
                   {initialObs && (
-                    <div className="p-3.5 bg-theme-base/60 border border-theme-border/70 rounded-2xl space-y-1.5">
+                    <div className="p-3.5 bg-theme-base/60 border border-theme-border/70 rounded-2xl space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <Clock size={11} />
-                          Cadastro Inicial
-                        </span>
-                        {lote.dataInicio && (
-                          <span className="text-[11px] text-theme-text-muted font-medium flex items-center gap-1">
-                            <Calendar size={11} />
-                            {fmtDate(lote.dataInicio)}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <Clock size={11} />
+                            Cadastro Inicial
                           </span>
-                        )}
+                          {lote.dataInicio && (
+                            <span className="text-[11px] text-theme-text-muted font-medium flex items-center gap-1">
+                              <Calendar size={11} />
+                              {fmtDate(lote.dataInicio)}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirm('__initial_obs__')}
+                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Apagar observação inicial"
+                        >
+                          <Trash2 size={12} />
+                          <span>Apagar</span>
+                        </button>
                       </div>
                       <p className="text-xs text-theme-text-light leading-relaxed whitespace-pre-wrap">
                         {initialObs}
@@ -200,7 +222,7 @@ export function LotNotesModal({
                   {adicNotes.map((nota) => (
                     <div
                       key={nota.id}
-                      className="p-3.5 bg-theme-base/80 border border-theme-border rounded-2xl space-y-1.5 hover:border-theme-border/80 transition-colors"
+                      className="p-3.5 bg-theme-base/80 border border-theme-border rounded-2xl space-y-2 hover:border-theme-border/80 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] text-theme-primary font-bold flex items-center gap-1">
@@ -210,10 +232,11 @@ export function LotNotesModal({
                         <button
                           type="button"
                           onClick={() => setDeleteConfirm(nota.id)}
-                          className="p-1 hover:bg-red-500/15 rounded-lg text-theme-text-muted hover:text-red-400 transition-colors cursor-pointer"
-                          title="Excluir observação"
+                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Apagar observação"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={12} />
+                          <span>Apagar</span>
                         </button>
                       </div>
                       <p className="text-xs text-white leading-relaxed whitespace-pre-wrap">

@@ -2025,6 +2025,93 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady]);
 
+  // ── Auto-preenchimento inteligente de dias sem registro em lotes de postura ativos ──
+  // Se passam dias e o criador não registrou coleta, adiciona automaticamente 'Nenhum registro' no histórico
+  useEffect(() => {
+    if (!isReady || eggLots.length === 0) return;
+
+    let hasUpdates = false;
+    const now = new Date();
+    // Considera dias até ontem (hoje ainda está em andamento)
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12, 0, 0);
+
+    const updatedEggLots = eggLots.map(lote => {
+      if (lote.status !== 'Ativo' || !lote.dataInicio) return lote;
+
+      const startDateObj = new Date(lote.dataInicio + 'T12:00:00');
+      if (isNaN(startDateObj.getTime())) return lote;
+
+      // Limita a verificação a no máximo 60 dias atrás para evitar sobrecarga
+      const maxPastMs = Date.now() - 60 * 86400000;
+      const effectiveStartTime = Math.max(startDateObj.getTime(), maxPastMs);
+      const effectiveStartDate = new Date(effectiveStartTime);
+
+      const existingRecords = lote.registros || [];
+      const existingDates = new Set(existingRecords.map(r => r?.data).filter(Boolean));
+
+      const newEmptyRecords: EggDailyRecord[] = [];
+      const iterDate = new Date(effectiveStartDate.getFullYear(), effectiveStartDate.getMonth(), effectiveStartDate.getDate(), 12, 0, 0);
+
+      while (iterDate <= yesterday) {
+        const yyyy = iterDate.getFullYear();
+        const mm = String(iterDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(iterDate.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        if (!existingDates.has(dateStr)) {
+          newEmptyRecords.push({
+            id: `auto-empty-${dateStr}-${lote.id}`,
+            data: dateStr,
+            coletados: 0,
+            vendidos: 0,
+            perdidos: 0,
+            precoVenda: lote.precoVendaPadrao || 0,
+            custoProd: lote.custoProdPadrao || 0,
+            observacao: 'Nenhum registro'
+          });
+          existingDates.add(dateStr);
+        }
+        iterDate.setDate(iterDate.getDate() + 1);
+      }
+
+      if (newEmptyRecords.length > 0) {
+        hasUpdates = true;
+        const mergedRecords = [...existingRecords, ...newEmptyRecords].sort((a, b) => b.data.localeCompare(a.data));
+        return { ...lote, registros: mergedRecords };
+      }
+
+      return lote;
+    });
+
+    if (hasUpdates) {
+      setEggLots(updatedEggLots);
+      localforage.setItem(getStorageKey('egglots'), updatedEggLots).catch(console.error);
+
+      if (isSupabaseConfigured && user) {
+        const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const lotsToPush = updatedEggLots
+          .filter((l, idx) => l.registros?.length !== eggLots[idx]?.registros?.length)
+          .map(l => ({
+            id: l.id,
+            user_id: targetUserId,
+            baia: l.baia,
+            data_inicio: l.dataInicio || '',
+            status: l.status || 'Ativo',
+            femeas_ids: l.femeasIds || [],
+            expectativa_diaria: l.expectativaDiaria || 0,
+            registros: packageEggLotRegistros(l)
+          }));
+
+        if (lotsToPush.length > 0) {
+          supabase!.from('egg_lots').upsert(lotsToPush, { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('[AutoEmpty] Erro ao sincronizar lotes com registros vazios no Supabase:', error);
+          });
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady]);
+
   const addBreed = (breed: Breed) => {
     setBreeds(prev => {
       const next = [...prev, breed];

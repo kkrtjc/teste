@@ -9,7 +9,7 @@ import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
-  AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText
+  AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText, Clock
 } from 'lucide-react';
 import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -712,8 +712,8 @@ function RegisterDaySheet({
     const preco = parseFloat(form.precoVenda) || 0;
     const custo = parseFloat(form.custoProd) || 0;
 
-    if (!col || col <= 0 || isNaN(col)) {
-      setError('Informe a quantidade válida de ovos coletados.');
+    if (isNaN(col) || col < 0) {
+      setError('Informe uma quantidade válida de ovos coletados (mínimo 0).');
       return;
     }
     if ((vend + perd) > col) {
@@ -1161,43 +1161,59 @@ function LotCard({
             <div>
               <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2">Histórico de Registros (Clique para Editar ou Excluir)</p>
               <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 smooth-scroll">
-                {[...records].sort((a, b) => b.data.localeCompare(a.data)).map(r => (
-                  <div key={r.id || r.data} className="flex items-center justify-between text-xs bg-theme-surface border border-theme-border hover:border-theme-primary/40 rounded-xl px-3 py-2 transition-colors">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <CalendarDays size={12} className="text-amber-400 shrink-0" />
-                      <span className="text-theme-text-muted w-16 shrink-0 font-mono text-[11px]">{formatDate(r.data)}</span>
-                      <span className="text-amber-400 font-bold shrink-0">{r.coletados} ovos</span>
-                      {r.vendidos > 0 && <span className="text-green-400 shrink-0">+{r.vendidos}v</span>}
-                      {(r.incubados || 0) > 0 && <span className="text-purple-400 shrink-0">+{r.incubados}c</span>}
-                      {r.perdidos > 0 && <span className="text-red-400 shrink-0">-{r.perdidos}p</span>}
-                    </div>
+                {[...records].sort((a, b) => b.data.localeCompare(a.data)).map(r => {
+                  const isNoRecord = r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0));
+                  return (
+                    <div key={r.id || r.data} className={`flex items-center justify-between text-xs rounded-xl px-3 py-2 transition-colors border ${
+                      isNoRecord
+                        ? 'bg-theme-base/50 border-theme-border/50 hover:border-amber-500/30'
+                        : 'bg-theme-surface border-theme-border hover:border-theme-primary/40'
+                    }`}>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <CalendarDays size={12} className={isNoRecord ? "text-theme-text-muted shrink-0" : "text-amber-400 shrink-0"} />
+                        <span className="text-theme-text-muted w-16 shrink-0 font-mono text-[11px]">{formatDate(r.data)}</span>
+                        {isNoRecord ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20 flex items-center gap-1">
+                            <Clock size={10} />
+                            Nenhum registro
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-amber-400 font-bold shrink-0">{r.coletados} ovos</span>
+                            {r.vendidos > 0 && <span className="text-green-400 shrink-0">+{r.vendidos}v</span>}
+                            {(r.incubados || 0) > 0 && <span className="text-purple-400 shrink-0">+{r.incubados}c</span>}
+                            {r.perdidos > 0 && <span className="text-red-400 shrink-0">-{r.perdidos}p</span>}
+                          </>
+                        )}
+                      </div>
 
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <button
-                        type="button"
-                        onClick={() => onEditRecord(lot, r)}
-                        className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors cursor-pointer"
-                        title="Editar lançamento"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onRequestDeleteRecord) {
-                            onRequestDeleteRecord(lot, r.id, r.data);
-                          } else {
-                            onDeleteRecord(lot, r.id);
-                          }
-                        }}
-                        className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
-                        title="Excluir lançamento"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <button
+                          type="button"
+                          onClick={() => onEditRecord(lot, r)}
+                          className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors cursor-pointer"
+                          title={isNoRecord ? "Preencher coleta deste dia" : "Editar lançamento"}
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onRequestDeleteRecord) {
+                              onRequestDeleteRecord(lot, r.id, r.data);
+                            } else {
+                              onDeleteRecord(lot, r.id);
+                            }
+                          }}
+                          className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+                          title="Excluir lançamento"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
