@@ -8,7 +8,7 @@ import {
 import { useAppContext, type Bird } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
 import { publishShowcase, generateQrCodeUrl } from '../../lib/showcaseShare';
-import { generateBirdPdf, sharePdfFile } from '../../lib/pdfGenerator';
+// PDF generator is dynamically imported on demand to keep the initial bundle small
 import { useHaptics } from '../../hooks/useHaptics';
 
 interface ShareBirdModalProps {
@@ -180,6 +180,7 @@ export function ShareBirdModal({
   const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
     try {
+      const { generateBirdPdf, sharePdfFile } = await import('../../lib/pdfGenerator');
       const blob = await generateBirdPdf({
         bird,
         farmSettings,

@@ -14,7 +14,7 @@ import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { LotNotesModal } from '../components/modals/LotNotesModal';
-import { generateLotPdf, sharePdfFile } from '../lib/pdfGenerator';
+// PDF generator is dynamically imported on demand to keep the initial bundle small
 import { calculateLotProduction } from '../lib/lotProduction';
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -610,6 +610,7 @@ export function Lots() {
   const handleShareLotPdf = async (lote: any, lotType: 'cruzador' | 'incubacao' | 'engorda' | 'postura' | 'pintinhos') => {
     setGeneratingLotId(lote.id);
     try {
+      const { generateLotPdf, sharePdfFile } = await import('../lib/pdfGenerator');
       const blob = await generateLotPdf({
         lot: lote,
         lotType,
