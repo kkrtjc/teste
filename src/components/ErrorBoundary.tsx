@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -25,6 +25,13 @@ export class GlobalErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[GlobalErrorBoundary] Erro fatal capturado:', error, info);
+    // Report to Sentry if available
+    try {
+      const Sentry = (window as any).__sentry_instance__;
+      if (Sentry?.captureException) {
+        Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+      }
+    } catch { /* silently ignore if Sentry is not loaded */ }
   }
 
   render() {
@@ -87,6 +94,12 @@ export class CardErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[CardErrorBoundary] Falha modular isolada:', error, info);
+    try {
+      const Sentry = (window as any).__sentry_instance__;
+      if (Sentry?.captureException) {
+        Sentry.captureException(error, { extra: { componentStack: info.componentStack, label: this.props.label } });
+      }
+    } catch { /* silently ignore */ }
   }
 
   render() {

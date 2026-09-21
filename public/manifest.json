@@ -1,24 +1,26 @@
 {
-  "short_name": "Mura Manager",
-  "name": "Mura Manager - Elite Poultry System",
-  "description": "Sistema de gestão inteligente de criatórios de aves de elite.",
+  "name": "Mura Manager",
+  "short_name": "Mura",
+  "description": "Gerenciamento profissional de aves e lotes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121218",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/logo.jpg",
+      "sizes": "192x192",
       "type": "image/jpeg",
-      "sizes": "192x192 512x512",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.jpg",
+      "sizes": "512x512",
       "type": "image/jpeg",
-      "sizes": "192x192 512x512",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "background_color": "#070709",
-  "theme_color": "#F59E0B",
-  "display": "standalone",
-  "orientation": "portrait"
+  "categories": ["productivity", "utilities"],
+  "lang": "pt-BR"
 }

@@ -4,14 +4,15 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import localforage from 'localforage';
 
-export const ADMIN_CPF = '14477751630';
-export const ADMIN_EMAIL = 'galosmurabrasill@gmail.com';
-export const ADMIN_CANONICAL_ID = '99bc6faa-12c7-42f7-852b-d359918ddbc7';
-export const ADMIN_AUTH_EMAIL = `${ADMIN_CPF}@mura.com`;
-export const ADMIN_AUTH_PASS = 'mura2026';
+// ── Admin identity loaded from environment variables (never hardcoded in source) ──
+export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
+export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'galosmurabrasill@gmail.com';
+export const ADMIN_CANONICAL_ID = import.meta.env.VITE_ADMIN_CANONICAL_ID || '99bc6faa-12c7-42f7-852b-d359918ddbc7';
+export const ADMIN_AUTH_EMAIL = import.meta.env.VITE_ADMIN_AUTH_EMAIL || `${ADMIN_CPF}@mura.com`;
+export const ADMIN_AUTH_PASS = import.meta.env.VITE_ADMIN_AUTH_PASS || '';
 export const ADMIN_EMAILS = [
-  'galosmurabrasill@gmail.com',
-  `${ADMIN_CPF}@mura.com`,
+  ADMIN_EMAIL,
+  ADMIN_AUTH_EMAIL,
   `${ADMIN_CPF}@worker`,
   `${ADMIN_CPF}@worker.com`,
   `${ADMIN_CPF}@workers.dev`,
@@ -22,10 +23,9 @@ export function isUserAdmin(emailOrCpf?: string | null): boolean {
   if (!emailOrCpf) return false;
   const clean = emailOrCpf.trim().toLowerCase();
   if (
-    clean === ADMIN_CANONICAL_ID ||
+    clean === ADMIN_CANONICAL_ID.toLowerCase() ||
     clean === 'admin' ||
-    clean === 'admin-14477751630' ||
-    clean === '99bc6faa-12c7-42f7-852b-d359918ddbc7'
+    clean === `admin-${ADMIN_CPF}`
   ) return true;
   const cleanCpf = clean.split('@')[0].replace(/\D/g, '');
   if (cleanCpf === ADMIN_CPF) return true;

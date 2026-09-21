@@ -7,6 +7,7 @@ import { PaywallScreen } from './components/PaywallScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
+import { AutoUpdater } from './components/AutoUpdater';
 
 import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
 
@@ -113,6 +114,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <AutoUpdater />
       <AuthProvider>
         <AppProvider>
           <AppContent />
