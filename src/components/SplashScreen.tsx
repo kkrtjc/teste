@@ -34,7 +34,7 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
         setShouldRender(false);
         if (onFinish) onFinish();
       }, 600);
-    }, 15000);
+    }, 8000);
     return () => clearTimeout(safetyTimer);
   }, [isLoading, onFinish]);
 

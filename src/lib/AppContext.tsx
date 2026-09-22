@@ -596,11 +596,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return `@mura-manager:${user.id}:${keyName}`;
   }, [user, isCurrentUserAdmin]);
 
+  // Gravação ultra-segura no armazenamento local (protege contra QuotaExceededError no Safari iOS em Aba Anônima)
+  const safeStorageSet = useCallback(async (key: string, value: any) => {
+    try {
+      await localforage.setItem(key, value);
+    } catch (e) {
+      console.warn(`[SafeStorage] Não foi possível persistir "${key}" (ignorado defensivamente):`, e);
+    }
+  }, []);
+
   const [isReady, setIsReady] = useState(false);
   const [isInitialSyncDone, setIsInitialSyncDone] = useState(false);
 
   const [breeds, setBreeds] = useState<Breed[]>([]);
   const [birds, setBirds] = useState<Bird[]>([]);
+  const birdsRef = useRef<Bird[]>([]);
+  useEffect(() => { birdsRef.current = birds; }, [birds]);
   const [vitrineConfig, setVitrineConfig] = useState<Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }>>(() => {
     try {
       const raw = localStorage.getItem('@mura-manager:vitrine-config');
@@ -1014,8 +1025,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? supabase!.from('breeds').select('*').in('user_id', adminUserIds).order('nome', { ascending: true })
           : supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -1269,11 +1280,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       setBreeds(uniqueBreeds);
-      await localforage.setItem(getStorageKey('breeds'), uniqueBreeds);
-      if (isAdmin) {
-        await localforage.setItem('@mura-manager:admin:breeds', uniqueBreeds);
-        await localforage.setItem('@mura-manager:breeds', uniqueBreeds);
-      }
+      await safeStorageSet(getStorageKey('breeds'), uniqueBreeds);
 
       // ── AVES: Sincronização Cloud-Authoritative & Prevenção Rigorosa de Fantasmas ──
       const offlinePendingIds = await getOfflinePendingBirdIds();
@@ -1323,50 +1330,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       let finalBirds: Bird[] = [];
       if (sbBirdsFromCloud !== null) {
-        // ── OTIMIZAÇÃO DE BANDA (Supabase Egress Saver) ──
-        // Identifica apenas as aves vindas da nuvem que NÃO têm fotos no armazenamento local deste aparelho
-        const missingPhotoBirdIds: string[] = [];
-        const cloudPhotoMap: Record<string, { imagem?: string; imagens?: string[] }> = {};
-
-        sbBirdsFromCloud.forEach((b: any) => {
-          const local = (localBirds || []).find((x: any) => x.id === b.id);
-          const hasLocal = Boolean(local?.imagem || (local?.imagens && local.imagens.length > 0));
-          const hasInCloud = Boolean(b.imagem || (b.imagens && Array.isArray(b.imagens) && b.imagens.length > 0));
-          if (!hasLocal && !hasInCloud) {
-            missingPhotoBirdIds.push(b.id);
-          }
-        });
-
-        // Se houver aves novas que não vieram com foto no payload inicial, busca sob demanda
-        if (missingPhotoBirdIds.length > 0 && isSupabaseConfigured) {
-          try {
-            const chunks: string[][] = [];
-            for (let i = 0; i < missingPhotoBirdIds.length; i += 25) {
-              chunks.push(missingPhotoBirdIds.slice(i, i + 25));
-            }
-            const chunkResults = await Promise.all(
-              chunks.map(chunkIds =>
-                supabase!
-                  .from('birds')
-                  .select('id,imagem,imagens')
-                  .in('id', chunkIds)
-              )
-            );
-            chunkResults.forEach(({ data: pData }) => {
-              if (pData) {
-                pData.forEach((pb: any) => {
-                  cloudPhotoMap[pb.id] = {
-                    imagem: pb.imagem || (pb.imagens && pb.imagens[0]) || undefined,
-                    imagens: pb.imagens || (pb.imagem ? [pb.imagem] : [])
-                  };
-                });
-              }
-            });
-          } catch (pErr) {
-            console.warn('[Sync Otimizado] Falha ao buscar fotos sob demanda:', pErr);
-          }
-        }
-
         const nextVitrineMap: Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }> = {};
 
         const cloudMapped: Bird[] = sbBirdsFromCloud.map((b: any) => {
@@ -1374,17 +1337,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           let birdImagens = (localBird?.imagens && localBird.imagens.length > 0)
             ? localBird.imagens
             : (localBird?.imagem ? [localBird.imagem] : []);
-
-          // Se o cache local não tinha fotos desta ave, aproveita diretamente as fotos trazidas da nuvem
-          if (birdImagens.length === 0) {
-            if (b.imagens && Array.isArray(b.imagens) && b.imagens.length > 0) {
-              birdImagens = b.imagens;
-            } else if (b.imagem) {
-              birdImagens = [b.imagem];
-            } else if (cloudPhotoMap[b.id]) {
-              birdImagens = cloudPhotoMap[b.id].imagens || (cloudPhotoMap[b.id].imagem ? [cloudPhotoMap[b.id].imagem!] : []);
-            }
-          }
 
           const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
           const parsedLocalVitrine = parseBirdVitrine(localBird?.observacoes);
@@ -1396,12 +1348,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           let birdVitrineStatus: any;
 
           if (isRecentChangeActive) {
-            // Ação explícita recente do usuário local tem autoridade absoluta
             isBirdInVitrine = recentChange.inVitrine;
             birdVitrinePrice = recentChange.vitrinePrice ?? (parsedCloudVitrine.vitrinePrice || localBird?.vitrinePrice || '');
             birdVitrineStatus = recentChange.vitrineStatus ?? (parsedCloudVitrine.vitrineStatus || localBird?.vitrineStatus || 'Disponível');
           } else {
-            // Sem alteração recente local:
             if (localBird?.inVitrine === false && !parsedCloudVitrine.inVitrine) {
               isBirdInVitrine = false;
               birdVitrinePrice = '';
@@ -1423,23 +1373,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           const cleanObs = parsedCloudVitrine.cleanObservacoes || parsedLocalVitrine.cleanObservacoes || '';
 
-          // Sincroniza Supabase caso haja divergência entre nuvem e o status consolidado
-          if (isSupabaseConfigured && user) {
-            if (!parsedCloudVitrine.inVitrine && isBirdInVitrine) {
-              // Ave deve estar na vitrine, grava a tag na nuvem
-              const obsWithTag = formatBirdObservacoesWithVitrine(cleanObs, true, birdVitrinePrice, birdVitrineStatus);
-              supabase!.from('birds').update({ observacoes: obsWithTag }).eq('id', b.id).then(({ error }) => {
-                if (error) console.warn('[Sync] Falha ao persistir tag vitrine em nuvem:', error);
-              });
-            } else if (parsedCloudVitrine.inVitrine && !isBirdInVitrine) {
-              // Ave foi removida da vitrine pelo usuário, remove a tag da nuvem
-              const obsWithoutTag = formatBirdObservacoesWithVitrine(cleanObs, false);
-              supabase!.from('birds').update({ observacoes: obsWithoutTag }).eq('id', b.id).then(({ error }) => {
-                if (error) console.warn('[Sync] Falha ao remover tag vitrine em nuvem:', error);
-              });
-            }
-          }
-
           if (isBirdInVitrine) {
             nextVitrineMap[b.id] = {
               inVitrine: true,
@@ -1456,7 +1389,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             raca: b.raca || '',
             baia: b.baia || 'ND',
             status: b.status || 'Adulto',
-            imagem: b.imagem || (birdImagens[0] ?? undefined),
+            imagem: localBird?.imagem || undefined,
             imagens: birdImagens,
             vacinas: b.vacinas,
             origem: b.origem,
@@ -1483,13 +1416,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         // Atualiza vitrineConfig exatamente com o mapa de aves ativas na vitrine
         setVitrineConfig(nextVitrineMap);
-        localforage.setItem(getStorageKey('vitrine-config'), nextVitrineMap).catch(console.error);
+        safeStorageSet(getStorageKey('vitrine-config'), nextVitrineMap).catch(() => {});
         try {
           localStorage.setItem('@mura-manager:vitrine-config', JSON.stringify(nextVitrineMap));
         } catch {}
 
         // Adiciona apenas aves locais que foram criadas offline e ainda não chegaram à nuvem
-        // e que NÃO estão nos tombstones (evita aves deletadas offline ressurgirem)
         const unconfirmedOffline = (localBirds || []).filter((b: any) =>
           b && b.id &&
           offlinePendingIds.has(b.id) &&
@@ -1504,14 +1436,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       setBirds(finalBirds);
-      try {
-        await localforage.setItem(getStorageKey('birds'), finalBirds);
-        if (isAdmin) {
-          await localforage.setItem('@mura-manager:admin:birds', finalBirds);
-          await localforage.setItem('@mura-manager:birds', finalBirds);
-        }
-      } catch (storageErr) {
-        console.warn('[Sync] Falha no storage local de aves (não-bloqueante):', storageErr);
+      birdsRef.current = finalBirds;
+      await safeStorageSet(getStorageKey('birds'), finalBirds);
+
+      // ── CARREGAMENTO DE FOTOS EM SEGUNDO PLANO (NON-BLOCKING) ──
+      // Busca fotos de alta resolução da nuvem sem atrasar a inicialização do app
+      if (isSupabaseConfigured && sbBirdsFromCloud && sbBirdsFromCloud.length > 0) {
+        const cloudBirdIds = sbBirdsFromCloud.map((b: any) => b.id);
+        (async () => {
+          try {
+            const { data: photoData } = await supabase!
+              .from('birds')
+              .select('id,imagem,imagens')
+              .in('id', cloudBirdIds);
+
+            if (photoData && photoData.length > 0) {
+              const photoMap = new Map<string, { imagem?: string; imagens?: string[] }>();
+              photoData.forEach((p: any) => {
+                photoMap.set(p.id, {
+                  imagem: p.imagem || (p.imagens && p.imagens[0]) || undefined,
+                  imagens: p.imagens || (p.imagem ? [p.imagem] : [])
+                });
+              });
+
+              setBirds(prev => {
+                const updated = prev.map(bird => {
+                  const p = photoMap.get(bird.id);
+                  if (!p) return bird;
+                  const imgs = (p.imagens && p.imagens.length > 0) ? p.imagens : (p.imagem ? [p.imagem] : bird.imagens);
+                  return {
+                    ...bird,
+                    imagem: p.imagem || imgs?.[0] || bird.imagem,
+                    imagens: imgs && imgs.length > 0 ? imgs : bird.imagens
+                  };
+                });
+                birdsRef.current = updated;
+                safeStorageSet(getStorageKey('birds'), updated);
+                return updated;
+              });
+            }
+          } catch (photoErr) {
+            console.warn('[Sync] Fotos em segundo plano:', photoErr);
+          }
+        })();
       }
 
 
@@ -1550,7 +1517,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setCouples(mappedCouples);
-      await localforage.setItem(getStorageKey('couples'), mappedCouples);
+      await safeStorageSet(getStorageKey('couples'), mappedCouples);
 
       // ── LOTES DE OVOS: Mapeamento e preservação ──
       const mappedEggLots = sbEggLots.map((l: any) => {
@@ -1682,7 +1649,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const finalEggLots = [...mappedEggLots, ...pendingEggLots];
       setEggLots(finalEggLots);
       eggLotsRef.current = finalEggLots;
-      await localforage.setItem(getStorageKey('egglots'), finalEggLots);
+      await safeStorageSet(getStorageKey('egglots'), finalEggLots);
 
       // ── LOTES DE CORTE: Mapeamento e preservação ──
       const mappedMeatLots = sbMeatLots.map((l: any) => {
@@ -1795,7 +1762,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const finalMeatLots = [...mappedMeatLots, ...pendingMeatLots];
       setMeatLots(finalMeatLots);
       meatLotsRef.current = finalMeatLots;
-      await localforage.setItem(getStorageKey('meatlots'), finalMeatLots);
+      await safeStorageSet(getStorageKey('meatlots'), finalMeatLots);
 
       // ── OVOS DE CASAL: Mapeamento e preservação ──
       const mappedCoupleEggs = sbCoupleEggs.map((e: any) => ({
@@ -1825,7 +1792,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const finalCoupleEggs = [...mappedCoupleEggs, ...pendingCoupleEggs];
       setCoupleEggs(finalCoupleEggs);
-      await localforage.setItem(getStorageKey('couple-eggs'), finalCoupleEggs);
+      await safeStorageSet(getStorageKey('couple-eggs'), finalCoupleEggs);
 
       // ── LOTES DE INCUBAÇÃO: Mapeamento e preservação ──
       const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
@@ -1867,7 +1834,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const finalIncubationLots = [...mappedIncubationLots, ...pendingIncubationLots];
       setIncubationLots(finalIncubationLots);
-      await localforage.setItem(getStorageKey('incubation-lots'), finalIncubationLots);
+      await safeStorageSet(getStorageKey('incubation-lots'), finalIncubationLots);
 
       // ── CONFIGURAÇÕES DA FAZENDA ──
       const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
@@ -1883,14 +1850,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           state: sbSettings.state || localSettings?.state || ''
         };
         setFarmSettings(settingsData);
-        await localforage.setItem(getStorageKey('settings'), settingsData);
+        await safeStorageSet(getStorageKey('settings'), settingsData);
         try {
           localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(settingsData));
           localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(settingsData));
         } catch {}
-        if (isAdmin) {
-          await localforage.setItem('@mura-manager:settings', settingsData);
-        }
       } else if (hasLocalProfile) {
         setFarmSettings(localSettings);
         try {
@@ -1916,16 +1880,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } catch {}
         if (recoveredSettings && (recoveredSettings.name || recoveredSettings.photo)) {
           setFarmSettings(recoveredSettings);
-          await localforage.setItem(getStorageKey('settings'), recoveredSettings);
+          await safeStorageSet(getStorageKey('settings'), recoveredSettings);
         } else {
           const defaultSettings = { name: '', photo: '', email: '', phone: '', city: '', state: '' };
           setFarmSettings(defaultSettings);
-          await localforage.setItem(getStorageKey('settings'), defaultSettings);
+          await safeStorageSet(getStorageKey('settings'), defaultSettings);
         }
       }
     } catch (syncError) {
-      console.error("Erro crítico na sincronização em background, fazendo fallback offline:", syncError);
-      await loadFromLocalForage();
+      console.error("Erro na sincronização em background:", syncError);
+      // Fallback offline defensivo: só restaura do cache se a memória ainda estiver completamente vazia
+      if (birdsRef.current.length === 0) {
+        await loadFromLocalForage();
+      }
     } finally {
       isSyncingRef.current = false;
     }
@@ -1966,7 +1933,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const syncPromise = syncWithSupabaseBackground(true);
           // Se localCount for 0 (aba privada ou novo aparelho), aguarda a nuvem entregar os dados antes de exibir o app
-          const waitTimeout = (localCount === 0 || !localCount) ? 12000 : 3500;
+          const waitTimeout = (localCount === 0 || !localCount) ? 5000 : 2500;
           await Promise.race([
             syncPromise,
             new Promise(resolve => setTimeout(resolve, waitTimeout))
