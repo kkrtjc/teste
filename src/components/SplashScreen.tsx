@@ -25,17 +25,18 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
     }
   }, [isLoading, onFinish]);
 
-  // Blindagem de segurança: nunca trava o usuário na splash por mais de 7 segundos
+  // Blindagem de segurança: nunca trava o usuário na splash por mais de 15 segundos em caso de perda total de conexão
   useEffect(() => {
+    if (!isLoading) return;
     const safetyTimer = setTimeout(() => {
       setIsFadingOut(true);
       setTimeout(() => {
         setShouldRender(false);
         if (onFinish) onFinish();
       }, 600);
-    }, 7000);
+    }, 15000);
     return () => clearTimeout(safetyTimer);
-  }, [onFinish]);
+  }, [isLoading, onFinish]);
 
   if (!shouldRender) return null;
 

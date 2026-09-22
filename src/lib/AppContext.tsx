@@ -827,11 +827,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else if (!currUserVal && legacyVal) {
           await localforage.setItem(userKey, legacyVal);
         }
+
+        if (isCurrentUserAdmin) {
+          const finalVal = await localforage.getItem<any>(userKey);
+          if (finalVal) {
+            await localforage.setItem(`@mura-manager:admin:${s}`, finalVal);
+          }
+        }
       } catch (err) {
         console.warn(`[Migrate] Erro ao migrar ${s} para o usuário:`, err);
       }
     }
-  }, [markPendingOfflineBird]);
+  }, [markPendingOfflineBird, isCurrentUserAdmin]);
 
   // Helper para carregar o cache offline (usado como fallback quando offline ou visitante)
   const loadFromLocalForage = useCallback(async () => {
@@ -935,14 +942,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const userKey = getStorageKey(item.suffix);
         let data: any = await localforage.getItem(userKey);
 
-        if (isCurrentUserAdmin && !data) {
-          data = await localforage.getItem(`@mura-manager:admin:${item.suffix}`);
+        const isDataEmpty = !data || (Array.isArray(data) && data.length === 0);
+        if (isCurrentUserAdmin && isDataEmpty) {
+          const adminData: any = await localforage.getItem(`@mura-manager:admin:${item.suffix}`);
+          if (adminData && (!Array.isArray(adminData) || adminData.length > 0)) {
+            data = adminData;
+          }
         }
-        if (!data) {
-          data = await localforage.getItem(`@mura-manager:guest:${item.suffix}`);
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          const guestData: any = await localforage.getItem(`@mura-manager:guest:${item.suffix}`);
+          if (guestData && (!Array.isArray(guestData) || guestData.length > 0)) {
+            data = guestData;
+          }
         }
-        if (!data) {
-          data = await localforage.getItem(`@mura-manager:${item.suffix}`);
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          const legacyData: any = await localforage.getItem(`@mura-manager:${item.suffix}`);
+          if (legacyData && (!Array.isArray(legacyData) || legacyData.length > 0)) {
+            data = legacyData;
+          }
         }
 
         if (data !== null && data !== undefined) {
@@ -993,7 +1010,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resCoupleEggs,
         resIncubationLots
       ] = await Promise.all([
-        supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
+        isAdmin
+          ? supabase!.from('breeds').select('*').in('user_id', adminUserIds).order('nome', { ascending: true })
+          : supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
           ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
           : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
@@ -1006,7 +1025,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isAdmin
           ? supabase!.from('meat_lots').select('*').in('user_id', adminUserIds)
           : supabase!.from('meat_lots').select('*').eq('user_id', targetUserId),
-        supabase!.from('profiles').select('*').eq('id', targetUserId).maybeSingle(),
+        isAdmin
+          ? supabase!.from('profiles').select('*').in('id', adminUserIds).maybeSingle()
+          : supabase!.from('profiles').select('*').eq('id', targetUserId).maybeSingle(),
         isAdmin
           ? supabase!.from('couple_eggs').select('*').in('user_id', adminUserIds)
           : supabase!.from('couple_eggs').select('*').eq('user_id', targetUserId),
@@ -1310,12 +1331,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sbBirdsFromCloud.forEach((b: any) => {
           const local = (localBirds || []).find((x: any) => x.id === b.id);
           const hasLocal = Boolean(local?.imagem || (local?.imagens && local.imagens.length > 0));
-          if (!hasLocal) {
+          const hasInCloud = Boolean(b.imagem || (b.imagens && Array.isArray(b.imagens) && b.imagens.length > 0));
+          if (!hasLocal && !hasInCloud) {
             missingPhotoBirdIds.push(b.id);
           }
         });
 
-        // Se houver aves novas (ex: cadastradas em outro aparelho ou primeiro login), busca fotos em paralelo de alta velocidade
+        // Se houver aves novas que não vieram com foto no payload inicial, busca sob demanda
         if (missingPhotoBirdIds.length > 0 && isSupabaseConfigured) {
           try {
             const chunks: string[][] = [];
@@ -1353,9 +1375,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? localBird.imagens
             : (localBird?.imagem ? [localBird.imagem] : []);
 
-          // Se o cache local não tinha fotos desta ave, usa as fotos trazidas sob demanda da nuvem
-          if (birdImagens.length === 0 && cloudPhotoMap[b.id]) {
-            birdImagens = cloudPhotoMap[b.id].imagens || (cloudPhotoMap[b.id].imagem ? [cloudPhotoMap[b.id].imagem!] : []);
+          // Se o cache local não tinha fotos desta ave, aproveita diretamente as fotos trazidas da nuvem
+          if (birdImagens.length === 0) {
+            if (b.imagens && Array.isArray(b.imagens) && b.imagens.length > 0) {
+              birdImagens = b.imagens;
+            } else if (b.imagem) {
+              birdImagens = [b.imagem];
+            } else if (cloudPhotoMap[b.id]) {
+              birdImagens = cloudPhotoMap[b.id].imagens || (cloudPhotoMap[b.id].imagem ? [cloudPhotoMap[b.id].imagem!] : []);
+            }
           }
 
           const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
@@ -1881,9 +1909,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         }
       } else {
-        const defaultSettings = { name: '', photo: '', email: '', phone: '', city: '', state: '' };
-        setFarmSettings(defaultSettings);
-        await localforage.setItem(getStorageKey('settings'), defaultSettings);
+        let recoveredSettings: any = null;
+        try {
+          const raw = localStorage.getItem(`@mura-manager:cached-farm-settings:${targetUserId}`) || localStorage.getItem('@mura-manager:cached-farm-settings');
+          if (raw) recoveredSettings = JSON.parse(raw);
+        } catch {}
+        if (recoveredSettings && (recoveredSettings.name || recoveredSettings.photo)) {
+          setFarmSettings(recoveredSettings);
+          await localforage.setItem(getStorageKey('settings'), recoveredSettings);
+        } else {
+          const defaultSettings = { name: '', photo: '', email: '', phone: '', city: '', state: '' };
+          setFarmSettings(defaultSettings);
+          await localforage.setItem(getStorageKey('settings'), defaultSettings);
+        }
       }
     } catch (syncError) {
       console.error("Erro crítico na sincronização em background, fazendo fallback offline:", syncError);
@@ -1918,21 +1956,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // ── Carrega cache local imediatamente ──
       // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
       const localCount = await loadFromLocalForage();
-      setIsReady(true);
+      if (localCount > 0) {
+        setIsReady(true);
+      }
 
       // ── Sincroniza com a nuvem para trazer todas as informações do criatório ──
       if (isSupabaseConfigured && navigator.onLine) {
         processSyncQueue().catch(() => {});
-        const syncPromise = syncWithSupabaseBackground(true).catch(err => {
+        try {
+          const syncPromise = syncWithSupabaseBackground(true);
+          // Se localCount for 0 (aba privada ou novo aparelho), aguarda a nuvem entregar os dados antes de exibir o app
+          const waitTimeout = (localCount === 0 || !localCount) ? 12000 : 3500;
+          await Promise.race([
+            syncPromise,
+            new Promise(resolve => setTimeout(resolve, waitTimeout))
+          ]);
+        } catch (err) {
           console.warn('[LoadData] Falha na sync inicial:', err);
-        });
-
-        // Se localCount for 0 (aba privada ou primeiro acesso), aguarda até 8s para a nuvem entregar os dados
-        const waitTimeout = (localCount === 0 || !localCount) ? 8000 : 3500;
-        await Promise.race([
-          syncPromise,
-          new Promise(resolve => setTimeout(resolve, waitTimeout))
-        ]);
+        }
       }
 
       setIsReady(true);
