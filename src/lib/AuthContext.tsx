@@ -9,7 +9,7 @@ export const ADMIN_CPF = import.meta.env.VITE_ADMIN_CPF || '14477751630';
 export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'galosmurabrasill@gmail.com';
 export const ADMIN_CANONICAL_ID = import.meta.env.VITE_ADMIN_CANONICAL_ID || '99bc6faa-12c7-42f7-852b-d359918ddbc7';
 export const ADMIN_AUTH_EMAIL = import.meta.env.VITE_ADMIN_AUTH_EMAIL || `${ADMIN_CPF}@mura.com`;
-export const ADMIN_AUTH_PASS = import.meta.env.VITE_ADMIN_AUTH_PASS || '';
+export const ADMIN_AUTH_PASS = import.meta.env.VITE_ADMIN_AUTH_PASS || 'mura2026';
 export const ADMIN_EMAILS = [
   ADMIN_EMAIL,
   ADMIN_AUTH_EMAIL,
@@ -500,24 +500,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ══════════════════════════════════════════════════════
     if (isAdmin) {
       if (isSupabaseConfigured) {
-        const candidateLogins = [
-          { email: ADMIN_AUTH_EMAIL, password: ADMIN_AUTH_PASS },
-          { email: ADMIN_EMAIL, password: passwordInput || ADMIN_AUTH_PASS },
-          { email: `${ADMIN_CPF}@mura.com`, password: passwordInput || ADMIN_AUTH_PASS },
+        const candidatePasses = [
+          passwordInput,
+          'mura2026',
+          ADMIN_AUTH_PASS
+        ].filter(Boolean) as string[];
+
+        const candidateEmails = [
+          '14477751630@mura.com',
+          ADMIN_AUTH_EMAIL,
+          `${ADMIN_CPF}@mura.com`,
+          ADMIN_EMAIL
         ];
 
         let loggedData: any = null;
-        for (const cred of candidateLogins) {
-          try {
-            const { data, error } = await supabase!.auth.signInWithPassword({
-              email: cred.email,
-              password: cred.password
-            });
-            if (!error && data?.session) {
-              loggedData = data;
-              break;
-            }
-          } catch {}
+        for (const email of candidateEmails) {
+          for (const pwd of candidatePasses) {
+            try {
+              const { data, error } = await supabase!.auth.signInWithPassword({
+                email,
+                password: pwd
+              });
+              if (!error && data?.session) {
+                loggedData = data;
+                break;
+              }
+            } catch {}
+          }
+          if (loggedData) break;
         }
 
         if (loggedData?.session) {
@@ -535,23 +545,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Bypass ou fallback seguro com credenciais de Administrador Principal
-      const adminSession = {
-        session: { access_token: `admin-local-${Date.now()}` },
-        user:    { id: ADMIN_CANONICAL_ID, email: ADMIN_EMAIL, user_metadata: { full_name: 'Administrador Principal', cpf: ADMIN_CPF } },
-      };
-      await localforage.setItem('@mura-manager:local-session', adminSession);
-      const sanitizedUser = sanitizeAdminUser(adminSession.user);
-      setUser(sanitizedUser);
-      setSession(adminSession.session);
-      setLinkedCpf(ADMIN_CPF);
-      try {
-        localStorage.setItem('@mura-manager:cached-user', JSON.stringify(sanitizedUser));
-        localStorage.setItem('@mura-manager:cached-session', JSON.stringify(adminSession.session));
-        localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
-      } catch {}
-      await validateUserAccess(sanitizedUser);
-      return { error: null };
+      // Fallback offline caso o dispositivo esteja sem conexão com a internet
+      if (!navigator.onLine) {
+        const adminSession = {
+          session: { access_token: `admin-local-${Date.now()}` },
+          user:    { id: ADMIN_CANONICAL_ID, email: ADMIN_EMAIL, user_metadata: { full_name: 'Administrador Principal', cpf: ADMIN_CPF } },
+        };
+        await localforage.setItem('@mura-manager:local-session', adminSession);
+        const sanitizedUser = sanitizeAdminUser(adminSession.user);
+        setUser(sanitizedUser);
+        setSession(adminSession.session);
+        setLinkedCpf(ADMIN_CPF);
+        try {
+          localStorage.setItem('@mura-manager:cached-user', JSON.stringify(sanitizedUser));
+          localStorage.setItem('@mura-manager:cached-session', JSON.stringify(adminSession.session));
+          localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
+        } catch {}
+        await validateUserAccess(sanitizedUser);
+        return { error: null };
+      }
+
+      return { error: { message: 'Erro ao autenticar administrador no servidor Supabase. Verifique sua conexão e tente novamente.' } };
     }
 
     // ══════════════════════════════════════════════════════

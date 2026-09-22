@@ -964,7 +964,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const syncWithSupabaseBackground = useCallback(async (force = false) => {
     if (!isSupabaseConfigured || !user) return;
     const now = Date.now();
-    if (isSyncingRef.current) return;
+    if (isSyncingRef.current && !force) return;
     if (!force && now - lastSyncTimeRef.current < 2500) return;
 
     isSyncingRef.current = true;
@@ -1895,7 +1895,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── Carrega cache local imediatamente ──
       // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
-      await loadFromLocalForage();
+      const localCount = await loadFromLocalForage();
       setIsReady(true);
 
       // ── Sincroniza com a nuvem para trazer todas as informações do criatório ──
@@ -1905,10 +1905,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           console.warn('[LoadData] Falha na sync inicial:', err);
         });
 
-        // Aguarda a sincronização com timeout seguro de 4 segundos para conexão lenta não travar
+        // Se localCount for 0 (aba privada ou primeiro acesso), aguarda até 8s para a nuvem entregar os dados
+        const waitTimeout = (localCount === 0 || !localCount) ? 8000 : 3500;
         await Promise.race([
           syncPromise,
-          new Promise(resolve => setTimeout(resolve, 4000))
+          new Promise(resolve => setTimeout(resolve, waitTimeout))
         ]);
       }
 
