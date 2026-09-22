@@ -935,6 +935,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isSyncingRef = useRef(false);
   const lastSyncTimeRef = useRef(0);
   const realtimeDebounceTimerRef = useRef<any>(null);
+  const recentLotEditsRef = useRef<Map<string, number>>(new Map());
 
   // Função principal de sincronização com o Supabase com mesclagem defensiva de dados
   const syncWithSupabaseBackground = useCallback(async (force = false) => {
@@ -1523,12 +1524,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const localMovs: any[] = local?.movimentacoes || [];
         const finalMovs = localMovs.length > cloudMovs.length ? localMovs : cloudMovs;
 
-        // Combina observações adicionais
+        // Combina observações adicionais respeitando deleções
         const cloudObsAdd: any[] = cloudMeta?.observacoesAdicionais || [];
         const localObsAdd: any[] = local?.observacoesAdicionais || [];
-        const finalObsAdd = localObsAdd.length > cloudObsAdd.length ? localObsAdd : cloudObsAdd;
+        const isRecentLotEdit = recentLotEditsRef.current.has(l.id) && (Date.now() - (recentLotEditsRef.current.get(l.id) || 0) < 30000);
 
-        const finalObservacao = (local?.observacao !== undefined && local.observacao !== '') ? local.observacao : (cloudMeta?.observacao || '');
+        let finalObsAdd: any[];
+        if (isRecentLotEdit) {
+          finalObsAdd = localObsAdd;
+        } else if (cloudMeta && Array.isArray(cloudMeta.observacoesAdicionais)) {
+          finalObsAdd = cloudMeta.observacoesAdicionais;
+        } else {
+          finalObsAdd = localObsAdd;
+        }
+
+        let finalObservacao: string;
+        if (isRecentLotEdit) {
+          finalObservacao = local?.observacao !== undefined ? local.observacao : (cloudMeta?.observacao || '');
+        } else if (cloudMeta && cloudMeta.observacao !== undefined) {
+          finalObservacao = cloudMeta.observacao;
+        } else {
+          finalObservacao = local?.observacao || '';
+        }
         const finalRaca = (local?.raca !== undefined && local.raca !== '') ? local.raca : (cloudMeta?.raca || '');
         const finalPrecoVendaPadrao = local?.precoVendaPadrao ?? cloudMeta?.precoVendaPadrao ?? 6.0;
         const finalCustoProdPadrao = local?.custoProdPadrao ?? cloudMeta?.custoProdPadrao ?? 0.30;
@@ -1606,15 +1623,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const localMovs: any[] = local?.movimentacoes || [];
         const finalMovs = localMovs.length > cloudMovs.length ? localMovs : cloudMovs;
 
+        // Combina observações adicionais respeitando deleções
         const cloudObsAdd: any[] = cloudMeta?.observacoesAdicionais || [];
         const localObsAdd: any[] = local?.observacoesAdicionais || [];
-        const finalObsAdd = localObsAdd.length > cloudObsAdd.length ? localObsAdd : cloudObsAdd;
+        const isRecentMeatLotEdit = recentLotEditsRef.current.has(l.id) && (Date.now() - (recentLotEditsRef.current.get(l.id) || 0) < 30000);
+
+        let finalObsAdd: any[];
+        if (isRecentMeatLotEdit) {
+          finalObsAdd = localObsAdd;
+        } else if (cloudMeta && Array.isArray(cloudMeta.observacoesAdicionais)) {
+          finalObsAdd = cloudMeta.observacoesAdicionais;
+        } else {
+          finalObsAdd = localObsAdd;
+        }
 
         const cloudPesagens: any[] = cloudMeta?.pesagens || [];
         const localPesagens: any[] = local?.pesagens || [];
         const finalPesagens = localPesagens.length > cloudPesagens.length ? localPesagens : cloudPesagens;
 
-        const finalObservacao = (local?.observacao !== undefined && local.observacao !== '') ? local.observacao : (cloudMeta?.observacao || '');
+        let finalObservacao: string;
+        if (isRecentMeatLotEdit) {
+          finalObservacao = local?.observacao !== undefined ? local.observacao : (cloudMeta?.observacao || '');
+        } else if (cloudMeta && cloudMeta.observacao !== undefined) {
+          finalObservacao = cloudMeta.observacao;
+        } else {
+          finalObservacao = local?.observacao || '';
+        }
         const finalVacinas = (local?.vacinas !== undefined && local.vacinas !== '') ? local.vacinas : (cloudMeta?.vacinas || '');
         const finalRaca = (local?.raca !== undefined && local.raca !== '') ? local.raca : (cloudMeta?.raca || '');
         const finalPesoMedioInicial = local?.pesoMedioInicial || cloudCleanWeight || '';
@@ -2803,6 +2837,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const editEggLot = (id: string, updatedLot: Partial<EggLot>) => {
+    recentLotEditsRef.current.set(id, Date.now());
     setEggLots(prev => {
       const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
       eggLotsRef.current = next;
@@ -2887,6 +2922,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   const editMeatLot = (id: string, updatedLot: Partial<MeatLot>) => {
+    recentLotEditsRef.current.set(id, Date.now());
     setMeatLots(prev => {
       const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
       meatLotsRef.current = next;

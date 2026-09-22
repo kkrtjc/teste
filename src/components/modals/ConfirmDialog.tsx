@@ -1,4 +1,4 @@
-﻿import { createPortal } from 'react-dom';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
 import { useHaptics } from '../../hooks/useHaptics';
 
@@ -77,7 +77,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none animate-fade-in"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none animate-fade-in"
       onClick={handleCancel}
     >
       <div

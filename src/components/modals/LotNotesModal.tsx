@@ -205,11 +205,10 @@ export function LotNotesModal({
                         <button
                           type="button"
                           onClick={() => setDeleteConfirm('__initial_obs__')}
-                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Apagar observação inicial"
+                          className="p-1.5 hover:bg-red-500/15 rounded-lg text-theme-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                          title="Excluir observação"
                         >
-                          <Trash2 size={12} />
-                          <span>Apagar</span>
+                          <Trash2 size={15} />
                         </button>
                       </div>
                       <p className="text-xs text-theme-text-light leading-relaxed whitespace-pre-wrap">
@@ -232,11 +231,10 @@ export function LotNotesModal({
                         <button
                           type="button"
                           onClick={() => setDeleteConfirm(nota.id)}
-                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title="Apagar observação"
+                          className="p-1.5 hover:bg-red-500/15 rounded-lg text-theme-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                          title="Excluir observação"
                         >
-                          <Trash2 size={12} />
-                          <span>Apagar</span>
+                          <Trash2 size={15} />
                         </button>
                       </div>
                       <p className="text-xs text-white leading-relaxed whitespace-pre-wrap">
