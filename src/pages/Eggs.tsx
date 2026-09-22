@@ -681,12 +681,12 @@ export const EggProductionChart = memo(function EggProductionChart({
           {activeDay.motivo}
         </p>
 
-        {/* Mini Cards com os Números do Dia */}
-        <div className="grid grid-cols-4 gap-2 mt-3">
-          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
-            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Coletados</span>
+        {/* Mini Cards com os Números do Dia (Responsivo: 2 colunas no celular para não cortar textos como 'Coletados', 4 em telas maiores) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Coletados</span>
             <span
-              className={`text-base font-black ${
+              className={`text-lg sm:text-base font-black truncate block mt-0.5 ${
                 activeDay.status === 'sem_registro'
                   ? 'text-blue-400'
                   : activeDay.status === 'critico_baixo'
@@ -697,29 +697,29 @@ export const EggProductionChart = memo(function EggProductionChart({
               {activeDay.coletados}
             </span>
             {totalFemeas > 0 && activeDay.coletados > 0 && (
-              <span className="text-[9px] text-emerald-400 font-bold block">
+              <span className="text-[9px] text-emerald-400 font-bold block truncate mt-0.5">
                 {Math.round((activeDay.coletados / totalFemeas) * 100)}% postura
               </span>
             )}
           </div>
 
-          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
-            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Vendidos</span>
-            <span className="text-base font-black text-green-400">
+          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Vendidos</span>
+            <span className="text-lg sm:text-base font-black text-green-400 truncate block mt-0.5">
               {activeDay.vendidos}
             </span>
           </div>
 
-          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
-            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Em Choco</span>
-            <span className="text-base font-black text-purple-400">
+          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Em Choco</span>
+            <span className="text-lg sm:text-base font-black text-purple-400 truncate block mt-0.5">
               {activeDay.incubados}
             </span>
           </div>
 
-          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
-            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Perdidos</span>
-            <span className={`text-base font-black ${activeDay.perdidos > 0 ? 'text-rose-400' : 'text-theme-text-muted'}`}>
+          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Perdidos</span>
+            <span className={`text-lg sm:text-base font-black truncate block mt-0.5 ${activeDay.perdidos > 0 ? 'text-rose-400' : 'text-theme-text-muted'}`}>
               {activeDay.perdidos}
             </span>
           </div>
@@ -784,13 +784,13 @@ const KpiCard = memo(function KpiCard({ label, value, sub, color = 'amber', icon
   };
 
   return (
-    <div className={`rounded-2xl border p-4 flex flex-col justify-between ${colors[color]}`}>
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">{label}</span>
-        <Icon size={14} />
+    <div className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col justify-between overflow-hidden min-w-0 ${colors[color]}`}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider opacity-80 truncate">{label}</span>
+        <Icon size={14} className="shrink-0" />
       </div>
-      <p className="text-xl sm:text-2xl font-black text-white mt-1">{value}</p>
-      {sub && <p className="text-[10px] opacity-70 mt-0.5">{sub}</p>}
+      <p className="text-xl sm:text-2xl font-black text-white mt-1 truncate">{value}</p>
+      {sub && <p className="text-[10px] opacity-70 mt-0.5 truncate leading-tight" title={sub}>{sub}</p>}
     </div>
   );
 });
@@ -1324,8 +1324,6 @@ type RegForm = {
   coletados: string;
   vendidos: string;
   perdidos: string;
-  precoVenda: string;
-  custoProd: string;
   observacao: string;
 };
 
@@ -1347,8 +1345,6 @@ function RegisterDaySheet({
     coletados: editingRecord ? String(editingRecord.coletados) : '',
     vendidos: editingRecord ? String(editingRecord.vendidos) : '0',
     perdidos: editingRecord ? String(editingRecord.perdidos) : '0',
-    precoVenda: editingRecord ? String(editingRecord.precoVenda) : (lot.precoVendaPadrao !== undefined ? String(lot.precoVendaPadrao) : ''),
-    custoProd: editingRecord ? String(editingRecord.custoProd) : (lot.custoProdPadrao !== undefined ? String(lot.custoProdPadrao) : ''),
     observacao: editingRecord?.observacao && editingRecord.observacao !== 'Nenhum registro' ? editingRecord.observacao : ''
   }));
 
@@ -1366,8 +1362,6 @@ function RegisterDaySheet({
         coletados: isAutoPlaceholder ? '' : String(existing.coletados),
         vendidos: String(existing.vendidos),
         perdidos: String(existing.perdidos),
-        precoVenda: String(existing.precoVenda),
-        custoProd: String(existing.custoProd),
         observacao: isAutoPlaceholder ? '' : (existing.observacao || '')
       }));
     } else {
@@ -1381,8 +1375,14 @@ function RegisterDaySheet({
     const col = parseFloat(form.coletados) || 0;
     const vend = parseFloat(form.vendidos) || 0;
     const perd = parseFloat(form.perdidos) || 0;
-    const preco = parseFloat(form.precoVenda) || 0;
-    const custo = parseFloat(form.custoProd) || 0;
+
+    // Preserva ou adota o padrão configurado no lote (sem obrigar preenchimento na coleta diária)
+    const preco = editingRecord?.precoVenda !== undefined
+      ? editingRecord.precoVenda
+      : (lot.precoVendaPadrao !== undefined ? lot.precoVendaPadrao : 6.0);
+    const custo = editingRecord?.custoProd !== undefined
+      ? editingRecord.custoProd
+      : (lot.custoProdPadrao !== undefined ? lot.custoProdPadrao : 0.30);
 
     if (isNaN(col) || col < 0) {
       setError('Informe uma quantidade válida de ovos coletados (mínimo 0).');
@@ -1477,17 +1477,6 @@ function RegisterDaySheet({
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Perdidos / Trincados</label>
               <input type="number" min="0" inputMode="numeric" placeholder="0" value={form.perdidos} onChange={set('perdidos')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Preço / Dúzia (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 10.00" value={form.precoVenda} onChange={set('precoVenda')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Custo / Ovo (R$)</label>
-              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Ex: 0.40" value={form.custoProd} onChange={set('custoProd')} onKeyDown={onlyNumericKeyDown} className={inputCls} />
             </div>
           </div>
 
@@ -1660,16 +1649,16 @@ function LotCard({
       )}
 
       {/* Grid de 5 colunas: Coletados, Estoque, Choco, Vendidos, Perdidos */}
-      <div className="grid grid-cols-5 divide-x divide-theme-border border-t border-theme-border">
+      <div className="grid grid-cols-5 divide-x divide-theme-border border-t border-theme-border min-w-0 overflow-hidden">
         {[{ label: 'Coletados', value: total, color: 'text-amber-400' },
           { label: 'Estoque', value: totalEstoque, color: 'text-blue-400' },
           { label: 'Em Choco', value: totalIncubados, color: 'text-purple-400' },
           { label: 'Vendidos', value: totalVendidos, color: 'text-green-400' },
           { label: 'Perdidos', value: totalPerdidos, color: 'text-red-400' }
         ].map(s => (
-          <div key={s.label} className="p-2 text-center">
-            <p className={`text-sm sm:text-base font-black ${s.color}`}>{s.value}</p>
-            <p className="text-[8px] sm:text-[9px] text-theme-text-muted uppercase font-bold truncate">{s.label}</p>
+          <div key={s.label} className="py-2 px-1 sm:p-2 text-center min-w-0 overflow-hidden">
+            <p className={`text-xs sm:text-base font-black ${s.color} truncate`}>{s.value}</p>
+            <p className="text-[7.5px] sm:text-[9px] text-theme-text-muted uppercase font-extrabold tracking-tighter sm:tracking-normal truncate" title={s.label}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -1942,12 +1931,15 @@ export function Eggs() {
   const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
   const [sellStockTarget, setSellStockTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
 
-  // Rola para o topo no carregamento + sincroniza lembrete
+  // Rola para o topo apenas no carregamento inicial da página (nunca durante edição de registros)
   useEffect(() => {
     window.scrollTo(0, 0);
     const scrollContainers = document.querySelectorAll('.overflow-y-auto');
     scrollContainers.forEach(el => { el.scrollTop = 0; });
+  }, []);
 
+  // Sincroniza lembrete diário sem rolar a página
+  useEffect(() => {
     const today = todayISO();
     const hasRegisteredToday = eggLots.some(lot => (lot.registros || []).some(r => r.data === today));
     syncDailyEggReminder(hasRegisteredToday);
@@ -1999,17 +1991,25 @@ export function Eggs() {
   const handleSaveRecord = (rec: EggDailyRecord) => {
     if (!registerTarget) return;
 
-    const existingIndex = (registerTarget.registros || []).findIndex(r => r.id === rec.id || r.data === rec.data);
+    // Busca sempre o lote atualizado do estado global para evitar perda de dados por closure desatualizada
+    const currentLot = eggLots.find(l => l.id === registerTarget.id) || registerTarget;
+    const existingIndex = (currentLot.registros || []).findIndex(r => r.id === rec.id || r.data === rec.data);
     let updatedRegistros: EggDailyRecord[];
 
     if (existingIndex >= 0) {
-      updatedRegistros = [...(registerTarget.registros || [])];
-      updatedRegistros[existingIndex] = rec;
+      updatedRegistros = [...(currentLot.registros || [])];
+      updatedRegistros[existingIndex] = {
+        ...updatedRegistros[existingIndex],
+        ...rec
+      };
     } else {
-      updatedRegistros = [...(registerTarget.registros || []), rec];
+      updatedRegistros = [...(currentLot.registros || []), rec];
     }
 
-    editEggLot(registerTarget.id, { registros: updatedRegistros });
+    updatedRegistros.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+    editEggLot(currentLot.id, { registros: updatedRegistros });
+    showToast(`Coleta de ${rec.coletados} ovos salva com sucesso!`, 'success');
   };
 
   // Exclui um registro diário

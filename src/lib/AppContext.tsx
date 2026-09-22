@@ -1538,9 +1538,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const unpacked = unpackEggLotRegistros(sbRegs);
         const cloudDailyRegs = unpacked.registros;
         const cloudMeta = unpacked.meta;
+        const isRecentLotEdit = recentLotEditsRef.current.has(l.id) && (Date.now() - (recentLotEditsRef.current.get(l.id) || 0) < 60000);
 
         const localDailyRegs: any[] = (local?.registros || []).filter((r: any) => !r?.__isLotMeta);
-        const finalDailyRegs = localDailyRegs.length > cloudDailyRegs.length ? localDailyRegs : cloudDailyRegs;
+        
+        let finalDailyRegs: any[];
+        if (isRecentLotEdit && localDailyRegs.length > 0) {
+          finalDailyRegs = localDailyRegs;
+        } else {
+          // Merge inteligente por data preservando coletas preenchidas pelo criador
+          const regByDate = new Map<string, any>();
+          cloudDailyRegs.forEach((r: any) => { if (r?.data) regByDate.set(r.data, r); });
+          localDailyRegs.forEach((lr: any) => {
+            if (!lr?.data) return;
+            const cr = regByDate.get(lr.data);
+            if (!cr) {
+              regByDate.set(lr.data, lr);
+            } else {
+              const isCloudEmpty = cr.observacao === 'Nenhum registro' || cr.id?.startsWith('auto-empty-') || (Number(cr.coletados) === 0 && !cr.vendidos && !cr.perdidos);
+              const isLocalFilled = lr.observacao !== 'Nenhum registro' && !lr.id?.startsWith('auto-empty-') && (Number(lr.coletados) > 0 || lr.vendidos > 0 || lr.perdidos > 0);
+              if (isLocalFilled && isCloudEmpty) {
+                regByDate.set(lr.data, lr);
+              }
+            }
+          });
+          finalDailyRegs = Array.from(regByDate.values()).sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+        }
 
         // Combina movimentações
         const cloudMovs: any[] = cloudMeta?.movimentacoes || [];
@@ -1550,7 +1573,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Combina observações adicionais respeitando deleções
         const cloudObsAdd: any[] = cloudMeta?.observacoesAdicionais || [];
         const localObsAdd: any[] = local?.observacoesAdicionais || [];
-        const isRecentLotEdit = recentLotEditsRef.current.has(l.id) && (Date.now() - (recentLotEditsRef.current.get(l.id) || 0) < 30000);
 
         let finalObsAdd: any[];
         if (isRecentLotEdit) {
