@@ -7,6 +7,7 @@ import {
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
+import muraLogo from '../assets/mura_logo.jpg';
 
 export function Dashboard() {
   const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots, isReady, isInitialSyncDone } = useAppContext();
@@ -184,6 +185,42 @@ export function Dashboard() {
 
   const hasEggLots = eggLots.some(l => l.status === 'Ativo');
 
+  // Se ainda estiver sincronizando e sem dados em cache, exibe a logo do app carregando
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-md mx-auto px-4 animate-fade-in select-none my-auto">
+        {/* Container da Logo com Efeito de Brilho & Borda Dourada */}
+        <div className="relative mb-5">
+          <div className="absolute -inset-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl blur-xl opacity-35 animate-pulse" />
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-2xl bg-black flex items-center justify-center">
+            <img
+              src={muraLogo}
+              alt="Mura Manager"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Título */}
+        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase font-serif drop-shadow-md text-center">
+          MURA <span className="text-amber-400">MANAGER</span>
+        </h2>
+        <p className="text-xs text-amber-200/70 font-semibold tracking-widest uppercase mt-1 text-center">
+          Gestão Inteligente de Criatórios
+        </p>
+
+        {/* Barra de Progresso Dourada */}
+        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden mt-6 relative">
+          <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full animate-[loading_1.5s_ease-in-out_infinite] w-full" />
+        </div>
+
+        <p className="text-xs text-amber-300/80 font-medium tracking-wide animate-pulse mt-3 text-center">
+          Carregando informações do criatório...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden pb-6">
 
@@ -208,20 +245,7 @@ export function Dashboard() {
       </div>
 
       {/* ── Stats grid ── */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-theme-surface/70 border border-theme-border/40 flex flex-col justify-between h-[100px] animate-pulse">
-              <div className="flex justify-between items-start">
-                <div className="w-12 h-7 bg-white/10 rounded-lg" />
-                <div className="w-7 h-7 bg-white/5 rounded-lg" />
-              </div>
-              <div className="w-20 h-3 bg-white/10 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
           {/* Total Aves Card */}
           <div 
             onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Total' } }); }}
@@ -306,10 +330,9 @@ export function Dashboard() {
             <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Lotes Cadastrados</p>
           </div>
         </div>
-      )}
 
       {/* ── Alertas de Lotes sem registro ── */}
-      {!isLoading && eggSummary.lotsWithGap.length > 0 && (
+      {eggSummary.lotsWithGap.length > 0 && (
         <div
           onClick={() => { triggerLight(); navigate('/eggs'); }}
           className="w-full max-w-7xl p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 cursor-pointer hover:bg-amber-500/15 transition-colors"
@@ -327,7 +350,7 @@ export function Dashboard() {
       )}
 
       {/* ── Seção: Produção de Ovos + Vendas (linha) ── */}
-      {!isLoading && (hasEggLots || salesSummary.count > 0 || latestMeatLotWeight) && (
+      {(hasEggLots || salesSummary.count > 0 || latestMeatLotWeight) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-7xl">
 
           {/* Card de Produção de Ovos — Últimos 7 dias */}

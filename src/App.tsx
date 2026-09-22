@@ -22,7 +22,7 @@ const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })))
 
 function AppContent() {
   const location = useLocation();
-  const { isReady } = useAppContext();
+  const { isReady, isInitialSyncDone } = useAppContext();
   const { user, loading: authLoading, isExpired, trialInfo, isAdmin } = useAuth();
 
   // ── Rota Pública de Compartilhamento (Visualização da Ave / Vitrine externa sem exigir login) ──
@@ -62,7 +62,7 @@ function AppContent() {
     return <PaywallScreen />;
   }
 
-  const isAppLoading = authLoading || !isReady;
+  const isAppLoading = authLoading || !isReady || !isInitialSyncDone;
 
   return (
     <>

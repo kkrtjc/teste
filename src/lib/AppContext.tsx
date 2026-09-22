@@ -620,11 +620,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { meatLotsRef.current = meatLots; }, [meatLots]);
   const [incubationLots, setIncubationLots] = useState<IncubationLot[]>([]);
   
-  const [farmSettings, setFarmSettings] = useState<FarmSettings>({
-    name: '',
-    photo: '',
-    email: '',
-    phone: ''
+  const [farmSettings, setFarmSettings] = useState<FarmSettings>(() => {
+    try {
+      const u = localStorage.getItem('@mura-manager:cached-user');
+      const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
+      const raw = localStorage.getItem(`@mura-manager:cached-farm-settings:${uid}`) || localStorage.getItem('@mura-manager:cached-farm-settings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch {}
+    return {
+      name: '',
+      photo: '',
+      email: '',
+      phone: '',
+      city: '',
+      state: ''
+    };
   });
 
   // ── Gestão de Tombstones para Exclusão Permanente (evita ressurreição de aves deletadas) ──
@@ -892,8 +905,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { suffix: 'couple-eggs',     setter: (d: any) => setCoupleEggs(Array.isArray(d) ? d : []) },
       { suffix: 'egglots',         setter: (d: any) => setEggLots(Array.isArray(d) ? d : []) },
       { suffix: 'meatlots',        setter: (d: any) => setMeatLots(Array.isArray(d) ? d : []) },
-      { suffix: 'incubation-lots', setter: (d: any) => setIncubationLots(Array.isArray(d) ? d : []) },
-      { suffix: 'settings',        setter: (d: any) => { if (d) setFarmSettings(d); } },
+      {
+        suffix: 'settings',
+        setter: (d: any) => {
+          if (d) {
+            setFarmSettings(d);
+            try {
+              localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(d));
+              if (user?.id) localStorage.setItem(`@mura-manager:cached-farm-settings:${user.id}`, JSON.stringify(d));
+            } catch {}
+          }
+        }
+      },
       {
         suffix: 'vitrine-config',
         setter: (d: any) => {
@@ -1805,26 +1828,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: sbSettings.name || localSettings?.name || '',
           photo: sbSettings.photo || localSettings?.photo || '',
           email: sbSettings.email || localSettings?.email || '',
-          phone: sbSettings.phone || localSettings?.phone || ''
+          phone: sbSettings.phone || localSettings?.phone || '',
+          city: sbSettings.city || localSettings?.city || '',
+          state: sbSettings.state || localSettings?.state || ''
         };
         setFarmSettings(settingsData);
         await localforage.setItem(getStorageKey('settings'), settingsData);
+        try {
+          localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(settingsData));
+          localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(settingsData));
+        } catch {}
         if (isAdmin) {
           await localforage.setItem('@mura-manager:settings', settingsData);
         }
       } else if (hasLocalProfile) {
         setFarmSettings(localSettings);
+        try {
+          localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(localSettings));
+          localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(localSettings));
+        } catch {}
         if (isSupabaseConfigured) {
           await supabase!.from('profiles').upsert({
             id: targetUserId,
             name: localSettings.name || '',
             photo: localSettings.photo || '',
             email: localSettings.email || '',
-            phone: localSettings.phone || ''
+            phone: localSettings.phone || '',
+            city: localSettings.city || '',
+            state: localSettings.state || ''
           });
         }
       } else {
-        const defaultSettings = { name: '', photo: '', email: '', phone: '' };
+        const defaultSettings = { name: '', photo: '', email: '', phone: '', city: '', state: '' };
         setFarmSettings(defaultSettings);
         await localforage.setItem(getStorageKey('settings'), defaultSettings);
       }
@@ -1858,30 +1893,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // ── Migra dados cadastrados offline / como visitante para a conta do usuário que acabou de logar ──
       await migrateGuestAndLocalDataToUser(user.id);
 
-      // ── Carrega cache local imediatamente → tela nunca aparece zerada se já houver dados ──
+      // ── Carrega cache local imediatamente ──
       // Tombstones do IndexedDB já filtram aves/lotes deletados no loadFromLocalForage
-      const localBirdsCount = await loadFromLocalForage();
-      if (localBirdsCount > 0) {
-        setIsReady(true);
-        setIsInitialSyncDone(true);
-      }
+      await loadFromLocalForage();
+      setIsReady(true);
 
-      // ── Sincroniza com a nuvem em background ──
-      // Isso corrige dados desatualizados silenciosamente após o app já estar visível
+      // ── Sincroniza com a nuvem para trazer todas as informações do criatório ──
       if (isSupabaseConfigured && navigator.onLine) {
         processSyncQueue().catch(() => {});
         const syncPromise = syncWithSupabaseBackground(true).catch(err => {
-          console.warn('[LoadData] Falha na sync background:', err);
+          console.warn('[LoadData] Falha na sync inicial:', err);
         });
 
-        // Se o cache local ainda não tinha aves, aguarda a nuvem terminar
-        // para que o usuário veja as informações completas de primeira, sem passar pelo zero
-        if (localBirdsCount === 0) {
-          await Promise.race([
-            syncPromise,
-            new Promise(resolve => setTimeout(resolve, 8000))
-          ]);
-        }
+        // Aguarda a sincronização com timeout seguro de 4 segundos para conexão lenta não travar
+        await Promise.race([
+          syncPromise,
+          new Promise(resolve => setTimeout(resolve, 4000))
+        ]);
       }
 
       setIsReady(true);
@@ -3052,6 +3080,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setFarmSettings(prev => {
       const next = { ...prev, ...settings };
       localforage.setItem(getStorageKey('settings'), next).catch(err => console.error(err));
+      try {
+        localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(next));
+        const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : (user?.id || 'guest');
+        localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(next));
+      } catch {}
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:settings', next).catch(err => console.error(err));
       }
@@ -3060,7 +3093,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
         supabase!
           .from('profiles')
-          .upsert({ id: targetUserId, name: next.name, photo: next.photo, email: next.email, phone: next.phone })
+          .upsert({
+            id: targetUserId,
+            name: next.name,
+            photo: next.photo,
+            email: next.email,
+            phone: next.phone,
+            city: next.city,
+            state: next.state
+          })
           .then(({ error }) => { if (error) console.error('Erro Supabase updateFarmSettings:', error); });
       }
       return next;
