@@ -1051,81 +1051,84 @@ export function Lots() {
   return (
     <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             Gestão de Lotes
           </h1>
           <p className="text-xs text-theme-text-muted">Acompanhe postura, engorda e pintinhos do seu criatório</p>
         </div>
-        
-        <div className="flex items-center gap-2">
+      </div>
+
+      {/* ── Barra Fixa de Abas no Topo (Sticky Header - 3 Lotes) ── */}
+      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2.5 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/40 shadow-sm">
+        <div className="grid grid-cols-3 gap-1.5 p-1 bg-theme-surface rounded-2xl border border-theme-border/60">
+          {[
+            { id: 'postura', label: 'Postura', icon: Egg, count: eggLots.length },
+            { id: 'engorda', label: 'Engorda', icon: Beef, count: filterEngorda.length },
+            { id: 'pintinhos', label: 'Pintinhos', icon: Baby, count: filterPintinhos.length },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id as any)}
+              className={`py-2.5 px-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
+                activeTab === t.id
+                  ? 'bg-theme-primary text-black font-black shadow-md'
+                  : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <t.icon size={15} className="shrink-0" />
+              <span className="truncate">{t.label}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] shrink-0 font-black ${
+                activeTab === t.id ? 'bg-black/20 text-black' : 'bg-theme-base text-theme-text-muted'
+              }`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Barra de Controles: Filtro de Status Limpo & Botão Novo Lote ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-1 bg-theme-surface p-1 rounded-xl border border-theme-border/60 self-start sm:self-auto">
+          {(['ativos', 'encerrados', 'todos'] as const).map(st => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => setLotStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                lotStatusFilter === st
+                  ? 'bg-theme-primary text-black font-black shadow-sm'
+                  : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {st === 'ativos' ? 'Ativos' : st === 'encerrados' ? 'Encerrados' : 'Todos'}
+            </button>
+          ))}
+        </div>
+
+        <div>
           {activeTab === 'postura' && (
-            <button onClick={() => setShowPostura(true)} className="btn-primary flex items-center gap-2">
-              <Plus size={16} /> Novo Lote de Postura
+            <button onClick={() => setShowPostura(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
+              <Plus size={15} /> Novo Lote de Postura
             </button>
           )}
           {activeTab === 'engorda' && (
-            <button onClick={() => setShowEngorda(true)} className="btn-primary flex items-center gap-2">
-              <Plus size={16} /> Novo Lote de Engorda
+            <button onClick={() => setShowEngorda(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
+              <Plus size={15} /> Novo Lote de Engorda
             </button>
           )}
           {activeTab === 'pintinhos' && (
-            <button onClick={() => setShowPintinhos(true)} className="btn-primary flex items-center gap-2">
-              <Plus size={16} /> Novo Lote de Pintinhos
+            <button onClick={() => setShowPintinhos(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
+              <Plus size={15} /> Novo Lote de Pintinhos
             </button>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-theme-surface p-1 rounded-2xl border border-theme-border/60 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'postura', label: 'Lotes de Postura', icon: Egg, count: eggLots.length },
-          { id: 'engorda', label: 'Engorda / Abate', icon: Beef, count: filterEngorda.length },
-          { id: 'pintinhos', label: 'Pintinhos', icon: Baby, count: filterPintinhos.length },
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id as any)}
-            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === t.id
-                ? 'bg-theme-primary text-black shadow-md'
-                : 'text-theme-text-muted hover:text-white'
-            }`}
-          >
-            <t.icon size={15} />
-            <span>{t.label}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-              activeTab === t.id ? 'bg-black/20 text-black font-black' : 'bg-theme-base text-theme-text-muted'
-            }`}>
-              {t.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Sub-filtro de Status dos Lotes (Ativos / Encerrados / Todos) ── */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-        <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider shrink-0">Filtrar:</span>
-        {(['ativos', 'encerrados', 'todos'] as const).map(st => (
-          <button
-            key={st}
-            type="button"
-            onClick={() => setLotStatusFilter(st)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-              lotStatusFilter === st
-                ? 'bg-theme-primary text-black font-black shadow-md'
-                : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-white border border-theme-border/50'
-            }`}
-          >
-            {st === 'ativos' ? '🟢 Em Produção / Ativos' : st === 'encerrados' ? '📦 Histórico / Encerrados' : '📋 Todos os Lotes'}
-          </button>
-        ))}
-      </div>
-
-      {/* ── BANNER DE ALERTA: PESAGEM PERIÓDICA (15 DIAS) ── */}
-      {lotsNeedingWeighing.length > 0 && (
+      {/* ── BANNER DE ALERTA: PESAGEM PERIÓDICA (15 DIAS - Apenas em Engorda) ── */}
+      {lotsNeedingWeighing.length > 0 && activeTab === 'engorda' && (
         <div className="w-full bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/20 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500 text-black font-black shrink-0 animate-pulse">
@@ -1157,24 +1160,7 @@ export function Lots() {
 
       {/* TAB CONTENT: POSTURA */}
       {activeTab === 'postura' && (
-        <div className="flex-1 flex flex-col space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Lotes Ativos', value: eggLots.filter(l => l.status !== 'Encerrado').length },
-              { 
-                label: 'Total de Fêmeas em Postura', 
-                value: eggLots.filter(l => l.status !== 'Encerrado').reduce((a, l) => {
-                  return a + ((l.qtdFemeas !== undefined && l.qtdFemeas !== null) ? Number(l.qtdFemeas) : (l.femeasIds?.length || 0));
-                }, 0) 
-              },
-            ].map(s => (
-              <div key={s.label} className="premium-card p-4">
-                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
-                <h3 className="text-2xl font-black text-white">{s.value}</h3>
-              </div>
-            ))}
-          </div>
-
+        <div className="flex-1 flex flex-col space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedEggLots.map(lote => {
               const dias = calcDays(lote.dataInicio);
@@ -1337,22 +1323,7 @@ export function Lots() {
 
       {/* TAB CONTENT: ENGORDA */}
       {activeTab === 'engorda' && (
-        <div className="flex-1 flex flex-col space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Lotes Ativos', value: filterEngorda.filter(l => l.status !== 'Abatido').length },
-              { 
-                label: 'Aves em Engorda', 
-                value: filterEngorda.reduce((a, l) => a + (l.status !== 'Abatido' ? ((l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0)) : 0), 0) 
-              },
-            ].map(s => (
-              <div key={s.label} className="premium-card p-4">
-                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
-                <h3 className="text-2xl font-black text-white">{s.value}</h3>
-              </div>
-            ))}
-          </div>
-
+        <div className="flex-1 flex flex-col space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedEngorda.map(lote => {
               const dias = calcDays(lote.dataInicio);
@@ -1770,22 +1741,7 @@ export function Lots() {
 
       {/* TAB CONTENT: PINTINHOS */}
       {activeTab === 'pintinhos' && (
-        <div className="flex-1 flex flex-col space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Lotes Ativos', value: filterPintinhos.filter(l => l.status !== 'Abatido').length },
-              { 
-                label: 'Total de Pintinhos', 
-                value: filterPintinhos.filter(l => l.status !== 'Abatido').reduce((a, l) => a + ((l.qtdAves !== undefined && l.qtdAves !== null) ? Number(l.qtdAves) : (l.avesIds?.length || 0)), 0) 
-              },
-            ].map(s => (
-              <div key={s.label} className="premium-card p-4">
-                <p className="text-theme-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">{s.label}</p>
-                <h3 className="text-2xl font-black text-white">{s.value}</h3>
-              </div>
-            ))}
-          </div>
-
+        <div className="flex-1 flex flex-col space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {displayedPintinhos.map(lote => {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);

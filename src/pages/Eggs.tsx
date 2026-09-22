@@ -7,7 +7,7 @@ import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
 import type { EggDailyRecord, EggLot, IncubationLot } from '../lib/AppContext';
 import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
-  ChevronDown, ChevronUp, X, Check, BarChart2,
+  ChevronDown, ChevronUp, ChevronRight, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
   AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText, Clock
 } from 'lucide-react';
@@ -1499,6 +1499,279 @@ function RegisterDaySheet({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Modal: Histórico Completo de Registros do Lote de Ovos
+// ─────────────────────────────────────────────────────────────────────────────
+function EggLotRecordsModal({
+  lot,
+  records,
+  prodStats,
+  onClose,
+  onEditRecord,
+  onRequestDeleteRecord,
+  onDeleteRecord,
+  onRegisterWithDate: _onRegisterWithDate
+}: {
+  lot: EggLot;
+  records: EggDailyRecord[];
+  prodStats: ReturnType<typeof calculateLotProduction>;
+  onClose: () => void;
+  onEditRecord: (lot: EggLot, record: EggDailyRecord) => void;
+  onRequestDeleteRecord?: (lot: EggLot, recordId: string, date: string) => void;
+  onDeleteRecord: (lot: EggLot, recordId: string) => void;
+  onRegisterWithDate?: (lot: EggLot, initialDate: string) => void;
+}) {
+  const [filterType, setFilterType] = useState<'todos' | 'coletas' | 'sem_registro' | 'criticos'>('todos');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const sortedRecords = useMemo(() => {
+    return [...records].sort((a, b) => b.data.localeCompare(a.data));
+  }, [records]);
+
+  // Contadores para as pílulas de filtro
+  const stats = useMemo(() => {
+    let semRegistro = 0;
+    let criticos = 0;
+    let comColeta = 0;
+
+    records.forEach(r => {
+      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+      if (isNoRecord) {
+        semRegistro++;
+      } else {
+        const isCritico = (
+          (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
+          (r.coletados === 0) ||
+          (prodStats.mediaOvosDia >= 2 && r.coletados < prodStats.mediaOvosDia * 0.45) ||
+          (r.coletados > 0 && r.perdidos >= 2 && (r.perdidos / r.coletados) >= 0.4)
+        );
+        if (isCritico) criticos++;
+        comColeta++;
+      }
+    });
+
+    return { total: records.length, semRegistro, criticos, comColeta };
+  }, [records, prodStats.mediaOvosDia]);
+
+  const filtered = useMemo(() => {
+    return sortedRecords.filter(r => {
+      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+      const isCritico = !isNoRecord && (
+        (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
+        (r.coletados === 0) ||
+        (prodStats.mediaOvosDia >= 2 && r.coletados < prodStats.mediaOvosDia * 0.45) ||
+        (r.coletados > 0 && r.perdidos >= 2 && (r.perdidos / r.coletados) >= 0.4)
+      );
+
+      if (filterType === 'coletas' && isNoRecord) return false;
+      if (filterType === 'sem_registro' && !isNoRecord) return false;
+      if (filterType === 'criticos' && !isCritico) return false;
+
+      if (searchTerm.trim()) {
+        const q = normalizeSearch(searchTerm);
+        const dtNorm = formatDate(r.data);
+        const isoNorm = r.data;
+        const obsNorm = normalizeSearch(r.observacao);
+        if (!dtNorm.includes(q) && !isoNorm.includes(q) && !obsNorm.includes(q)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [sortedRecords, filterType, searchTerm, prodStats.mediaOvosDia]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-theme-surface w-full max-w-lg rounded-2xl border border-theme-border/70 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Cabeçalho do Modal */}
+        <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0 bg-theme-surface">
+          <div>
+            <h3 className="font-black text-white text-base flex items-center gap-2">
+              <CalendarDays size={18} className="text-amber-400" />
+              <span>Histórico de Registros</span>
+            </h3>
+            <p className="text-xs text-theme-text-muted mt-0.5">
+              Baia {lot.baia}{lot.raca ? ` · ${lot.raca}` : ''} &bull; {records.length} {records.length === 1 ? 'dia registrado' : 'dias registrados'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Busca e Filtros Rápidos */}
+        <div className="p-3 sm:px-5 sm:py-3 border-b border-theme-border/60 bg-theme-base/50 space-y-2.5 shrink-0">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" />
+            <input
+              type="text"
+              placeholder="Buscar por data (ex: 22/09) ou observação..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full bg-theme-surface border border-theme-border/80 rounded-xl py-2 pl-9 pr-8 text-xs text-white placeholder-theme-text-muted focus:border-theme-primary outline-none transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'todos', label: 'Todos', count: stats.total },
+              { id: 'coletas', label: 'Com Coleta', count: stats.comColeta },
+              { id: 'sem_registro', label: 'Sem Registro', count: stats.semRegistro },
+              { id: 'criticos', label: 'Baixa Produção', count: stats.criticos },
+            ].map(f => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilterType(f.id as any)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                  filterType === f.id
+                    ? 'bg-theme-primary text-black font-black shadow-sm'
+                    : 'bg-theme-surface hover:bg-theme-surface-hover text-theme-text-muted hover:text-white border border-theme-border/40'
+                }`}
+              >
+                <span>{f.label}</span>
+                <span className={`px-1 py-0.2 rounded-full text-[9px] ${
+                  filterType === f.id ? 'bg-black/25 text-black' : 'bg-theme-base text-theme-text-muted'
+                }`}>
+                  {f.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Lista de Dias com Scroll Suave */}
+        <div className="overflow-y-auto flex-1 p-3 sm:p-5 space-y-2 smooth-scroll">
+          {filtered.length === 0 ? (
+            <div className="text-center py-10 text-theme-text-muted">
+              <CalendarDays size={32} className="mx-auto mb-2 opacity-40 text-amber-400" />
+              <p className="text-xs font-bold text-white">Nenhum registro encontrado</p>
+              <p className="text-[11px] mt-0.5">Tente mudar o filtro ou termo de busca.</p>
+            </div>
+          ) : (
+            filtered.map(r => {
+              const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+              const isCritico = !isNoRecord && (
+                (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
+                (r.coletados === 0) ||
+                (prodStats.mediaOvosDia >= 2 && r.coletados < prodStats.mediaOvosDia * 0.45) ||
+                (r.coletados > 0 && r.perdidos >= 2 && (r.perdidos / r.coletados) >= 0.4)
+              );
+
+              return (
+                <div
+                  key={r.id || r.data}
+                  className={`flex items-center justify-between text-xs rounded-xl px-3.5 py-2.5 transition-colors border ${
+                    isNoRecord
+                      ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40'
+                      : isCritico
+                      ? 'bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40'
+                      : 'bg-theme-base/60 border-theme-border/70 hover:border-theme-primary/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <CalendarDays
+                      size={14}
+                      className={isNoRecord ? 'text-blue-400 shrink-0' : isCritico ? 'text-rose-400 shrink-0' : 'text-amber-400 shrink-0'}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-white">{formatDate(r.data)}</span>
+                        {isNoRecord ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20 flex items-center gap-1">
+                            <Clock size={10} />
+                            Sem registro
+                          </span>
+                        ) : (
+                          <>
+                            <span className={`font-bold ${isCritico ? 'text-rose-400' : 'text-amber-400'}`}>
+                              {r.coletados} {r.coletados === 1 ? 'ovo' : 'ovos'}
+                            </span>
+                            {isCritico && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold">
+                                Baixa produção
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Sublinha de detalhes */}
+                      {!isNoRecord && (r.vendidos > 0 || r.perdidos > 0 || (r.incubados || 0) > 0 || r.observacao) && (
+                        <div className="flex items-center gap-2 text-[10px] text-theme-text-muted mt-0.5 truncate">
+                          {r.vendidos > 0 && <span className="text-green-400 font-medium">+{r.vendidos} vendidos</span>}
+                          {(r.incubados || 0) > 0 && <span className="text-purple-400 font-medium">+{r.incubados} choco</span>}
+                          {r.perdidos > 0 && <span className="text-red-400 font-medium">-{r.perdidos} perdidos</span>}
+                          {r.observacao && <span className="italic truncate">&bull; {r.observacao}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => onEditRecord(lot, r)}
+                      className="p-1.5 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors cursor-pointer"
+                      title={isNoRecord ? 'Preencher coleta deste dia' : 'Editar lançamento'}
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onRequestDeleteRecord) {
+                          onRequestDeleteRecord(lot, r.id, r.data);
+                        } else {
+                          onDeleteRecord(lot, r.id);
+                        }
+                      }}
+                      className="p-1.5 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+                      title="Excluir lançamento"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Rodapé */}
+        <div className="p-3 sm:px-5 border-t border-theme-border flex items-center justify-end shrink-0 bg-theme-surface">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-theme-base hover:bg-white/5 border border-theme-border text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // LotCard — Card Principal do Lote com Detecção de Anomalias & Gestão de Estoque
 // ─────────────────────────────────────────────────────────────────────────────
 function LotCard({
@@ -1533,6 +1806,7 @@ function LotCard({
   isExpandedInitial?: boolean;
 }) {
   const [expanded, setExpanded] = useState(isExpandedInitial);
+  const [showRecordsModal, setShowRecordsModal] = useState(false);
   const records = lot.registros ?? [];
 
   const total = records.reduce((s, r) => s + r.coletados, 0);
@@ -1825,79 +2099,40 @@ function LotCard({
           </div>
 
           {records.length > 0 && (
-            <div>
-              <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2">Histórico de Registros (Clique para Editar ou Excluir)</p>
-              <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 smooth-scroll">
-                {[...records].sort((a, b) => b.data.localeCompare(a.data)).map(r => {
-                  const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
-                  const isCritico = !isNoRecord && (
-                    (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
-                    (r.coletados === 0) ||
-                    (prodStats.mediaOvosDia >= 2 && r.coletados < prodStats.mediaOvosDia * 0.45) ||
-                    (r.coletados > 0 && r.perdidos >= 2 && (r.perdidos / r.coletados) >= 0.4)
-                  );
-                  return (
-                    <div key={r.id || r.data} className={`flex items-center justify-between text-xs rounded-xl px-3 py-2 transition-colors border ${
-                      isNoRecord
-                        ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40'
-                        : isCritico
-                        ? 'bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40'
-                        : 'bg-theme-surface border-theme-border hover:border-theme-primary/40'
-                    }`}>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <CalendarDays size={12} className={isNoRecord ? "text-blue-400 shrink-0" : isCritico ? "text-rose-400 shrink-0" : "text-amber-400 shrink-0"} />
-                        <span className="text-theme-text-muted w-16 shrink-0 font-mono text-[11px]">{formatDate(r.data)}</span>
-                        {isNoRecord ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20 flex items-center gap-1">
-                            <Clock size={10} />
-                            Sem registro
-                          </span>
-                        ) : (
-                          <>
-                            <span className={`font-bold shrink-0 ${isCritico ? 'text-rose-400' : 'text-amber-400'}`}>{r.coletados} ovos</span>
-                            {r.vendidos > 0 && <span className="text-green-400 shrink-0">+{r.vendidos}v</span>}
-                            {(r.incubados || 0) > 0 && <span className="text-purple-400 shrink-0">+{r.incubados}c</span>}
-                            {r.perdidos > 0 && <span className="text-red-400 shrink-0">-{r.perdidos}p</span>}
-                            {isCritico && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold ml-1">
-                                Baixa produção
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <button
-                          type="button"
-                          onClick={() => onEditRecord(lot, r)}
-                          className="p-1 text-theme-text-muted hover:text-amber-400 rounded-lg hover:bg-amber-400/10 transition-colors cursor-pointer"
-                          title={isNoRecord ? "Preencher coleta deste dia" : "Editar lançamento"}
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onRequestDeleteRecord) {
-                              onRequestDeleteRecord(lot, r.id, r.data);
-                            } else {
-                              onDeleteRecord(lot, r.id);
-                            }
-                          }}
-                          className="p-1 text-theme-text-muted hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
-                          title="Excluir lançamento"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowRecordsModal(true)}
+                className="w-full py-2.5 px-4 rounded-xl border border-theme-border/80 bg-theme-surface hover:bg-theme-surface-hover text-white font-bold text-xs flex items-center justify-between transition-all hover:border-theme-primary/50 group active:scale-[0.99] cursor-pointer shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={15} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>Ver Histórico de Registros ({records.length} {records.length === 1 ? 'dia' : 'dias'})</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-theme-text-muted group-hover:text-white transition-colors">
+                  <span className="text-[11px] font-medium">Abrir Histórico</span>
+                  <ChevronRight size={14} className="text-amber-400" />
+                </div>
+              </button>
             </div>
           )}
         </div>
+      )}
+
+      {showRecordsModal && (
+        <EggLotRecordsModal
+          lot={lot}
+          records={records}
+          prodStats={prodStats}
+          onClose={() => setShowRecordsModal(false)}
+          onEditRecord={(l, r) => {
+            setShowRecordsModal(false);
+            onEditRecord(l, r);
+          }}
+          onRequestDeleteRecord={onRequestDeleteRecord}
+          onDeleteRecord={onDeleteRecord}
+          onRegisterWithDate={onRegisterWithDate}
+        />
       )}
     </div>
   );
