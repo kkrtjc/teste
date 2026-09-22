@@ -148,6 +148,8 @@ export function Settings() {
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email || user?.email || '');
   const [phone, setPhone] = useState(farmSettings.phone);
+  const [city, setCity] = useState(farmSettings.city || '');
+  const [state, setState] = useState(farmSettings.state || '');
   const [previewImage, setPreviewImage] = useState<string>(farmSettings.photo);
   const [isSaved, setIsSaved] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -234,12 +236,16 @@ export function Settings() {
       lastSettingsRef.current.name !== farmSettings.name ||
       lastSettingsRef.current.email !== currentEmail ||
       lastSettingsRef.current.phone !== farmSettings.phone ||
-      lastSettingsRef.current.photo !== farmSettings.photo
+      lastSettingsRef.current.photo !== farmSettings.photo ||
+      lastSettingsRef.current.city !== farmSettings.city ||
+      lastSettingsRef.current.state !== farmSettings.state
     ) {
       lastSettingsRef.current = { ...farmSettings, email: currentEmail, userEmail: user?.email };
       setName(farmSettings.name);
       setEmail(currentEmail);
       setPhone(farmSettings.phone);
+      setCity(farmSettings.city || '');
+      setState(farmSettings.state || '');
       setPreviewImage(farmSettings.photo);
     }
   }, [farmSettings, user]);
@@ -348,7 +354,9 @@ export function Settings() {
       name,
       email,
       phone,
-      photo: finalPhoto
+      photo: finalPhoto,
+      city: city.trim(),
+      state: state.trim()
     });
     
     setIsSaved(true);
@@ -530,6 +538,35 @@ export function Settings() {
                   onChange={e => setPhone(e.target.value)}
                   placeholder="(00) 00000-0000"
                   className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-theme-primary transition-colors font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                  <Home size={14} /> Cidade
+                </label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  placeholder="Ex: Cuiabá"
+                  className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-theme-primary transition-colors font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                  <Home size={14} /> Estado (UF)
+                </label>
+                <input
+                  type="text"
+                  value={state}
+                  onChange={e => setState(e.target.value.toUpperCase().slice(0, 2))}
+                  placeholder="Ex: MT"
+                  maxLength={2}
+                  className="w-full bg-theme-base border border-theme-border/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-theme-primary transition-colors font-medium uppercase"
                 />
               </div>
             </div>

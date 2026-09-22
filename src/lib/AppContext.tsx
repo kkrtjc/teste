@@ -972,8 +972,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ] = await Promise.all([
         supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,imagem,imagens,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -2123,8 +2123,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        // Usa Map por ID para comparar corretamente (índice de array pode mudar entre renders)
+        const originalEggLotsMap = new Map(eggLots.map(l => [l.id, l]));
         const lotsToPush = updatedEggLots
-          .filter((l, idx) => l.registros?.length !== eggLots[idx]?.registros?.length)
+          .filter(l => l.registros?.length !== (originalEggLotsMap.get(l.id)?.registros?.length ?? 0))
           .map(l => ({
             id: l.id,
             user_id: targetUserId,
