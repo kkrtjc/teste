@@ -46,61 +46,730 @@ const onlyNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
   if (!/^\d$/.test(e.key)) e.preventDefault();
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BarChart — Gráfico Interativo de Produção (Últimos 14 dias)
-// ─────────────────────────────────────────────────────────────────────────────
-const BarChart = memo(function BarChart({ records }: { records: EggDailyRecord[] }) {
-  const last14 = useMemo(() => {
-    return [...records].sort((a, b) => a.data.localeCompare(b.data)).slice(-14);
-  }, [records]);
-  if (last14.length === 0) return (
-    <div className="h-32 flex items-center justify-center text-xs text-theme-text-muted">
-      Nenhum registro de produção ainda
-    </div>
-  );
+const PT_BR_WEEKDAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const PT_BR_WEEKDAYS_FULL = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+const PT_BR_MONTHS_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-  const max = Math.max(...last14.map(r => r.coletados), 1);
-  const W = 280;
-  const H = 96;
-  const BAR_W = Math.floor((W - 20) / last14.length) - 2;
+function parseDateDetails(iso: string) {
+  if (!iso || !iso.includes('-')) {
+    return { dayNum: '01', monthNum: '01', weekdayShort: 'Seg', weekdayFull: 'Segunda-feira', fullFormatted: iso || '' };
+  }
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d, 12, 0, 0);
+  const weekdayIdx = isNaN(dt.getDay()) ? 0 : dt.getDay();
+  return {
+    dayNum: String(d).padStart(2, '0'),
+    monthNum: String(m).padStart(2, '0'),
+    weekdayShort: PT_BR_WEEKDAYS_SHORT[weekdayIdx] || 'Seg',
+    weekdayFull: PT_BR_WEEKDAYS_FULL[weekdayIdx] || 'Segunda-feira',
+    fullFormatted: `${d} de ${PT_BR_MONTHS_FULL[(m || 1) - 1] || ''}`
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EggProductionChart — Gráfico Interativo & Inteligente de Postura
+// Cores Zootécnicas:
+//  - Azul (#3B82F6): Dias sem registro / lacuna de coleta
+//  - Vermelho (#EF4444): Dias negativos ou com média crítica / perdas severas
+//  - Dourado (#F59E0B): Produção normal dentro do padrão do lote
+//  - Esmeralda (#10B981): Pico de postura do período
+// ─────────────────────────────────────────────────────────────────────────────
+export interface EggProductionChartProps {
+  lot: EggLot;
+  records: EggDailyRecord[];
+  totalFemeas?: number;
+  expectativaDiaria?: number;
+  onOpenRegister?: (lot: EggLot, initialDate?: string, existingRecord?: EggDailyRecord) => void;
+  onEditRecord?: (lot: EggLot, record: EggDailyRecord) => void;
+}
+
+export const EggProductionChart = memo(function EggProductionChart({
+  lot,
+  records,
+  totalFemeas = 0,
+  expectativaDiaria,
+  onOpenRegister,
+  onEditRecord
+}: EggProductionChartProps) {
+  const [chartPeriod, setChartPeriod] = useState<7 | 14 | 30>(14);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+
+  // Calcula a média ou expectativa base de postura do lote (referência)
+  const lotAverage = useMemo(() => {
+    if (expectativaDiaria && expectativaDiaria > 0) return expectativaDiaria;
+    const validRecords = records.filter(r => r.coletados > 0 && r.observacao !== 'Nenhum registro');
+    if (validRecords.length > 0) {
+      const total = validRecords.reduce((s, r) => s + (Number(r.coletados) || 0), 0);
+      return total / validRecords.length;
+    }
+    if (totalFemeas > 0) {
+      return totalFemeas * 0.7; // Expectativa padrão de 70% postura
+    }
+    return 0;
+  }, [expectativaDiaria, records, totalFemeas]);
+
+  // Âncora final da linha do tempo: se o lote está encerrado, âncora no último registro
+  const endDateStr = useMemo(() => {
+    if (lot.status === 'Encerrado' && records.length > 0) {
+      const sorted = [...records].sort((a, b) => b.data.localeCompare(a.data));
+      return sorted[0].data;
+    }
+    return todayISO();
+  }, [lot.status, records]);
+
+  // Gera o período contínuo de dias (sem pular dias não registrados)
+  const periodDates = useMemo(() => {
+    const [y, m, d] = (endDateStr || todayISO()).split('-').map(Number);
+    const baseDate = new Date(y, (m || 1) - 1, d || 1, 12, 0, 0);
+    const dates: string[] = [];
+    for (let i = chartPeriod - 1; i >= 0; i--) {
+      const iter = new Date(baseDate.getTime() - i * 86400000);
+      const yyyy = iter.getFullYear();
+      const mm = String(iter.getMonth() + 1).padStart(2, '0');
+      const dd = String(iter.getDate()).padStart(2, '0');
+      dates.push(`${yyyy}-${mm}-${dd}`);
+    }
+    return dates;
+  }, [endDateStr, chartPeriod]);
+
+  // Data selecionada interativa (inicia com hoje ou última data do período)
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    return periodDates[periodDates.length - 1] || todayISO();
+  });
+
+  // Mantém a seleção dentro do período atual
+  useEffect(() => {
+    if (!periodDates.includes(selectedDate)) {
+      setSelectedDate(periodDates[periodDates.length - 1] || todayISO());
+    }
+  }, [periodDates, selectedDate]);
+
+  // Processa todos os dias aplicando as regras visuais exigidas
+  const dayData = useMemo(() => {
+    const recMap = new Map<string, EggDailyRecord>();
+    records.forEach(r => {
+      if (r?.data) recMap.set(r.data, r);
+    });
+
+    const maxCollectedInPeriod = Math.max(
+      ...periodDates.map(dt => {
+        const r = recMap.get(dt);
+        if (!r || r.observacao === 'Nenhum registro') return 0;
+        return Number(r.coletados) || 0;
+      }),
+      0
+    );
+
+    return periodDates.map(dateStr => {
+      const rec = recMap.get(dateStr);
+      const dateParts = parseDateDetails(dateStr);
+      const isToday = dateStr === todayISO();
+
+      const isNoRecord = !rec ||
+        rec.observacao === 'Nenhum registro' ||
+        (rec as any).isNoRecord === true ||
+        rec.observacao?.toLowerCase().includes('nenhum registro') ||
+        rec.observacao?.toLowerCase().includes('sem registro') ||
+        rec.id?.startsWith('auto-empty-') ||
+        (rec.coletados === 0 && !rec.vendidos && !rec.perdidos && (!rec.incubados || rec.incubados === 0) && !rec.observacao);
+
+      if (isNoRecord) {
+        return {
+          date: dateStr,
+          ...dateParts,
+          isToday,
+          rec,
+          coletados: 0,
+          vendidos: 0,
+          incubados: 0,
+          perdidos: 0,
+          saldo: 0,
+          observacao: rec?.observacao || 'Sem registro',
+          status: 'sem_registro' as const,
+          statusLabel: 'Sem Registro',
+          statusColor: '#3B82F6',
+          motivo: 'Nenhuma coleta registrada para este lote neste dia'
+        };
+      }
+
+      const coletados = Number(rec.coletados) || 0;
+      const vendidos = Number(rec.vendidos) || 0;
+      const incubados = Number(rec.incubados) || 0;
+      const perdidos = Number(rec.perdidos) || 0;
+      const saldo = coletados - perdidos;
+
+      // Critérios para "Negativo ou Baixa Média" (Vermelho)
+      const isPerdaGrave = perdidos >= coletados && (coletados > 0 || perdidos > 0);
+      const isZeroColeta = coletados === 0;
+      const isAbaixoMedia = lotAverage >= 2 && coletados < (lotAverage * 0.45);
+      const isTaxaPerdaAlta = coletados > 0 && perdidos >= 2 && (perdidos / coletados) >= 0.4;
+
+      if (isPerdaGrave || isZeroColeta || isAbaixoMedia || isTaxaPerdaAlta) {
+        let motivo = 'Produção abaixo da média esperada do lote';
+        if (isPerdaGrave) motivo = 'Saldo crítico: ovos perdidos igualaram ou superaram os ovos coletados';
+        else if (isZeroColeta) motivo = 'Postura zerada: nenhum ovo coletado nesta data';
+        else if (isTaxaPerdaAlta) motivo = `Taxa alta de quebra/perda (${Math.round((perdidos / coletados) * 100)}% de perdas)`;
+        else if (isAbaixoMedia) motivo = `Produção (${coletados} ovos) ficou ${Math.round(((lotAverage - coletados) / lotAverage) * 100)}% abaixo da média (${lotAverage.toFixed(1)}/dia)`;
+
+        return {
+          date: dateStr,
+          ...dateParts,
+          isToday,
+          rec,
+          coletados,
+          vendidos,
+          incubados,
+          perdidos,
+          saldo,
+          observacao: rec.observacao,
+          status: 'critico_baixo' as const,
+          statusLabel: 'Abaixo da Média / Negativo',
+          statusColor: '#EF4444',
+          motivo
+        };
+      }
+
+      // Pico de postura (Verde Esmeralda)
+      const isPeak = maxCollectedInPeriod >= 2 && coletados === maxCollectedInPeriod;
+      if (isPeak) {
+        return {
+          date: dateStr,
+          ...dateParts,
+          isToday,
+          rec,
+          coletados,
+          vendidos,
+          incubados,
+          perdidos,
+          saldo,
+          observacao: rec.observacao,
+          status: 'pico' as const,
+          statusLabel: 'Pico de Postura',
+          statusColor: '#10B981',
+          motivo: `Maior coleta registrada no período (${coletados} ovos)`
+        };
+      }
+
+      // Normal (Dourado/Amber)
+      return {
+        date: dateStr,
+        ...dateParts,
+        isToday,
+        rec,
+        coletados,
+        vendidos,
+        incubados,
+        perdidos,
+        saldo,
+        observacao: rec.observacao,
+        status: 'normal' as const,
+        statusLabel: 'Produção Normal',
+        statusColor: '#F59E0B',
+        motivo: `${coletados} ovos coletados dentro do padrão do lote`
+      };
+    });
+  }, [periodDates, records, lotAverage]);
+
+  // Resumo de métricas do período selecionado
+  const periodStats = useMemo(() => {
+    const recordedDays = dayData.filter(d => d.status !== 'sem_registro');
+    const semRegistroCount = dayData.filter(d => d.status === 'sem_registro').length;
+    const criticosCount = dayData.filter(d => d.status === 'critico_baixo').length;
+    const totalColetados = recordedDays.reduce((s, d) => s + d.coletados, 0);
+    const totalPerdidos = recordedDays.reduce((s, d) => s + d.perdidos, 0);
+    const totalVendidos = recordedDays.reduce((s, d) => s + d.vendidos, 0);
+    const mediaPeriodo = recordedDays.length > 0 ? (totalColetados / recordedDays.length).toFixed(1) : '0';
+
+    return {
+      recordedDaysCount: recordedDays.length,
+      semRegistroCount,
+      criticosCount,
+      totalColetados,
+      totalPerdidos,
+      totalVendidos,
+      mediaPeriodo
+    };
+  }, [dayData]);
+
+  // Dia ativo em foco (hover ou clique)
+  const activeDay = useMemo(() => {
+    return dayData.find(d => d.date === (hoveredDate || selectedDate)) || dayData[dayData.length - 1];
+  }, [dayData, hoveredDate, selectedDate]);
+
+  // Cálculos de geometria do SVG
+  const svgW = 520;
+  const svgH = 150;
+  const startX = 24;
+  const usableW = 472;
+  const baselineY = 112;
+  const topY = 18;
+  const chartH = baselineY - topY; // 94px
+
+  const maxVal = Math.max(...dayData.map(d => d.coletados), Math.ceil(lotAverage) || 1, 4);
+  const colW = usableW / dayData.length;
+  const barW = Math.max(7, Math.min(26, colW - (dayData.length > 20 ? 3 : 5)));
+
+  // Posição Y da linha de média/expectativa
+  const yBench = lotAverage > 0 && lotAverage <= maxVal ? baselineY - (lotAverage / maxVal) * chartH : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 24}`} className="w-full" style={{ maxHeight: 130 }}>
-      {last14.map((r, i) => {
-        const barH = Math.max(4, (r.coletados / max) * H);
-        const vendH = Math.max(0, (r.vendidos / max) * H);
-        const perdH = Math.max(0, (r.perdidos / max) * H);
-        const incH = Math.max(0, ((r.incubados || 0) / max) * H);
-        const x = 10 + i * (BAR_W + 2);
-        const isPeak = r.coletados === max && max > 0;
+    <div className="space-y-3.5">
+      {/* Barra de Controles do Gráfico */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-amber-400/10 flex items-center justify-center text-amber-400 shrink-0">
+            <BarChart2 size={13} />
+          </div>
+          <div>
+            <span className="text-xs font-black text-white uppercase tracking-wider block">
+              Desempenho Diário de Postura
+            </span>
+            <span className="text-[10px] text-theme-text-muted">
+              {chartPeriod} dias exibidos &bull; Toque em qualquer coluna para ver detalhes
+            </span>
+          </div>
+        </div>
 
-        return (
-          <g key={r.id || i}>
-            {/* Fundo do pilar */}
-            <rect x={x} y={H - barH} width={BAR_W} height={barH} rx="2" fill={isPeak ? "#F59E0B44" : "#F59E0B22"} />
-            {/* Ovos Vendidos */}
-            <rect x={x} y={H - vendH} width={BAR_W} height={vendH} rx="2" fill="#10B981" opacity="0.75" />
-            {/* Ovos Incubados (Choco) */}
-            <rect x={x + BAR_W * 0.3} y={H - incH} width={BAR_W * 0.4} height={incH} rx="2" fill="#8B5CF6" opacity="0.8" />
-            {/* Ovos Perdidos */}
-            <rect x={x + BAR_W * 0.65} y={H - perdH} width={BAR_W * 0.35} height={perdH} rx="2" fill="#EF4444" opacity="0.8" />
+        {/* Seletor de Período 7d / 14d / 30d */}
+        <div className="flex items-center bg-theme-surface border border-theme-border rounded-xl p-0.5 gap-0.5">
+          {([7, 14, 30] as const).map(p => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setChartPeriod(p)}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                chartPeriod === p
+                  ? 'bg-amber-400 text-black shadow-sm font-black'
+                  : 'text-theme-text-muted hover:text-white'
+              }`}
+            >
+              {p}d
+            </button>
+          ))}
+        </div>
+      </div>
 
-            {/* Indicador de Pico de Postura */}
-            {isPeak && (
-              <circle cx={x + BAR_W / 2} cy={H - barH - 4} r="2" fill="#F59E0B" />
+      {/* Container do Gráfico SVG */}
+      <div className="rounded-2xl border border-theme-border/60 bg-theme-surface/50 p-2 sm:p-3 relative overflow-hidden select-none">
+        <svg
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          className="w-full h-auto overflow-visible"
+          style={{ maxHeight: 180 }}
+          onMouseLeave={() => setHoveredDate(null)}
+        >
+          <defs>
+            {/* Gradiente Dourado (Normal) */}
+            <linearGradient id="eggAmberGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FBBF24" />
+              <stop offset="100%" stopColor="#D97706" />
+            </linearGradient>
+
+            {/* Gradiente Vermelho (Abaixo da Média / Negativo) */}
+            <linearGradient id="eggRedGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#F87171" />
+              <stop offset="100%" stopColor="#DC2626" />
+            </linearGradient>
+
+            {/* Gradiente Verde (Pico) */}
+            <linearGradient id="eggGreenGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#34D399" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+
+            {/* Gradiente Azul (Sem Registro) */}
+            <linearGradient id="eggBlueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#60A5FA" />
+              <stop offset="100%" stopColor="#2563EB" />
+            </linearGradient>
+          </defs>
+
+          {/* Linha de Base (y = 0) */}
+          <line x1={startX - 10} y1={baselineY} x2={startX + usableW + 5} y2={baselineY} stroke="#374151" strokeWidth="1" />
+
+          {/* Linha de Referência da Média Diária */}
+          {yBench !== null && (
+            <g>
+              <line
+                x1={startX - 10}
+                y1={yBench}
+                x2={startX + usableW + 5}
+                y2={yBench}
+                stroke="#F59E0B"
+                strokeWidth="1"
+                strokeDasharray="4 3"
+                strokeOpacity="0.45"
+              />
+              <text
+                x={startX + usableW + 2}
+                y={yBench - 3}
+                textAnchor="end"
+                fontSize="7.5"
+                fill="#F59E0B"
+                opacity="0.85"
+                fontWeight="bold"
+              >
+                Média {lotAverage.toFixed(1)}
+              </text>
+            </g>
+          )}
+
+          {/* Colunas Diárias */}
+          {dayData.map((d, i) => {
+            const cx = startX + i * colW + colW / 2;
+            const x = cx - barW / 2;
+            const isSelected = selectedDate === d.date;
+            const isHovered = hoveredDate === d.date;
+            const isHighlighted = isSelected || isHovered;
+
+            // Altura do pilar conforme status
+            let barH = 6;
+            let barY = baselineY - barH;
+            let barFill = 'url(#eggAmberGrad)';
+
+            if (d.status === 'sem_registro') {
+              barH = 8;
+              barY = baselineY - barH;
+              barFill = 'url(#eggBlueGrad)';
+            } else if (d.status === 'critico_baixo') {
+              if (d.coletados === 0) {
+                barH = 7;
+                barY = baselineY - barH;
+                barFill = '#EF4444';
+              } else {
+                barH = Math.max(10, (d.coletados / maxVal) * chartH);
+                barY = baselineY - barH;
+                barFill = 'url(#eggRedGrad)';
+              }
+            } else if (d.status === 'pico') {
+              barH = Math.max(12, (d.coletados / maxVal) * chartH);
+              barY = baselineY - barH;
+              barFill = 'url(#eggGreenGrad)';
+            } else {
+              barH = Math.max(10, (d.coletados / maxVal) * chartH);
+              barY = baselineY - barH;
+              barFill = 'url(#eggAmberGrad)';
+            }
+
+            // Frações de vendas e perdas
+            const vendH = d.vendidos > 0 && d.status !== 'sem_registro' ? Math.min(barH, Math.max(3, (d.vendidos / maxVal) * chartH)) : 0;
+            const perdH = d.perdidos > 0 && d.status !== 'sem_registro' ? Math.min(barH, Math.max(3, (d.perdidos / maxVal) * chartH)) : 0;
+
+            return (
+              <g key={d.date}>
+                {/* Destaque de Coluna Ativa */}
+                {isHighlighted && (
+                  <rect
+                    x={cx - colW / 2 + 1}
+                    y={topY - 8}
+                    width={colW - 2}
+                    height={chartH + 16}
+                    rx="6"
+                    fill="rgba(255,255,255,0.06)"
+                    stroke={d.statusColor}
+                    strokeWidth="1"
+                    strokeDasharray="3 2"
+                    opacity={isSelected ? 1 : 0.6}
+                  />
+                )}
+
+                {/* Linha guia suave de coluna */}
+                <line
+                  x1={cx}
+                  y1={topY}
+                  x2={cx}
+                  y2={baselineY}
+                  stroke={d.status === 'sem_registro' ? '#3B82F6' : '#FFFFFF'}
+                  strokeWidth="1"
+                  strokeDasharray="1 3"
+                  strokeOpacity={d.status === 'sem_registro' ? '0.2' : '0.04'}
+                />
+
+                {/* Pilar Principal */}
+                <rect
+                  x={x}
+                  y={barY}
+                  width={barW}
+                  height={barH}
+                  rx="3"
+                  fill={barFill}
+                  className="transition-all"
+                  opacity={isHighlighted ? 1 : 0.88}
+                />
+
+                {/* Sub-barra de Vendas (Verde) */}
+                {vendH > 0 && (
+                  <rect
+                    x={x}
+                    y={baselineY - vendH}
+                    width={barW}
+                    height={vendH}
+                    rx="2"
+                    fill="#10B981"
+                    opacity="0.8"
+                  />
+                )}
+
+                {/* Topo de Perdas (Vermelho) */}
+                {perdH > 0 && d.status !== 'critico_baixo' && (
+                  <rect
+                    x={x}
+                    y={barY}
+                    width={barW}
+                    height={perdH}
+                    rx="2"
+                    fill="#EF4444"
+                    opacity="0.85"
+                  />
+                )}
+
+                {/* Indicador Especial no Topo da Barra */}
+                {d.status === 'sem_registro' && (
+                  <circle cx={cx} cy={baselineY - 14} r="2" fill="#3B82F6" />
+                )}
+
+                {d.status === 'critico_baixo' && (
+                  <circle cx={cx} cy={barY - 4} r="2" fill="#EF4444" />
+                )}
+
+                {d.status === 'pico' && (
+                  <circle cx={cx} cy={barY - 5} r="2.5" fill="#10B981" />
+                )}
+
+                {/* Marcador triangular do dia selecionado */}
+                {isSelected && (
+                  <polygon
+                    points={`${cx - 3},${baselineY + 1} ${cx + 3},${baselineY + 1} ${cx},${baselineY - 3}`}
+                    fill={d.statusColor}
+                  />
+                )}
+
+                {/* Número do Dia (X-axis) */}
+                <text
+                  x={cx}
+                  y={baselineY + 13}
+                  textAnchor="middle"
+                  fontSize={dayData.length > 20 ? '7' : '8.5'}
+                  fontWeight={d.isToday || isSelected ? '900' : '600'}
+                  fill={
+                    isSelected
+                      ? '#FFFFFF'
+                      : d.isToday
+                      ? '#F59E0B'
+                      : d.status === 'sem_registro'
+                      ? '#60A5FA'
+                      : d.status === 'critico_baixo'
+                      ? '#F87171'
+                      : '#9CA3AF'
+                  }
+                >
+                  {d.dayNum}
+                </text>
+
+                {/* Dia da Semana (Letra Inicial) */}
+                <text
+                  x={cx}
+                  y={baselineY + 23}
+                  textAnchor="middle"
+                  fontSize="6.5"
+                  fill={isSelected ? '#E5E7EB' : '#6B7280'}
+                >
+                  {d.weekdayShort[0]}
+                </text>
+
+                {/* Área de Toque/Clique Total da Coluna */}
+                <rect
+                  x={cx - colW / 2}
+                  y={0}
+                  width={colW}
+                  height={svgH}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onClick={() => setSelectedDate(d.date)}
+                  onMouseEnter={() => setHoveredDate(d.date)}
+                  onTouchStart={() => setSelectedDate(d.date)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Card Interativo de Detalhes do Dia Selecionado */}
+      <div
+        className={`p-3.5 rounded-2xl border transition-all animate-fade-in ${
+          activeDay.status === 'sem_registro'
+            ? 'bg-blue-500/10 border-blue-500/30'
+            : activeDay.status === 'critico_baixo'
+            ? 'bg-rose-500/10 border-rose-500/30'
+            : activeDay.status === 'pico'
+            ? 'bg-emerald-500/10 border-emerald-500/30'
+            : 'bg-theme-surface border-theme-border/80'
+        }`}
+      >
+        {/* Cabeçalho do Dia */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-theme-border/40">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-black text-white flex items-center gap-1.5">
+              <CalendarDays
+                size={14}
+                className={
+                  activeDay.status === 'sem_registro'
+                    ? 'text-blue-400'
+                    : activeDay.status === 'critico_baixo'
+                    ? 'text-rose-400'
+                    : 'text-amber-400'
+                }
+              />
+              {activeDay.fullFormatted} ({activeDay.weekdayFull})
+            </span>
+            {activeDay.isToday && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-extrabold border border-amber-400/30">
+                Hoje
+              </span>
             )}
+            <span
+              className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
+                activeDay.status === 'sem_registro'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                  : activeDay.status === 'critico_baixo'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  : activeDay.status === 'pico'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              }`}
+            >
+              {activeDay.status === 'sem_registro' && <Clock size={11} />}
+              {activeDay.status === 'critico_baixo' && <AlertTriangle size={11} />}
+              {activeDay.status === 'pico' && <Sparkles size={11} />}
+              {activeDay.status === 'normal' && <Check size={11} />}
+              <span>{activeDay.statusLabel}</span>
+            </span>
+          </div>
 
-            {/* Data (Dia) */}
-            <text x={x + BAR_W / 2} y={H + 14} textAnchor="middle" fontSize="7" fill="#9CA3AF" fontWeight="bold">
-              {r.data ? r.data.slice(8) : ''}
-            </text>
-          </g>
-        );
-      })}
-      <line x1="10" y1={H} x2={W - 10} y2={H} stroke="#374151" strokeWidth="1" />
-    </svg>
+          {/* Botão de Ação Direta no Dia Selecionado */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {activeDay.status === 'sem_registro' ? (
+              <button
+                type="button"
+                onClick={() => onOpenRegister?.(lot, activeDay.date, activeDay.rec)}
+                className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>Registrar Coleta deste Dia</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeDay.rec && onEditRecord) {
+                    onEditRecord(lot, activeDay.rec);
+                  } else if (onOpenRegister) {
+                    onOpenRegister(lot, activeDay.date, activeDay.rec);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-theme-surface hover:bg-theme-surface-hover text-white border border-theme-border font-bold text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit2 size={12} className="text-theme-primary" />
+                <span>Editar Lançamento</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Motivo / Contexto Amigável */}
+        <p className="text-xs text-theme-text-muted mt-2">
+          {activeDay.motivo}
+        </p>
+
+        {/* Mini Cards com os Números do Dia */}
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
+            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Coletados</span>
+            <span
+              className={`text-base font-black ${
+                activeDay.status === 'sem_registro'
+                  ? 'text-blue-400'
+                  : activeDay.status === 'critico_baixo'
+                  ? 'text-rose-400'
+                  : 'text-amber-400'
+              }`}
+            >
+              {activeDay.coletados}
+            </span>
+            {totalFemeas > 0 && activeDay.coletados > 0 && (
+              <span className="text-[9px] text-emerald-400 font-bold block">
+                {Math.round((activeDay.coletados / totalFemeas) * 100)}% postura
+              </span>
+            )}
+          </div>
+
+          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
+            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Vendidos</span>
+            <span className="text-base font-black text-green-400">
+              {activeDay.vendidos}
+            </span>
+          </div>
+
+          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
+            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Em Choco</span>
+            <span className="text-base font-black text-purple-400">
+              {activeDay.incubados}
+            </span>
+          </div>
+
+          <div className="p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center">
+            <span className="text-[9px] uppercase font-bold text-theme-text-muted block">Perdidos</span>
+            <span className={`text-base font-black ${activeDay.perdidos > 0 ? 'text-rose-400' : 'text-theme-text-muted'}`}>
+              {activeDay.perdidos}
+            </span>
+          </div>
+        </div>
+
+        {/* Observação Adicional do Dia */}
+        {activeDay.observacao && activeDay.observacao !== 'Nenhum registro' && (
+          <div className="mt-2.5 px-3 py-2 rounded-xl bg-theme-base/40 border border-theme-border/30 text-xs text-theme-text-muted flex items-start gap-1.5">
+            <FileText size={12} className="text-amber-400 shrink-0 mt-0.5" />
+            <span className="leading-snug"><strong>Obs:</strong> {activeDay.observacao}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Legenda Explicativa & Resumo */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+        {/* Legenda de Cores */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5" title="Dias sem lançamento de coleta no histórico">
+            <div className="w-2.5 h-2.5 rounded-sm bg-blue-500 shadow-sm shadow-blue-500/50" />
+            <span className="text-[11px] font-bold text-blue-400">Sem registro</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Dias com produção abaixo de 45% da média ou com perdas elevadas">
+            <div className="w-2.5 h-2.5 rounded-sm bg-rose-500 shadow-sm shadow-rose-500/50" />
+            <span className="text-[11px] font-bold text-rose-400">Baixa produção / Negativo</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Produção regular do lote">
+            <div className="w-2.5 h-2.5 rounded-sm bg-amber-400" />
+            <span className="text-[11px] font-bold text-theme-text-muted">Normal</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Melhor dia de postura do período">
+            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
+            <span className="text-[11px] font-bold text-emerald-400">Pico</span>
+          </div>
+        </div>
+
+        {/* Resumo do Período */}
+        <div className="flex items-center gap-3 text-[11px] text-theme-text-muted font-bold flex-wrap">
+          <span>Total: <strong className="text-white">{periodStats.totalColetados} ovos</strong></span>
+          <span>Média: <strong className="text-amber-400">{periodStats.mediaPeriodo}/dia</strong></span>
+          {periodStats.semRegistroCount > 0 && (
+            <span className="text-blue-400">{periodStats.semRegistroCount} {periodStats.semRegistroCount === 1 ? 'dia sem registro' : 'dias sem registro'}</span>
+          )}
+        </div>
+      </div>
+    </div>
   );
 });
+
+export const BarChart = EggProductionChart;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // KPI Card
@@ -663,23 +1332,25 @@ type RegForm = {
 function RegisterDaySheet({
   lot,
   editingRecord,
+  initialDate,
   onClose,
   onSave
 }: {
   lot: EggLot;
   editingRecord?: EggDailyRecord | null;
+  initialDate?: string;
   onClose: () => void;
   onSave: (rec: EggDailyRecord) => void;
 }) {
-  const [form, setForm] = useState<RegForm>({
-    data: editingRecord?.data || todayISO(),
+  const [form, setForm] = useState<RegForm>(() => ({
+    data: editingRecord?.data || initialDate || todayISO(),
     coletados: editingRecord ? String(editingRecord.coletados) : '',
     vendidos: editingRecord ? String(editingRecord.vendidos) : '0',
     perdidos: editingRecord ? String(editingRecord.perdidos) : '0',
     precoVenda: editingRecord ? String(editingRecord.precoVenda) : (lot.precoVendaPadrao !== undefined ? String(lot.precoVendaPadrao) : ''),
     custoProd: editingRecord ? String(editingRecord.custoProd) : (lot.custoProdPadrao !== undefined ? String(lot.custoProdPadrao) : ''),
-    observacao: editingRecord?.observacao || ''
-  });
+    observacao: editingRecord?.observacao && editingRecord.observacao !== 'Nenhum registro' ? editingRecord.observacao : ''
+  }));
 
   const [error, setError] = useState('');
   const [existingRecordAlert, setExistingRecordAlert] = useState(false);
@@ -688,15 +1359,16 @@ function RegisterDaySheet({
     if (editingRecord) return;
     const existing = (lot.registros || []).find(r => r.data === form.data);
     if (existing) {
-      setExistingRecordAlert(true);
+      const isAutoPlaceholder = existing.observacao === 'Nenhum registro' || existing.id?.startsWith('auto-empty-');
+      setExistingRecordAlert(!isAutoPlaceholder);
       setForm(prev => ({
         ...prev,
-        coletados: String(existing.coletados),
+        coletados: isAutoPlaceholder ? '' : String(existing.coletados),
         vendidos: String(existing.vendidos),
         perdidos: String(existing.perdidos),
         precoVenda: String(existing.precoVenda),
         custoProd: String(existing.custoProd),
-        observacao: existing.observacao || ''
+        observacao: isAutoPlaceholder ? '' : (existing.observacao || '')
       }));
     } else {
       setExistingRecordAlert(false);
@@ -844,6 +1516,7 @@ function LotCard({
   lot,
   birds,
   onRegister,
+  onRegisterWithDate,
   onEditRecord,
   onDeleteRecord,
   onSendToIncubation,
@@ -858,6 +1531,7 @@ function LotCard({
   lot: EggLot;
   birds: ReturnType<typeof useAppContext>['birds'];
   onRegister: (lot: EggLot) => void;
+  onRegisterWithDate?: (lot: EggLot, initialDate: string) => void;
   onEditRecord: (lot: EggLot, record: EggDailyRecord) => void;
   onDeleteRecord: (lot: EggLot, recordId: string) => void;
   onSendToIncubation: (lot: EggLot, stock: number) => void;
@@ -1121,18 +1795,22 @@ function LotCard({
       {expanded && (
         <div className="border-t border-theme-border bg-theme-base/40 px-4 py-4 space-y-4 animate-fade-in">
           <div>
-            <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2 flex items-center gap-1.5">
-              <BarChart2 size={11} /> Produção Diária (últimos 14 dias)
-            </p>
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              {[{ color: 'bg-amber-400/40', label: 'Coletados' }, { color: 'bg-green-400/70', label: 'Vendidos' }, { color: 'bg-purple-400/70', label: 'Incubados' }, { color: 'bg-red-400/70', label: 'Perdidos' }].map(l => (
-                <div key={l.label} className="flex items-center gap-1">
-                  <div className={`w-2.5 h-2.5 rounded-sm ${l.color}`} />
-                  <span className="text-[10px] text-theme-text-muted font-bold">{l.label}</span>
-                </div>
-              ))}
-            </div>
-            <BarChart records={records} />
+            <EggProductionChart
+              lot={lot}
+              records={records}
+              totalFemeas={totalFemeas}
+              expectativaDiaria={lot.expectativaDiaria}
+              onOpenRegister={(targetLot, initialDate, existing) => {
+                if (existing) {
+                  onEditRecord(targetLot, existing);
+                } else if (onRegisterWithDate) {
+                  onRegisterWithDate(targetLot, initialDate || todayISO());
+                } else {
+                  onRegister(targetLot);
+                }
+              }}
+              onEditRecord={onEditRecord}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -1162,27 +1840,40 @@ function LotCard({
               <p className="text-[10px] font-bold uppercase text-theme-text-muted mb-2">Histórico de Registros (Clique para Editar ou Excluir)</p>
               <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1 smooth-scroll">
                 {[...records].sort((a, b) => b.data.localeCompare(a.data)).map(r => {
-                  const isNoRecord = r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0));
+                  const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+                  const isCritico = !isNoRecord && (
+                    (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
+                    (r.coletados === 0) ||
+                    (prodStats.mediaOvosDia >= 2 && r.coletados < prodStats.mediaOvosDia * 0.45) ||
+                    (r.coletados > 0 && r.perdidos >= 2 && (r.perdidos / r.coletados) >= 0.4)
+                  );
                   return (
                     <div key={r.id || r.data} className={`flex items-center justify-between text-xs rounded-xl px-3 py-2 transition-colors border ${
                       isNoRecord
-                        ? 'bg-theme-base/50 border-theme-border/50 hover:border-amber-500/30'
+                        ? 'bg-blue-500/5 border-blue-500/20 hover:border-blue-500/40'
+                        : isCritico
+                        ? 'bg-rose-500/5 border-rose-500/20 hover:border-rose-500/40'
                         : 'bg-theme-surface border-theme-border hover:border-theme-primary/40'
                     }`}>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <CalendarDays size={12} className={isNoRecord ? "text-theme-text-muted shrink-0" : "text-amber-400 shrink-0"} />
+                        <CalendarDays size={12} className={isNoRecord ? "text-blue-400 shrink-0" : isCritico ? "text-rose-400 shrink-0" : "text-amber-400 shrink-0"} />
                         <span className="text-theme-text-muted w-16 shrink-0 font-mono text-[11px]">{formatDate(r.data)}</span>
                         {isNoRecord ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20 flex items-center gap-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20 flex items-center gap-1">
                             <Clock size={10} />
-                            Nenhum registro
+                            Sem registro
                           </span>
                         ) : (
                           <>
-                            <span className="text-amber-400 font-bold shrink-0">{r.coletados} ovos</span>
+                            <span className={`font-bold shrink-0 ${isCritico ? 'text-rose-400' : 'text-amber-400'}`}>{r.coletados} ovos</span>
                             {r.vendidos > 0 && <span className="text-green-400 shrink-0">+{r.vendidos}v</span>}
                             {(r.incubados || 0) > 0 && <span className="text-purple-400 shrink-0">+{r.incubados}c</span>}
                             {r.perdidos > 0 && <span className="text-red-400 shrink-0">-{r.perdidos}p</span>}
+                            {isCritico && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold ml-1">
+                                Baixa produção
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
@@ -1237,6 +1928,7 @@ export function Eggs() {
 
   const [registerTarget, setRegisterTarget] = useState<EggLot | null>(null);
   const [editingRecord, setEditingRecord] = useState<EggDailyRecord | null>(null);
+  const [registerInitialDate, setRegisterInitialDate] = useState<string | undefined>(undefined);
   const [isCreateLotModalOpen, setIsCreateLotModalOpen] = useState(false);
   const [period, setPeriod] = useState<7 | 30 | 999>(30);
 
@@ -1470,8 +2162,9 @@ export function Eggs() {
               key={lot.id}
               lot={lot}
               birds={birds}
-              onRegister={l => { setEditingRecord(null); setRegisterTarget(l); }}
-              onEditRecord={(l, r) => { setEditingRecord(r); setRegisterTarget(l); }}
+              onRegister={l => { setRegisterInitialDate(undefined); setEditingRecord(null); setRegisterTarget(l); }}
+              onRegisterWithDate={(l, dt) => { setRegisterInitialDate(dt); setEditingRecord(null); setRegisterTarget(l); }}
+              onEditRecord={(l, r) => { setRegisterInitialDate(undefined); setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
@@ -1497,8 +2190,9 @@ export function Eggs() {
               key={lot.id}
               lot={lot}
               birds={birds}
-              onRegister={l => { setEditingRecord(null); setRegisterTarget(l); }}
-              onEditRecord={(l, r) => { setEditingRecord(r); setRegisterTarget(l); }}
+              onRegister={l => { setRegisterInitialDate(undefined); setEditingRecord(null); setRegisterTarget(l); }}
+              onRegisterWithDate={(l, dt) => { setRegisterInitialDate(dt); setEditingRecord(null); setRegisterTarget(l); }}
+              onEditRecord={(l, r) => { setRegisterInitialDate(undefined); setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
@@ -1517,7 +2211,8 @@ export function Eggs() {
         <RegisterDaySheet
           lot={registerTarget}
           editingRecord={editingRecord}
-          onClose={() => { setRegisterTarget(null); setEditingRecord(null); }}
+          initialDate={registerInitialDate}
+          onClose={() => { setRegisterTarget(null); setEditingRecord(null); setRegisterInitialDate(undefined); }}
           onSave={handleSaveRecord}
         />
       )}
