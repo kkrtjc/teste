@@ -11,9 +11,10 @@ import { AutoUpdater } from './components/AutoUpdater';
 
 import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
 
-// Code-splitting com React.lazy para carregamento instantâneo do bundle principal
+import { Dashboard } from './pages/Dashboard';
+
+// Code-splitting com React.lazy para carregamento sob demanda das abas secundárias
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
-const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
 const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
 const Vitrine = lazy(() => import('./pages/Vitrine').then(m => ({ default: m.Vitrine })));

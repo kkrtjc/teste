@@ -12,12 +12,12 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
 
   useEffect(() => {
     if (!isLoading) {
-      // Inicia a animação de saída suave e rápida (scale down + fade out)
+      // Inicia a animação cinematográfica de zoom in e dissolução suave ao encerrar
       setIsFadingOut(true);
       const timer = setTimeout(() => {
         setShouldRender(false);
         if (onFinish) onFinish();
-      }, 350); // Duração sincronizada da animação (350ms)
+      }, 600); // 600ms sincronizados com as transições de CSS
       return () => clearTimeout(timer);
     } else {
       setShouldRender(true);
@@ -25,15 +25,15 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
     }
   }, [isLoading, onFinish]);
 
-  // Blindagem de segurança: nunca trava o usuário na splash por mais de 8 segundos
+  // Blindagem de segurança: nunca trava o usuário na splash por mais de 7 segundos
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
       setIsFadingOut(true);
       setTimeout(() => {
         setShouldRender(false);
         if (onFinish) onFinish();
-      }, 350);
-    }, 8000);
+      }, 600);
+    }, 7000);
     return () => clearTimeout(safetyTimer);
   }, [onFinish]);
 
@@ -41,22 +41,29 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070709] transition-all duration-350 ease-out select-none pointer-events-none ${
-        isFadingOut ? 'opacity-0 scale-105 backdrop-blur-none' : 'opacity-100 scale-100'
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#070709] transition-opacity duration-600 ease-out select-none pointer-events-none ${
+        isFadingOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      {/* Luzes sutis de fundo */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse" />
+      {/* Luzes sutis de fundo com expansão suave no encerramento */}
+      <div 
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none transition-all duration-600 ease-out ${
+          isFadingOut ? 'scale-150 opacity-0' : 'scale-100 opacity-100 animate-pulse'
+        }`} 
+      />
 
+      {/* Container Central com Animação de Zoom In / Expansão Cinematográfica no Encerramento */}
       <div
-        className={`flex flex-col items-center gap-5 transition-all duration-700 ease-out transform-gpu ${
-          isFadingOut ? 'scale-90 opacity-0 -translate-y-4' : 'scale-100 opacity-100 translate-y-0'
+        className={`flex flex-col items-center gap-5 transition-all duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${
+          isFadingOut 
+            ? 'scale-125 opacity-0 blur-[2px] -translate-y-2' 
+            : 'scale-100 opacity-100 blur-0 translate-y-0'
         }`}
       >
         {/* Container da Logo com Efeito de Brilho & Borda Dourada */}
         <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl blur-md opacity-40 animate-pulse" />
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-2 border-amber-500/50 shadow-2xl bg-black flex items-center justify-center">
+          <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl blur-md opacity-40 animate-pulse" />
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-2xl bg-black flex items-center justify-center">
             <img
               src={muraLogo}
               alt="Mura Manager Logo"
@@ -76,10 +83,10 @@ export function SplashScreen({ isLoading, onFinish }: SplashScreenProps) {
         </div>
 
         {/* Barra de Progresso/Indicador Suave */}
-        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden mt-4 relative">
+        <div className={`w-48 h-1 bg-white/10 rounded-full overflow-hidden mt-4 relative transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}>
           <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full animate-[loading_1.5s_ease-in-out_infinite] w-full" />
         </div>
-        <p className="text-[11px] text-amber-300/80 font-medium tracking-wide animate-pulse">
+        <p className={`text-[11px] text-amber-300/80 font-medium tracking-wide transition-opacity duration-300 ${isFadingOut ? 'opacity-0' : 'opacity-100 animate-pulse'}`}>
           Carregando informações do criatório...
         </p>
       </div>

@@ -7,10 +7,9 @@ import {
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
-import muraLogo from '../assets/mura_logo.jpg';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots, isReady, isInitialSyncDone } = useAppContext();
+  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots } = useAppContext();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
@@ -27,7 +26,7 @@ export function Dashboard() {
     try {
       const u = localStorage.getItem('@mura-manager:cached-user');
       const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
-      const raw = localStorage.getItem(`@mura-manager:dashboard-stats:${uid}`);
+      const raw = localStorage.getItem(`@mura-manager:dashboard-stats:${uid}`) || localStorage.getItem('@mura-manager:dashboard-stats');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && (parsed.totalAves > 0 || parsed.totalLotes > 0)) {
@@ -172,54 +171,15 @@ export function Dashboard() {
       try {
         const uid = user?.id || 'guest';
         localStorage.setItem(`@mura-manager:dashboard-stats:${uid}`, JSON.stringify(stats));
+        localStorage.setItem('@mura-manager:dashboard-stats', JSON.stringify(stats));
       } catch {}
     }
   }, [stats, user?.id]);
 
   // Estado de carregamento
   const hasRealData = stats.totalAves > 0 || stats.totalLotes > 0;
-  const isSyncFinished = isReady && isInitialSyncDone;
-  const isLoading = !isSyncFinished && !cachedStats && !hasRealData;
-
   const displayStats = hasRealData ? stats : (cachedStats || stats);
-
   const hasEggLots = eggLots.some(l => l.status === 'Ativo');
-
-  // Se ainda estiver sincronizando e sem dados em cache, exibe a logo do app carregando
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-md mx-auto px-4 animate-fade-in select-none my-auto">
-        {/* Container da Logo com Efeito de Brilho & Borda Dourada */}
-        <div className="relative mb-5">
-          <div className="absolute -inset-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl blur-xl opacity-35 animate-pulse" />
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-2xl bg-black flex items-center justify-center">
-            <img
-              src={muraLogo}
-              alt="Mura Manager"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-
-        {/* Título */}
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase font-serif drop-shadow-md text-center">
-          MURA <span className="text-amber-400">MANAGER</span>
-        </h2>
-        <p className="text-xs text-amber-200/70 font-semibold tracking-widest uppercase mt-1 text-center">
-          Gestão Inteligente de Criatórios
-        </p>
-
-        {/* Barra de Progresso Dourada */}
-        <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden mt-6 relative">
-          <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full animate-[loading_1.5s_ease-in-out_infinite] w-full" />
-        </div>
-
-        <p className="text-xs text-amber-300/80 font-medium tracking-wide animate-pulse mt-3 text-center">
-          Carregando informações do criatório...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden pb-6">
