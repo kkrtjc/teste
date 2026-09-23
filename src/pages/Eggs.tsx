@@ -2189,6 +2189,7 @@ export function Eggs() {
 
   // Estados para exclusão com ConfirmDialog e modal de movimentações
   const [deleteLotConfirm, setDeleteLotConfirm] = useState<EggLot | null>(null);
+  const [toggleStatusConfirm, setToggleStatusConfirm] = useState<{ lot: EggLot; nextStatus: 'Ativo' | 'Encerrado' } | null>(null);
   const [deleteRecordConfirm, setDeleteRecordConfirm] = useState<{ lot: EggLot; recordId: string; date: string } | null>(null);
   const [movementModal, setMovementModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
   const [notesModal, setNotesModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
@@ -2284,10 +2285,22 @@ export function Eggs() {
     editEggLot(lot.id, { registros: updatedRegistros });
   };
 
-  const handleToggleLotStatus = (lot: EggLot) => {
+  const handleRequestToggleStatus = (lot: EggLot) => {
     const nextStatus = lot.status === 'Ativo' ? 'Encerrado' : 'Ativo';
+    setToggleStatusConfirm({ lot, nextStatus });
+  };
+
+  const handleExecuteToggleStatus = () => {
+    if (!toggleStatusConfirm) return;
+    const { lot, nextStatus } = toggleStatusConfirm;
     editEggLot(lot.id, { status: nextStatus });
-    showToast(`Lote Baia ${lot.baia} marcado como ${nextStatus}!`, nextStatus === 'Ativo' ? 'success' : 'info');
+    showToast(
+      nextStatus === 'Encerrado'
+        ? `Lote Baia ${lot.baia} foi encerrado com sucesso!`
+        : `Lote Baia ${lot.baia} foi reativado com sucesso!`,
+      nextStatus === 'Ativo' ? 'success' : 'info'
+    );
+    setToggleStatusConfirm(null);
   };
 
   const handleExecuteDeleteLot = () => {
@@ -2434,7 +2447,7 @@ export function Eggs() {
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
-              onToggleStatus={handleToggleLotStatus}
+              onToggleStatus={handleRequestToggleStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
               onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
               onOpenNotes={l => setNotesModal({ isOpen: true, lote: l })}
@@ -2462,7 +2475,7 @@ export function Eggs() {
               onDeleteRecord={handleDeleteRecord}
               onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
-              onToggleStatus={handleToggleLotStatus}
+              onToggleStatus={handleRequestToggleStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
               onOpenMovement={l => setMovementModal({ isOpen: true, lote: l })}
               onOpenNotes={l => setNotesModal({ isOpen: true, lote: l })}
@@ -2541,6 +2554,21 @@ export function Eggs() {
           />
         );
       })()}
+
+      {/* Confirmação de Encerramento / Reativação do Lote */}
+      <ConfirmDialog
+        isOpen={!!toggleStatusConfirm}
+        title={toggleStatusConfirm?.nextStatus === 'Encerrado' ? `Encerrar Lote da Baia ${toggleStatusConfirm?.lot.baia || ''}?` : `Reativar Lote da Baia ${toggleStatusConfirm?.lot.baia || ''}?`}
+        message={
+          toggleStatusConfirm?.nextStatus === 'Encerrado'
+            ? `Tem certeza que deseja encerrar as atividades do Lote da Baia ${toggleStatusConfirm?.lot.baia}? O lote será arquivado na seção de Lotes Encerrados.`
+            : `Deseja reativar o Lote da Baia ${toggleStatusConfirm?.lot.baia}? Ele voltará para a lista de Lotes Ativos para novas coletas.`
+        }
+        variant={toggleStatusConfirm?.nextStatus === 'Encerrado' ? 'warning' : 'info'}
+        confirmText={toggleStatusConfirm?.nextStatus === 'Encerrado' ? 'Sim, encerrar lote' : 'Sim, reativar lote'}
+        onConfirm={handleExecuteToggleStatus}
+        onCancel={() => setToggleStatusConfirm(null)}
+      />
 
       {/* Confirmação de Exclusão do Lote de Postura */}
       <ConfirmDialog
