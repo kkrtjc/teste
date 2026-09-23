@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
-import type { EggDailyRecord, EggLot, IncubationLot } from '../lib/AppContext';
+import type { EggDailyRecord, EggLot } from '../lib/AppContext';
 import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, ChevronRight, X, Check, BarChart2,
@@ -189,7 +189,7 @@ export const EggProductionChart = memo(function EggProductionChart({
         rec.observacao?.toLowerCase().includes('nenhum registro') ||
         rec.observacao?.toLowerCase().includes('sem registro') ||
         rec.id?.startsWith('auto-empty-') ||
-        (rec.coletados === 0 && !rec.vendidos && !rec.perdidos && (!rec.incubados || rec.incubados === 0) && !rec.observacao);
+        (rec.coletados === 0 && !rec.vendidos && !rec.perdidos && !rec.observacao);
 
       if (isNoRecord) {
         return {
@@ -199,7 +199,6 @@ export const EggProductionChart = memo(function EggProductionChart({
           rec,
           coletados: 0,
           vendidos: 0,
-          incubados: 0,
           perdidos: 0,
           saldo: 0,
           observacao: rec?.observacao || 'Sem registro',
@@ -212,7 +211,6 @@ export const EggProductionChart = memo(function EggProductionChart({
 
       const coletados = Number(rec.coletados) || 0;
       const vendidos = Number(rec.vendidos) || 0;
-      const incubados = Number(rec.incubados) || 0;
       const perdidos = Number(rec.perdidos) || 0;
       const saldo = coletados - perdidos;
 
@@ -236,7 +234,6 @@ export const EggProductionChart = memo(function EggProductionChart({
           rec,
           coletados,
           vendidos,
-          incubados,
           perdidos,
           saldo,
           observacao: rec.observacao,
@@ -257,7 +254,6 @@ export const EggProductionChart = memo(function EggProductionChart({
           rec,
           coletados,
           vendidos,
-          incubados,
           perdidos,
           saldo,
           observacao: rec.observacao,
@@ -276,7 +272,6 @@ export const EggProductionChart = memo(function EggProductionChart({
         rec,
         coletados,
         vendidos,
-        incubados,
         perdidos,
         saldo,
         observacao: rec.observacao,
@@ -722,8 +717,8 @@ export const EggProductionChart = memo(function EggProductionChart({
             {selectedDay.motivo}
           </p>
 
-          {/* Mini Cards com os Números do Dia (Responsivo: 2 colunas no celular para não cortar textos como 'Coletados', 4 em telas maiores) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+          {/* Mini Cards com os Números do Dia (Coletados, Vendidos, Perdidos) */}
+          <div className="grid grid-cols-3 gap-2 mt-3">
             <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
               <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Coletados</span>
               <span
@@ -748,13 +743,6 @@ export const EggProductionChart = memo(function EggProductionChart({
               <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Vendidos</span>
               <span className="text-lg sm:text-base font-black text-green-400 truncate block mt-0.5">
                 {selectedDay.vendidos}
-              </span>
-            </div>
-
-            <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
-              <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Em Choco</span>
-              <span className="text-lg sm:text-base font-black text-purple-400 truncate block mt-0.5">
-                {selectedDay.incubados}
               </span>
             </div>
 
@@ -1149,104 +1137,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Modal: Enviar Ovos do Estoque para Incubação / Choco
-// ─────────────────────────────────────────────────────────────────────────────
-function SendToIncubationModal({
-  lot,
-  availableStock,
-  onClose,
-  onConfirm
-}: {
-  lot: EggLot;
-  availableStock: number;
-  onClose: () => void;
-  onConfirm: (count: number) => void;
-}) {
-  const [quantity, setQuantity] = useState(String(availableStock));
-  const [error, setError] = useState('');
 
-  const handleConfirm = () => {
-    const qty = parseInt(quantity) || 0;
-    if (qty <= 0) {
-      setError('Informe uma quantidade válida de ovos.');
-      return;
-    }
-    if (qty > availableStock) {
-      setError(`Quantidade não pode exceder o estoque disponível (${availableStock} ovos).`);
-      return;
-    }
-    onConfirm(qty);
-    onClose();
-  };
-
-  const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2.5 text-sm text-white focus:border-theme-primary outline-none text-center font-black text-2xl text-purple-400";
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-purple-500/30 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-theme-border pb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <h3 className="font-black text-sm text-white">Enviar p/ Incubação / Choco</h3>
-              <p className="text-[10px] text-theme-text-muted">Baia {lot.baia}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1 text-theme-text-muted hover:text-white rounded-lg">
-            <X size={16} />
-          </button>
-        </div>
-
-        {error && (
-          <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-bold text-center">
-            {error}
-          </div>
-        )}
-
-        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-center space-y-1">
-          <p className="text-[10px] font-bold text-purple-300 uppercase">Estoque Disponível na Baia</p>
-          <p className="text-2xl font-black text-white">{availableStock} <span className="text-xs font-normal text-theme-text-muted">ovos</span></p>
-        </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-theme-text-muted">Quantidade a Enviar</label>
-            <button
-              onClick={() => setQuantity(String(availableStock))}
-              className="text-[10px] text-purple-400 hover:text-purple-300 font-bold underline"
-            >
-              Enviar Todos ({availableStock})
-            </button>
-          </div>
-          <input
-            type="number"
-            min="1"
-            max={availableStock}
-            inputMode="numeric"
-            value={quantity}
-            onChange={e => setQuantity(e.target.value)}
-            onKeyDown={onlyNumericKeyDown}
-            className={inputCls}
-          />
-        </div>
-
-        <div className="pt-2">
-          <button
-            onClick={handleConfirm}
-            className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
-          >
-            <Sparkles size={16} />
-            <span>Criar Lote de Incubação</span>
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal: Registrar Venda Direta do Estoque
@@ -1441,7 +1332,6 @@ function RegisterDaySheet({
       coletados: col,
       vendidos: vend,
       perdidos: perd,
-      incubados: editingRecord?.incubados || 0,
       precoVenda: preco,
       custoProd: custo,
       observacao: form.observacao.trim() || undefined
@@ -1576,7 +1466,7 @@ function EggLotRecordsModal({
     let comColeta = 0;
 
     records.forEach(r => {
-      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos)) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
       if (isNoRecord) {
         semRegistro++;
       } else {
@@ -1596,7 +1486,7 @@ function EggLotRecordsModal({
 
   const filtered = useMemo(() => {
     return sortedRecords.filter(r => {
-      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+      const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos)) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
       const isCritico = !isNoRecord && (
         (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
         (r.coletados === 0) ||
@@ -1709,7 +1599,7 @@ function EggLotRecordsModal({
             </div>
           ) : (
             filtered.map(r => {
-              const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos && (!r.incubados || r.incubados === 0))) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
+              const isNoRecord = (r.coletados === 0 && (!r.vendidos && !r.perdidos)) || r.observacao === 'Nenhum registro' || r.id?.startsWith('auto-empty-');
               const isCritico = !isNoRecord && (
                 (r.perdidos >= r.coletados && (r.coletados > 0 || r.perdidos > 0)) ||
                 (r.coletados === 0) ||
@@ -1756,10 +1646,9 @@ function EggLotRecordsModal({
                       </div>
 
                       {/* Sublinha de detalhes */}
-                      {!isNoRecord && (r.vendidos > 0 || r.perdidos > 0 || (r.incubados || 0) > 0 || r.observacao) && (
+                      {!isNoRecord && (r.vendidos > 0 || r.perdidos > 0 || r.observacao) && (
                         <div className="flex items-center gap-2 text-[10px] text-theme-text-muted mt-0.5 truncate">
                           {r.vendidos > 0 && <span className="text-green-400 font-medium">+{r.vendidos} vendidos</span>}
-                          {(r.incubados || 0) > 0 && <span className="text-purple-400 font-medium">+{r.incubados} choco</span>}
                           {r.perdidos > 0 && <span className="text-red-400 font-medium">-{r.perdidos} perdidos</span>}
                           {r.observacao && <span className="italic truncate">&bull; {r.observacao}</span>}
                         </div>
@@ -1823,7 +1712,6 @@ function LotCard({
   onRegisterWithDate,
   onEditRecord,
   onDeleteRecord,
-  onSendToIncubation,
   onSellFromStock,
   onToggleStatus,
   onDeleteLot,
@@ -1838,7 +1726,6 @@ function LotCard({
   onRegisterWithDate?: (lot: EggLot, initialDate: string) => void;
   onEditRecord: (lot: EggLot, record: EggDailyRecord) => void;
   onDeleteRecord: (lot: EggLot, recordId: string) => void;
-  onSendToIncubation: (lot: EggLot, stock: number) => void;
   onSellFromStock: (lot: EggLot, stock: number) => void;
   onToggleStatus?: (lot: EggLot) => void;
   onDeleteLot?: (lot: EggLot) => void;
@@ -1854,8 +1741,7 @@ function LotCard({
   const total = records.reduce((s, r) => s + r.coletados, 0);
   const totalVendidos = records.reduce((s, r) => s + r.vendidos, 0);
   const totalPerdidos = records.reduce((s, r) => s + r.perdidos, 0);
-  const totalIncubados = records.reduce((s, r) => s + (r.incubados || 0), 0);
-  const totalEstoque = Math.max(0, total - totalVendidos - totalPerdidos - totalIncubados);
+  const totalEstoque = Math.max(0, total - totalVendidos - totalPerdidos);
 
   const receita = records.reduce((s, r) => s + (r.vendidos / 12) * r.precoVenda, 0);
   const custo = records.reduce((s, r) => s + r.vendidos * r.custoProd, 0);
@@ -1995,11 +1881,10 @@ function LotCard({
         </div>
       )}
 
-      {/* Grid de 5 colunas: Coletados, Estoque, Choco, Vendidos, Perdidos */}
-      <div className="grid grid-cols-5 divide-x divide-theme-border border-t border-theme-border min-w-0 overflow-hidden">
+      {/* Grid de 4 colunas: Coletados, Estoque, Vendidos, Perdidos */}
+      <div className="grid grid-cols-4 divide-x divide-theme-border border-t border-theme-border min-w-0 overflow-hidden">
         {[{ label: 'Coletados', value: total, color: 'text-amber-400' },
           { label: 'Estoque', value: totalEstoque, color: 'text-blue-400' },
-          { label: 'Em Choco', value: totalIncubados, color: 'text-purple-400' },
           { label: 'Vendidos', value: totalVendidos, color: 'text-green-400' },
           { label: 'Perdidos', value: totalPerdidos, color: 'text-red-400' }
         ].map(s => (
@@ -2071,25 +1956,14 @@ function LotCard({
         )}
 
         {totalEstoque > 0 && isAtivo && (
-          <>
-            <button
-              onClick={() => onSendToIncubation(lot, totalEstoque)}
-              className="px-2.5 py-2 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 active:scale-95"
-              title="Enviar ovos do estoque para incubação/chocadeira"
-            >
-              <Sparkles size={13} />
-              <span>Choco ({totalEstoque})</span>
-            </button>
-
-            <button
-              onClick={() => onSellFromStock(lot, totalEstoque)}
-              className="px-2.5 py-2 rounded-xl border border-green-500/30 bg-green-500/10 text-green-300 hover:bg-green-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 active:scale-95"
-              title="Registrar venda de ovos do estoque"
-            >
-              <ShoppingCart size={13} />
-              <span>Vender</span>
-            </button>
-          </>
+          <button
+            onClick={() => onSellFromStock(lot, totalEstoque)}
+            className="px-2.5 py-2 rounded-xl border border-green-500/30 bg-green-500/10 text-green-300 hover:bg-green-500 hover:text-white transition-all text-xs font-bold flex items-center gap-1 active:scale-95 cursor-pointer"
+            title="Registrar venda de ovos do estoque"
+          >
+            <ShoppingCart size={13} />
+            <span>Vender ({totalEstoque})</span>
+          </button>
         )}
 
         {onOpenMovement && (
@@ -2216,7 +2090,7 @@ function LotCard({
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
   const { hasModuleAccess } = useAuth();
-  const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, addIncubationLot, showToast } = useAppContext();
+  const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, showToast } = useAppContext();
   const location = useLocation();
 
   if (!hasModuleAccess('eggs')) {
@@ -2236,8 +2110,7 @@ export function Eggs() {
   const [movementModal, setMovementModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
   const [notesModal, setNotesModal] = useState<{ isOpen: boolean; lote: EggLot | null }>({ isOpen: false, lote: null });
 
-  // Modais de Destino dos Ovos
-  const [incubationTarget, setIncubationTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
+  // Modal de Venda Direta do Estoque
   const [sellStockTarget, setSellStockTarget] = useState<{ lot: EggLot; stock: number } | null>(null);
 
   // Rola para o topo apenas no carregamento inicial da página (nunca durante edição de registros)
@@ -2275,21 +2148,20 @@ export function Eggs() {
     }
   }, [location.state]);
 
-  const { kpiColetados, kpiVendidos, kpiPerdidos, kpiIncubados, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
+  const { kpiColetados, kpiVendidos, kpiPerdidos, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
     const cutoff = period === 999 ? '2000-01-01' : new Date(Date.now() - period * 86400000).toISOString().split('T')[0];
-    let col = 0, vend = 0, perd = 0, inc = 0, rec = 0, cst = 0;
+    let col = 0, vend = 0, perd = 0, rec = 0, cst = 0;
     for (const lot of eggLots) {
       for (const r of (lot.registros ?? [])) {
         if (r.data < cutoff) continue;
         col += r.coletados;
         vend += r.vendidos;
         perd += r.perdidos;
-        inc += (r.incubados || 0);
         rec += (r.vendidos / 12) * r.precoVenda;
         cst += r.vendidos * r.custoProd;
       }
     }
-    return { kpiColetados: col, kpiVendidos: vend, kpiPerdidos: perd, kpiIncubados: inc, kpiReceita: rec, kpiCusto: cst, kpiLucro: rec - cst };
+    return { kpiColetados: col, kpiVendidos: vend, kpiPerdidos: perd, kpiReceita: rec, kpiCusto: cst, kpiLucro: rec - cst };
   }, [eggLots, period]);
 
   const aproveitamento = kpiColetados > 0 ? Math.round(((kpiColetados - kpiPerdidos) / kpiColetados) * 100) : 0;
@@ -2360,35 +2232,6 @@ export function Eggs() {
     setDeleteRecordConfirm(null);
   };
 
-  // Confirmação de envio para incubação / choco
-  const handleConfirmIncubation = (count: number) => {
-    if (!incubationTarget) return;
-    const { lot } = incubationTarget;
-
-    // 1. Cria o Lote de Incubação
-    const newIncubationLot: IncubationLot = {
-      id: uid(),
-      coupleId: '',
-      numeroLote: `Baia ${lot.baia}`,
-      quantidadeOvos: count,
-      dataInicio: todayISO(),
-      baia: lot.baia,
-      ovoscopia1Realizada: false,
-      ovoscopia2Realizada: false,
-      ovosDescartados1: 0,
-      ovosDescartados2: 0,
-      eclodido: false
-    };
-    addIncubationLot(newIncubationLot);
-
-    // 2. Abate do estoque acumulando em `incubados` nos registros do lote
-    const records = [...(lot.registros || [])].sort((a, b) => b.data.localeCompare(a.data));
-    if (records.length > 0) {
-      records[0].incubados = (records[0].incubados || 0) + count;
-      editEggLot(lot.id, { registros: records });
-    }
-  };
-
   // Confirmação de venda direta do estoque
   const handleConfirmSellStock = (count: number, pricePerDozen: number) => {
     if (!sellStockTarget) return;
@@ -2446,7 +2289,7 @@ export function Eggs() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <KpiCard icon={Egg} label="Coletados" value={String(kpiColetados)} sub={`${aproveitamento}% aproveitamento (${periodLabel})`} color="amber" />
-        <KpiCard icon={Sparkles} label="Em Choco" value={String(kpiIncubados)} sub={`${kpiColetados - kpiVendidos - kpiPerdidos - kpiIncubados} estoque`} color="purple" />
+        <KpiCard icon={ShoppingCart} label="Vendidos" value={String(kpiVendidos)} sub={`${Math.max(0, kpiColetados - kpiVendidos - kpiPerdidos)} em estoque`} color="green" />
         <KpiCard icon={DollarSign} label="Receita Total" value={fmtBRL(kpiReceita)} sub={`Custo ${fmtBRL(kpiCusto)}`} color="blue" />
         <KpiCard icon={kpiLucro >= 0 ? TrendingUp : TrendingDown} label="Lucro Líquido" value={fmtBRL(kpiLucro)} sub={`${kpiVendidos} vendidos`} color={kpiLucro >= 0 ? 'green' : 'red'} />
       </div>
@@ -2487,7 +2330,6 @@ export function Eggs() {
               onRegisterWithDate={(l, dt) => { setRegisterInitialDate(dt); setEditingRecord(null); setRegisterTarget(l); }}
               onEditRecord={(l, r) => { setRegisterInitialDate(undefined); setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
-              onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
               onToggleStatus={handleRequestToggleStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
@@ -2515,7 +2357,6 @@ export function Eggs() {
               onRegisterWithDate={(l, dt) => { setRegisterInitialDate(dt); setEditingRecord(null); setRegisterTarget(l); }}
               onEditRecord={(l, r) => { setRegisterInitialDate(undefined); setEditingRecord(r); setRegisterTarget(l); }}
               onDeleteRecord={handleDeleteRecord}
-              onSendToIncubation={(l, s) => setIncubationTarget({ lot: l, stock: s })}
               onSellFromStock={(l, s) => setSellStockTarget({ lot: l, stock: s })}
               onToggleStatus={handleRequestToggleStatus}
               onDeleteLot={l => setDeleteLotConfirm(l)}
@@ -2535,16 +2376,6 @@ export function Eggs() {
           initialDate={registerInitialDate}
           onClose={() => { setRegisterTarget(null); setEditingRecord(null); setRegisterInitialDate(undefined); }}
           onSave={handleSaveRecord}
-        />
-      )}
-
-      {/* Modal: Enviar para Incubação */}
-      {incubationTarget && (
-        <SendToIncubationModal
-          lot={incubationTarget.lot}
-          availableStock={incubationTarget.stock}
-          onClose={() => setIncubationTarget(null)}
-          onConfirm={handleConfirmIncubation}
         />
       )}
 
