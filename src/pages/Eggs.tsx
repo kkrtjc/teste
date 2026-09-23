@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, memo } from 'react';
+import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
@@ -132,17 +132,35 @@ export const EggProductionChart = memo(function EggProductionChart({
     return dates;
   }, [endDateStr, chartPeriod]);
 
-  // Data selecionada interativa (inicia com hoje ou última data do período)
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return periodDates[periodDates.length - 1] || todayISO();
-  });
+  // Data selecionada interativa (inicia como null; só exibe detalhes quando um dia for clicado)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mantém a seleção dentro do período atual
+  // Mantém a seleção dentro do período atual caso haja data selecionada
   useEffect(() => {
-    if (!periodDates.includes(selectedDate)) {
-      setSelectedDate(periodDates[periodDates.length - 1] || todayISO());
+    if (selectedDate && !periodDates.includes(selectedDate)) {
+      setSelectedDate(null);
     }
   }, [periodDates, selectedDate]);
+
+  // Fecha as opções do dia selecionado se o usuário clicar ou tocar fora do gráfico/painel
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setSelectedDate(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [selectedDate]);
 
   // Processa todos os dias aplicando as regras visuais exigidas
   const dayData = useMemo(() => {
@@ -291,10 +309,11 @@ export const EggProductionChart = memo(function EggProductionChart({
     };
   }, [dayData]);
 
-  // Dia ativo em foco (hover ou clique)
-  const activeDay = useMemo(() => {
-    return dayData.find(d => d.date === (hoveredDate || selectedDate)) || dayData[dayData.length - 1];
-  }, [dayData, hoveredDate, selectedDate]);
+  // Dia selecionado para exibição detalhada (apenas após o usuário clicar em um dia do gráfico)
+  const selectedDay = useMemo(() => {
+    if (!selectedDate) return null;
+    return dayData.find(d => d.date === selectedDate) || null;
+  }, [dayData, selectedDate]);
 
   // Cálculos de geometria do SVG
   const svgW = 520;
@@ -313,7 +332,7 @@ export const EggProductionChart = memo(function EggProductionChart({
   const yBench = lotAverage > 0 && lotAverage <= maxVal ? baselineY - (lotAverage / maxVal) * chartH : null;
 
   return (
-    <div className="space-y-3.5">
+    <div ref={containerRef} className="space-y-3.5">
       {/* Barra de Controles do Gráfico */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -356,6 +375,11 @@ export const EggProductionChart = memo(function EggProductionChart({
           className="w-full h-auto overflow-visible"
           style={{ maxHeight: 180 }}
           onMouseLeave={() => setHoveredDate(null)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedDate(null);
+            }
+          }}
         >
           <defs>
             {/* Gradiente Dourado (Normal) */}
@@ -584,9 +608,15 @@ export const EggProductionChart = memo(function EggProductionChart({
                   height={svgH}
                   fill="transparent"
                   className="cursor-pointer"
-                  onClick={() => setSelectedDate(d.date)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDate(d.date);
+                  }}
                   onMouseEnter={() => setHoveredDate(d.date)}
-                  onTouchStart={() => setSelectedDate(d.date)}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                    setSelectedDate(d.date);
+                  }}
                 />
               </g>
             );
@@ -594,145 +624,157 @@ export const EggProductionChart = memo(function EggProductionChart({
         </svg>
       </div>
 
-      {/* Card Interativo de Detalhes do Dia Selecionado */}
-      <div
-        className={`p-3.5 rounded-2xl border transition-all animate-fade-in ${
-          activeDay.status === 'sem_registro'
-            ? 'bg-blue-500/10 border-blue-500/30'
-            : activeDay.status === 'critico_baixo'
-            ? 'bg-rose-500/10 border-rose-500/30'
-            : activeDay.status === 'pico'
-            ? 'bg-emerald-500/10 border-emerald-500/30'
-            : 'bg-theme-surface border-theme-border/80'
-        }`}
-      >
-        {/* Cabeçalho do Dia */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-theme-border/40">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-black text-white flex items-center gap-1.5">
-              <CalendarDays
-                size={14}
-                className={
-                  activeDay.status === 'sem_registro'
+      {/* Card Interativo de Detalhes do Dia Selecionado (Só aparece após clicar em algum dia do gráfico) */}
+      {selectedDay && (
+        <div
+          className={`p-3.5 rounded-2xl border transition-all animate-fade-in ${
+            selectedDay.status === 'sem_registro'
+              ? 'bg-blue-500/10 border-blue-500/30'
+              : selectedDay.status === 'critico_baixo'
+              ? 'bg-rose-500/10 border-rose-500/30'
+              : selectedDay.status === 'pico'
+              ? 'bg-emerald-500/10 border-emerald-500/30'
+              : 'bg-theme-surface border-theme-border/80'
+          }`}
+        >
+          {/* Cabeçalho do Dia */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-theme-border/40">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-black text-white flex items-center gap-1.5">
+                <CalendarDays
+                  size={14}
+                  className={
+                    selectedDay.status === 'sem_registro'
+                      ? 'text-blue-400'
+                      : selectedDay.status === 'critico_baixo'
+                      ? 'text-rose-400'
+                      : 'text-amber-400'
+                  }
+                />
+                {selectedDay.fullFormatted} ({selectedDay.weekdayFull})
+              </span>
+              {selectedDay.isToday && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-extrabold border border-amber-400/30">
+                  Hoje
+                </span>
+              )}
+              <span
+                className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
+                  selectedDay.status === 'sem_registro'
+                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                    : selectedDay.status === 'critico_baixo'
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : selectedDay.status === 'pico'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                }`}
+              >
+                {selectedDay.status === 'sem_registro' && <Clock size={11} />}
+                {selectedDay.status === 'critico_baixo' && <AlertTriangle size={11} />}
+                {selectedDay.status === 'pico' && <Sparkles size={11} />}
+                {selectedDay.status === 'normal' && <Check size={11} />}
+                <span>{selectedDay.statusLabel}</span>
+              </span>
+            </div>
+
+            {/* Botão de Ação Direta no Dia Selecionado e Botão de Fechar */}
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {selectedDay.status === 'sem_registro' ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenRegister?.(lot, selectedDay.date, selectedDay.rec)}
+                  className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={13} />
+                  <span>Registrar Coleta deste Dia</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedDay.rec && onEditRecord) {
+                      onEditRecord(lot, selectedDay.rec);
+                    } else if (onOpenRegister) {
+                      onOpenRegister(lot, selectedDay.date, selectedDay.rec);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-theme-surface hover:bg-theme-surface-hover text-white border border-theme-border font-bold text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit2 size={12} className="text-theme-primary" />
+                  <span>Editar Lançamento</span>
+                </button>
+              )}
+
+              {/* Botão X para fechar as opções do dia */}
+              <button
+                type="button"
+                onClick={() => setSelectedDate(null)}
+                className="p-1.5 rounded-xl text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                title="Fechar detalhes do dia"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          {/* Motivo / Contexto Amigável */}
+          <p className="text-xs text-theme-text-muted mt-2">
+            {selectedDay.motivo}
+          </p>
+
+          {/* Mini Cards com os Números do Dia (Responsivo: 2 colunas no celular para não cortar textos como 'Coletados', 4 em telas maiores) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+            <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+              <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Coletados</span>
+              <span
+                className={`text-lg sm:text-base font-black truncate block mt-0.5 ${
+                  selectedDay.status === 'sem_registro'
                     ? 'text-blue-400'
-                    : activeDay.status === 'critico_baixo'
+                    : selectedDay.status === 'critico_baixo'
                     ? 'text-rose-400'
                     : 'text-amber-400'
-                }
-              />
-              {activeDay.fullFormatted} ({activeDay.weekdayFull})
-            </span>
-            {activeDay.isToday && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-extrabold border border-amber-400/30">
-                Hoje
-              </span>
-            )}
-            <span
-              className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
-                activeDay.status === 'sem_registro'
-                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                  : activeDay.status === 'critico_baixo'
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                  : activeDay.status === 'pico'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-              }`}
-            >
-              {activeDay.status === 'sem_registro' && <Clock size={11} />}
-              {activeDay.status === 'critico_baixo' && <AlertTriangle size={11} />}
-              {activeDay.status === 'pico' && <Sparkles size={11} />}
-              {activeDay.status === 'normal' && <Check size={11} />}
-              <span>{activeDay.statusLabel}</span>
-            </span>
-          </div>
-
-          {/* Botão de Ação Direta no Dia Selecionado */}
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            {activeDay.status === 'sem_registro' ? (
-              <button
-                type="button"
-                onClick={() => onOpenRegister?.(lot, activeDay.date, activeDay.rec)}
-                className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                }`}
               >
-                <Plus size={13} />
-                <span>Registrar Coleta deste Dia</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeDay.rec && onEditRecord) {
-                    onEditRecord(lot, activeDay.rec);
-                  } else if (onOpenRegister) {
-                    onOpenRegister(lot, activeDay.date, activeDay.rec);
-                  }
-                }}
-                className="px-3 py-1.5 rounded-xl bg-theme-surface hover:bg-theme-surface-hover text-white border border-theme-border font-bold text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Edit2 size={12} className="text-theme-primary" />
-                <span>Editar Lançamento</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Motivo / Contexto Amigável */}
-        <p className="text-xs text-theme-text-muted mt-2">
-          {activeDay.motivo}
-        </p>
-
-        {/* Mini Cards com os Números do Dia (Responsivo: 2 colunas no celular para não cortar textos como 'Coletados', 4 em telas maiores) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
-          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
-            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Coletados</span>
-            <span
-              className={`text-lg sm:text-base font-black truncate block mt-0.5 ${
-                activeDay.status === 'sem_registro'
-                  ? 'text-blue-400'
-                  : activeDay.status === 'critico_baixo'
-                  ? 'text-rose-400'
-                  : 'text-amber-400'
-              }`}
-            >
-              {activeDay.coletados}
-            </span>
-            {totalFemeas > 0 && activeDay.coletados > 0 && (
-              <span className="text-[9px] text-emerald-400 font-bold block truncate mt-0.5">
-                {Math.round((activeDay.coletados / totalFemeas) * 100)}% postura
+                {selectedDay.coletados}
               </span>
-            )}
+              {totalFemeas > 0 && selectedDay.coletados > 0 && (
+                <span className="text-[9px] text-emerald-400 font-bold block truncate mt-0.5">
+                  {Math.round((selectedDay.coletados / totalFemeas) * 100)}% postura
+                </span>
+              )}
+            </div>
+
+            <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+              <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Vendidos</span>
+              <span className="text-lg sm:text-base font-black text-green-400 truncate block mt-0.5">
+                {selectedDay.vendidos}
+              </span>
+            </div>
+
+            <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+              <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Em Choco</span>
+              <span className="text-lg sm:text-base font-black text-purple-400 truncate block mt-0.5">
+                {selectedDay.incubados}
+              </span>
+            </div>
+
+            <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
+              <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Perdidos</span>
+              <span className={`text-lg sm:text-base font-black truncate block mt-0.5 ${selectedDay.perdidos > 0 ? 'text-rose-400' : 'text-theme-text-muted'}`}>
+                {selectedDay.perdidos}
+              </span>
+            </div>
           </div>
 
-          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
-            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Vendidos</span>
-            <span className="text-lg sm:text-base font-black text-green-400 truncate block mt-0.5">
-              {activeDay.vendidos}
-            </span>
-          </div>
-
-          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
-            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Em Choco</span>
-            <span className="text-lg sm:text-base font-black text-purple-400 truncate block mt-0.5">
-              {activeDay.incubados}
-            </span>
-          </div>
-
-          <div className="p-2.5 sm:p-2 rounded-xl bg-theme-base/60 border border-theme-border/40 text-center min-w-0 overflow-hidden">
-            <span className="text-[10px] sm:text-[9px] uppercase font-extrabold text-theme-text-muted block truncate">Perdidos</span>
-            <span className={`text-lg sm:text-base font-black truncate block mt-0.5 ${activeDay.perdidos > 0 ? 'text-rose-400' : 'text-theme-text-muted'}`}>
-              {activeDay.perdidos}
-            </span>
-          </div>
+          {/* Observação Adicional do Dia */}
+          {selectedDay.observacao && selectedDay.observacao !== 'Nenhum registro' && (
+            <div className="mt-2.5 px-3 py-2 rounded-xl bg-theme-base/40 border border-theme-border/30 text-xs text-theme-text-muted flex items-start gap-1.5">
+              <FileText size={12} className="text-amber-400 shrink-0 mt-0.5" />
+              <span className="leading-snug"><strong>Obs:</strong> {selectedDay.observacao}</span>
+            </div>
+          )}
         </div>
-
-        {/* Observação Adicional do Dia */}
-        {activeDay.observacao && activeDay.observacao !== 'Nenhum registro' && (
-          <div className="mt-2.5 px-3 py-2 rounded-xl bg-theme-base/40 border border-theme-border/30 text-xs text-theme-text-muted flex items-start gap-1.5">
-            <FileText size={12} className="text-amber-400 shrink-0 mt-0.5" />
-            <span className="leading-snug"><strong>Obs:</strong> {activeDay.observacao}</span>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Legenda Explicativa & Resumo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
