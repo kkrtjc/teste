@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText, Layers
+  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -1051,48 +1051,19 @@ export function Lots() {
   return (
     <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 via-theme-surface to-amber-500/5 border border-amber-500/30 flex items-center justify-center text-theme-primary shadow-sm shrink-0">
-            <Layers size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Gestão de Lotes
-            </h1>
-            <p className="text-xs text-theme-text-muted">Acompanhamento zootécnico unificado de postura, engorda e pintinhos</p>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-black text-white tracking-tight">
+          Gestão de Lotes
+        </h1>
       </div>
 
-      {/* ── Barra de Abas Presas à Página Principal (3 Colunas Fixas Sem Rolagem) ── */}
-      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 pt-1.5 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/80">
-        <div className="grid grid-cols-3 w-full gap-1 sm:gap-2 -mb-[1px]">
+      {/* ── Barra de Abas (3 Colunas Fixas Sem Rolagem - Sem Riscos em Volta / Relevância Sutil) ── */}
+      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-theme-base/95 backdrop-blur-md">
+        <div className="grid grid-cols-3 w-full gap-1.5 sm:gap-2">
           {[
-            {
-              id: 'postura',
-              label: 'Postura',
-              count: eggLots.length,
-              activeBorder: 'border-t-amber-400',
-              activeBadge: 'bg-amber-400 text-black font-black',
-              inactiveBadge: 'bg-white/[0.06] text-theme-text-muted border border-white/5',
-            },
-            {
-              id: 'engorda',
-              label: 'Engorda',
-              count: filterEngorda.length,
-              activeBorder: 'border-t-orange-400',
-              activeBadge: 'bg-orange-400 text-black font-black',
-              inactiveBadge: 'bg-white/[0.06] text-theme-text-muted border border-white/5',
-            },
-            {
-              id: 'pintinhos',
-              label: 'Pintinhos',
-              count: filterPintinhos.length,
-              activeBorder: 'border-t-yellow-400',
-              activeBadge: 'bg-yellow-400 text-black font-black',
-              inactiveBadge: 'bg-white/[0.06] text-theme-text-muted border border-white/5',
-            },
+            { id: 'postura', label: 'Postura', count: eggLots.length },
+            { id: 'engorda', label: 'Engorda', count: filterEngorda.length },
+            { id: 'pintinhos', label: 'Pintinhos', count: filterPintinhos.length },
           ].map(t => {
             const isActive = activeTab === t.id;
             return (
@@ -1100,27 +1071,20 @@ export function Lots() {
                 key={t.id}
                 type="button"
                 onClick={() => setActiveTab(t.id as any)}
-                className={`group relative w-full py-2.5 sm:py-3 px-1 sm:px-3 transition-all text-center flex items-center justify-center gap-1 sm:gap-2 cursor-pointer rounded-t-xl border-t-2 border-x ${
+                className={`w-full py-2.5 sm:py-3 px-1 sm:px-3 transition-all text-center flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer rounded-xl ${
                   isActive
-                    ? `bg-theme-surface border-x-theme-border/80 ${t.activeBorder} shadow-sm z-10 text-white font-black`
-                    : 'bg-transparent border-transparent text-theme-text-muted hover:text-white hover:bg-white/[0.03] font-bold'
+                    ? 'bg-white/[0.08] text-white font-black shadow-sm'
+                    : 'text-theme-text-muted hover:text-white hover:bg-white/[0.03] font-bold'
                 }`}
-                style={{
-                  borderBottom: isActive ? '1px solid var(--color-theme-surface, #13141a)' : '1px solid transparent',
-                  backgroundColor: isActive ? 'var(--color-theme-surface, #13141a)' : 'transparent',
-                }}
               >
-                <span className="text-[11px] sm:text-xs md:text-sm font-black tracking-tight whitespace-nowrap">
+                <span className="text-[11px] sm:text-xs md:text-sm tracking-tight whitespace-nowrap">
                   {t.label}
                 </span>
                 <span className={`px-1.5 py-0.2 sm:py-0.5 rounded-full text-[9px] sm:text-[10px] font-black shrink-0 transition-all ${
-                  isActive ? t.activeBadge : t.inactiveBadge
+                  isActive ? 'bg-theme-primary text-black' : 'bg-white/[0.05] text-theme-text-muted'
                 }`}>
                   {t.count}
                 </span>
-                {isActive && (
-                  <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-                )}
               </button>
             );
           })}
