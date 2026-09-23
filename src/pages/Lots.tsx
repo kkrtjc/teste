@@ -1065,46 +1065,40 @@ export function Lots() {
         </div>
       </div>
 
-      {/* ── Barra de Abas Presas à Página Principal (Docked Tabs) ── */}
-      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 pt-2 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/80">
-        <div className="flex items-stretch overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 -mb-[1px]">
+      {/* ── Barra de Abas Presas à Página Principal (3 Colunas Fixas Sem Rolagem) ── */}
+      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 pt-1.5 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/80">
+        <div className="grid grid-cols-3 w-full gap-1 sm:gap-2 -mb-[1px]">
           {[
             {
               id: 'postura',
-              label: 'Lotes de Postura',
-              subtitle: 'Galinhas poedeiras e ovos',
+              label: 'Postura',
               icon: Egg,
               count: eggLots.length,
-              accentColor: 'text-amber-400',
+              activeBorder: 'border-t-amber-400',
               iconBgActive: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
               iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
-              activeBorder: 'border-t-amber-400',
               activeBadge: 'bg-amber-400 text-black font-black',
               inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
             },
             {
               id: 'engorda',
-              label: 'Lotes de Engorda',
-              subtitle: 'Crescimento, peso e abate',
+              label: 'Engorda',
               icon: Beef,
               count: filterEngorda.length,
-              accentColor: 'text-orange-400',
+              activeBorder: 'border-t-orange-400',
               iconBgActive: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
               iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
-              activeBorder: 'border-t-orange-400',
               activeBadge: 'bg-orange-400 text-black font-black',
               inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
             },
             {
               id: 'pintinhos',
-              label: 'Lotes de Pintinhos',
-              subtitle: 'Maternidade e recria inicial',
+              label: 'Pintinhos',
               icon: Baby,
               count: filterPintinhos.length,
-              accentColor: 'text-yellow-400',
+              activeBorder: 'border-t-yellow-400',
               iconBgActive: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
               iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
-              activeBorder: 'border-t-yellow-400',
               activeBadge: 'bg-yellow-400 text-black font-black',
               inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
             },
@@ -1116,41 +1110,29 @@ export function Lots() {
                 key={t.id}
                 type="button"
                 onClick={() => setActiveTab(t.id as any)}
-                className={`group relative flex-1 min-w-[180px] sm:min-w-0 px-3.5 sm:px-5 py-3 sm:py-3.5 transition-all text-left flex items-center justify-between gap-2.5 sm:gap-3 cursor-pointer rounded-t-xl sm:rounded-t-2xl border-t-2 border-x ${
+                className={`group relative w-full py-2.5 sm:py-3 px-1 sm:px-3 transition-all text-center flex items-center justify-center gap-1.5 sm:gap-2.5 cursor-pointer rounded-t-xl border-t-2 border-x ${
                   isActive
-                    ? `bg-theme-surface border-x-theme-border/80 ${t.activeBorder} shadow-sm z-10`
-                    : 'bg-transparent border-transparent text-theme-text-muted hover:text-white hover:bg-white/[0.03]'
+                    ? `bg-theme-surface border-x-theme-border/80 ${t.activeBorder} shadow-sm z-10 text-white font-black`
+                    : 'bg-transparent border-transparent text-theme-text-muted hover:text-white hover:bg-white/[0.03] font-bold'
                 }`}
                 style={{
                   borderBottom: isActive ? '1px solid var(--color-theme-surface, #13141a)' : '1px solid transparent',
                   backgroundColor: isActive ? 'var(--color-theme-surface, #13141a)' : 'transparent',
                 }}
               >
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
-                    isActive ? `${t.iconBgActive} shadow-sm` : `${t.iconBgInactive} border-white/5 group-hover:text-white group-hover:bg-white/[0.07]`
-                  }`}>
-                    <Icon size={17} />
-                  </div>
-                  <div className="min-w-0">
-                    <span className={`block text-xs sm:text-sm font-black tracking-tight truncate ${
-                      isActive ? 'text-white' : 'text-theme-text-muted group-hover:text-white'
-                    }`}>
-                      {t.label}
-                    </span>
-                    <span className="hidden md:block text-[10px] text-theme-text-muted truncate">
-                      {t.subtitle}
-                    </span>
-                  </div>
+                <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                  isActive ? `${t.iconBgActive} shadow-sm` : `${t.iconBgInactive} border-white/5 group-hover:text-white`
+                }`}>
+                  <Icon size={14} />
                 </div>
-
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 transition-all ${
+                <span className="text-xs sm:text-sm tracking-tight truncate">
+                  {t.label}
+                </span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0 transition-all ${
                   isActive ? t.activeBadge : t.inactiveBadge
                 }`}>
                   {t.count}
                 </span>
-
-                {/* Linha sutil de brilho superior ativa */}
                 {isActive && (
                   <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
                 )}

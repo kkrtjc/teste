@@ -1859,6 +1859,12 @@ function LotCard({
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAtivo ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
                 {lot.status}
               </span>
+              {(!prodStats.hasRecords || records.length === 0) && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Sem registros
+                </span>
+              )}
             </div>
 
             {/* Ações Rápidas de Gestão do Lote */}
@@ -1906,6 +1912,31 @@ function LotCard({
           ) : null}
         </div>
       </div>
+
+      {/* ── CARD AVISO DE SEM REGISTROS (IGUAL DA ABA LOTES) ── */}
+      {(!prodStats.hasRecords || records.length === 0) && (
+        <div className="mx-4 mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-3 text-xs animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Egg size={16} />
+            </div>
+            <div>
+              <p className="font-black text-amber-300 text-xs">Sem registros</p>
+              <p className="text-[11px] text-theme-text-muted">Nenhuma coleta registrada para este lote ainda. Lance o primeiro dia de postura.</p>
+            </div>
+          </div>
+          {isAtivo && (
+            <button
+              type="button"
+              onClick={() => onRegister(lot)}
+              className="px-3 py-1.5 bg-theme-primary hover:bg-amber-400 text-black text-xs font-black rounded-lg transition-all shrink-0 cursor-pointer shadow-sm active:scale-95 flex items-center gap-1"
+            >
+              <Plus size={13} />
+              <span>Lançar Dia</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── CARD ALERTA DE QUEDA DE POSTURA ── */}
       {anomalyInfo && (
