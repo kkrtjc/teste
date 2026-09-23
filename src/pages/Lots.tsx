@@ -1210,7 +1210,7 @@ export function Lots() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
                       <p className="text-[10px] font-bold text-theme-text-muted uppercase mb-1 flex items-center gap-1">
-                        <Timer size={11} /> Idade
+                        <Timer size={11} /> Idade do Lote
                       </p>
                       <p className="text-base font-black text-white">{dias} dias</p>
                     </div>
