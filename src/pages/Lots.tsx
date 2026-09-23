@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText
+  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText, Layers
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -1051,77 +1051,162 @@ export function Lots() {
   return (
     <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            Gestão de Lotes
-          </h1>
-          <p className="text-xs text-theme-text-muted">Acompanhe postura, engorda e pintinhos do seu criatório</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 via-theme-surface to-amber-500/5 border border-amber-500/30 flex items-center justify-center text-theme-primary shadow-sm shrink-0">
+            <Layers size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Gestão de Lotes
+            </h1>
+            <p className="text-xs text-theme-text-muted">Acompanhamento zootécnico unificado de postura, engorda e pintinhos</p>
+          </div>
         </div>
       </div>
 
-      {/* ── Barra Fixa de Abas no Topo (Sticky Header - 3 Lotes) ── */}
-      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2.5 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/40 shadow-sm">
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-theme-surface rounded-2xl border border-theme-border/60">
+      {/* ── Barra de Abas Presas à Página Principal (Docked Tabs) ── */}
+      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 pt-2 bg-theme-base/95 backdrop-blur-md border-b border-theme-border/80">
+        <div className="flex items-stretch overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 -mb-[1px]">
           {[
-            { id: 'postura', label: 'Postura', icon: Egg, count: eggLots.length },
-            { id: 'engorda', label: 'Engorda', icon: Beef, count: filterEngorda.length },
-            { id: 'pintinhos', label: 'Pintinhos', icon: Baby, count: filterPintinhos.length },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
-              className={`py-2.5 px-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
-                activeTab === t.id
-                  ? 'bg-theme-primary text-black font-black shadow-md'
-                  : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <t.icon size={15} className="shrink-0" />
-              <span className="truncate">{t.label}</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] shrink-0 font-black ${
-                activeTab === t.id ? 'bg-black/20 text-black' : 'bg-theme-base text-theme-text-muted'
-              }`}>
-                {t.count}
-              </span>
-            </button>
-          ))}
+            {
+              id: 'postura',
+              label: 'Lotes de Postura',
+              subtitle: 'Galinhas poedeiras e ovos',
+              icon: Egg,
+              count: eggLots.length,
+              accentColor: 'text-amber-400',
+              iconBgActive: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+              iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
+              activeBorder: 'border-t-amber-400',
+              activeBadge: 'bg-amber-400 text-black font-black',
+              inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
+            },
+            {
+              id: 'engorda',
+              label: 'Lotes de Engorda',
+              subtitle: 'Crescimento, peso e abate',
+              icon: Beef,
+              count: filterEngorda.length,
+              accentColor: 'text-orange-400',
+              iconBgActive: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+              iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
+              activeBorder: 'border-t-orange-400',
+              activeBadge: 'bg-orange-400 text-black font-black',
+              inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
+            },
+            {
+              id: 'pintinhos',
+              label: 'Lotes de Pintinhos',
+              subtitle: 'Maternidade e recria inicial',
+              icon: Baby,
+              count: filterPintinhos.length,
+              accentColor: 'text-yellow-400',
+              iconBgActive: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+              iconBgInactive: 'bg-white/[0.04] text-theme-text-muted',
+              activeBorder: 'border-t-yellow-400',
+              activeBadge: 'bg-yellow-400 text-black font-black',
+              inactiveBadge: 'bg-theme-surface border border-theme-border/60 text-theme-text-muted',
+            },
+          ].map(t => {
+            const isActive = activeTab === t.id;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveTab(t.id as any)}
+                className={`group relative flex-1 min-w-[180px] sm:min-w-0 px-3.5 sm:px-5 py-3 sm:py-3.5 transition-all text-left flex items-center justify-between gap-2.5 sm:gap-3 cursor-pointer rounded-t-xl sm:rounded-t-2xl border-t-2 border-x ${
+                  isActive
+                    ? `bg-theme-surface border-x-theme-border/80 ${t.activeBorder} shadow-sm z-10`
+                    : 'bg-transparent border-transparent text-theme-text-muted hover:text-white hover:bg-white/[0.03]'
+                }`}
+                style={{
+                  borderBottom: isActive ? '1px solid var(--color-theme-surface, #13141a)' : '1px solid transparent',
+                  backgroundColor: isActive ? 'var(--color-theme-surface, #13141a)' : 'transparent',
+                }}
+              >
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                    isActive ? `${t.iconBgActive} shadow-sm` : `${t.iconBgInactive} border-white/5 group-hover:text-white group-hover:bg-white/[0.07]`
+                  }`}>
+                    <Icon size={17} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className={`block text-xs sm:text-sm font-black tracking-tight truncate ${
+                      isActive ? 'text-white' : 'text-theme-text-muted group-hover:text-white'
+                    }`}>
+                      {t.label}
+                    </span>
+                    <span className="hidden md:block text-[10px] text-theme-text-muted truncate">
+                      {t.subtitle}
+                    </span>
+                  </div>
+                </div>
+
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 transition-all ${
+                  isActive ? t.activeBadge : t.inactiveBadge
+                }`}>
+                  {t.count}
+                </span>
+
+                {/* Linha sutil de brilho superior ativa */}
+                {isActive && (
+                  <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── Barra de Controles: Filtro de Status Limpo & Botão Novo Lote ── */}
+      {/* ── Barra de Controles: Filtro de Status & Botão de Criação ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-1 bg-theme-surface p-1 rounded-xl border border-theme-border/60 self-start sm:self-auto">
-          {(['ativos', 'encerrados', 'todos'] as const).map(st => (
+        <div className="flex items-center gap-1 bg-theme-surface/80 p-1 rounded-xl border border-theme-border/70 self-start sm:self-auto shadow-sm">
+          {[
+            { id: 'ativos', label: 'Lotes Ativos', dot: 'bg-emerald-400' },
+            { id: 'encerrados', label: 'Encerrados', dot: 'bg-zinc-500' },
+            { id: 'todos', label: 'Todos os Lotes', dot: 'bg-theme-primary' },
+          ].map(st => (
             <button
-              key={st}
+              key={st.id}
               type="button"
-              onClick={() => setLotStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                lotStatusFilter === st
-                  ? 'bg-theme-primary text-black font-black shadow-sm'
-                  : 'text-theme-text-muted hover:text-white hover:bg-white/5'
+              onClick={() => setLotStatusFilter(st.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                lotStatusFilter === st.id
+                  ? 'bg-theme-base text-white border border-theme-border font-black shadow-sm'
+                  : 'text-theme-text-muted hover:text-white hover:bg-white/5 border border-transparent'
               }`}
             >
-              {st === 'ativos' ? 'Ativos' : st === 'encerrados' ? 'Encerrados' : 'Todos'}
+              <span className={`w-1.5 h-1.5 rounded-full ${st.dot} shrink-0`} />
+              <span>{st.label}</span>
             </button>
           ))}
         </div>
 
         <div>
           {activeTab === 'postura' && (
-            <button onClick={() => setShowPostura(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
-              <Plus size={15} /> Novo Lote de Postura
+            <button 
+              onClick={() => setShowPostura(true)} 
+              className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 transition-all"
+            >
+              <Plus size={16} /> Novo Lote de Postura
             </button>
           )}
           {activeTab === 'engorda' && (
-            <button onClick={() => setShowEngorda(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
-              <Plus size={15} /> Novo Lote de Engorda
+            <button 
+              onClick={() => setShowEngorda(true)} 
+              className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 transition-all"
+            >
+              <Plus size={16} /> Novo Lote de Engorda
             </button>
           )}
           {activeTab === 'pintinhos' && (
-            <button onClick={() => setShowPintinhos(true)} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black shadow-md">
-              <Plus size={15} /> Novo Lote de Pintinhos
+            <button 
+              onClick={() => setShowPintinhos(true)} 
+              className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black shadow-lg shadow-amber-500/10 cursor-pointer active:scale-95 transition-all"
+            >
+              <Plus size={16} /> Novo Lote de Pintinhos
             </button>
           )}
         </div>
@@ -1204,7 +1289,7 @@ export function Lots() {
                         <Users size={11} className="text-theme-primary" /> Fêmeas
                       </p>
                       <p className="text-base font-black text-white">{totalF}</p>
-                      <p className="text-[9px] text-theme-text-muted truncate">{cadastradasF} cad. + {avulsasF} av.</p>
+                      <p className="text-[10px] text-theme-text-muted truncate">{cadastradasF} cadastradas + {avulsasF} avulsas</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1464,11 +1549,11 @@ export function Lots() {
                       </p>
                       <p className="text-base font-black text-white">{(lote.idadeInicialDias || 0) + dias} dias</p>
                       {lote.idadeInicialDias ? (
-                        <p className="text-[9px] text-theme-text-muted truncate">
-                          {lote.idadeInicialDias}d inic. + {dias}d no lote
+                        <p className="text-[10px] text-theme-text-muted truncate">
+                          {lote.idadeInicialDias} dias iniciais + {dias} dias no lote
                         </p>
                       ) : (
-                        <p className="text-[9px] text-theme-text-muted truncate">
+                        <p className="text-[10px] text-theme-text-muted truncate">
                           {dias} dias no lote
                         </p>
                       )}
@@ -1481,7 +1566,7 @@ export function Lots() {
                       <p className="text-base font-black text-white">
                         {pesoAtualEstimadoG !== null && pesoAtualEstimadoG > 0 ? formatWeightG(pesoAtualEstimadoG) : '—'}
                       </p>
-                      <p className="text-[9px] text-theme-text-muted truncate">
+                      <p className="text-[10px] text-theme-text-muted truncate">
                         {pesoAtualEstimadoG !== null && pesoAtualEstimadoG > 0 ? pesoOrigemLabel : 'Informe peso inicial/pesar'}
                       </p>
                     </div>
@@ -1493,7 +1578,7 @@ export function Lots() {
                       <p className="text-base font-black text-white truncate">
                         {pesoMetaG > 0 ? formatWeightG(pesoMetaG) : '—'}
                       </p>
-                      <p className="text-[9px] text-theme-text-muted">{pesoMetaG > 0 ? 'Alvo final' : 'Não definida'}</p>
+                      <p className="text-[10px] text-theme-text-muted">{pesoMetaG > 0 ? 'Alvo final' : 'Não definida'}</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
@@ -1501,7 +1586,7 @@ export function Lots() {
                         <Users size={11} /> Aves
                       </p>
                       <p className="text-base font-black text-white">{totalA}</p>
-                      <p className="text-[9px] text-theme-text-muted">{cadastradasA} cad. + {avulsasA} av.</p>
+                      <p className="text-[10px] text-theme-text-muted">{cadastradasA} cadastradas + {avulsasA} avulsas</p>
                     </div>
                   </div>
 
@@ -1784,7 +1869,7 @@ export function Lots() {
                         <Timer size={11} /> Idade
                       </p>
                       <p className="text-base font-black text-white">{dias} dias</p>
-                      <p className="text-[9px] text-theme-text-muted">Nasc: {fmtDate(lote.dataNascimento || lote.dataInicio)}</p>
+                      <p className="text-[10px] text-theme-text-muted">Nascimento: {fmtDate(lote.dataNascimento || lote.dataInicio)}</p>
                     </div>
 
                     <div className="bg-theme-surface p-3 rounded-xl border border-theme-border/50">
