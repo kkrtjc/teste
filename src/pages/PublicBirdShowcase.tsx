@@ -29,9 +29,17 @@ export function PublicBirdShowcase() {
   const isViewingVitrineBird = Boolean(selectedVitrineBird);
   const activeBird = selectedVitrineBird || data?.bird;
 
-  const vitrineList = (data?.vitrineBirds && data.vitrineBirds.length > 0)
+  const isBirdAliveAndAvailable = (b: any) => {
+    if (!b) return false;
+    const s = (b.status || '').toLowerCase().trim();
+    return s !== 'vendido' && s !== 'faleceu' && s !== 'abatido' && s !== 'morto';
+  };
+
+  const rawVitrineList = (data?.vitrineBirds && data.vitrineBirds.length > 0)
     ? data.vitrineBirds
     : (data?.bird ? [data.bird] : []);
+
+  const vitrineList = rawVitrineList.filter(isBirdAliveAndAvailable);
 
   const filteredCatalogBirds = vitrineList.filter((b: any) => {
     if (!catalogSearch.trim()) return true;

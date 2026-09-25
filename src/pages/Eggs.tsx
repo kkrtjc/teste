@@ -2242,7 +2242,20 @@ export function Eggs() {
       records[0].vendidos = (records[0].vendidos || 0) + count;
       records[0].precoVenda = pricePerDozen;
       editEggLot(lot.id, { registros: records });
+    } else {
+      const newRecord: EggDailyRecord = {
+        id: uid(),
+        data: todayISO(),
+        coletados: 0,
+        vendidos: count,
+        perdidos: 0,
+        precoVenda: pricePerDozen,
+        custoProd: lot.custoProdPadrao !== undefined ? lot.custoProdPadrao : 0.30,
+        observacao: 'Venda de estoque'
+      };
+      editEggLot(lot.id, { registros: [newRecord] });
     }
+    showToast(`${count} ovos vendidos registrados com sucesso!`, 'success');
   };
 
   const periodLabel = period === 7 ? '7 dias' : period === 30 ? '30 dias' : 'Tudo';

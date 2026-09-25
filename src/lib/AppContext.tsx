@@ -2403,7 +2403,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setBirds(prev => {
       const currentBird = prev.find(b => b.id === id);
-      const isVit = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : Boolean(currentBird?.inVitrine);
+      const effectiveStatus = updatedBird.status !== undefined ? updatedBird.status : currentBird?.status;
+      const isUnavailableForVitrine = effectiveStatus 
+        ? ['vendido', 'faleceu', 'abatido', 'morto'].includes(effectiveStatus.toLowerCase()) 
+        : false;
+
+      // Se a ave estiver vendida, morta ou baixada, ela NUNCA deve permanecer na vitrine pública
+      const isVit = isUnavailableForVitrine 
+        ? false 
+        : (updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : Boolean(currentBird?.inVitrine));
       const vitPrice = updatedBird.vitrinePrice !== undefined ? updatedBird.vitrinePrice : (currentBird?.vitrinePrice || '');
       const vitStat = updatedBird.vitrineStatus !== undefined ? updatedBird.vitrineStatus : (currentBird?.vitrineStatus || 'Disponível');
 
@@ -2414,18 +2422,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const next = prev.map(b => {
         if (b.id === id) {
           const nextFields = { ...updatedBird };
-          if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu') && !b.dataBaixa) {
+          if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu' || updatedBird.status === 'Abatido') && !b.dataBaixa) {
             nextFields.dataBaixa = updatedBird.dataVenda || new Date().toISOString().split('T')[0];
           }
-          if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu') {
+          if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu' && updatedBird.status !== 'Abatido') {
             nextFields.dataBaixa = undefined;
             nextFields.dataVenda = undefined;
             nextFields.compradorNome = undefined;
             nextFields.compradorContato = undefined;
           }
           nextFields.inVitrine = isVit;
-          nextFields.vitrinePrice = vitPrice;
-          nextFields.vitrineStatus = vitStat;
+          nextFields.vitrinePrice = isUnavailableForVitrine ? '' : vitPrice;
+          nextFields.vitrineStatus = isUnavailableForVitrine ? 'Vendido' : vitStat;
           nextFields.observacoes = cleanObs;
           return { ...b, ...nextFields };
         }
@@ -2438,10 +2446,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Persistência robusta de vitrineConfig (isolada e imune a sobrescritas de sync)
-      if (updatedBird.inVitrine !== undefined || updatedBird.vitrinePrice !== undefined || updatedBird.vitrineStatus !== undefined) {
+      if (isUnavailableForVitrine || updatedBird.inVitrine !== undefined || updatedBird.vitrinePrice !== undefined || updatedBird.vitrineStatus !== undefined) {
         setVitrineConfig(vPrev => {
           const prevEntry = vPrev[id] || {};
-          const isVitVal = updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : prevEntry.inVitrine;
+          const isVitVal = isUnavailableForVitrine ? false : (updatedBird.inVitrine !== undefined ? updatedBird.inVitrine : prevEntry.inVitrine);
           const nextConfig = { ...vPrev };
           if (isVitVal) {
             nextConfig[id] = {
@@ -3396,10 +3404,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { ...res, count: validBirds.length, birds: validBirds };
   }, [user, isCurrentUserAdmin, getStorageKey, showToast, getDeletedBirdIds]);
 
+  // Helper defensivo: apenas aves vivas e não baixadas/vendidas são elegíveis para a vitrine pública
+  const isBirdAvailableForVitrine = useCallback((b: Partial<Bird> | null | undefined): boolean => {
+    if (!b) return false;
+    const s = (b.status || '').toLowerCase().trim();
+    return s !== 'vendido' && s !== 'faleceu' && s !== 'abatido' && s !== 'morto';
+  }, []);
+
   const isVitrineUnlocked = useMemo(() => birds.length >= 10, [birds.length]);
   const vitrineBirds = useMemo(() => {
-    return birds.filter(b => b && (b.inVitrine !== undefined ? b.inVitrine : Boolean(vitrineConfig[b.id]?.inVitrine)));
-  }, [birds, vitrineConfig]);
+    return birds.filter(b => 
+      b && 
+      isBirdAvailableForVitrine(b) && 
+      (b.inVitrine !== undefined ? b.inVitrine : Boolean(vitrineConfig[b.id]?.inVitrine))
+    );
+  }, [birds, vitrineConfig, isBirdAvailableForVitrine]);
 
   const toggleBirdVitrine = useCallback((
     birdId: string, 
@@ -3407,13 +3426,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     price?: string, 
     status?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque'
   ) => {
+    const target = birds.find(b => b.id === birdId);
+    if (inVitrine && target && !isBirdAvailableForVitrine(target)) {
+      showToast('Esta ave está vendida ou baixada e não pode ser colocada na vitrine.', 'warning');
+      return;
+    }
     editBird(birdId, {
       inVitrine,
       ...(price !== undefined ? { vitrinePrice: price } : {}),
       ...(status !== undefined ? { vitrineStatus: status } : {})
     });
     showToast(inVitrine ? 'Ave adicionada à vitrine pública!' : 'Ave removida da vitrine.', 'info');
-  }, [editBird, showToast]);
+  }, [birds, editBird, showToast, isBirdAvailableForVitrine]);
 
   const contextValue = useMemo(() => ({
     isReady,

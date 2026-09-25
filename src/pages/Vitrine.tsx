@@ -31,8 +31,17 @@ export function Vitrine() {
   // Link geral da vitrine do criatório
   const vitrineUrl = `${window.location.origin}/p/vitrine/${user?.id || 'meu-criatorio'}`;
 
-  const filteredBirds = useMemo(() => {
+  // Filtro Inteligente: Aves vendidas, mortas ou baixadas NUNCA entram como opção na vitrine
+  const availableBirds = useMemo(() => {
     return birds.filter(b => {
+      if (!b) return false;
+      const s = (b.status || '').toLowerCase().trim();
+      return s !== 'vendido' && s !== 'faleceu' && s !== 'abatido' && s !== 'morto';
+    });
+  }, [birds]);
+
+  const filteredBirds = useMemo(() => {
+    return availableBirds.filter(b => {
       const matchSearch = 
         b.anilha.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (b.nome && b.nome.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -45,7 +54,7 @@ export function Vitrine() {
       if (filterMode === 'outVitrine') return !isInVitrine;
       return true;
     });
-  }, [birds, vitrineConfig, searchQuery, filterMode]);
+  }, [availableBirds, vitrineConfig, searchQuery, filterMode]);
 
   const syncVitrineOnline = async () => {
     if (vitrineBirds.length === 0) return;
@@ -213,11 +222,11 @@ export function Vitrine() {
 
           {/* Stats Badges */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="px-3 py-2 bg-theme-base/60 border border-theme-border rounded-xl text-center">
-              <span className="text-[10px] text-zinc-400 block font-bold uppercase">No Plantel</span>
-              <span className="text-base font-mono font-black text-white">{birds.length}</span>
+            <div className="px-3 py-2 bg-theme-base/60 border border-theme-border rounded-xl text-center" title="Aves ativas no plantel (excluindo vendidas e baixadas)">
+              <span className="text-[10px] text-zinc-400 block font-bold uppercase">Disponíveis</span>
+              <span className="text-base font-mono font-black text-white">{availableBirds.length}</span>
             </div>
-            <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center">
+            <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center" title="Aves ativas atualmente expostas na vitrine pública">
               <span className="text-[10px] text-amber-400 block font-bold uppercase">Na Vitrine</span>
               <span className="text-base font-mono font-black text-amber-400">{vitrineBirds.length}</span>
             </div>
@@ -267,22 +276,22 @@ export function Vitrine() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-theme-surface border border-theme-border rounded-xl shrink-0">
+        <div className="flex items-center gap-1.5 p-1 bg-theme-surface border border-theme-border rounded-xl shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setFilterMode('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterMode === 'all'
                 ? 'bg-white/10 text-white'
                 : 'text-theme-text-muted hover:text-white'
             }`}
           >
-            Todas ({birds.length})
+            Disponíveis ({availableBirds.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterMode('inVitrine')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterMode === 'inVitrine'
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 : 'text-theme-text-muted hover:text-white'
@@ -293,21 +302,31 @@ export function Vitrine() {
           <button
             type="button"
             onClick={() => setFilterMode('outVitrine')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterMode === 'outVitrine'
                 ? 'bg-white/10 text-white'
                 : 'text-theme-text-muted hover:text-white'
             }`}
           >
-            Fora ({birds.length - vitrineBirds.length})
+            Fora ({Math.max(0, availableBirds.length - vitrineBirds.length)})
           </button>
         </div>
       </div>
 
       {/* Birds Grid */}
       {filteredBirds.length === 0 ? (
-        <div className="p-8 text-center bg-theme-surface border border-theme-border rounded-2xl">
-          <p className="text-xs text-theme-text-muted">Nenhuma ave encontrada com os filtros atuais.</p>
+        <div className="p-8 text-center bg-theme-surface border border-theme-border rounded-2xl space-y-2">
+          <Store size={36} className="mx-auto text-amber-400/60" />
+          <p className="text-sm font-bold text-white">
+            {availableBirds.length === 0 
+              ? 'Nenhuma ave ativa disponível para a vitrine' 
+              : 'Nenhuma ave encontrada com os filtros atuais'}
+          </p>
+          <p className="text-xs text-theme-text-muted max-w-sm mx-auto leading-relaxed">
+            {availableBirds.length === 0
+              ? 'Aves vendidas, abatidas ou falecidas são protegidas e filtradas automaticamente do catálogo da vitrine.'
+              : 'Tente alterar os termos da busca ou selecione outra categoria acima.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -315,26 +334,32 @@ export function Vitrine() {
             <div 
               key={b.id}
               className={`p-4 rounded-2xl border transition-all space-y-3 bg-theme-surface ${
-                b.inVitrine 
+                (b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine)
                   ? 'border-amber-500/50 shadow-lg shadow-amber-500/5' 
                   : 'border-theme-border opacity-85 hover:opacity-100'
               }`}
             >
               {/* Header with Photo & Anilha */}
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 rounded-xl bg-black overflow-hidden border border-theme-border shrink-0 relative">
+                <div className="w-16 h-16 rounded-xl bg-black overflow-hidden border border-theme-border shrink-0 relative flex items-center justify-center">
                   {b.imagem || (b.imagens && b.imagens[0]) ? (
                     <img 
                       src={b.imagem || b.imagens![0]} 
                       alt={b.anilha} 
+                      loading="lazy"
+                      decoding="async"
+                      onError={e => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                       className="w-full h-full object-cover" 
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600">
-                      Sem foto
-                    </div>
+                  ) : null}
+                  {!(b.imagem || (b.imagens && b.imagens[0])) && (
+                    <span className="text-xl select-none opacity-40">
+                      {b.sexo === 'Macho' ? '🐓' : '🐔'}
+                    </span>
                   )}
-                  {b.inVitrine && (
+                  {Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine) && (
                     <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   )}
                 </div>

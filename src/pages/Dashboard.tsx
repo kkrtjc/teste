@@ -44,7 +44,8 @@ export function Dashboard() {
     let pintinhos = 0;
     
     birds.forEach(b => {
-      if (b.status !== 'Vendido' && b.status !== 'Faleceu') {
+      const s = (b.status || '').toLowerCase().trim();
+      if (s !== 'vendido' && s !== 'faleceu' && s !== 'abatido' && s !== 'morto') {
         total++;
         if (b.sexo === 'Macho') machos++;
         if (b.sexo === 'Fêmea') femeas++;
