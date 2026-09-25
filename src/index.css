@@ -218,6 +218,24 @@ button, a, input, select, textarea, [role="button"] {
   contain-intrinsic-size: 0 240px;
 }
 
+.virtualized-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 280px;
+  contain: layout style paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.virtualized-lot-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 340px;
+  contain: layout style paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 .gpu-accelerated {
   transform: translateZ(0);
   backface-visibility: hidden;

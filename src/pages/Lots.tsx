@@ -1199,7 +1199,7 @@ export function Lots() {
               const avulsasF = Math.max(0, totalF - cadastradasF);
               const prodStats = calculateLotProduction(lote.registros, totalF);
               return (
-                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Egg size={100} /></div>
                   {/* Cabeçalho */}
                   <div className="flex justify-between items-start mb-4">
@@ -1448,7 +1448,7 @@ export function Lots() {
               const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
 
               return (
-                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col space-y-4">
+                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col space-y-4">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={110} /></div>
                   
                   {/* Cabeçalho */}
@@ -1777,7 +1777,7 @@ export function Lots() {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = (lote.qtdAves !== undefined && lote.qtdAves !== null) ? Number(lote.qtdAves) : (lote.avesIds?.length || 0);
               return (
-                <div key={lote.id} className="premium-card p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
                   <div className="flex justify-between items-start mb-4">
                     <div>

@@ -124,7 +124,7 @@ const BirdItemCard = memo(function BirdItemCard({
   return (
     <div
       onClick={() => onSelect(bird.id)}
-      className="premium-card content-visibility-auto flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
+      className="premium-card virtualized-card gpu-accelerated flex flex-col group cursor-pointer hover:border-theme-primary/50 transition-all overflow-hidden relative bg-theme-surface active:scale-[0.98] touch-manipulation"
     >
       {/* Bloco da Foto 1:1 Quadrada Grande igual a de Raças */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
