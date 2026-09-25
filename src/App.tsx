@@ -11,12 +11,6 @@ import { AutoUpdater } from './components/AutoUpdater';
 
 import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
 
-import { Dashboard } from './pages/Dashboard';
-import { Birds } from './pages/Birds';
-import { Lots } from './pages/Lots';
-import { Eggs } from './pages/Eggs';
-import { Vitrine } from './pages/Vitrine';
-import { Settings } from './pages/Settings';
 
 // Login carregado sob demanda (apenas quando o usuário não estiver logado)
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
@@ -93,15 +87,16 @@ function AppContent() {
             />
           )}
 
-          {/* App Routes com resposta síncrona instantânea (0ms sem telas de carregamento) */}
+          {/* App Routes com resposta síncrona instantânea (0ms sem desmontagem de telas) */}
           <Routes>
             <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-              <Route index element={<Dashboard />} />
-              <Route path="birds" element={<Birds />} />
-              <Route path="vitrine" element={<Vitrine />} />
-              <Route path="lots" element={<Lots />} />
-              <Route path="eggs" element={<Eggs />} />
-              <Route path="settings" element={<Settings />} />
+              <Route index element={null} />
+              <Route path="birds" element={null} />
+              <Route path="vitrine" element={null} />
+              <Route path="lots" element={null} />
+              <Route path="eggs" element={null} />
+              <Route path="settings" element={null} />
+              <Route path="*" element={null} />
             </Route>
           </Routes>
         </>

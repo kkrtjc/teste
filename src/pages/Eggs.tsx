@@ -1705,7 +1705,7 @@ function EggLotRecordsModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // LotCard — Card Principal do Lote com Detecção de Anomalias & Gestão de Estoque
 // ─────────────────────────────────────────────────────────────────────────────
-function LotCard({
+const LotCard = memo(function LotCard({
   lot,
   birds,
   onRegister,
@@ -2083,7 +2083,7 @@ function LotCard({
       )}
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Componente Principal: Eggs

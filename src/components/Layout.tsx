@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, memo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Layers, Settings, 
+  LayoutDashboard, Layers, Settings as SettingsIcon, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
   Bell, MessageSquare, HelpCircle, Egg, Sparkles, RefreshCw,
   Zap, Store, ArrowLeft, Lock
@@ -15,6 +15,44 @@ const BirdProfileModal = lazy(() => import('./modals/BirdProfileModal').then(m =
 const OnboardingTour = lazy(() => import('./modals/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 const UserProfileSetupModal = lazy(() => import('./modals/UserProfileSetupModal').then(m => ({ default: m.UserProfileSetupModal })));
 const PWAInstallGuideModal = lazy(() => import('./modals/PWAInstallGuideModal').then(m => ({ default: m.PWAInstallGuideModal })));
+
+// Code-splitting e carregamento otimizado das páginas principais (Padrão Linear.app)
+const Dashboard = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Birds = lazy(() => import('../pages/Birds').then(m => ({ default: m.Birds })));
+const Vitrine = lazy(() => import('../pages/Vitrine').then(m => ({ default: m.Vitrine })));
+const Lots = lazy(() => import('../pages/Lots').then(m => ({ default: m.Lots })));
+const Eggs = lazy(() => import('../pages/Eggs').then(m => ({ default: m.Eggs })));
+const Settings = lazy(() => import('../pages/Settings').then(m => ({ default: m.Settings })));
+
+// Prefetch em background durante idle para garantir transição imediata (0ms)
+if (typeof window !== 'undefined') {
+  const prefetchPages = () => {
+    import('../pages/Dashboard');
+    import('../pages/Birds');
+    import('../pages/Lots');
+    import('../pages/Eggs');
+    import('../pages/Vitrine');
+    import('../pages/Settings');
+  };
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(prefetchPages, { timeout: 2500 });
+  } else {
+    setTimeout(prefetchPages, 1000);
+  }
+}
+
+function TabLoadingFallback() {
+  return (
+    <div className="space-y-4 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto">
+      <div className="h-8 w-48 bg-white/5 rounded-xl animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="h-36 bg-white/5 rounded-2xl animate-pulse" />
+        <div className="h-36 bg-white/5 rounded-2xl animate-pulse" />
+        <div className="h-36 bg-white/5 rounded-2xl animate-pulse" />
+      </div>
+    </div>
+  );
+}
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF, type SubscriptionPlan } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -521,15 +559,41 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     };
   }, [isAnyModalActive]);
 
-  // Garante que qualquer redirecionamento, navegação por atalho ou troca de aba abra no TOPO da página
+  // ── 🌟 ARQUITETURA KEEP-ALIVE (Padrão Linear.app: 0ms de latência e preservação de estado/scroll) ──
+  const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'lots' | 'eggs' | 'settings' | 'other' => {
+    const clean = pathname.replace(/^\//, '').split('/')[0].toLowerCase();
+    if (!clean || clean === 'dashboard') return 'dashboard';
+    if (clean === 'birds') return 'birds';
+    if (clean === 'vitrine') return 'vitrine';
+    if (clean === 'lots') return 'lots';
+    if (clean === 'eggs') return 'eggs';
+    if (clean === 'settings') return 'settings';
+    return 'other';
+  };
+
+  const activeTabKey = getTabKey(location.pathname);
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set([activeTabKey]));
+  const scrollPositionsRef = useRef<Record<string, number>>({});
+  const lastActiveTabRef = useRef(activeTabKey);
+
   useEffect(() => {
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTop = 0;
+    if (activeTabKey !== 'other') {
+      setVisitedTabs(prev => {
+        if (prev.has(activeTabKey)) return prev;
+        const next = new Set(prev);
+        next.add(activeTabKey);
+        return next;
+      });
     }
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, [location.pathname, location.search, (location as any).state]);
+
+    const prevTab = lastActiveTabRef.current;
+    if (mainScrollRef.current && prevTab !== activeTabKey) {
+      scrollPositionsRef.current[prevTab] = mainScrollRef.current.scrollTop;
+      const restored = scrollPositionsRef.current[activeTabKey] || 0;
+      mainScrollRef.current.scrollTop = restored;
+      lastActiveTabRef.current = activeTabKey;
+    }
+  }, [activeTabKey]);
 
   const expiringCount = expiringClients.length;
 
@@ -541,7 +605,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     { icon: Store, label: 'Vitrine', path: '/vitrine', locked: false },
     { icon: Layers, label: 'Lotes', path: '/lots', locked: !canAccessLots },
     { icon: Egg, label: 'Ovos', path: '/eggs', locked: !canAccessLots },
-    { icon: Settings, label: 'Configurações', path: '/settings', locked: false },
+    { icon: SettingsIcon, label: 'Configurações', path: '/settings', locked: false },
   ];
 
   // Mobile bottom nav: first 5 items (no settings — access via profile photo)
@@ -792,7 +856,40 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         )}
 
         <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-24 md:pb-6 gpu-accelerated">
-          <Outlet />
+          {/* 🌟 ARQUITETURA KEEP-ALIVE (0ms DE TROCA DE ABAS / SEM REMOUNT DESTRUTIVO) */}
+          <Suspense fallback={<TabLoadingFallback />}>
+            {visitedTabs.has('dashboard') && (
+              <div key="tab-view-dashboard" style={{ display: activeTabKey === 'dashboard' ? 'block' : 'none' }}>
+                <Dashboard />
+              </div>
+            )}
+            {visitedTabs.has('birds') && (
+              <div key="tab-view-birds" style={{ display: activeTabKey === 'birds' ? 'block' : 'none' }}>
+                <Birds />
+              </div>
+            )}
+            {visitedTabs.has('vitrine') && (
+              <div key="tab-view-vitrine" style={{ display: activeTabKey === 'vitrine' ? 'block' : 'none' }}>
+                <Vitrine />
+              </div>
+            )}
+            {visitedTabs.has('lots') && (
+              <div key="tab-view-lots" style={{ display: activeTabKey === 'lots' ? 'block' : 'none' }}>
+                <Lots />
+              </div>
+            )}
+            {visitedTabs.has('eggs') && (
+              <div key="tab-view-eggs" style={{ display: activeTabKey === 'eggs' ? 'block' : 'none' }}>
+                <Eggs />
+              </div>
+            )}
+            {visitedTabs.has('settings') && (
+              <div key="tab-view-settings" style={{ display: activeTabKey === 'settings' ? 'block' : 'none' }}>
+                <Settings />
+              </div>
+            )}
+            {activeTabKey === 'other' && <Outlet />}
+          </Suspense>
         </div>
       </main>
 

@@ -88,28 +88,34 @@ export function Dashboard() {
       if (lot.status !== 'Ativo') return;
       const registros = lot.registros || [];
 
-      // Soma do mês atual
-      registros.forEach(r => {
-        if (r.data?.startsWith(thisMonth) && r.observacao !== 'Nenhum registro') {
+      const regByDate = new Map<string, typeof registros[0]>();
+
+      // Soma do mês atual e indexação O(1) de registros
+      for (let i = 0; i < registros.length; i++) {
+        const r = registros[i];
+        if (!r?.data) continue;
+        regByDate.set(r.data, r);
+        if (r.data.startsWith(thisMonth) && r.observacao !== 'Nenhum registro') {
           totalMes += r.coletados || 0;
         }
-      });
+      }
 
-      // Soma dos últimos 7 dias + mapa diário
-      last7Days.forEach(dateStr => {
-        const reg = registros.find(r => r.data === dateStr);
+      // Soma dos últimos 7 dias + mapa diário O(1)
+      for (let i = 0; i < last7Days.length; i++) {
+        const dateStr = last7Days[i];
+        const reg = regByDate.get(dateStr);
         const collected = (reg && reg.observacao !== 'Nenhum registro') ? (reg.coletados || 0) : 0;
         dailyMap[dateStr] = (dailyMap[dateStr] || 0) + collected;
-        if (dateStr !== last7Days[last7Days.length - 1]) {
+        if (i < last7Days.length - 1) {
           totalSemana += collected;
         }
-      });
+      }
 
-      // Detecta lotes com 3+ dias seguidos de "Nenhum registro"
-      const sortedDates = [...last7Days].reverse();
+      // Detecta lotes com 3+ dias seguidos de "Nenhum registro" O(1)
       let gapCount = 0;
-      for (const d of sortedDates) {
-        const reg = registros.find(r => r.data === d);
+      for (let i = last7Days.length - 1; i >= 0; i--) {
+        const d = last7Days[i];
+        const reg = regByDate.get(d);
         if (!reg || reg.observacao === 'Nenhum registro') {
           gapCount++;
         } else {

@@ -12,6 +12,9 @@ import { uploadBreedPhoto } from '../lib/storageService';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { SmartBirdImage } from '../components/ui/SmartBirdImage';
 
+// Singleton de Collator natural para pt-BR (reutilizado em todas as ordenações para 0 overhead)
+const ringNaturalCollator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+
 const BreedItemCard = memo(function BreedItemCard({
   breed,
   count,
@@ -517,11 +520,9 @@ export function Birds() {
     }
   }, [location]);
 
-  // Garante rolagem para o TOPO ao trocar de aba ou filtro de raça
+  // Garante rolagem para o TOPO ao trocar de aba ou filtro de raça de forma suave
   useEffect(() => {
-    window.scrollTo(0, 0);
-    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
-    scrollContainers.forEach(el => { el.scrollTop = 0; });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, [activeTab, activeBreed]);
   const [showNewBreedModal, setShowNewBreedModal] = useState(false);
   const [breedToEdit, setBreedToEdit] = useState<Breed | null>(null);
@@ -723,17 +724,13 @@ export function Birds() {
       list = list.filter(b => b.status !== 'Vendido' && b.status !== 'Faleceu');
     }
     
-    // Ordenar em ordem crescente de anilha (natural sorting: 1, 2, 10, A-1, A-2, etc.)
+    // Ordenar em ordem crescente de anilha (natural sorting O(N log N) de alta performance)
     return [...list].sort((a, b) => {
       if (!a) return 1;
       if (!b) return -1;
       const anilhaA = (a.anilha || '').toString().trim();
       const anilhaB = (b.anilha || '').toString().trim();
-      try {
-        return anilhaA.localeCompare(anilhaB, 'pt-BR', { numeric: true, sensitivity: 'base' });
-      } catch {
-        return anilhaA.localeCompare(anilhaB);
-      }
+      return ringNaturalCollator.compare(anilhaA, anilhaB);
     });
   }, [birds, activeBreed, sexFilter, statusFilter]);
 

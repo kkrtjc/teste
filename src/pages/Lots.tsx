@@ -131,7 +131,8 @@ function BirdPicker({
   }, [birds, q, hasSearch]);
 
   const selectedBirds = useMemo(() => {
-    return selected.map(id => birds.find(b => b.id === id)).filter(Boolean) as typeof birds;
+    const map = new Map(birds.map(b => [b.id, b]));
+    return selected.map(id => map.get(id)).filter(Boolean) as typeof birds;
   }, [birds, selected]);
 
   return (
@@ -732,20 +733,32 @@ export function Lots() {
     pendingSaveFn: () => {},
   });
 
+  // Indexação O(1) de aves em memória para lookups instantâneos sem varredura O(N)
+  const birdsById = useMemo(() => {
+    const map = new Map<string, typeof birds[0]>();
+    for (let i = 0; i < birds.length; i++) {
+      const b = birds[i];
+      if (b?.id) map.set(b.id, b);
+    }
+    return map;
+  }, [birds]);
+
   const activeFemales = useMemo(() => {
     return birds.filter(b => {
-      const s = normalizeSearch(b.sexo);
-      const isFemale = s === 'femea' || s === 'f' || s.startsWith('fem');
-      const stat = normalizeSearch(b.status);
-      const isExcluded = ['vendido', 'faleceu', 'morto', 'abatido'].includes(stat);
-      return isFemale && !isExcluded;
+      if (!b) return false;
+      const s = (b.sexo || '').toLowerCase();
+      const isFemale = s === 'fêmea' || s === 'femea' || s === 'f' || s.startsWith('fem');
+      if (!isFemale) return false;
+      const stat = (b.status || '').toLowerCase();
+      return stat !== 'vendido' && stat !== 'faleceu' && stat !== 'morto' && stat !== 'abatido';
     });
   }, [birds]);
 
   const activeBirds = useMemo(() => {
     return birds.filter(b => {
-      const stat = normalizeSearch(b.status);
-      return !['vendido', 'faleceu', 'morto', 'abatido'].includes(stat);
+      if (!b) return false;
+      const stat = (b.status || '').toLowerCase();
+      return stat !== 'vendido' && stat !== 'faleceu' && stat !== 'morto' && stat !== 'abatido';
     });
   }, [birds]);
 
@@ -1264,7 +1277,7 @@ export function Lots() {
                       <div className="space-y-1.5">
                         <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                           {lote.femeasIds.map(id => {
-                            const b = birds.find(x => x.id === id);
+                            const b = birdsById.get(id);
                             return b ? (
                               <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
@@ -1668,7 +1681,7 @@ export function Lots() {
                       <div className="space-y-1.5">
                         <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                           {lote.avesIds.map(id => {
-                            const b = birds.find(x => x.id === id);
+                            const b = birdsById.get(id);
                             return b ? (
                               <span key={id} className="text-[10px] bg-theme-surface px-2 py-1 rounded-md text-white border border-theme-border flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
@@ -1836,8 +1849,8 @@ export function Lots() {
 
                     {/* Pais do criatório */}
                     {(() => {
-                      const pai = birds.find(b => b.id === lote.paiId);
-                      const mae = birds.find(b => b.id === lote.maeId);
+                      const pai = lote.paiId ? birdsById.get(lote.paiId) : undefined;
+                      const mae = lote.maeId ? birdsById.get(lote.maeId) : undefined;
                       if (pai || mae) {
                         return (
                           <div className="bg-theme-base/60 p-2.5 rounded-xl border border-theme-border/50 text-[11px] space-y-1">
