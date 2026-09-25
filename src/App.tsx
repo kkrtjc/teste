@@ -12,14 +12,14 @@ import { AutoUpdater } from './components/AutoUpdater';
 import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
 
 import { Dashboard } from './pages/Dashboard';
+import { Birds } from './pages/Birds';
+import { Lots } from './pages/Lots';
+import { Eggs } from './pages/Eggs';
+import { Vitrine } from './pages/Vitrine';
+import { Settings } from './pages/Settings';
 
-// Code-splitting com React.lazy para carregamento sob demanda das abas secundárias
+// Login carregado sob demanda (apenas quando o usuário não estiver logado)
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
-const Lots = lazy(() => import('./pages/Lots').then(m => ({ default: m.Lots })));
-const Birds = lazy(() => import('./pages/Birds').then(m => ({ default: m.Birds })));
-const Vitrine = lazy(() => import('./pages/Vitrine').then(m => ({ default: m.Vitrine })));
-const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
-const Eggs = lazy(() => import('./pages/Eggs').then(m => ({ default: m.Eggs })));
 
 function AppContent() {
   const location = useLocation();
@@ -93,19 +93,17 @@ function AppContent() {
             />
           )}
 
-          {/* App Routes com resposta síncrona instantânea (0ms) */}
-          <Suspense fallback={<SplashScreen isLoading={true} />}>
-            <Routes>
-              <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
-                <Route index element={<Dashboard />} />
-                <Route path="birds" element={<Birds />} />
-                <Route path="vitrine" element={<Vitrine />} />
-                <Route path="lots" element={<Lots />} />
-                <Route path="eggs" element={<Eggs />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-            </Routes>
-          </Suspense>
+          {/* App Routes com resposta síncrona instantânea (0ms sem telas de carregamento) */}
+          <Routes>
+            <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+              <Route index element={<Dashboard />} />
+              <Route path="birds" element={<Birds />} />
+              <Route path="vitrine" element={<Vitrine />} />
+              <Route path="lots" element={<Lots />} />
+              <Route path="eggs" element={<Eggs />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
         </>
       )}
     </>

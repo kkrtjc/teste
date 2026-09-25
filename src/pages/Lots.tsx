@@ -647,11 +647,12 @@ export function Lots() {
           setActiveTab(stateObj.tab);
         }
       }
+      try {
+        window.history.replaceState({}, document.title);
+      } catch {}
     }
     window.scrollTo(0, 0);
-    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
-    scrollContainers.forEach(el => { el.scrollTop = 0; });
-  }, [location, activeTab]);
+  }, [location.key]);
 
   // Postura Lot states
   const [showPostura, setShowPostura] = useState(false);
@@ -748,8 +749,8 @@ export function Lots() {
     });
   }, [birds]);
 
-  const filterEngorda = meatLots.filter(l => !l.id.startsWith('chick-'));
-  const filterPintinhos = meatLots.filter(l => l.id.startsWith('chick-'));
+  const filterEngorda = useMemo(() => meatLots.filter(l => !l.id.startsWith('chick-')), [meatLots]);
+  const filterPintinhos = useMemo(() => meatLots.filter(l => l.id.startsWith('chick-')), [meatLots]);
 
   // ── Filtro de Status dos Lotes (Ativos / Encerrados / Todos) ──
   const [lotStatusFilter, setLotStatusFilter] = useState<'ativos' | 'encerrados' | 'todos'>('ativos');
@@ -841,7 +842,7 @@ export function Lots() {
 
     setConfirmTransfer({ isOpen: false, lote: null });
     setActiveTab('engorda');
-    showToast?.('Lote transferido para Engorda / Abate com sucesso!', 'success');
+    showToast?.('Lote de pintinhos transferido para a aba de engorda com sucesso!', 'success');
   };
 
   // ── Handlers de Seleção sem Perder Estado ──
@@ -1904,13 +1905,17 @@ export function Lots() {
                         {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0)} {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0) === 1 ? 'nota' : 'notas'}
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => openTransferModal(lote)}
-                      className="w-full py-2.5 px-3 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
-                    >
-                      <Beef size={15} className="text-orange-400" /> Transferir para Engorda / Abate
-                    </button>
+                    {dias >= 30 && (
+                      <button
+                        type="button"
+                        onClick={() => openTransferModal(lote)}
+                        className="w-full py-2 px-3 bg-theme-surface/50 hover:bg-theme-surface border border-theme-border/60 hover:border-theme-border text-theme-text-muted hover:text-white font-medium text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        title="Transferir este lote de pintinhos para a aba de engorda"
+                      >
+                        <Beef size={14} className="text-orange-400/80" />
+                        <span>Transferir para engorda</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -2677,13 +2682,13 @@ export function Lots() {
                 ❓
               </div>
               <div>
-                <h3 className="font-black text-base text-white">Confirmar Transferência de Lote</h3>
-                <p className="text-xs text-theme-text-muted">Transferência para Engorda</p>
+                <h3 className="font-black text-base text-white">Transferir para Engorda</h3>
+                <p className="text-xs text-theme-text-muted">Baia {confirmTransfer.lote.baia}</p>
               </div>
             </div>
 
-            <p className="text-sm text-theme-text-muted leading-relaxed">
-              Você realmente deseja transferir o lote da <strong className="text-white">Baia {confirmTransfer.lote.baia}</strong> para a aba de <strong className="text-theme-primary uppercase">Engorda / Abate</strong>?
+            <p className="text-sm text-white font-medium leading-relaxed">
+              Quer transferir esse lote de pintinhos para a aba de engorda?
             </p>
 
             <div className="bg-theme-base p-3.5 rounded-xl border border-theme-border/50 text-xs space-y-1">

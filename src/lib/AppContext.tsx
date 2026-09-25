@@ -1962,14 +1962,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[Foco App] Aplicativo visível. Disparando sincronização imediata...');
-        processSyncQueue().catch(() => {});
-        syncWithSupabaseBackground(true);
+        const now = Date.now();
+        if (now - lastSyncTimeRef.current >= 20000 && !isSyncingRef.current) {
+          processSyncQueue().catch(() => {});
+          syncWithSupabaseBackground(false);
+        }
       }
     };
 
     window.addEventListener('online', handleOnline);
-    window.addEventListener('focus', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Canal Realtime do Supabase: escuta mudanças nas tabelas e broadcast instantâneo entre abas/aparelhos
@@ -2031,7 +2032,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => {
       window.removeEventListener('online', handleOnline);
-      window.removeEventListener('focus', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
       clearInterval(syncInterval);
