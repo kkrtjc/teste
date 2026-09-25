@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
+import { preloadBirdImagesInBackground } from './birdImageCache';
 
 export type Breed = {
   id: string;
@@ -2039,6 +2040,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       realtimeBroadcastChannelRef.current = null;
     };
   }, [user, syncWithSupabaseBackground]);
+
+  // Pré-aquecimento silencioso e cacheamento local em segundo plano de fotos das aves
+  useEffect(() => {
+    if (birds.length > 0) {
+      preloadBirdImagesInBackground(birds);
+    }
+  }, [birds]);
 
   // Modals
   const [isAddBirdModalOpen, setIsAddBirdModalOpen] = useState(false);

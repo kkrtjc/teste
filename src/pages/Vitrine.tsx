@@ -8,6 +8,7 @@ import { useAuth } from '../lib/AuthContext';
 import { ShareBirdModal } from '../components/modals/ShareBirdModal';
 import { publishShowcase } from '../lib/showcaseShare';
 import { useHaptics } from '../hooks/useHaptics';
+import { SmartBirdImage } from '../components/ui/SmartBirdImage';
 
 export function Vitrine() {
   const { 
@@ -342,23 +343,13 @@ export function Vitrine() {
               {/* Header with Photo & Anilha */}
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-xl bg-black overflow-hidden border border-theme-border shrink-0 relative flex items-center justify-center">
-                  {b.imagem || (b.imagens && b.imagens[0]) ? (
-                    <img 
-                      src={b.imagem || b.imagens![0]} 
-                      alt={b.anilha} 
-                      loading="lazy"
-                      decoding="async"
-                      onError={e => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : null}
-                  {!(b.imagem || (b.imagens && b.imagens[0])) && (
-                    <span className="text-xl select-none opacity-40">
-                      {b.sexo === 'Macho' ? '🐓' : '🐔'}
-                    </span>
-                  )}
+                  <SmartBirdImage
+                    src={b.imagem || (b.imagens && b.imagens[0])}
+                    alt={b.anilha}
+                    gender={b.sexo}
+                    className="w-full h-full object-cover"
+                    fallbackClassName="text-xl select-none opacity-40"
+                  />
                   {Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine) && (
                     <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   )}

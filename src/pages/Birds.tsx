@@ -10,6 +10,7 @@ import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 import { uploadBreedPhoto } from '../lib/storageService';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
+import { SmartBirdImage } from '../components/ui/SmartBirdImage';
 
 const BreedItemCard = memo(function BreedItemCard({
   breed,
@@ -124,22 +125,12 @@ const BirdItemCard = memo(function BirdItemCard({
     >
       {/* Bloco da Foto 1:1 Quadrada Grande igual a de Raças */}
       <div className="aspect-square w-full bg-theme-base flex items-center justify-center overflow-hidden relative border-b border-theme-border/30">
-        {bird.imagem ? (
-          <img
-            src={bird.imagem}
-            alt={bird.anilha}
-            loading="lazy"
-            decoding="async"
-            onError={e => {
-              e.currentTarget.style.display = 'none';
-            }}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <span className="text-5xl group-hover:scale-105 transition-transform duration-300 select-none opacity-40">
-            {bird.sexo === 'Macho' ? '🐓' : '🐔'}
-          </span>
-        )}
+        <SmartBirdImage
+          src={bird.imagem}
+          alt={bird.anilha}
+          gender={bird.sexo}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
 
         {/* Badge Sexo no Canto Superior Direito */}
         <div className="absolute top-2 right-2 z-10">

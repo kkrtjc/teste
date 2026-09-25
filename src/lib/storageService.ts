@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { compressImageToBlob } from './imageCompression';
+import { cacheLocalBirdImage } from './birdImageCache';
 
 const BUCKET_NAME = 'birds';
 
@@ -19,9 +20,9 @@ export function isStorageUrl(url?: string | null): boolean {
  * - Fast loading and cached on the user's mobile device
  * - Returns a public CDN URL (e.g., https://.../birds/userId/birdId_0.webp)
  *
- * Fallback Guarantee:
- * - If Supabase Storage is offline, bucket doesn't exist yet, or network fails,
- *   it seamlessly returns the compressed Base64 dataUrl so the user NEVER loses their photo.
+ * Local First Guarantee:
+ * - Always saves the compressed local version directly in the client device's IndexedDB.
+ * - The device that took the photo will NEVER need to download it from the cloud.
  */
 export async function uploadBirdPhoto(
   photo: string | File,
@@ -34,8 +35,13 @@ export async function uploadBirdPhoto(
     return photo;
   }
 
+  let localDataUrl = typeof photo === 'string' && photo.startsWith('data:') ? photo : '';
+
   // If Supabase is not configured or client is offline, keep as-is (base64)
   if (!isSupabaseConfigured || !supabase || !navigator.onLine || !userId) {
+    if (localDataUrl) {
+      cacheLocalBirdImage(`bird_local:${birdId}_${photoIndex}`, localDataUrl).catch(() => {});
+    }
     return typeof photo === 'string' ? photo : '';
   }
 
@@ -44,6 +50,20 @@ export async function uploadBirdPhoto(
     const ext = mimeType.includes('webp') ? 'webp' : 'jpg';
     const cleanBirdId = birdId.replace(/[^a-zA-Z0-9_-]/g, '_');
     const filePath = `${userId}/${cleanBirdId}_${photoIndex}_${Date.now()}.${ext}`;
+
+    // Se ainda não tinha dataUrl (ex: era File), converte o blob para salvar no cache local do aparelho
+    if (!localDataUrl) {
+      localDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    if (localDataUrl) {
+      cacheLocalBirdImage(`bird_local:${birdId}_${photoIndex}`, localDataUrl).catch(() => {});
+    }
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -54,9 +74,8 @@ export async function uploadBirdPhoto(
       });
 
     if (error) {
-      // Se o bucket não existir ainda ou der erro de permissão, continua usando base64 com segurança
       console.warn('[Storage] Upload para Supabase Storage falhou, mantendo base64 defensivo:', error.message);
-      return typeof photo === 'string' ? photo : '';
+      return localDataUrl || (typeof photo === 'string' ? photo : '');
     }
 
     if (data?.path) {
@@ -65,14 +84,18 @@ export async function uploadBirdPhoto(
         .getPublicUrl(data.path);
 
       if (publicData?.publicUrl) {
+        // Vincula a URL pública diretamente ao arquivo local no aparelho do usuário
+        if (localDataUrl) {
+          cacheLocalBirdImage(publicData.publicUrl, localDataUrl).catch(() => {});
+        }
         return publicData.publicUrl;
       }
     }
 
-    return typeof photo === 'string' ? photo : '';
+    return localDataUrl || (typeof photo === 'string' ? photo : '');
   } catch (err) {
     console.warn('[Storage] Falha não-bloqueante no upload para o storage:', err);
-    return typeof photo === 'string' ? photo : '';
+    return localDataUrl || (typeof photo === 'string' ? photo : '');
   }
 }
 
@@ -88,7 +111,12 @@ export async function uploadBreedPhoto(
     return photo;
   }
 
+  let localDataUrl = typeof photo === 'string' && photo.startsWith('data:') ? photo : '';
+
   if (!isSupabaseConfigured || !supabase || !navigator.onLine || !userId) {
+    if (localDataUrl) {
+      cacheLocalBirdImage(`breed_local:${breedId}`, localDataUrl).catch(() => {});
+    }
     return typeof photo === 'string' ? photo : '';
   }
 
@@ -97,6 +125,19 @@ export async function uploadBreedPhoto(
     const ext = mimeType.includes('webp') ? 'webp' : 'jpg';
     const cleanBreedId = breedId.replace(/[^a-zA-Z0-9_-]/g, '_');
     const filePath = `${userId}/breeds/${cleanBreedId}_${Date.now()}.${ext}`;
+
+    if (!localDataUrl) {
+      localDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    if (localDataUrl) {
+      cacheLocalBirdImage(`breed_local:${breedId}`, localDataUrl).catch(() => {});
+    }
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -108,7 +149,7 @@ export async function uploadBreedPhoto(
 
     if (error) {
       console.warn('[Storage] Upload da foto da raça falhou, mantendo base64:', error.message);
-      return typeof photo === 'string' ? photo : '';
+      return localDataUrl || (typeof photo === 'string' ? photo : '');
     }
 
     if (data?.path) {
@@ -117,14 +158,17 @@ export async function uploadBreedPhoto(
         .getPublicUrl(data.path);
 
       if (publicData?.publicUrl) {
+        if (localDataUrl) {
+          cacheLocalBirdImage(publicData.publicUrl, localDataUrl).catch(() => {});
+        }
         return publicData.publicUrl;
       }
     }
 
-    return typeof photo === 'string' ? photo : '';
+    return localDataUrl || (typeof photo === 'string' ? photo : '');
   } catch (err) {
     console.warn('[Storage] Falha no upload da foto da raça:', err);
-    return typeof photo === 'string' ? photo : '';
+    return localDataUrl || (typeof photo === 'string' ? photo : '');
   }
 }
 

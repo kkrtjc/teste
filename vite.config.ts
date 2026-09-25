@@ -52,6 +52,19 @@ export default defineConfig({
             }
           },
           {
+            // Supabase Storage CDN Images - CacheFirst (1 ano de cache no disco do cliente)
+            urlPattern: /supabase\.co\/storage\/v1\/object\/public\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'mura-storage-images-v1',
+              expiration: {
+                maxEntries: 1000,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
+              },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
             // Supabase API - NetworkFirst so data is always fresh
             urlPattern: /supabase\.co/i,
             handler: 'NetworkFirst',

@@ -10,6 +10,7 @@ import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 import { ShareBirdModal } from './ShareBirdModal';
 import { SellBirdModal } from './SellBirdModal';
+import { SmartBirdImage } from '../ui/SmartBirdImage';
 
 function PedigreeTreeNode({
   label,
@@ -347,7 +348,12 @@ export function BirdProfileModal() {
                   style={{ backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
                 />
                 {/* Foreground Image */}
-                <img src={currentImage} alt={bird.nome} className="relative z-10 h-full max-w-full object-contain shadow-2xl" />
+                <SmartBirdImage
+                  src={currentImage}
+                  alt={bird.nome}
+                  gender={bird.sexo}
+                  className="relative z-10 h-full max-w-full object-contain shadow-2xl"
+                />
 
                 {/* Left/Right Chevrons */}
                 {images.length > 1 && (
@@ -399,11 +405,12 @@ export function BirdProfileModal() {
             {/* Avatar / Title Overlays */}
             <div className="absolute -bottom-12 left-6 flex items-end gap-4 z-30">
               <div className="w-24 h-24 rounded-2xl bg-theme-surface border-4 border-theme-base overflow-hidden flex items-center justify-center text-4xl shadow-xl shrink-0">
-                {currentImage ? (
-                  <img src={currentImage} alt={bird.nome} className="w-full h-full object-cover" />
-                ) : (
-                  bird.sexo === 'Macho' ? '🐓' : '🐔'
-                )}
+                <SmartBirdImage
+                  src={currentImage}
+                  alt={bird.nome}
+                  gender={bird.sexo}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="mb-2">
                 <div className="flex items-center gap-2">
