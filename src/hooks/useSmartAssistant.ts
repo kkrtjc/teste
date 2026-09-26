@@ -4,14 +4,22 @@ import { useAuth } from '../lib/AuthContext';
 import { 
   ASSISTANT_GUIDES, 
   getTabIdFromPath, 
+  ADD_BIRD_FORM_GUIDE_STEP,
   type TabGuide, 
   type AssistantStep 
 } from '../lib/assistantSteps';
 
 const SEEN_TABS_STORAGE_PREFIX = '@mura-manager:assistant-seen-tabs:';
 
-export function useSmartAssistant(options?: { isBlocked?: boolean }) {
+export interface UseSmartAssistantOptions {
+  isBlocked?: boolean;
+  isAddBirdModalOpen?: boolean;
+  onCloseAddBirdModal?: () => void;
+}
+
+export function useSmartAssistant(options?: UseSmartAssistantOptions) {
   const isBlocked = Boolean(options?.isBlocked);
+  const isAddBirdModalOpen = Boolean(options?.isAddBirdModalOpen);
   const location = useLocation();
   const { user } = useAuth();
   const userId = user?.id || 'guest';
@@ -19,6 +27,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
+  const [formSubStep, setFormSubStep] = useState<AssistantStep | null>(null);
 
   const autoTriggerTimerRef = useRef<any>(null);
   const lastAutoTriggeredTabRef = useRef<string | null>(null);
@@ -48,15 +57,18 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
 
   // Guia ativo atual
   const activeGuide: TabGuide | null = activeTabId ? ASSISTANT_GUIDES[activeTabId] || null : null;
-  const currentStep: AssistantStep | null = activeGuide ? activeGuide.steps[stepIndex] || null : null;
+  const currentStep: AssistantStep | null = formSubStep || (activeGuide ? activeGuide.steps[stepIndex] || null : null);
 
   // Fecha o modal e persiste o status de visualização
   const handleClose = useCallback(() => {
+    if (formSubStep) {
+      setFormSubStep(null);
+    }
     if (activeTabId) {
       markTabAsSeen(activeTabId);
     }
     setIsOpen(false);
-  }, [activeTabId, markTabAsSeen]);
+  }, [activeTabId, markTabAsSeen, formSubStep]);
 
   // Abre a assistente para uma aba específica (ou para a aba atual)
   const openAssistant = useCallback((forcedTabId?: string) => {
@@ -65,11 +77,20 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
 
     setActiveTabId(tabId);
     setStepIndex(0);
+    setFormSubStep(null);
     setIsOpen(true);
   }, [location.pathname]);
 
-  // Avança para o próximo passo da aba
+  // Avança para o próximo passo da aba ou conclui sub-etapa de formulário
   const nextStep = useCallback(() => {
+    if (formSubStep) {
+      // Se estava no formulário, fechar o formulário e avançar para o passo 2 (Busca e Filtros)
+      options?.onCloseAddBirdModal?.();
+      setFormSubStep(null);
+      setStepIndex(1);
+      return;
+    }
+
     if (!activeGuide) return;
 
     if (stepIndex < activeGuide.steps.length - 1) {
@@ -78,14 +99,41 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
       // Concluiu a aba!
       handleClose();
     }
-  }, [activeGuide, stepIndex, handleClose]);
+  }, [formSubStep, activeGuide, stepIndex, handleClose, options]);
 
   // Volta para o passo anterior
   const prevStep = useCallback(() => {
+    if (formSubStep) {
+      // Se estava no formulário e voltou, fecha o formulário e volta para o passo 0 (botão cadastrar)
+      options?.onCloseAddBirdModal?.();
+      setFormSubStep(null);
+      setStepIndex(0);
+      return;
+    }
+
     if (stepIndex > 0 && activeGuide) {
       setStepIndex(prev => prev - 1);
     }
-  }, [activeGuide, stepIndex]);
+  }, [formSubStep, activeGuide, stepIndex, options]);
+
+  // ── REAÇÃO INTERATIVA: QUANDO O FORMULÁRIO DE CADASTRO É ABERTO OU FECHADO ──
+  useEffect(() => {
+    if (isAddBirdModalOpen) {
+      // O usuário abriu o formulário de cadastro de ave
+      setFormSubStep(ADD_BIRD_FORM_GUIDE_STEP);
+      setIsOpen(true);
+    } else {
+      // O formulário foi fechado (via Cancelar, Salvar ou X)
+      setFormSubStep(prev => {
+        if (prev?.id === 'birds-add-form-guide') {
+          // Avança automaticamente para o próximo passo (Passo 2: Busca e Filtros Rápidos)
+          setStepIndex(1);
+          return null;
+        }
+        return prev;
+      });
+    }
+  }, [isAddBirdModalOpen]);
 
   // ── DETECTOR INTELIGENTE DE PRIMEIRA VISITA POR ABA ──
   // Quando o usuário navega para uma aba pela primeira vez, ativa a assistente visual automaticamente
@@ -93,7 +141,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
   useEffect(() => {
     clearTimeout(autoTriggerTimerRef.current);
 
-    if (isBlocked) return;
+    if (isBlocked && !isAddBirdModalOpen) return;
 
     // Checagem de segurança no DOM: se o popup de teste grátis estiver visível, aguarda
     if (typeof document !== 'undefined' && document.getElementById('trial-popup-overlay')) {
@@ -111,7 +159,6 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
 
     // Aguarda a renderização completa da tela (800ms) antes de mostrar
     autoTriggerTimerRef.current = setTimeout(() => {
-      // Verifica novamente se a rota ainda é a mesma e nenhum popup abriu
       const checkTab = getTabIdFromPath(window.location.pathname);
       const isPopupInDOM = typeof document !== 'undefined' && Boolean(document.getElementById('trial-popup-overlay'));
       if (checkTab === currentTab && !isOpen && !isBlocked && !isPopupInDOM) {
@@ -123,7 +170,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
     return () => {
       clearTimeout(autoTriggerTimerRef.current);
     };
-  }, [location.pathname, getSeenTabs, isOpen, openAssistant, isBlocked]);
+  }, [location.pathname, getSeenTabs, isOpen, openAssistant, isBlocked, isAddBirdModalOpen]);
 
   // Quando o popup de teste grátis for fechado pelo usuário, agora sim ativa a assistente!
   useEffect(() => {
@@ -163,6 +210,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
     activeGuide,
     currentStep,
     stepIndex,
+    isFormSubStep: Boolean(formSubStep),
     openAssistant,
     closeAssistant: handleClose,
     nextStep,

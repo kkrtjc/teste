@@ -88,16 +88,28 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       const isMobile = window.innerWidth < 768;
 
       if (isMobile) {
-        // No mobile:
-        // Se o elemento estiver abaixo de 40% da tela, rolamos para o fim ('end')
-        // para dar espaço amplo ao card no topo da tela.
-        // Se estiver no topo, rolamos para o início ('start') para o card ficar no rodapé.
-        const placeCardAtTop = rect.top > (screenHeight * 0.40);
-        el.scrollIntoView({
-          behavior: 'smooth',
-          block: placeCardAtTop ? 'end' : 'start',
-          inline: 'nearest'
-        });
+        // Se for o grid de métricas do plantel (que possui 3 linhas de cards no mobile),
+        // rolamos para o topo ('start') para garantir que todos os 6 cards comecem no topo
+        // e sobre espaço livre no rodapé para o card flutuante!
+        if (currentStep.id === 'dashboard-stats') {
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          });
+        } else if (rect.top > (screenHeight * 0.40)) {
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end',
+            inline: 'nearest'
+          });
+        } else {
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
       } else {
         // No desktop: centraliza suavemente
         el.scrollIntoView({
@@ -193,21 +205,15 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onNext, onPrev, onClose]);
 
-  // ── Cálculo das Dimensões e Posição do Recorte / Spotlight ──
+  // ── Cálculo Exato das Dimensões do Recorte / Spotlight (Sem cortes arbitrários de altura) ──
   const getSpotlightRect = useCallback(() => {
     if (!targetRect) return null;
-    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-    const pad = 8;
-    
-    // Se o elemento for muito alto no mobile (ex: grid ou lista grande),
-    // limitamos o foco aos primeiros 36% da tela para deixar 64% da tela livre para o card e contexto
-    const maxHeight = isMobile ? window.innerHeight * 0.36 : window.innerHeight * 0.65;
-    const effectiveHeight = Math.min(targetRect.height, maxHeight);
+    const pad = 6;
 
-    const x = Math.max(4, targetRect.left - pad);
-    const y = Math.max(4, targetRect.top - pad);
-    const width = Math.min(window.innerWidth - 8, targetRect.width + pad * 2);
-    const height = effectiveHeight + pad * 2;
+    const x = Math.max(2, targetRect.left - pad);
+    const y = Math.max(2, targetRect.top - pad);
+    const width = targetRect.width + pad * 2;
+    const height = targetRect.height + pad * 2;
 
     return {
       x,
@@ -222,7 +228,8 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
   if (!isOpen || !activeGuide || !currentStep) return null;
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  const isLastStep = stepIndex === activeGuide.steps.length - 1;
+  const isFormSubStep = currentStep.id.includes('form-guide');
+  const isLastStep = !isFormSubStep && stepIndex === activeGuide.steps.length - 1;
   const sRect = getSpotlightRect();
 
   const handleNextClick = () => {
@@ -237,6 +244,37 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
   const handlePrevClick = () => {
     triggerLight();
     onPrev();
+  };
+
+  // Dispara o clique no elemento real do DOM quando o usuário toca no elemento ou moldura
+  const triggerTargetClick = () => {
+    const el = findTargetElement();
+    if (!el) return;
+    triggerLight();
+    const clickable = (el.tagName === 'BUTTON' || el.tagName === 'A' || typeof (el as any).onclick === 'function')
+      ? el
+      : (el.querySelector('button, a, [role="button"]') as HTMLElement) || el;
+    clickable.click();
+  };
+
+  // Trata cliques no backdrop
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (!targetRect) {
+      onClose();
+      return;
+    }
+    const { clientX, clientY } = e;
+    const isInside = (
+      clientX >= targetRect.left &&
+      clientX <= targetRect.right &&
+      clientY >= targetRect.top &&
+      clientY <= targetRect.bottom
+    );
+    if (isInside) {
+      triggerTargetClick();
+      return;
+    }
+    onClose();
   };
 
   // ── Cálculo Geométrico Rigoroso: ZERO SOBREPOSIÇÃO entre o Card e a Função Apresentada ──
@@ -381,7 +419,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       <svg 
         className="fixed inset-0 w-full h-full z-[10000] pointer-events-auto select-none"
         style={{ width: '100vw', height: '100vh' }}
-        onClick={onClose}
+        onClick={handleBackdropClick}
       >
         <defs>
           <mask id="assistant-spotlight-cutout">
@@ -394,8 +432,8 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
                 y={sRect.y}
                 width={sRect.width}
                 height={sRect.height}
-                rx="18"
-                ry="18"
+                rx="20"
+                ry="20"
                 fill="black"
               />
             )}
@@ -413,10 +451,10 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
         />
       </svg>
 
-      {/* ── Moldura de Destaque Vibrante & Elegante em volta do Recorte ── */}
+      {/* ── Moldura de Destaque Vibrante & Interativa em volta do Recorte ── */}
       {sRect && (
         <div
-          className="fixed z-[10001] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 assistant-spotlight-pulse"
+          className="fixed z-[10001] border-2 border-amber-400 rounded-2xl cursor-pointer pointer-events-auto transition-all duration-300 assistant-spotlight-pulse"
           style={{
             left: sRect.x,
             top: sRect.y,
@@ -424,11 +462,15 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
             height: sRect.height,
             boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.5), 0 0 35px rgba(245, 158, 11, 0.85), inset 0 0 15px rgba(245, 158, 11, 0.12)',
           }}
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerTargetClick();
+          }}
         >
           {/* Badge flutuante sobre a moldura destacada */}
-          <div className="absolute -top-3.5 left-3 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-black font-black text-[9px] tracking-wider uppercase shadow-lg flex items-center gap-1 select-none">
+          <div className="absolute -top-3.5 left-3 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-black font-black text-[9px] tracking-wider uppercase shadow-lg flex items-center gap-1 select-none pointer-events-none">
             <Sparkles size={11} className="text-black" />
-            <span>Recurso em Destaque</span>
+            <span>{isFormSubStep ? 'Formulário Aberto' : 'Toque para Explorar'}</span>
           </div>
         </div>
       )}
@@ -488,7 +530,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
             </h3>
             
             {/* Texto de Instrução Escrito na Tela com Alto Contraste e Legibilidade */}
-            <div className="text-xs text-zinc-100 leading-relaxed font-normal bg-[#0b0d16]/90 p-3 rounded-2xl border border-amber-400/20 shadow-inner">
+            <div className="text-xs text-zinc-100 leading-relaxed font-normal bg-[#0b0d16]/90 p-3 rounded-2xl border border-amber-400/20 shadow-inner whitespace-pre-line">
               <p>{renderFormattedText(currentStep.description)}</p>
             </div>
           </div>
@@ -497,21 +539,28 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
           <div className="flex items-center justify-between pt-2 border-t border-white/10">
             {/* Marcadores de Etapa */}
             <div className="flex items-center gap-1.5">
-              {activeGuide.steps.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === stepIndex 
-                      ? 'w-6 bg-gradient-to-r from-amber-400 to-orange-400 shadow-sm shadow-amber-500/60' 
-                      : 'w-1.5 bg-zinc-700'
-                  }`}
-                />
-              ))}
+              {isFormSubStep ? (
+                <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                  <Sparkles size={12} />
+                  <span>Explorando Formulário</span>
+                </span>
+              ) : (
+                activeGuide.steps.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      idx === stepIndex 
+                        ? 'w-6 bg-gradient-to-r from-amber-400 to-orange-400 shadow-sm shadow-amber-500/60' 
+                        : 'w-1.5 bg-zinc-700'
+                    }`}
+                  />
+                ))
+              )}
             </div>
 
             {/* Botões Voltar & Avançar */}
             <div className="flex items-center gap-2">
-              {stepIndex > 0 && (
+              {(stepIndex > 0 || isFormSubStep) && (
                 <button
                   type="button"
                   onClick={handlePrevClick}
@@ -527,7 +576,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
                 onClick={handleNextClick}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-black text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-amber-500/30 cursor-pointer"
               >
-                <span>{isLastStep ? 'Entendi, Concluir' : 'Avançar'}</span>
+                <span>{isFormSubStep ? 'Continuar Instruções' : isLastStep ? 'Entendi, Concluir' : 'Avançar'}</span>
                 {isLastStep ? <CheckCircle2 size={15} /> : <ChevronRight size={15} />}
               </button>
             </div>

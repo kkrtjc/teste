@@ -1026,6 +1026,7 @@ export function AddBirdModal() {
     >
       {/* Container relativo para os overlays internos (travado contra rolagem horizontal/vertical da janela) */}
       <div 
+        id="add-bird-modal-container"
         className="relative bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh] gpu-accelerated animate-scale-up" 
         onClick={e => e.stopPropagation()}
         onTouchMove={handleCardTouchMove}
@@ -1047,7 +1048,7 @@ export function AddBirdModal() {
             <h3 className="font-black text-lg text-white">
               {birdToEditId ? 'Editar Ave' : 'Nova Ave'}
             </h3>
-            <button onClick={closeModals} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+            <button id="add-bird-modal-close" onClick={closeModals} className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
               <X size={20} />
             </button>
           </div>
@@ -1079,7 +1080,7 @@ export function AddBirdModal() {
             </button>
           ) : (
             <div className="flex gap-2">
-              <button onClick={closeModals} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">
+              <button id="add-bird-modal-cancel" onClick={closeModals} className="px-4 py-2 text-sm text-theme-text-muted hover:text-white transition-colors">
                 Cancelar
               </button>
               {birdToEditId && (

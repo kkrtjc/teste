@@ -58,7 +58,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
         title: 'Cadastrar Nova Ave',
         badge: 'Passo 1 de 3',
         speechText: 'Para adicionar uma ave, toque no botão Cadastrar Ave. Você pode registrar anilha, foto, baia, data de nascimento e vincular os pais para montar a árvore genealógica.',
-        description: 'Toque em **Cadastrar Ave** para registrar anilha, foto, baia, sexo, status e vincular os pais para gerar a **árvore genealógica completa**.'
+        description: 'Toque no botão **Cadastrar Ave** para abrir o formulário. Você pode clicar no botão agora mesmo para ver como funciona e conhecer os campos!'
       },
       {
         id: 'birds-search',
@@ -221,3 +221,12 @@ export function getTabIdFromPath(pathname: string): string | null {
   if (clean.startsWith('setting')) return 'settings';
   return null;
 }
+
+export const ADD_BIRD_FORM_GUIDE_STEP: AssistantStep = {
+  id: 'birds-add-form-guide',
+  targetId: 'add-bird-modal-container',
+  title: 'Formulário: Cadastrar Nova Ave',
+  badge: 'Instrução do Formulário',
+  speechText: '',
+  description: 'Neste formulário você cadastra a ave em 4 etapas rápidas:\n\n• **1. Identificação:** Anilha/ID obrigatório (único para cada ave) e a Raça.\n• **2. Características:** Sexo (Macho/Fêmea), Baia de alojamento e Data de Nascimento.\n• **3. Pedigree:** Selecione o Pai e a Mãe para montar a **árvore genealógica** automática!\n• **4. Vacinas:** Registro das doses aplicadas e histórico sanitário.\n\n🔙 **Para voltar e continuar as instruções:** Toque no botão **Cancelar** no rodapé ou no **(X)** no topo a qualquer momento!'
+};

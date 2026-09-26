@@ -295,7 +295,11 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     closeAssistant,
     nextStep,
     prevStep
-  } = useSmartAssistant({ isBlocked });
+  } = useSmartAssistant({ 
+    isBlocked,
+    isAddBirdModalOpen,
+    onCloseAddBirdModal: closeModals
+  });
 
   // Redireciona qualquer chamada legada de startTour para a assistente inteligente
   useEffect(() => {
