@@ -7,6 +7,11 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
  */
 export function AutoUpdater() {
   useRegisterSW({
+    onNeedRefresh() {
+      // Quando há uma nova versão disponível, NÃO recarrega a página automaticamente.
+      // O novo SW fica pronto e a atualização entra em vigor de forma transparente na próxima sessão.
+      console.info('[PWA] Nova versão pronta em background.');
+    },
     onRegistered(registration) {
       if (!registration) return;
       // Verifica atualizações silenciosamente a cada 30 minutos em background

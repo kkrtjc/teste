@@ -12,8 +12,9 @@ import { AutoUpdater } from './components/AutoUpdater';
 import { PublicBirdShowcase } from './pages/PublicBirdShowcase';
 
 
-// Login carregado sob demanda (apenas quando o usuário não estiver logado)
-const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+// Login carregado sob demanda com prefetch imediato no início da aplicação
+const loginPromise = import('./pages/Login');
+const Login = lazy(() => loginPromise.then(m => ({ default: m.Login })));
 
 function AppContent() {
   const location = useLocation();
