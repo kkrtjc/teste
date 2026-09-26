@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   ChevronRight, 
   ChevronLeft, 
   X, 
   CheckCircle2, 
-  Bot
+  Bot,
+  Sparkles
 } from 'lucide-react';
 import { type TabGuide, type AssistantStep } from '../../lib/assistantSteps';
 import { useHaptics } from '../../hooks/useHaptics';
@@ -44,6 +45,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
   onClose
 }: SmartAssistantModalProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const { triggerLight, triggerSuccess } = useHaptics();
 
   // Encontra o elemento alvo suportando múltiplos seletores de fallback
@@ -77,34 +79,34 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
   useEffect(() => {
     if (!isOpen || !currentStep) return;
 
-    // Aguarda montagem da view
     const timer = setTimeout(() => {
       const el = findTargetElement();
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const screenHeight = window.innerHeight;
-        const isMobile = window.innerWidth < 768;
+      if (!el) return;
 
-        if (isMobile) {
-          // No mobile:
-          // Se o elemento estiver abaixo do terço superior (rect.top > screenHeight * 0.40),
-          // o card ficará no topo da tela. Portanto, rolamos para a parte inferior (block: 'end').
-          // Se o elemento estiver no topo, o card ficará no rodapé, então rolamos para o topo (block: 'start').
-          const placeCardAtTop = rect.top > (screenHeight * 0.40);
-          el.scrollIntoView({
-            behavior: 'smooth',
-            block: placeCardAtTop ? 'end' : 'start',
-            inline: 'nearest'
-          });
-        } else {
-          el.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-          });
-        }
+      const rect = el.getBoundingClientRect();
+      const screenHeight = window.innerHeight;
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        // No mobile:
+        // Se o elemento estiver abaixo de 40% da tela, rolamos para o fim ('end')
+        // para dar espaço amplo ao card no topo da tela.
+        // Se estiver no topo, rolamos para o início ('start') para o card ficar no rodapé.
+        const placeCardAtTop = rect.top > (screenHeight * 0.40);
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: placeCardAtTop ? 'end' : 'start',
+          inline: 'nearest'
+        });
+      } else {
+        // No desktop: centraliza suavemente
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
       }
-    }, 180);
+    }, 140);
 
     return () => clearTimeout(timer);
   }, [isOpen, currentStep, findTargetElement]);
@@ -191,10 +193,37 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onNext, onPrev, onClose]);
 
+  // ── Cálculo das Dimensões e Posição do Recorte / Spotlight ──
+  const getSpotlightRect = useCallback(() => {
+    if (!targetRect) return null;
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+    const pad = 8;
+    
+    // Se o elemento for muito alto no mobile (ex: grid ou lista grande),
+    // limitamos o foco aos primeiros 36% da tela para deixar 64% da tela livre para o card e contexto
+    const maxHeight = isMobile ? window.innerHeight * 0.36 : window.innerHeight * 0.65;
+    const effectiveHeight = Math.min(targetRect.height, maxHeight);
+
+    const x = Math.max(4, targetRect.left - pad);
+    const y = Math.max(4, targetRect.top - pad);
+    const width = Math.min(window.innerWidth - 8, targetRect.width + pad * 2);
+    const height = effectiveHeight + pad * 2;
+
+    return {
+      x,
+      y,
+      width,
+      height,
+      bottom: y + height,
+      right: x + width,
+    };
+  }, [targetRect]);
+
   if (!isOpen || !activeGuide || !currentStep) return null;
 
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
   const isLastStep = stepIndex === activeGuide.steps.length - 1;
+  const sRect = getSpotlightRect();
 
   const handleNextClick = () => {
     if (isLastStep) {
@@ -210,35 +239,65 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     onPrev();
   };
 
-  // Cálculo de Posicionamento Fluido do Card para NUNCA tampar o elemento destacado
+  // ── Cálculo Geométrico Rigoroso: ZERO SOBREPOSIÇÃO entre o Card e a Função Apresentada ──
   const getFluidCardStyle = (): React.CSSProperties => {
-    if (!targetRect) {
+    const cardEl = cardRef.current;
+    const cardHeight = cardEl ? cardEl.offsetHeight : (isMobile ? 210 : 225);
+    const cardWidth = cardEl ? cardEl.offsetWidth : (isMobile ? window.innerWidth - 24 : 390);
+
+    // Fallback padrão se ainda não localizou o elemento no DOM
+    if (!sRect) {
       return isMobile 
-        ? { position: 'fixed', bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 84px)', left: '12px', right: '12px', zIndex: 10002 }
-        : { position: 'fixed', bottom: '32px', right: '32px', width: '400px', zIndex: 10002 };
+        ? { position: 'fixed', bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 80px)', left: '12px', right: '12px', zIndex: 10002 }
+        : { position: 'fixed', bottom: '32px', right: '32px', width: '390px', zIndex: 10002 };
     }
 
     const screenHeight = window.innerHeight;
     const screenWidth = window.innerWidth;
-    const targetCenterY = targetRect.top + targetRect.height / 2;
-    const targetCenterX = targetRect.left + targetRect.width / 2;
 
     if (isMobile) {
-      // No mobile:
-      // Se o elemento estiver abaixo de 40% da tela, o card fica no topo livre
-      if (targetCenterY > screenHeight * 0.40) {
+      // No Mobile:
+      // O card ocupa a largura total (left: 12px, right: 12px).
+      // Portanto, o card DEVE ficar ESTRITAMENTE ACIMA ou ABAIXO do elemento destacado.
+      const safeBottomDock = 80; // Altura reservada da dock de navegação inferior
+      const spaceBelow = (screenHeight - safeBottomDock) - sRect.bottom;
+      const spaceAbove = sRect.y;
+
+      // 1. Se cabe com folga abaixo do elemento destacado:
+      if (spaceBelow >= cardHeight + 12) {
         return {
           position: 'fixed',
-          top: 'calc(max(env(safe-area-inset-top, 0px), 12px) + 12px)',
+          top: `${sRect.bottom + 12}px`,
+          left: '12px',
+          right: '12px',
+          zIndex: 10002,
+        };
+      }
+
+      // 2. Se cabe com folga acima do elemento destacado:
+      if (spaceAbove >= cardHeight + 12) {
+        return {
+          position: 'fixed',
+          top: `${Math.max(12, sRect.y - cardHeight - 12)}px`,
+          left: '12px',
+          right: '12px',
+          zIndex: 10002,
+        };
+      }
+
+      // 3. Se o espaço for justo, escolhe o lado com maior espaço livre
+      if (spaceBelow >= spaceAbove) {
+        return {
+          position: 'fixed',
+          bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 80px)',
           left: '12px',
           right: '12px',
           zIndex: 10002,
         };
       } else {
-        // Se o elemento estiver na metade superior, o card fica no rodapé (acima da dock)
         return {
           position: 'fixed',
-          bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 84px)',
+          top: 'calc(max(env(safe-area-inset-top, 0px), 12px) + 10px)',
           left: '12px',
           right: '12px',
           zIndex: 10002,
@@ -246,28 +305,71 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       }
     }
 
-    // Desktop:
-    // Analisa a posição do elemento para garantir 0% de sobreposição
-    const isTargetOnRight = targetCenterX > (screenWidth / 2);
-    const isTargetOnBottom = targetCenterY > (screenHeight / 2);
+    // No Desktop / Tablet (screenWidth >= 768px):
+    const spaceRight = screenWidth - sRect.right;
+    const spaceLeft = sRect.x;
+    const spaceBelow = screenHeight - sRect.bottom;
+    const spaceAbove = sRect.y;
 
-    if (isTargetOnRight) {
-      // Elemento no lado direito -> posiciona o card no lado esquerdo
+    // 1. Prioridade A: Lateral Direita (se houver pelo menos cardWidth + 24px livres à direita do elemento)
+    if (spaceRight >= cardWidth + 24) {
       return {
         position: 'fixed',
-        left: screenWidth > 960 ? '280px' : '32px',
-        top: isTargetOnBottom ? '80px' : `${Math.max(80, Math.min(targetRect.bottom + 20, screenHeight - 320))}px`,
-        width: '400px',
+        left: `${sRect.right + 16}px`,
+        top: `${Math.max(20, Math.min(sRect.y, screenHeight - cardHeight - 20))}px`,
+        width: '390px',
+        zIndex: 10002,
+      };
+    }
+
+    // 2. Prioridade B: Lateral Esquerda (se houver pelo menos cardWidth + 24px livres à esquerda do elemento)
+    if (spaceLeft >= cardWidth + 24) {
+      return {
+        position: 'fixed',
+        left: `${Math.max(20, sRect.x - cardWidth - 16)}px`,
+        top: `${Math.max(20, Math.min(sRect.y, screenHeight - cardHeight - 20))}px`,
+        width: '390px',
+        zIndex: 10002,
+      };
+    }
+
+    // 3. Prioridade C: O elemento é largo (ocupa a largura quase toda da tela).
+    // Posiciona verticalmente (Abaixo ou Acima), garantindo ZERO colisão!
+    if (spaceBelow >= cardHeight + 20) {
+      return {
+        position: 'fixed',
+        top: `${sRect.bottom + 16}px`,
+        left: `${Math.max(24, Math.min(sRect.x, screenWidth - cardWidth - 24))}px`,
+        width: '390px',
+        zIndex: 10002,
+      };
+    }
+
+    if (spaceAbove >= cardHeight + 20) {
+      return {
+        position: 'fixed',
+        top: `${Math.max(20, sRect.y - cardHeight - 16)}px`,
+        left: `${Math.max(24, Math.min(sRect.x, screenWidth - cardWidth - 24))}px`,
+        width: '390px',
+        zIndex: 10002,
+      };
+    }
+
+    // 4. Fallback seguro no desktop: ancorado no canto de maior respiro
+    if (spaceBelow >= spaceAbove) {
+      return {
+        position: 'fixed',
+        bottom: '24px',
+        right: '32px',
+        width: '390px',
         zIndex: 10002,
       };
     } else {
-      // Elemento no lado esquerdo -> posiciona o card no lado direito
-      const verticalPos = isTargetOnBottom ? { top: '80px' } : { bottom: '32px' };
       return {
         position: 'fixed',
+        top: '24px',
         right: '32px',
-        ...verticalPos,
-        width: '400px',
+        width: '390px',
         zIndex: 10002,
       };
     }
@@ -275,8 +377,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
-      {/* ── Backdrop Escurecido com RECORTE TRANSPARENTE 100% NÍTIDO no Alvo (SVG Cutout Mask) ── */}
-      {/* O furo recortado tem 0% de opacidade e 0px de blur, permitindo leitura cristalina de todas as opções */}
+      {/* ── Backdrop Suavemente Opaco (Não muito escuro, não chama atenção, coloca o app em segundo plano elegante) ── */}
       <svg 
         className="fixed inset-0 w-full h-full z-[10000] pointer-events-auto select-none"
         style={{ width: '100vw', height: '100vh' }}
@@ -284,76 +385,85 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       >
         <defs>
           <mask id="assistant-spotlight-cutout">
-            {/* 1. Tudo Branco = fundo escuro cobre a página inteira */}
+            {/* 1. Branco = fundo cobre a página */}
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {/* 2. Recorte Preto = 100% TRANSPARENTE (furo perfeito sem NENHUMA opacidade sobre o elemento) */}
-            {targetRect && (
+            {/* 2. Preto = furo 100% transparente sobre o elemento em foco */}
+            {sRect && (
               <rect
-                x={Math.max(2, targetRect.left - 6)}
-                y={Math.max(2, targetRect.top - 6)}
-                width={targetRect.width + 12}
-                height={targetRect.height + 12}
-                rx="16"
-                ry="16"
+                x={sRect.x}
+                y={sRect.y}
+                width={sRect.width}
+                height={sRect.height}
+                rx="18"
+                ry="18"
                 fill="black"
               />
             )}
           </mask>
         </defs>
-        {/* Retângulo escurecido cobrindo a tela inteira EXCETO o furo do recorte */}
+        {/* Retângulo de véu suave: escurece o suficiente para dar foco ao recurso e ao card, sem ficar preto escuro */}
         <rect
           x="0"
           y="0"
           width="100%"
           height="100%"
-          fill="rgba(5, 7, 15, 0.78)"
+          fill="rgba(10, 14, 24, 0.52)"
           mask="url(#assistant-spotlight-cutout)"
           className="cursor-pointer"
         />
       </svg>
 
-      {/* ── Borda Pulsante Elegante em volta do Recorte ── */}
-      {targetRect && (
+      {/* ── Moldura de Destaque Vibrante & Elegante em volta do Recorte ── */}
+      {sRect && (
         <div
           className="fixed z-[10001] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 assistant-spotlight-pulse"
           style={{
-            left: Math.max(2, targetRect.left - 6),
-            top: Math.max(2, targetRect.top - 6),
-            width: targetRect.width + 12,
-            height: targetRect.height + 12,
-            boxShadow: '0 0 25px rgba(245, 158, 11, 0.85), inset 0 0 15px rgba(245, 158, 11, 0.15)',
+            left: sRect.x,
+            top: sRect.y,
+            width: sRect.width,
+            height: sRect.height,
+            boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.5), 0 0 35px rgba(245, 158, 11, 0.85), inset 0 0 15px rgba(245, 158, 11, 0.12)',
           }}
-        />
+        >
+          {/* Badge flutuante sobre a moldura destacada */}
+          <div className="absolute -top-3.5 left-3 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-black font-black text-[9px] tracking-wider uppercase shadow-lg flex items-center gap-1 select-none">
+            <Sparkles size={11} className="text-black" />
+            <span>Recurso em Destaque</span>
+          </div>
+        </div>
       )}
 
-      {/* ── Card Flutuante da Assistente Mura IA (Visual & Instruções na Tela) ── */}
+      {/* ── Card Flutuante de Instrução (Hiper Visível, Sobre o Fundo, Zero Sobreposição) ── */}
       <div 
+        ref={cardRef}
         style={getFluidCardStyle()}
         className="transition-all duration-300 ease-out animate-scale-up z-[10002]"
       >
-        <div className="bg-[#0f111a]/98 border-2 border-amber-500/40 rounded-3xl p-4 sm:p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3">
+        <div className="bg-gradient-to-b from-[#181b2c] to-[#0f111d] border-2 border-amber-400/80 rounded-3xl p-4 sm:p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95),_0_0_35px_rgba(245,158,11,0.22)] backdrop-blur-2xl relative overflow-hidden flex flex-col gap-3">
           
-          {/* Header da Assistente */}
+          {/* Glow decorativo de topo */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-90" />
+          
+          {/* Header do Card */}
           <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
             <div className="flex items-center gap-2.5">
-              {/* Avatar da IA com Brilho Pulsante */}
               <div className="relative">
-                <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center">
-                  <div className="w-full h-full bg-[#121420] rounded-[14px] flex items-center justify-center text-amber-400">
-                    <Bot size={18} />
+                <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-0.5 shadow-md shadow-amber-500/30 flex items-center justify-center">
+                  <div className="w-full h-full bg-[#10121d] rounded-[14px] flex items-center justify-center text-amber-400">
+                    <Bot size={17} />
                   </div>
                 </div>
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#121420] rounded-full animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#10121d] rounded-full animate-pulse" />
               </div>
 
               <div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-xs font-black text-white tracking-tight">Mura IA</span>
-                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/25 text-amber-300 border border-amber-500/40">
                     {activeGuide.tabTitle}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-amber-400/90 block leading-tight mt-0.5">
+                <span className="text-[10px] font-bold text-amber-400 block leading-tight mt-0.5">
                   {currentStep.badge}
                 </span>
               </div>
@@ -377,8 +487,8 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
               <span>{currentStep.title}</span>
             </h3>
             
-            {/* Texto de Instrução Escrito na Tela com Alto Contraste */}
-            <div className="text-xs text-zinc-200 leading-relaxed font-normal bg-black/50 p-3 rounded-xl border border-white/10">
+            {/* Texto de Instrução Escrito na Tela com Alto Contraste e Legibilidade */}
+            <div className="text-xs text-zinc-100 leading-relaxed font-normal bg-[#0b0d16]/90 p-3 rounded-2xl border border-amber-400/20 shadow-inner">
               <p>{renderFormattedText(currentStep.description)}</p>
             </div>
           </div>
@@ -392,7 +502,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
                   key={idx}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     idx === stepIndex 
-                      ? 'w-6 bg-gradient-to-r from-amber-400 to-orange-400 shadow-sm shadow-amber-500/50' 
+                      ? 'w-6 bg-gradient-to-r from-amber-400 to-orange-400 shadow-sm shadow-amber-500/60' 
                       : 'w-1.5 bg-zinc-700'
                   }`}
                 />
@@ -405,7 +515,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
                 <button
                   type="button"
                   onClick={handlePrevClick}
-                  className="px-3 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl border border-white/15 text-xs font-bold text-zinc-200 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <ChevronLeft size={14} />
                   <span>Voltar</span>
@@ -415,7 +525,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
               <button
                 type="button"
                 onClick={handleNextClick}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-black text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-amber-500/30 cursor-pointer"
               >
                 <span>{isLastStep ? 'Entendi, Concluir' : 'Avançar'}</span>
                 {isLastStep ? <CheckCircle2 size={15} /> : <ChevronRight size={15} />}
