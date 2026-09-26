@@ -241,7 +241,7 @@ export function Vitrine() {
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-8">
       {/* Header & Vitrine Link Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#171722] to-theme-surface border border-amber-500/30 shadow-2xl relative overflow-hidden space-y-4">
+      <div id="vitrine-header-card" className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#171722] to-theme-surface border border-amber-500/30 shadow-2xl relative overflow-hidden space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
@@ -276,7 +276,7 @@ export function Vitrine() {
             <span className="truncate">{vitrineUrl}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div id="vitrine-share-buttons" className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleCopyVitrineLink}
@@ -365,7 +365,7 @@ export function Vitrine() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div id="vitrine-bird-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBirds.map(b => (
             <div 
               key={b.id}

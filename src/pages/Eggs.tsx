@@ -2274,7 +2274,7 @@ export function Eggs() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div id="eggs-header-controls" className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           {/* Seletor de Período */}
           <div className="flex bg-theme-surface border border-theme-border rounded-xl p-1 gap-1">
             {([7, 30, 999] as const).map(p => (
@@ -2300,7 +2300,7 @@ export function Eggs() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div id="eggs-kpi-summary" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <KpiCard icon={Egg} label="Coletados" value={String(kpiColetados)} sub={`${aproveitamento}% aproveitamento (${periodLabel})`} color="amber" />
         <KpiCard icon={ShoppingCart} label="Vendidos" value={String(kpiVendidos)} sub={`${Math.max(0, kpiColetados - kpiVendidos - kpiPerdidos)} em estoque`} color="green" />
         <KpiCard icon={DollarSign} label="Receita Total" value={fmtBRL(kpiReceita)} sub={`Custo ${fmtBRL(kpiCusto)}`} color="blue" />
@@ -2329,7 +2329,7 @@ export function Eggs() {
 
       {/* Lotes Ativos */}
       {activeLots.length > 0 && (
-        <div className="space-y-3">
+        <div id="eggs-lots-list" className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-widest text-theme-text-muted flex items-center gap-2">
             <Layers size={12} />
             <span>Lotes Ativos ({activeLots.length})</span>

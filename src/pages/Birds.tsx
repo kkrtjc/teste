@@ -822,7 +822,7 @@ export function Birds() {
         </div>
         
         {/* Botão de Ação Primária Padronizado (Mesmo local, tamanho e estilo em todas as abas) */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div id="birds-add-button" className="flex items-center gap-2 shrink-0">
           {activeTab === 'aves' ? (
             <button 
               type="button"
@@ -855,7 +855,7 @@ export function Birds() {
       </div>
 
       {/* ── Tabs (Glassmorphic Pill Bar Padronizada) ── */}
-      <div className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-lg self-start gap-1">
+      <div id="birds-tabs-bar" className="flex p-1 bg-theme-surface border border-theme-border/40 rounded-full overflow-x-auto hide-scrollbar shrink-0 w-full sm:w-auto max-w-lg self-start gap-1">
         <button 
           onClick={() => { setActiveTab('aves'); }}
           className={`flex-1 sm:flex-none text-center px-4 py-2 text-xs font-black transition-all rounded-full whitespace-nowrap ${
@@ -897,7 +897,7 @@ export function Birds() {
       {activeTab === 'aves' && (
         <div className="space-y-3">
           {/* Search Row Padronizada */}
-          <div className="w-full shrink-0">
+          <div id="birds-search-bar" className="w-full shrink-0">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted" size={15} />
               <input

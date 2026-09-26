@@ -212,7 +212,7 @@ export function Dashboard() {
       </div>
 
       {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
+      <div id="dashboard-stats-grid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
           {/* Total Aves Card */}
           <div 
             onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Total' } }); }}
@@ -323,6 +323,7 @@ export function Dashboard() {
           {/* Card de Produção de Ovos — Últimos 7 dias */}
           {hasEggLots && (
             <div
+              id="dashboard-egg-card"
               onClick={() => { triggerLight(); navigate('/eggs'); }}
               className="bg-theme-surface border border-theme-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-amber-500/40 transition-colors shadow-lg"
             >

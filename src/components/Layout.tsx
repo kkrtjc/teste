@@ -4,10 +4,12 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Layers, Settings as SettingsIcon, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, HelpCircle, Egg, Sparkles, RefreshCw,
+  Bell, MessageSquare, Egg, Sparkles, RefreshCw,
   Zap, Store, ArrowLeft, Lock
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
+import { SmartAssistantModal } from './assistant/SmartAssistantModal';
+import { useSmartAssistant } from '../hooks/useSmartAssistant';
 
 // Code-splitting dos modais pesados para alívio de memória e boot instantâneo
 const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ default: m.AddBirdModal })));
@@ -272,8 +274,8 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
 
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
   const { 
-    farmSettings, openTutorial, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
-    isTourOpen, isProfileSetupOpen, startTour, closeTour, finishProfileSetup, showToast,
+    farmSettings, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
+    isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal
   } = useAppContext();
@@ -281,6 +283,21 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const location = useLocation();
   const { triggerLight } = useHaptics();
   const { isLocalMode, isAdmin, trialInfo, cpf, hasModuleAccess, user, activateSubscription, isExpired } = useAuth();
+
+  const {
+    isOpen: isAssistantOpen,
+    activeGuide,
+    currentStep,
+    stepIndex,
+    isSpeaking,
+    isMuted,
+    openAssistant,
+    closeAssistant,
+    nextStep,
+    prevStep,
+    toggleMute,
+    repeatSpeech
+  } = useSmartAssistant();
 
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
@@ -627,6 +644,21 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
           {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
         </Suspense>
+
+        {/* ── Assistente Inteligente Mura IA (Contextual por Aba com Voz & Texto) ── */}
+        <SmartAssistantModal
+          isOpen={isAssistantOpen}
+          activeGuide={activeGuide}
+          currentStep={currentStep}
+          stepIndex={stepIndex}
+          isSpeaking={isSpeaking}
+          isMuted={isMuted}
+          onNext={nextStep}
+          onPrev={prevStep}
+          onClose={closeAssistant}
+          onToggleMute={toggleMute}
+          onRepeatSpeech={repeatSpeech}
+        />
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
@@ -638,7 +670,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
           <p className="text-[10px] text-theme-text-muted uppercase tracking-widest mt-1 font-bold">Elite Poultry System</p>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav id="nav-main-menu" className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -695,14 +727,18 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
             </div>
           </div>
           
-          {/* Help / Tutorial Trigger */}
+          {/* Assistente Inteligente Mura IA Trigger */}
           <button
-            onClick={startTour || openTutorial}
-            className="p-2 hover:bg-white/5 text-theme-text-muted hover:text-white rounded-xl transition-all active:scale-95 shrink-0 ml-auto mr-2 flex items-center gap-1.5 text-xs font-bold"
-            title="Tutorial de Uso"
+            id="header-assistant-button"
+            onClick={() => {
+              triggerLight();
+              openAssistant();
+            }}
+            className="p-2 hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 border border-amber-500/25 hover:border-amber-500/50 rounded-xl transition-all active:scale-95 shrink-0 ml-auto mr-2 flex items-center gap-1.5 text-xs font-black shadow-sm shadow-amber-500/10 cursor-pointer"
+            title="Abrir Assistente Inteligente Mura IA (Explicação das ferramentas desta aba)"
           >
-            <HelpCircle size={18} />
-            <span className="hidden sm:inline">Ajuda</span>
+            <Sparkles size={16} className="text-amber-400 animate-pulse" />
+            <span className="hidden sm:inline">Assistente IA</span>
           </button>
 
           {/* Admin panel button if CPF is admin */}
@@ -895,7 +931,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
 
       {/* Floating Bottom Navigation (Mobile Dock) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 touch-manipulation">
-        <nav className="bg-[#121218] border border-theme-border/60 rounded-2xl shadow-xl px-2 py-2">
+        <nav id="mobile-nav-main-menu" className="bg-[#121218] border border-theme-border/60 rounded-2xl shadow-xl px-2 py-2">
           <div className="flex justify-around items-center h-14">
             {mobileNavItems.map((item) => (
               <NavLink

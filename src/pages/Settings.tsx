@@ -462,7 +462,7 @@ export function Settings() {
       )}
 
       {/* ── CARD 1: DADOS DO CRIATÓRIO E PERFIL ── */}
-      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
+      <div id="settings-farm-info" className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6">
         <div className="border-b border-theme-border/40 pb-3">
           <h3 className="text-base font-black text-white flex items-center gap-2">
             <Home size={18} className="text-theme-primary" /> Informações do Criatório
@@ -590,7 +590,7 @@ export function Settings() {
       </div>
 
       {/* ── CARD 2: BACKUP E SEGURANÇA DOS DADOS ── */}
-      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+      <div id="settings-backup-card" className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
         <div className="border-b border-theme-border/40 pb-3">
           <h3 className="text-base font-black text-white flex items-center gap-2">
             <Database size={18} className="text-theme-primary" /> Cópia de Segurança (Backup)

@@ -1083,7 +1083,7 @@ export function Lots() {
       </div>
 
       {/* ── Barra de Abas (3 Colunas Fixas Sem Rolagem - Sem Riscos em Volta / Relevância Sutil) ── */}
-      <div className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-theme-base/95 backdrop-blur-md">
+      <div id="lots-tabs-bar" className="sticky top-0 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-theme-base/95 backdrop-blur-md">
         <div className="grid grid-cols-3 w-full gap-1.5 sm:gap-2">
           {[
             { id: 'postura', label: 'Postura', count: eggLots.length },
@@ -1118,7 +1118,7 @@ export function Lots() {
 
       {/* ── Barra de Controles: Filtro de Status & Botão de Criação ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <div className="flex items-center gap-1 bg-theme-surface/80 p-1 rounded-xl border border-theme-border/70 self-start sm:self-auto shadow-sm">
+        <div id="lots-status-filter" className="flex items-center gap-1 bg-theme-surface/80 p-1 rounded-xl border border-theme-border/70 self-start sm:self-auto shadow-sm">
           {[
             { id: 'ativos', label: 'Lotes Ativos', dot: 'bg-emerald-400' },
             { id: 'encerrados', label: 'Encerrados', dot: 'bg-zinc-500' },
@@ -1140,7 +1140,7 @@ export function Lots() {
           ))}
         </div>
 
-        <div>
+        <div id="lots-create-button">
           {activeTab === 'postura' && (
             <button 
               onClick={() => setShowPostura(true)} 
