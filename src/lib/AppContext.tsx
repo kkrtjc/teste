@@ -1026,8 +1026,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? supabase!.from('breeds').select('*').in('user_id', adminUserIds).order('nome', { ascending: true })
           : supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem,imagens').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem,imagens').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -1281,7 +1281,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       setBreeds(uniqueBreeds);
-      await safeStorageSet(getStorageKey('breeds'), uniqueBreeds);
+      safeStorageSet(getStorageKey('breeds'), uniqueBreeds);
 
       // ── AVES: Sincronização Cloud-Authoritative & Prevenção Rigorosa de Fantasmas ──
       const offlinePendingIds = await getOfflinePendingBirdIds();
@@ -1335,9 +1335,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const cloudMapped: Bird[] = sbBirdsFromCloud.map((b: any) => {
           const localBird = (localBirds || []).find((x: any) => x.id === b.id);
-          let birdImagens = (localBird?.imagens && localBird.imagens.length > 0)
+          const cloudImgs: string[] = (b.imagens && Array.isArray(b.imagens) && b.imagens.length > 0)
+            ? b.imagens
+            : (b.imagem ? [b.imagem] : []);
+          const localImgs: string[] = (localBird?.imagens && localBird.imagens.length > 0)
             ? localBird.imagens
             : (localBird?.imagem ? [localBird.imagem] : []);
+          const birdImagens = localImgs.length > 0 ? localImgs : cloudImgs;
+          const birdImagem = localBird?.imagem || b.imagem || birdImagens[0] || undefined;
 
           const parsedCloudVitrine = parseBirdVitrine(b.observacoes);
           const parsedLocalVitrine = parseBirdVitrine(localBird?.observacoes);
@@ -1390,7 +1395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             raca: b.raca || '',
             baia: b.baia || 'ND',
             status: b.status || 'Adulto',
-            imagem: localBird?.imagem || undefined,
+            imagem: birdImagem,
             imagens: birdImagens,
             vacinas: b.vacinas,
             origem: b.origem,
@@ -1438,7 +1443,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setBirds(finalBirds);
       birdsRef.current = finalBirds;
-      await safeStorageSet(getStorageKey('birds'), finalBirds);
+      safeStorageSet(getStorageKey('birds'), finalBirds);
 
       // ── CARREGAMENTO DE FOTOS EM SEGUNDO PLANO (NON-BLOCKING) ──
       // Busca fotos de alta resolução da nuvem sem atrasar a inicialização do app
@@ -1518,7 +1523,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setCouples(mappedCouples);
-      await safeStorageSet(getStorageKey('couples'), mappedCouples);
+      safeStorageSet(getStorageKey('couples'), mappedCouples);
 
       // ── LOTES DE OVOS: Mapeamento e preservação ──
       const mappedEggLots = sbEggLots.map((l: any) => {
@@ -1650,7 +1655,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const finalEggLots = [...mappedEggLots, ...pendingEggLots];
       setEggLots(finalEggLots);
       eggLotsRef.current = finalEggLots;
-      await safeStorageSet(getStorageKey('egglots'), finalEggLots);
+      safeStorageSet(getStorageKey('egglots'), finalEggLots);
 
       // ── LOTES DE CORTE: Mapeamento e preservação ──
       const mappedMeatLots = sbMeatLots.map((l: any) => {
@@ -1763,7 +1768,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const finalMeatLots = [...mappedMeatLots, ...pendingMeatLots];
       setMeatLots(finalMeatLots);
       meatLotsRef.current = finalMeatLots;
-      await safeStorageSet(getStorageKey('meatlots'), finalMeatLots);
+      safeStorageSet(getStorageKey('meatlots'), finalMeatLots);
 
       // ── OVOS DE CASAL: Mapeamento e preservação ──
       const mappedCoupleEggs = sbCoupleEggs.map((e: any) => ({
@@ -1793,7 +1798,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const finalCoupleEggs = [...mappedCoupleEggs, ...pendingCoupleEggs];
       setCoupleEggs(finalCoupleEggs);
-      await safeStorageSet(getStorageKey('couple-eggs'), finalCoupleEggs);
+      safeStorageSet(getStorageKey('couple-eggs'), finalCoupleEggs);
 
       // ── LOTES DE INCUBAÇÃO: Mapeamento e preservação ──
       const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
@@ -1835,7 +1840,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const finalIncubationLots = [...mappedIncubationLots, ...pendingIncubationLots];
       setIncubationLots(finalIncubationLots);
-      await safeStorageSet(getStorageKey('incubation-lots'), finalIncubationLots);
+      safeStorageSet(getStorageKey('incubation-lots'), finalIncubationLots);
 
       // ── CONFIGURAÇÕES DA FAZENDA ──
       const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
@@ -1851,7 +1856,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           state: sbSettings.state || localSettings?.state || ''
         };
         setFarmSettings(settingsData);
-        await safeStorageSet(getStorageKey('settings'), settingsData);
+        safeStorageSet(getStorageKey('settings'), settingsData);
         try {
           localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(settingsData));
           localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(settingsData));
@@ -1934,7 +1939,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const syncPromise = syncWithSupabaseBackground(true);
           // Se localCount for 0 (aba privada ou novo aparelho), aguarda a nuvem entregar os dados antes de exibir o app
-          const waitTimeout = (localCount === 0 || !localCount) ? 5000 : 2500;
+          const waitTimeout = (localCount === 0 || !localCount) ? 8000 : 2500;
           await Promise.race([
             syncPromise,
             new Promise(resolve => setTimeout(resolve, waitTimeout))

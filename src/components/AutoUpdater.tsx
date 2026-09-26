@@ -1,39 +1,24 @@
-import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 /**
- * AutoUpdater - Registra o Service Worker e aplica atualizações automaticamente.
- * Quando uma nova versão do app é publicada, o SW atualiza em background
- * e a próxima navegação do usuário carrega a versão nova sem interrupção.
+ * AutoUpdater - Registra o Service Worker e gerencia o cache offline em segundo plano.
+ * NUNCA força recarregamento abrupto de página (window.location.reload) enquanto o usuário
+ * estiver navegando, digitando seu CPF ou preenchendo formulários na aplicação.
  */
 export function AutoUpdater() {
-  const { updateServiceWorker } = useRegisterSW({
+  useRegisterSW({
     onRegistered(registration) {
       if (!registration) return;
-      // Check for updates every 60 seconds
-      setInterval(() => {
+      // Verifica atualizações silenciosamente a cada 30 minutos em background
+      const timer = setInterval(() => {
         registration.update().catch(() => {});
-      }, 60 * 1000);
-    },
-    onNeedRefresh() {
-      // Auto-apply update silently on next page focus
-      updateServiceWorker(false);
+      }, 30 * 60 * 1000);
+      return () => clearInterval(timer);
     },
     onOfflineReady() {
-      console.info('[PWA] App pronto para uso offline.');
+      console.info('[PWA] Recursos armazenados para uso offline.');
     },
   });
-
-  // Apply update when user returns to the tab
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        updateServiceWorker(false).catch(() => {});
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [updateServiceWorker]);
 
   return null;
 }
