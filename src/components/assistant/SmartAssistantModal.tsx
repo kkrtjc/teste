@@ -5,9 +5,6 @@ import {
   ChevronLeft, 
   X, 
   CheckCircle2, 
-  Volume2, 
-  VolumeX, 
-  RotateCcw,
   Bot
 } from 'lucide-react';
 import { type TabGuide, type AssistantStep } from '../../lib/assistantSteps';
@@ -18,13 +15,9 @@ interface SmartAssistantModalProps {
   activeGuide: TabGuide | null;
   currentStep: AssistantStep | null;
   stepIndex: number;
-  isSpeaking: boolean;
-  isMuted: boolean;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
-  onToggleMute: () => void;
-  onRepeatSpeech: () => void;
 }
 
 function renderFormattedText(text: string) {
@@ -46,13 +39,9 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
   activeGuide,
   currentStep,
   stepIndex,
-  isSpeaking,
-  isMuted,
   onNext,
   onPrev,
-  onClose,
-  onToggleMute,
-  onRepeatSpeech
+  onClose
 }: SmartAssistantModalProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const { triggerLight, triggerSuccess } = useHaptics();
@@ -120,31 +109,67 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     return () => clearTimeout(timer);
   }, [isOpen, currentStep, findTargetElement]);
 
-  // Monitora a posição do elemento com ResizeObserver e scroll listener
+  // Monitora a posição do elemento com requestAnimationFrame e listeners passivos (elimina layout thrashing)
   useEffect(() => {
     if (!isOpen || !currentStep) return;
 
+    let rafId: number | null = null;
+    let scheduled = false;
+
     const updateTarget = () => {
+      scheduled = false;
       const el = findTargetElement();
       if (el) {
         const rect = el.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          setTargetRect(rect);
+          setTargetRect(prev => {
+            if (!prev) return rect;
+            // Previne re-render se as coordenadas não mudaram perceptivelmente
+            if (
+              Math.abs(prev.top - rect.top) < 1 &&
+              Math.abs(prev.left - rect.left) < 1 &&
+              Math.abs(prev.width - rect.width) < 1 &&
+              Math.abs(prev.height - rect.height) < 1
+            ) {
+              return prev;
+            }
+            return rect;
+          });
           return;
         }
       }
       setTargetRect(null);
     };
 
+    const requestUpdate = () => {
+      if (!scheduled) {
+        scheduled = true;
+        rafId = requestAnimationFrame(updateTarget);
+      }
+    };
+
+    // Atualização inicial imediata
     updateTarget();
-    const interval = setInterval(updateTarget, 100);
-    window.addEventListener('resize', updateTarget);
-    window.addEventListener('scroll', updateTarget, true);
+
+    // Listeners com passive: true para garantir 60+ FPS sem travar o scroll da thread principal
+    window.addEventListener('resize', requestUpdate, { passive: true });
+    window.addEventListener('scroll', requestUpdate, { passive: true, capture: true });
+
+    // Observa redimensionamentos do elemento alvo caso ele mude dinamicamente de tamanho
+    const el = findTargetElement();
+    let resizeObserver: ResizeObserver | null = null;
+    if (el && typeof ResizeObserver !== 'undefined') {
+      try {
+        resizeObserver = new ResizeObserver(() => requestUpdate());
+        resizeObserver.observe(el);
+      } catch {}
+    }
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', updateTarget);
-      window.removeEventListener('scroll', updateTarget, true);
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', requestUpdate);
+      window.removeEventListener('scroll', requestUpdate, true);
+      if (resizeObserver) resizeObserver.disconnect();
     };
   }, [isOpen, currentStep, findTargetElement]);
 
@@ -301,10 +326,10 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
         />
       )}
 
-      {/* ── Card Flutuante da Assistente Mura IA (Fala & Legenda na Tela) ── */}
+      {/* ── Card Flutuante da Assistente Mura IA (Visual & Instruções na Tela) ── */}
       <div 
         style={getFluidCardStyle()}
-        className="transition-all duration-400 ease-out animate-scale-up z-[10002]"
+        className="transition-all duration-300 ease-out animate-scale-up z-[10002]"
       >
         <div className="bg-[#0f111a]/98 border-2 border-amber-500/40 rounded-3xl p-4 sm:p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3">
           
@@ -334,52 +359,15 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
               </div>
             </div>
 
-            {/* Controles de Áudio & Fechar */}
-            <div className="flex items-center gap-1">
-              {/* Efeito Visual de Onda de Áudio Quando a IA Fala */}
-              {isSpeaking ? (
-                <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/15 border border-amber-500/30 rounded-lg mr-1 animate-pulse" title="Mura IA falando">
-                  <div className="w-1 bg-amber-400 rounded-full animate-sound-wave-1" />
-                  <div className="w-1 bg-amber-400 rounded-full animate-sound-wave-2" />
-                  <div className="w-1 bg-amber-400 rounded-full animate-sound-wave-3" />
-                  <div className="w-1 bg-amber-400 rounded-full animate-sound-wave-4" />
-                </div>
-              ) : null}
-
-              {/* Botão de Repetir Fala */}
-              <button
-                type="button"
-                onClick={onRepeatSpeech}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-                title="Ouvir novamente"
-              >
-                <RotateCcw size={15} />
-              </button>
-
-              {/* Botão de Mudo / Som */}
-              <button
-                type="button"
-                onClick={onToggleMute}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  isMuted 
-                    ? 'text-rose-400 hover:bg-rose-500/10' 
-                    : 'text-amber-400 hover:bg-amber-400/10'
-                }`}
-                title={isMuted ? 'Ativar voz da assistente' : 'Silenciar voz'}
-              >
-                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-
-              {/* Botão Fechar / Pular */}
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer ml-1"
-                title="Fechar instruções"
-              >
-                <X size={16} />
-              </button>
-            </div>
+            {/* Botão Fechar */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              title="Fechar instruções"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Título do Passo */}
@@ -389,21 +377,9 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
               <span>{currentStep.title}</span>
             </h3>
             
-            {/* Texto Falado Escrito na Tela (Legenda) */}
-            <div className="text-xs text-zinc-300 leading-relaxed font-normal bg-black/40 p-2.5 sm:p-3 rounded-xl border border-white/5 space-y-2">
+            {/* Texto de Instrução Escrito na Tela com Alto Contraste */}
+            <div className="text-xs text-zinc-200 leading-relaxed font-normal bg-black/50 p-3 rounded-xl border border-white/10">
               <p>{renderFormattedText(currentStep.description)}</p>
-
-              {/* Botão amigável de desbloqueio de áudio em navegadores com bloqueio de autoplay */}
-              {!isMuted && !isSpeaking && (
-                <button
-                  type="button"
-                  onClick={onRepeatSpeech}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
-                >
-                  <Volume2 size={13} className="text-amber-400" />
-                  <span>Ouvir explicação com voz</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -441,7 +417,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
                 onClick={handleNextClick}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black text-xs font-black flex items-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
               >
-                <span>{isLastStep ? 'Concluir' : 'Avançar'}</span>
+                <span>{isLastStep ? 'Entendi, Concluir' : 'Avançar'}</span>
                 {isLastStep ? <CheckCircle2 size={15} /> : <ChevronRight size={15} />}
               </button>
             </div>

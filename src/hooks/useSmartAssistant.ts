@@ -7,12 +7,6 @@ import {
   type TabGuide, 
   type AssistantStep 
 } from '../lib/assistantSteps';
-import { 
-  speakAssistant, 
-  stopAssistantSpeech, 
-  isVoiceMuted, 
-  setVoiceMuted as saveVoiceMuted 
-} from '../lib/assistantSpeech';
 
 const SEEN_TABS_STORAGE_PREFIX = '@mura-manager:assistant-seen-tabs:';
 
@@ -25,8 +19,6 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMuted, setIsMuted] = useState<boolean>(() => isVoiceMuted());
 
   const autoTriggerTimerRef = useRef<any>(null);
   const lastAutoTriggeredTabRef = useRef<string | null>(null);
@@ -58,102 +50,45 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
   const activeGuide: TabGuide | null = activeTabId ? ASSISTANT_GUIDES[activeTabId] || null : null;
   const currentStep: AssistantStep | null = activeGuide ? activeGuide.steps[stepIndex] || null : null;
 
-  // Interrompe voz ao fechar ou desmontar
+  // Fecha o modal e persiste o status de visualização
   const handleClose = useCallback(() => {
-    stopAssistantSpeech();
-    setIsSpeaking(false);
     if (activeTabId) {
       markTabAsSeen(activeTabId);
     }
     setIsOpen(false);
   }, [activeTabId, markTabAsSeen]);
 
-  // Dispara a fala da assistente para o passo atual
-  const speakCurrentStep = useCallback((step: AssistantStep | null) => {
-    if (!step) {
-      stopAssistantSpeech();
-      setIsSpeaking(false);
-      return;
-    }
-
-    if (isVoiceMuted()) {
-      stopAssistantSpeech();
-      setIsSpeaking(false);
-      return;
-    }
-
-    speakAssistant(step.speechText, {
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false)
-    });
-  }, []);
-
-  // Abre manualmente a assistente para uma aba específica (ou para a aba atual)
+  // Abre a assistente para uma aba específica (ou para a aba atual)
   const openAssistant = useCallback((forcedTabId?: string) => {
     const tabId = forcedTabId || getTabIdFromPath(location.pathname);
     if (!tabId || !ASSISTANT_GUIDES[tabId]) return;
 
-    stopAssistantSpeech();
     setActiveTabId(tabId);
     setStepIndex(0);
     setIsOpen(true);
-
-    const firstStep = ASSISTANT_GUIDES[tabId].steps[0];
-    // Aguarda abertura do modal antes de falar
-    setTimeout(() => {
-      speakCurrentStep(firstStep);
-    }, 300);
-  }, [location.pathname, speakCurrentStep]);
+  }, [location.pathname]);
 
   // Avança para o próximo passo da aba
   const nextStep = useCallback(() => {
     if (!activeGuide) return;
 
     if (stepIndex < activeGuide.steps.length - 1) {
-      const nextIndex = stepIndex + 1;
-      setStepIndex(nextIndex);
-      const next = activeGuide.steps[nextIndex];
-      speakCurrentStep(next);
+      setStepIndex(prev => prev + 1);
     } else {
       // Concluiu a aba!
       handleClose();
     }
-  }, [activeGuide, stepIndex, speakCurrentStep, handleClose]);
+  }, [activeGuide, stepIndex, handleClose]);
 
   // Volta para o passo anterior
   const prevStep = useCallback(() => {
     if (stepIndex > 0 && activeGuide) {
-      const prevIndex = stepIndex - 1;
-      setStepIndex(prevIndex);
-      const prev = activeGuide.steps[prevIndex];
-      speakCurrentStep(prev);
+      setStepIndex(prev => prev - 1);
     }
-  }, [activeGuide, stepIndex, speakCurrentStep]);
-
-  // Alterna o mudo da voz
-  const toggleMute = useCallback(() => {
-    const nextState = !isMuted;
-    setIsMuted(nextState);
-    saveVoiceMuted(nextState);
-
-    if (nextState) {
-      stopAssistantSpeech();
-      setIsSpeaking(false);
-    } else if (currentStep) {
-      speakCurrentStep(currentStep);
-    }
-  }, [isMuted, currentStep, speakCurrentStep]);
-
-  // Repete a fala do passo atual
-  const repeatSpeech = useCallback(() => {
-    if (currentStep) {
-      speakCurrentStep(currentStep);
-    }
-  }, [currentStep, speakCurrentStep]);
+  }, [activeGuide, stepIndex]);
 
   // ── DETECTOR INTELIGENTE DE PRIMEIRA VISITA POR ABA ──
-  // Quando o usuário navega para uma aba pela primeira vez, ativa a assistente automaticamente
+  // Quando o usuário navega para uma aba pela primeira vez, ativa a assistente visual automaticamente
   // NÃO dispara se houver modal de boas-vindas / teste grátis ativo (ordem estrita de exibição)
   useEffect(() => {
     clearTimeout(autoTriggerTimerRef.current);
@@ -174,7 +109,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
     const seenTabs = getSeenTabs();
     if (seenTabs.includes(currentTab)) return;
 
-    // Aguarda a renderização completa da tela (900ms) antes de mostrar
+    // Aguarda a renderização completa da tela (800ms) antes de mostrar
     autoTriggerTimerRef.current = setTimeout(() => {
       // Verifica novamente se a rota ainda é a mesma e nenhum popup abriu
       const checkTab = getTabIdFromPath(window.location.pathname);
@@ -183,7 +118,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
         lastAutoTriggeredTabRef.current = currentTab;
         openAssistant(currentTab);
       }
-    }, 900);
+    }, 800);
 
     return () => {
       clearTimeout(autoTriggerTimerRef.current);
@@ -202,7 +137,7 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
             lastAutoTriggeredTabRef.current = currentTab;
             openAssistant(currentTab);
           }
-        }, 700);
+        }, 600);
       }
     };
 
@@ -211,13 +146,6 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
       window.removeEventListener('trial-popup-dismissed', handleTrialDismissed);
     };
   }, [location.pathname, getSeenTabs, isOpen, openAssistant]);
-
-  // Cancela voz ao trocar de página
-  useEffect(() => {
-    return () => {
-      stopAssistantSpeech();
-    };
-  }, [location.pathname]);
 
   // Permite abrir a assistente via evento customizado global de qualquer lugar do app
   useEffect(() => {
@@ -235,14 +163,10 @@ export function useSmartAssistant(options?: { isBlocked?: boolean }) {
     activeGuide,
     currentStep,
     stepIndex,
-    isSpeaking,
-    isMuted,
     openAssistant,
     closeAssistant: handleClose,
     nextStep,
     prevStep,
-    toggleMute,
-    repeatSpeech,
     markTabAsSeen
   };
 }

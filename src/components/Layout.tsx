@@ -291,14 +291,10 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     activeGuide,
     currentStep,
     stepIndex,
-    isSpeaking,
-    isMuted,
     openAssistant,
     closeAssistant,
     nextStep,
-    prevStep,
-    toggleMute,
-    repeatSpeech
+    prevStep
   } = useSmartAssistant({ isBlocked });
 
   // Redireciona qualquer chamada legada de startTour para a assistente inteligente
@@ -654,19 +650,15 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
           {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
         </Suspense>
 
-        {/* ── Assistente Inteligente Mura IA (Contextual por Aba com Voz & Texto) ── */}
+        {/* ── Assistente Inteligente Mura IA (Contextual por Aba - Visual & Fluida 60+ FPS) ── */}
         <SmartAssistantModal
           isOpen={isAssistantOpen}
           activeGuide={activeGuide}
           currentStep={currentStep}
           stepIndex={stepIndex}
-          isSpeaking={isSpeaking}
-          isMuted={isMuted}
           onNext={nextStep}
           onPrev={prevStep}
           onClose={closeAssistant}
-          onToggleMute={toggleMute}
-          onRepeatSpeech={repeatSpeech}
         />
       
       {/* Sidebar (Desktop) */}
