@@ -463,7 +463,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       if (session?.user) {
         const u = sanitizeAdminUser(session.user);
-        setUser(u);
+        setUser((prevUser: any) => {
+          if (prevUser && prevUser.id === u.id && prevUser.email === u.email) {
+            return prevUser;
+          }
+          return u;
+        });
         try {
           localStorage.setItem('@mura-manager:cached-user', JSON.stringify(u));
           if (session.access_token) {

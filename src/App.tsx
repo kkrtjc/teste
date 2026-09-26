@@ -66,7 +66,7 @@ function AppContent() {
       <SplashScreen isLoading={isAppLoading} />
 
       {/* Renderiza o App apenas quando autenticado e com banco pronto */}
-      {user && isReady && (
+      {user && isReady && isInitialSyncDone && (
         <>
           {/* ── Popup de trial: aparece 1x por dia, obrigatório antes do app ── */}
           {showTrialPopup && (

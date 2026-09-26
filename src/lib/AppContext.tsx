@@ -1030,8 +1030,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? supabase!.from('breeds').select('*').in('user_id', adminUserIds).order('nome', { ascending: true })
           : supabase!.from('breeds').select('*').eq('user_id', targetUserId).order('nome', { ascending: true }),
         isAdmin
-          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem,imagens').in('user_id', adminUserIds).order('anilha', { ascending: true })
-          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem,imagens').eq('user_id', targetUserId).order('anilha', { ascending: true }),
+          ? supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem').in('user_id', adminUserIds).order('anilha', { ascending: true })
+          : supabase!.from('birds').select('id,anilha,nome,sexo,raca,baia,status,vacinas,origem,casal_id,pai_id,mae_id,is_pai_externo,is_mae_externo,data_nascimento,peso,observacoes,user_id,imagem').eq('user_id', targetUserId).order('anilha', { ascending: true }),
         isAdmin
           ? supabase!.from('couples').select('*').in('user_id', adminUserIds)
           : supabase!.from('couples').select('*').eq('user_id', targetUserId),
@@ -1042,7 +1042,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? supabase!.from('meat_lots').select('*').in('user_id', adminUserIds)
           : supabase!.from('meat_lots').select('*').eq('user_id', targetUserId),
         isAdmin
-          ? supabase!.from('profiles').select('*').in('id', adminUserIds).maybeSingle()
+          ? supabase!.from('profiles').select('*').in('id', adminUserIds).order('updated_at', { ascending: false }).limit(1)
           : supabase!.from('profiles').select('*').eq('id', targetUserId).maybeSingle(),
         isAdmin
           ? supabase!.from('couple_eggs').select('*').in('user_id', adminUserIds)
@@ -1092,7 +1092,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbCouples = resCouples.data || [];
       let sbEggLots = resEggLots.data || [];
       let sbMeatLots = resMeatLots.data || [];
-      let sbSettings = resSettings.data || null;
+      let sbSettings = (resSettings.data && Array.isArray(resSettings.data))
+        ? (resSettings.data[0] || null)
+        : (resSettings.data || null);
       let sbCoupleEggs = resCoupleEggs.data || [];
       let sbIncubationLots = resIncubationLots.data || [];
 
@@ -1897,6 +1899,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           await safeStorageSet(getStorageKey('settings'), defaultSettings);
         }
       }
+
+      if (finalBirds.length > 0 || sbSettings) {
+        setIsReady(true);
+        setIsInitialSyncDone(true);
+      }
     } catch (syncError) {
       console.error("Erro na sincronização em background:", syncError);
       // Fallback offline defensivo: só restaura do cache se a memória ainda estiver completamente vazia
@@ -1908,10 +1915,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [user, loadFromLocalForage]);
 
+  const lastLoadedUserIdRef = useRef<string | null>(null);
+
   // Carregamento inicial de dados ao iniciar ou trocar de usuário
   useEffect(() => {
     async function loadData() {
       if (!user) {
+        lastLoadedUserIdRef.current = null;
         // Se ainda está determinando a sessão e há usuário em cache no localStorage, NÃO limpa a tela
         const hasCachedUser = !!localStorage.getItem('@mura-manager:cached-user');
         if (hasCachedUser) {
@@ -1925,6 +1935,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Evita execuções duplicadas e concorrentes para o mesmo usuário se já há dados carregados
+      if (lastLoadedUserIdRef.current === user.id && birdsRef.current.length > 0) {
+        setIsReady(true);
+        setIsInitialSyncDone(true);
+        return;
+      }
+      lastLoadedUserIdRef.current = user.id;
+
+      // Se a memória local está vazia (ex: aba privada ou primeira instalação), reseta isReady para não abrir tela vazia prematura
+      if (birdsRef.current.length === 0) {
+        setIsReady(false);
+      }
       setIsInitialSyncDone(false);
 
       // ── Migra dados cadastrados offline / como visitante para a conta do usuário que acabou de logar ──
@@ -1935,6 +1957,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localCount = await loadFromLocalForage();
       if (localCount > 0) {
         setIsReady(true);
+      } else {
+        setIsReady(false);
       }
 
       // ── Sincroniza com a nuvem para trazer todas as informações do criatório ──
@@ -1942,8 +1966,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         processSyncQueue().catch(() => {});
         try {
           const syncPromise = syncWithSupabaseBackground(true);
-          // Se localCount for 0 (aba privada ou novo aparelho), aguarda a nuvem entregar os dados antes de exibir o app
-          const waitTimeout = (localCount === 0 || !localCount) ? 8000 : 2500;
+          // Se localCount for 0 (aba privada ou novo aparelho), aguarda a nuvem com tempo seguro de até 15s
+          const waitTimeout = (localCount === 0 || !localCount) ? 15000 : 2500;
           await Promise.race([
             syncPromise,
             new Promise(resolve => setTimeout(resolve, waitTimeout))
@@ -1958,7 +1982,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     loadData();
-  }, [user, loadFromLocalForage, syncWithSupabaseBackground, migrateGuestAndLocalDataToUser]);
+  }, [user?.id, loadFromLocalForage, syncWithSupabaseBackground, migrateGuestAndLocalDataToUser]);
 
   // Efeito de reconexão automática e sincronização contínua (Online / Focus / Timer 60s)
   useEffect(() => {
