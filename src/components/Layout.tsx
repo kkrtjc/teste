@@ -14,7 +14,6 @@ import { useSmartAssistant } from '../hooks/useSmartAssistant';
 // Code-splitting dos modais pesados para alívio de memória e boot instantâneo
 const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ default: m.AddBirdModal })));
 const BirdProfileModal = lazy(() => import('./modals/BirdProfileModal').then(m => ({ default: m.BirdProfileModal })));
-const OnboardingTour = lazy(() => import('./modals/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 const UserProfileSetupModal = lazy(() => import('./modals/UserProfileSetupModal').then(m => ({ default: m.UserProfileSetupModal })));
 const PWAInstallGuideModal = lazy(() => import('./modals/PWAInstallGuideModal').then(m => ({ default: m.PWAInstallGuideModal })));
 
@@ -298,6 +297,14 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     toggleMute,
     repeatSpeech
   } = useSmartAssistant();
+
+  // Redireciona qualquer chamada legada de startTour para a assistente inteligente
+  useEffect(() => {
+    if (isTourOpen) {
+      closeTour?.();
+      openAssistant();
+    }
+  }, [isTourOpen, closeTour, openAssistant]);
 
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
@@ -641,7 +648,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
         <Suspense fallback={null}>
           {isAddBirdModalOpen && <AddBirdModal />}
           {selectedBirdProfileId && <BirdProfileModal />}
-          {isTourOpen && <OnboardingTour isOpen={true} onClose={closeTour || (() => {})} onComplete={closeTour || (() => {})} />}
           {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
         </Suspense>
 

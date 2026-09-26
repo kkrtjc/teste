@@ -4,7 +4,7 @@ import {
   ShieldCheck, MessageCircle, 
   ChevronLeft, ChevronRight, Award, Calendar, 
   Scale, Dna, ArrowUpRight, Loader2,
-  Store, ChevronDown, ArrowLeft, Search
+  Store, ChevronDown, ArrowLeft, Search, AlertCircle
 } from 'lucide-react';
 import { fetchShowcase, type PublicShowcaseData } from '../lib/showcaseShare';
 
@@ -19,6 +19,7 @@ export function PublicBirdShowcase() {
   const [selectedVitrineBird, setSelectedVitrineBird] = useState<any | null>(null);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [highlightVitrine, setHighlightVitrine] = useState(false);
+  const [warningToast, setWarningToast] = useState<string | null>(null);
   const vitrineSectionRef = useRef<HTMLDivElement>(null);
   const isPausedRef = useRef(false);
   const timerRef = useRef<any>(null);
@@ -294,7 +295,8 @@ export function PublicBirdShowcase() {
   const handleBirdWhatsApp = (targetBird: any) => {
     if (!targetBird) return;
     if (!cleanWhatsapp) {
-      alert('O criador ainda não informou um número de WhatsApp nesta ficha técnica.');
+      setWarningToast('O criador ainda não cadastrou um número de WhatsApp nesta vitrine.');
+      setTimeout(() => setWarningToast(null), 4000);
       return;
     }
     const anilhaStr = targetBird.anilha ? `anilha *${targetBird.anilha}*` : 'esta ave';
@@ -1020,6 +1022,15 @@ export function PublicBirdShowcase() {
       </div>
     )}
   </main>
+      {/* Toast flutuante moderno para avisos da vitrine */}
+      {warningToast && (
+        <div className="fixed bottom-6 left-4 right-4 z-[9999] flex justify-center pointer-events-none animate-slide-up">
+          <div className="bg-[#181924]/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md text-xs font-bold flex items-center gap-2.5 max-w-md pointer-events-auto">
+            <AlertCircle size={16} className="text-amber-400 shrink-0" />
+            <span>{warningToast}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3366,7 +3366,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openTutorial = useCallback(() => {
-    setIsTutorialOpen(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-smart-assistant'));
+    }
   }, []);
 
   const closeTutorial = useCallback(() => {
@@ -3381,7 +3383,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
 
-  const startTour = useCallback(() => setIsTourOpen(true), []);
+  const startTour = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-smart-assistant'));
+    }
+  }, []);
   const closeTour = useCallback(() => {
     setIsTourOpen(false);
     try {

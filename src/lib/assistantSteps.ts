@@ -30,7 +30,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'dashboard-eggs',
-        targetId: 'dashboard-egg-card',
+        targetId: 'dashboard-egg-card, dashboard-stats-grid',
         title: 'Produção Semanal de Ovos',
         badge: 'Passo 2 de 3',
         speechText: 'Neste gráfico, você visualiza a contagem dos ovos coletados nos últimos sete dias e o acumulado do mês, com alertas automáticos se algum lote ficar sem registro.',
@@ -38,7 +38,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'dashboard-navigation',
-        targetId: 'nav-main-menu',
+        targetId: 'nav-main-menu, mobile-nav-main-menu',
         title: 'Navegação por Abas',
         badge: 'Passo 3 de 3',
         speechText: 'Use o menu de navegação para explorar as ferramentas do app. Conforme você entrar em uma nova aba pela primeira vez, eu vou te ensinar como ela funciona!',
@@ -134,7 +134,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'eggs-daily',
-        targetId: 'eggs-lots-list',
+        targetId: 'eggs-lots-list, eggs-empty-lot-card, eggs-header-controls',
         title: 'Lançamento Diário de Coleta',
         badge: 'Passo 3 de 3',
         speechText: 'Toque em Lançar Dia no card da baia para registrar a contagem de hoje. O calendário calcula automaticamente a taxa de postura e identifica variações de produção.',
@@ -150,7 +150,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
     steps: [
       {
         id: 'vitrine-link',
-        targetId: 'vitrine-header-card',
+        targetId: 'vitrine-header-card, vitrine-locked-card',
         title: 'Catálogo Público Exclusivo',
         badge: 'Passo 1 de 3',
         speechText: 'A Vitrine Digital é a página pública oficial do seu criatório. Aqui você tem um link exclusivo pronto para divulgar suas aves para clientes em todo o Brasil.',
@@ -158,7 +158,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'vitrine-share',
-        targetId: 'vitrine-share-buttons',
+        targetId: 'vitrine-share-buttons, vitrine-locked-card, vitrine-header-card',
         title: 'Compartilhar no WhatsApp',
         badge: 'Passo 2 de 3',
         speechText: 'Com um único toque, você pode copiar o link ou enviar diretamente uma mensagem personalizada no WhatsApp com fotos, preços e procedência selecionada.',
@@ -166,7 +166,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'vitrine-toggles',
-        targetId: 'vitrine-bird-list',
+        targetId: 'vitrine-bird-list, vitrine-locked-card, vitrine-header-card',
         title: 'Exibir ou Ocultar Aves',
         badge: 'Passo 3 de 3',
         speechText: 'Basta tocar no botão Na Vitrine em cada ave que você deseja exibir. Somente as aves que você ativar ficarão visíveis para seus clientes.',
@@ -190,7 +190,7 @@ export const ASSISTANT_GUIDES: Record<string, TabGuide> = {
       },
       {
         id: 'settings-pwa',
-        targetId: 'install-pwa-card',
+        targetId: 'install-pwa-card, settings-farm-info',
         title: 'Salvar no Celular (iPhone & Android)',
         badge: 'Passo 2 de 3',
         speechText: 'Dica de ouro: adicione o ícone do Mura Manager na tela inicial do seu celular. Ele funciona como um aplicativo instalado, abre em tela cheia e mantém seu login sempre salvo.',

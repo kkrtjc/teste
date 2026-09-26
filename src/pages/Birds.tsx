@@ -543,6 +543,7 @@ export function Birds() {
   const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda' | 'Vendido' | 'Faleceu'>('Todos');
   const [deleteBreedConfirm, setDeleteBreedConfirm] = useState<{ id: string; nome: string; message: string } | null>(null);
+  const [reactivateBirdConfirm, setReactivateBirdConfirm] = useState<Bird | null>(null);
 
   // Calcula a contagem de aves por raça em complexidade O(N) linear
   const birdCountByBreed = useMemo(() => {
@@ -1432,16 +1433,8 @@ export function Birds() {
                       <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                         {(isSold || isDeceased) && (
                           <button
-                            onClick={() => {
-                              if (confirm(`Deseja reativar a ave ${b.anilha} de volta para o plantel ativo?`)) {
-                                editBird(b.id, {
-                                  status: b.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
-                                  dataBaixa: undefined,
-                                  dataVenda: undefined,
-                                });
-                                showToast(`Ave ${b.anilha} reativada no plantel!`, 'success');
-                              }
-                            }}
+                            type="button"
+                            onClick={() => setReactivateBirdConfirm(b)}
                             className="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
                             title="Reativar ave e trazer de volta para o plantel ativo"
                           >
@@ -1489,6 +1482,27 @@ export function Birds() {
           setDeleteBreedConfirm(null);
         }}
         onCancel={() => setDeleteBreedConfirm(null)}
+      />
+
+      {/* Confirmação de reativação de ave */}
+      <ConfirmDialog
+        isOpen={Boolean(reactivateBirdConfirm)}
+        title={`Reativar Ave ${reactivateBirdConfirm?.anilha || ''}?`}
+        message={`A ave ${reactivateBirdConfirm?.anilha || ''} retornará para o plantel ativo (como ${reactivateBirdConfirm?.sexo === 'Macho' ? 'Reprodutor' : 'Matriz'}) e voltará a constar nas suas contagens e árvores genealógicas ativas.`}
+        confirmLabel="Reativar no Plantel"
+        confirmVariant="info"
+        onConfirm={() => {
+          if (reactivateBirdConfirm) {
+            editBird(reactivateBirdConfirm.id, {
+              status: reactivateBirdConfirm.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
+              dataBaixa: undefined,
+              dataVenda: undefined,
+            });
+            showToast(`Ave ${reactivateBirdConfirm.anilha} reativada no plantel!`, 'success');
+          }
+          setReactivateBirdConfirm(null);
+        }}
+        onCancel={() => setReactivateBirdConfirm(null)}
       />
 
     </div>

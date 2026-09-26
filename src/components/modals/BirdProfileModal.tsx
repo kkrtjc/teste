@@ -10,6 +10,7 @@ import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 import { ShareBirdModal } from './ShareBirdModal';
 import { SellBirdModal } from './SellBirdModal';
+import { ConfirmDialog } from './ConfirmDialog';
 import { SmartBirdImage } from '../ui/SmartBirdImage';
 
 function PedigreeTreeNode({
@@ -120,6 +121,8 @@ export function BirdProfileModal() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -284,16 +287,7 @@ export function BirdProfileModal() {
           <div className="flex items-center gap-2 sm:gap-3">
             {bird.status === 'Vendido' ? (
               <button
-                onClick={() => {
-                  if (confirm(`Deseja reativar a ave ${bird.anilha} de volta para o plantel ativo?`)) {
-                    editBird(bird.id, {
-                      status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
-                      dataBaixa: undefined,
-                      dataVenda: undefined,
-                    });
-                    showToast('Ave reativada no plantel ativo!', 'success');
-                  }
-                }}
+                onClick={() => setReactivateConfirmOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
                 title="Reativar ave e trazer de volta para o plantel ativo"
               >
@@ -320,12 +314,7 @@ export function BirdProfileModal() {
               <span className="hidden sm:inline">Compartilhar</span>
             </button>
             <button
-              onClick={() => {
-                if (confirm(`Deseja excluir permanentemente a ave ${bird.anilha} do plantel?`)) {
-                  removeBird(bird.id);
-                  closeModals();
-                }
-              }}
+              onClick={() => setDeleteConfirmOpen(true)}
               className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
             >
               <Trash2 size={16} /> <span className="hidden sm:inline">Excluir</span>
@@ -1062,6 +1051,44 @@ export function BirdProfileModal() {
           isOpen={isSellModalOpen}
           onClose={() => setIsSellModalOpen(false)}
           onSuccess={() => closeModals()}
+        />
+      )}
+
+      {/* Confirmação de Exclusão Definitiva */}
+      {bird && (
+        <ConfirmDialog
+          isOpen={deleteConfirmOpen}
+          title={`Excluir Ave ${bird.anilha}?`}
+          message={`Tem certeza que deseja excluir permanentemente a ave anilha ${bird.anilha}${bird.nome ? ` (${bird.nome})` : ''} do seu criatório? Todos os dados associados serão removidos.`}
+          confirmLabel="Excluir Definitivamente"
+          confirmVariant="danger"
+          onConfirm={() => {
+            removeBird(bird.id);
+            setDeleteConfirmOpen(false);
+            closeModals();
+          }}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
+      )}
+
+      {/* Confirmação de Reativação no Plantel */}
+      {bird && (
+        <ConfirmDialog
+          isOpen={reactivateConfirmOpen}
+          title={`Reativar Ave ${bird.anilha}?`}
+          message="A ave retornará para o seu plantel ativo (como Reprodutor ou Matriz) e voltará a constar nas suas contagens e gráficos."
+          confirmLabel="Reativar no Plantel"
+          confirmVariant="info"
+          onConfirm={() => {
+            editBird(bird.id, {
+              status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
+              dataBaixa: undefined,
+              dataVenda: undefined,
+            });
+            showToast(`Ave ${bird.anilha} reativada com sucesso!`, 'success');
+            setReactivateConfirmOpen(false);
+          }}
+          onCancel={() => setReactivateConfirmOpen(false)}
         />
       )}
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Camera, Save, Phone, Mail, Home, LogOut, HelpCircle, 
+  Camera, Save, Phone, Mail, Home, LogOut, Sparkles, 
   Download, Upload, CheckCircle2, AlertCircle, 
   Database, Smartphone, Zap
 } from 'lucide-react';
@@ -141,7 +141,7 @@ export function Settings() {
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
     coupleEggs, incubationLots,
-    importBackup, openTutorial, showToast, recoverAllBirds
+    importBackup, showToast, recoverAllBirds
   } = useAppContext();
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, isExpired, activateSubscription } = useAuth();
 
@@ -674,22 +674,24 @@ export function Settings() {
         </div>
       </div>
 
-      {/* ── CARD 3: AJUDA E TUTORIAL GUIADO ── */}
+      {/* ── CARD 3: ASSISTENTE INTELIGENTE MURA IA ── */}
       <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
         <div>
           <h3 className="text-base font-black text-white flex items-center gap-2">
-            <HelpCircle size={18} className="text-theme-primary" /> Central de Ajuda &amp; Treinamento
+            <Sparkles size={18} className="text-amber-400" /> Assistente Inteligente Mura IA
           </h3>
           <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
-            Dúvidas sobre como cadastrar matrizes, gerenciar ovos ou interpretar o pedigree? Reveja nosso tutorial guiado a qualquer momento.
+            Dúvidas sobre como cadastrar matrizes, gerenciar ovos ou ativar sua vitrine? Abra a assistente inteligente para ouvir e ver as explicações detalhadas em qualquer tela.
           </p>
         </div>
 
         <button
-          onClick={openTutorial}
-          className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-theme-primary to-orange-500 hover:from-amber-400 hover:to-orange-600 text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-theme-primary/10"
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-smart-assistant'))}
+          className="w-full flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer"
         >
-          📖 Iniciar Tutorial Guiado Interativo
+          <Sparkles size={16} />
+          <span>✨ Iniciar Assistente Inteligente Mura IA (Com Voz &amp; Guia)</span>
         </button>
       </div>
 

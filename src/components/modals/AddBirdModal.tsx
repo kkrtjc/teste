@@ -7,6 +7,7 @@ import { compressImage } from '../../lib/imageCompression';
 import { uploadBirdPhoto } from '../../lib/storageService';
 import { calculateExactAge } from '../../lib/utils';
 import { QuickBreedModal } from './QuickBreedModal';
+import { ConfirmDialog } from './ConfirmDialog';
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 function StepDots({ total, current }: { total: number; current: number }) {
@@ -238,6 +239,7 @@ export function AddBirdModal() {
   const [detailBird, setDetailBird] = useState<typeof birds[number] | null>(null);
   const [showBaiaDetail, setShowBaiaDetail] = useState(false);
   const [showQuickBreedModal, setShowQuickBreedModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1082,13 +1084,9 @@ export function AddBirdModal() {
               </button>
               {birdToEditId && (
                 <button
-                  onClick={() => {
-                    if (confirm('Deseja excluir permanentemente esta ave?')) {
-                      removeBird(birdToEditId);
-                      closeModals();
-                    }
-                  }}
-                  className="px-4 py-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 size={14} /> Excluir
                 </button>
@@ -1119,6 +1117,22 @@ export function AddBirdModal() {
         isOpen={showQuickBreedModal}
         onClose={() => setShowQuickBreedModal(false)}
         onBreedSaved={(newBreed) => setRaca(newBreed.nome)}
+      />
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Excluir Ave Permanentemente?"
+        message={`Tem certeza que deseja excluir esta ave (${anilha || 'sem anilha'})? Todos os registros, vínculos genealógicos e fotos associados serão removidos.`}
+        confirmLabel="Excluir Definitivamente"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (birdToEditId) {
+            removeBird(birdToEditId);
+            setShowDeleteConfirm(false);
+            closeModals();
+          }
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>,
     document.body

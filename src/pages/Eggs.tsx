@@ -2309,7 +2309,7 @@ export function Eggs() {
 
       {/* Sem Lotes */}
       {eggLots.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-theme-border bg-theme-surface/40 p-10 text-center space-y-4">
+        <div id="eggs-empty-lot-card" className="rounded-2xl border border-dashed border-theme-border bg-theme-surface/40 p-10 text-center space-y-4">
           <Egg size={44} className="text-amber-400/40 mx-auto" />
           <div className="space-y-1">
             <p className="text-white font-black text-lg">Nenhum lote de postura cadastrado</p>

@@ -191,7 +191,7 @@ export function Vitrine() {
         </div>
 
         {/* Card Gamificado de Bloqueio */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-theme-surface border border-theme-border shadow-2xl relative overflow-hidden text-center space-y-6">
+        <div id="vitrine-locked-card" className="p-6 sm:p-8 rounded-3xl bg-theme-surface border border-theme-border shadow-2xl relative overflow-hidden text-center space-y-6">
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-500/20 to-orange-600/10 border-2 border-amber-500/40 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
             <Lock size={36} className="text-amber-400 animate-pulse" />
           </div>
