@@ -3224,12 +3224,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await supabase!.from('couples').insert(toInsert);
       }
     }
-    if (backupData.egglots) {
-      setEggLots(backupData.egglots);
-      await localforage.setItem(getStorageKey('egglots'), backupData.egglots);
+    const eggLotsData = backupData.egglots || backupData.eggLots;
+    if (eggLotsData) {
+      setEggLots(eggLotsData);
+      await localforage.setItem(getStorageKey('egglots'), eggLotsData);
       if (isSupabaseConfigured && user) {
         await supabase!.from('egg_lots').delete().eq('user_id', targetUserId);
-        const toInsert = backupData.egglots.map((l: any) => ({
+        const toInsert = eggLotsData.map((l: any) => ({
           id: l.id,
           user_id: targetUserId,
           baia: l.baia,
@@ -3242,12 +3243,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await supabase!.from('egg_lots').insert(toInsert);
       }
     }
-    if (backupData.meatlots) {
-      setMeatLots(backupData.meatlots);
-      await localforage.setItem(getStorageKey('meatlots'), backupData.meatlots);
+    const meatLotsData = backupData.meatlots || backupData.meatLots;
+    if (meatLotsData) {
+      setMeatLots(meatLotsData);
+      await localforage.setItem(getStorageKey('meatlots'), meatLotsData);
       if (isSupabaseConfigured && user) {
         await supabase!.from('meat_lots').delete().eq('user_id', targetUserId);
-        const toInsert = backupData.meatlots.map((l: any) => ({
+        const toInsert = meatLotsData.map((l: any) => ({
           id: l.id,
           user_id: targetUserId,
           baia: l.baia,

@@ -9,7 +9,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, incubationLots } = useAppContext();
+  const { birds, farmSettings, breeds, eggLots, meatLots } = useAppContext();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
@@ -55,7 +55,7 @@ export function Dashboard() {
       }
     });
 
-    const totalLotes = (eggLots?.length || 0) + (meatLots?.length || 0) + (incubationLots?.length || 0);
+    const totalLotes = (eggLots?.length || 0) + (meatLots?.length || 0);
 
     return {
       totalAves: total,
@@ -65,7 +65,7 @@ export function Dashboard() {
       totalLotes: totalLotes,
       totalRacas: breeds.length
     };
-  }, [birds, eggLots, meatLots, incubationLots, breeds.length]);
+  }, [birds, eggLots, meatLots, breeds.length]);
 
   // ── Resumo de ovos dos últimos 7 dias (lotes ativos) ──
   const eggSummary = useMemo(() => {

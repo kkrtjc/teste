@@ -292,7 +292,7 @@ function BaiaBirdsManagementCard({
 
   const targetNorm = normalizeBaia(baia);
   const baiaBirds = birds.filter(
-    b => b.status !== 'Vendido' && b.status !== 'Faleceu' && b.baia && normalizeBaia(b.baia) === targetNorm
+    b => b.status !== 'Vendido' && b.status !== 'Faleceu' && b.status !== 'Abatido' && b.status !== 'Morto' && b.baia && normalizeBaia(b.baia) === targetNorm
   );
 
   if (baiaBirds.length === 0) return null;
@@ -850,7 +850,18 @@ export function Lots() {
       pesoMeta: lote.pesoMeta,
       status: 'Crescimento',
       raca: lote.raca,
+      racaId: lote.racaId,
+      origem: lote.origem,
+      origemPais: lote.origemPais,
+      paiId: lote.paiId,
+      maeId: lote.maeId,
+      paiNome: lote.paiNome,
+      maeNome: lote.maeNome,
+      paisTexto: lote.paisTexto,
+      vacinas: lote.vacinas,
+      movimentacoes: lote.movimentacoes || [],
       observacao: lote.observacao,
+      observacoesAdicionais: lote.observacoesAdicionais || [],
     });
 
     setConfirmTransfer({ isOpen: false, lote: null });
@@ -2478,7 +2489,7 @@ export function Lots() {
                             className={inputCls + " appearance-none pr-8 text-xs"}
                           >
                             <option value="">-- Selecionar Pai do Plantel --</option>
-                            {birds.filter(b => b.sexo === 'Macho' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(m => (
+                            {activeBirds.filter(b => b.sexo === 'Macho').map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.anilha}{m.nome ? ` - ${m.nome}` : ''} ({m.raca})
                               </option>
@@ -2497,7 +2508,7 @@ export function Lots() {
                             className={inputCls + " appearance-none pr-8 text-xs"}
                           >
                             <option value="">-- Selecionar Mãe do Plantel --</option>
-                            {birds.filter(b => b.sexo === 'Fêmea' && b.status !== 'Vendido' && b.status !== 'Faleceu').map(f => (
+                            {activeFemales.map(f => (
                               <option key={f.id} value={f.id}>
                                 {f.anilha}{f.nome ? ` - ${f.nome}` : ''} ({f.raca})
                               </option>

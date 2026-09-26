@@ -114,6 +114,10 @@ export function Vitrine() {
   };
 
   const handleCopyVitrineLink = async () => {
+    if (vitrineBirds.length === 0) {
+      showToast('Ative pelo menos uma ave na vitrine antes de compartilhar.', 'warning');
+      return;
+    }
     syncVitrineOnline();
     try {
       const text = getVitrineShareText();
@@ -128,6 +132,10 @@ export function Vitrine() {
   };
 
   const handleShareVitrineWhatsApp = () => {
+    if (vitrineBirds.length === 0) {
+      showToast('Ative pelo menos uma ave na vitrine antes de compartilhar.', 'warning');
+      return;
+    }
     syncVitrineOnline();
     triggerLight();
     const text = getVitrineShareText();
