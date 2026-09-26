@@ -27,7 +27,7 @@ export function ShareBirdModal({
   onClose
 }: ShareBirdModalProps) {
   const { 
-    farmSettings, updateFarmSettings, vitrineBirds, showToast,
+    birds, farmSettings, updateFarmSettings, vitrineBirds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
   } = useAppContext();
   const { trialInfo, isAdmin } = useAuth();
@@ -67,31 +67,60 @@ export function ShareBirdModal({
 
       setIsPublishing(true);
       try {
+        const fatherBird = bird.paiId ? birds.find(b => b.id === bird.paiId) : null;
+        const motherBird = bird.maeId ? birds.find(b => b.id === bird.maeId) : null;
+        const resolvedPaiNome = bird.isPaiExterno 
+          ? (bird.paiId || 'Pai Externo')
+          : (fatherBird ? (fatherBird.nome ? `${fatherBird.anilha} (${fatherBird.nome})` : `Anilha ${fatherBird.anilha}`) : (pai ? (pai.nome ? `${pai.anilha} (${pai.nome})` : `Anilha ${pai.anilha}`) : ''));
+        const resolvedMaeNome = bird.isMaeExterno 
+          ? (bird.maeId || 'Mãe Externa')
+          : (motherBird ? (motherBird.nome ? `${motherBird.anilha} (${motherBird.nome})` : `Anilha ${motherBird.anilha}`) : (mae ? (mae.nome ? `${mae.anilha} (${mae.nome})` : `Anilha ${mae.anilha}`) : ''));
+
+        const enrichedBird = {
+          ...bird,
+          paiNome: resolvedPaiNome,
+          maeNome: resolvedMaeNome,
+          paiAnilha: fatherBird?.anilha || pai?.anilha || '',
+          maeAnilha: motherBird?.anilha || mae?.anilha || '',
+        };
+
         const otherVitrineBirds = mode === 'public'
-          ? availableVitrineBirds.map(b => ({
-              ...b,
-              id: b.id,
-              anilha: b.anilha,
-              nome: b.nome || '',
-              raca: b.raca || '',
-              sexo: b.sexo || '',
-              status: b.status || 'Disponível',
-              peso: b.peso || '',
-              dataNascimento: b.dataNascimento || '',
-              vacinas: b.vacinas || '',
-              observacoes: b.observacoes || '',
-              imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
-              imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
-              vitrinePrice: b.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
-              vitrineStatus: b.vitrineStatus || 'Disponível'
-            }))
+          ? availableVitrineBirds.map(b => {
+              const f = b.paiId ? birds.find(x => x.id === b.paiId) : null;
+              const m = b.maeId ? birds.find(x => x.id === b.maeId) : null;
+              return {
+                ...b,
+                id: b.id,
+                anilha: b.anilha,
+                nome: b.nome || '',
+                raca: b.raca || '',
+                sexo: b.sexo || '',
+                status: b.status || 'Disponível',
+                peso: b.peso || '',
+                dataNascimento: b.dataNascimento || '',
+                vacinas: b.vacinas || '',
+                observacoes: b.observacoes || '',
+                imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
+                imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
+                vitrinePrice: b.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
+                vitrineStatus: b.vitrineStatus || 'Disponível',
+                paiId: b.paiId || '',
+                maeId: b.maeId || '',
+                isPaiExterno: b.isPaiExterno,
+                isMaeExterno: b.isMaeExterno,
+                paiNome: b.isPaiExterno ? b.paiId : (f ? (f.nome ? `${f.anilha} (${f.nome})` : `Anilha ${f.anilha}`) : ''),
+                maeNome: b.isMaeExterno ? b.maeId : (m ? (m.nome ? `${m.anilha} (${m.nome})` : `Anilha ${m.anilha}`) : ''),
+                paiAnilha: f?.anilha || '',
+                maeAnilha: m?.anilha || '',
+              };
+            })
           : [];
 
         const activePhone = sellerWhatsapp || farmSettings?.phone || farmSettings?.whatsapp || '';
 
         const url = await publishShowcase({
           id: bird.id,
-          bird,
+          bird: enrichedBird,
           farmSettings: {
             name: farmSettings?.name,
             responsible: farmSettings?.responsible,

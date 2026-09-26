@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ShieldCheck, MessageCircle, 
@@ -55,7 +55,12 @@ export function PublicBirdShowcase() {
     isPausedRef.current = false;
   }, [selectedVitrineBird]);
 
+  const [birdHistory, setBirdHistory] = useState<any[]>([]);
+
   const handleSelectVitrineBird = (otherBird: any) => {
+    if (activeBird && activeBird.id !== otherBird.id) {
+      setBirdHistory(prev => [...prev, activeBird]);
+    }
     setSelectedVitrineBird(otherBird);
     try {
       window.history.pushState({ vitrineBirdId: otherBird.id }, '');
@@ -64,6 +69,18 @@ export function PublicBirdShowcase() {
   };
 
   const handleBackFromVitrineBird = () => {
+    if (birdHistory.length > 0) {
+      const prev = birdHistory[birdHistory.length - 1];
+      setBirdHistory(h => h.slice(0, -1));
+      setSelectedVitrineBird(prev === data?.bird ? null : prev);
+      try {
+        if (window.history.state?.vitrineBirdId) {
+          window.history.back();
+        }
+      } catch {}
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (selectedVitrineBird) {
       setSelectedVitrineBird(null);
       try {
@@ -83,11 +100,108 @@ export function PublicBirdShowcase() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setSelectedVitrineBird(null);
+      setBirdHistory(prev => {
+        if (prev.length > 0) {
+          const next = prev.slice(0, -1);
+          const last = prev[prev.length - 1];
+          setSelectedVitrineBird(last === data?.bird ? null : last);
+          return next;
+        } else {
+          setSelectedVitrineBird(null);
+          return [];
+        }
+      });
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [data]);
+
+  // ── Genealogia / Parentesco da Ave Ativa ──
+  const parentageInfo = useMemo(() => {
+    if (!activeBird) {
+      return { 
+        hasAnyParents: false, 
+        hasPai: false, 
+        hasMae: false, 
+        paiDisplayName: '', 
+        maeDisplayName: '', 
+        paiInVitrine: null as any, 
+        maeInVitrine: null as any 
+      };
+    }
+
+    // ── Pai ──
+    const paiAnilha = activeBird.paiAnilha || (!selectedVitrineBird && data?.pai?.anilha) || '';
+    const paiId = activeBird.paiId || (!selectedVitrineBird && data?.pai?.id) || '';
+    const rawPaiNome = activeBird.paiNome || (!selectedVitrineBird && data?.pai?.nome) || '';
+
+    // Procura se o pai está disponível na vitrine
+    const paiInVitrine = (!activeBird.isPaiExterno)
+      ? vitrineList.find((b: any) => {
+          if (!b || b.id === activeBird.id) return false;
+          if (paiId && b.id === paiId) return true;
+          if (paiAnilha && b.anilha && b.anilha.toLowerCase() === paiAnilha.toLowerCase()) return true;
+          if (rawPaiNome && b.anilha && (rawPaiNome === b.anilha || rawPaiNome.includes(b.anilha))) return true;
+          return false;
+        })
+      : null;
+
+    let paiDisplayName = '';
+    if (rawPaiNome) {
+      paiDisplayName = rawPaiNome;
+    } else if (paiInVitrine) {
+      paiDisplayName = paiInVitrine.nome 
+        ? `${paiInVitrine.anilha} (${paiInVitrine.nome})` 
+        : `Anilha ${paiInVitrine.anilha}`;
+    } else if (paiAnilha) {
+      paiDisplayName = `Anilha ${paiAnilha}`;
+    } else if (paiId) {
+      paiDisplayName = activeBird.isPaiExterno ? paiId : `Ave ID ${paiId.slice(0, 6)}`;
+    }
+
+    const hasPai = Boolean(paiDisplayName || paiInVitrine);
+
+    // ── Mãe ──
+    const maeAnilha = activeBird.maeAnilha || (!selectedVitrineBird && data?.mae?.anilha) || '';
+    const maeId = activeBird.maeId || (!selectedVitrineBird && data?.mae?.id) || '';
+    const rawMaeNome = activeBird.maeNome || (!selectedVitrineBird && data?.mae?.nome) || '';
+
+    // Procura se a mãe está disponível na vitrine
+    const maeInVitrine = (!activeBird.isMaeExterno)
+      ? vitrineList.find((b: any) => {
+          if (!b || b.id === activeBird.id) return false;
+          if (maeId && b.id === maeId) return true;
+          if (maeAnilha && b.anilha && b.anilha.toLowerCase() === maeAnilha.toLowerCase()) return true;
+          if (rawMaeNome && b.anilha && (rawMaeNome === b.anilha || rawMaeNome.includes(b.anilha))) return true;
+          return false;
+        })
+      : null;
+
+    let maeDisplayName = '';
+    if (rawMaeNome) {
+      maeDisplayName = rawMaeNome;
+    } else if (maeInVitrine) {
+      maeDisplayName = maeInVitrine.nome 
+        ? `${maeInVitrine.anilha} (${maeInVitrine.nome})` 
+        : `Anilha ${maeInVitrine.anilha}`;
+    } else if (maeAnilha) {
+      maeDisplayName = `Anilha ${maeAnilha}`;
+    } else if (maeId) {
+      maeDisplayName = activeBird.isMaeExterno ? maeId : `Ave ID ${maeId.slice(0, 6)}`;
+    }
+
+    const hasMae = Boolean(maeDisplayName || maeInVitrine);
+
+    return {
+      hasAnyParents: hasPai || hasMae,
+      hasPai,
+      paiDisplayName,
+      paiInVitrine,
+      hasMae,
+      maeDisplayName,
+      maeInVitrine
+    };
+  }, [activeBird, selectedVitrineBird, data, vitrineList]);
 
   const handleOpenVitrine = () => {
     if (vitrineSectionRef.current) {
@@ -607,49 +721,133 @@ export function PublicBirdShowcase() {
           </div>
 
           {/* Technical Grid Specs */}
-          <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-            {bird.peso && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <Scale size={16} className="text-amber-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Peso Atual</span>
-                  <span className="font-bold text-white block truncate">{bird.peso}</span>
+          {(bird.peso || bird.dataNascimento) && (
+            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+              {bird.peso && (
+                <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
+                  <Scale size={16} className="text-amber-400 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Peso Atual</span>
+                    <span className="font-bold text-white block truncate">{bird.peso}</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {bird.dataNascimento && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <Calendar size={16} className="text-amber-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Nascimento</span>
-                  <span className="font-bold text-white block truncate">
-                    {new Date(bird.dataNascimento).toLocaleDateString('pt-BR')}
-                  </span>
+              {bird.dataNascimento && (
+                <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
+                  <Calendar size={16} className="text-amber-400 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Nascimento</span>
+                    <span className="font-bold text-white block truncate">
+                      {new Date(bird.dataNascimento).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {!isViewingVitrineBird && data?.pai && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <Dna size={16} className="text-blue-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Pai</span>
-                  <span className="font-bold text-white truncate block font-mono text-[11px]">
-                    {data.pai.anilha}
-                  </span>
+          {/* Genealogia / Parentesco */}
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+              Genealogia / Parentesco:
+            </span>
+
+            {!parentageInfo.hasAnyParents ? (
+              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 text-xs text-zinc-400">
+                <Dna size={15} className="text-zinc-600 shrink-0" />
+                <span className="font-medium text-zinc-400">Sem pais informados</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* Pai */}
+                <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex flex-col justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Dna size={14} className="text-blue-400 shrink-0" />
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold">Pai</span>
+                    </div>
+                    {parentageInfo.hasPai && (
+                      parentageInfo.paiInVitrine ? (
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                          Na Vitrine
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-zinc-500 bg-white/5 border border-white/5 px-1.5 py-0.5 rounded">
+                          Indisponível na vitrine
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    {parentageInfo.paiInVitrine && (parentageInfo.paiInVitrine.imagem || parentageInfo.paiInVitrine.imagens?.[0]) && (
+                      <img
+                        src={parentageInfo.paiInVitrine.imagem || parentageInfo.paiInVitrine.imagens?.[0]}
+                        alt={parentageInfo.paiDisplayName}
+                        className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0"
+                      />
+                    )}
+                    <span className="font-bold text-white text-xs block truncate flex-1">
+                      {parentageInfo.hasPai ? parentageInfo.paiDisplayName : 'Não informado'}
+                    </span>
+                  </div>
+
+                  {parentageInfo.hasPai && parentageInfo.paiInVitrine && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVitrineBird(parentageInfo.paiInVitrine)}
+                      className="w-full mt-0.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[11px] font-bold transition-all cursor-pointer group"
+                    >
+                      <span className="truncate">Ver ave na vitrine</span>
+                      <ArrowUpRight size={13} className="shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </button>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {!isViewingVitrineBird && data?.mae && (
-              <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex items-center gap-2.5 min-w-0 overflow-hidden">
-                <Dna size={16} className="text-pink-400 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <span className="text-[10px] text-zinc-500 uppercase block font-bold truncate">Mãe</span>
-                  <span className="font-bold text-white truncate block font-mono text-[11px]">
-                    {data.mae.anilha}
-                  </span>
+                {/* Mãe */}
+                <div className="p-3 bg-[#111118] border border-white/5 rounded-xl flex flex-col justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Dna size={14} className="text-pink-400 shrink-0" />
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold">Mãe</span>
+                    </div>
+                    {parentageInfo.hasMae && (
+                      parentageInfo.maeInVitrine ? (
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                          Na Vitrine
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-zinc-500 bg-white/5 border border-white/5 px-1.5 py-0.5 rounded">
+                          Indisponível na vitrine
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    {parentageInfo.maeInVitrine && (parentageInfo.maeInVitrine.imagem || parentageInfo.maeInVitrine.imagens?.[0]) && (
+                      <img
+                        src={parentageInfo.maeInVitrine.imagem || parentageInfo.maeInVitrine.imagens?.[0]}
+                        alt={parentageInfo.maeDisplayName}
+                        className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0"
+                      />
+                    )}
+                    <span className="font-bold text-white text-xs block truncate flex-1">
+                      {parentageInfo.hasMae ? parentageInfo.maeDisplayName : 'Não informada'}
+                    </span>
+                  </div>
+
+                  {parentageInfo.hasMae && parentageInfo.maeInVitrine && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVitrineBird(parentageInfo.maeInVitrine)}
+                      className="w-full mt-0.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[11px] font-bold transition-all cursor-pointer group"
+                    >
+                      <span className="truncate">Ver ave na vitrine</span>
+                      <ArrowUpRight size={13} className="shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}

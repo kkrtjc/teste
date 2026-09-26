@@ -39,6 +39,10 @@ export type Bird = {
   maeId?: string;
   isPaiExterno?: boolean;
   isMaeExterno?: boolean;
+  paiNome?: string;
+  maeNome?: string;
+  paiAnilha?: string;
+  maeAnilha?: string;
   dataNascimento?: string;
   peso?: string;
   dataBaixa?: string;

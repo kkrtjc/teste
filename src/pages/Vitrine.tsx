@@ -62,10 +62,25 @@ export function Vitrine() {
     try {
       const firstBird = vitrineBirds[0];
       const activePhone = farmSettings?.phone || farmSettings?.whatsapp || '';
+
+      const fatherBird = firstBird.paiId ? birds.find(b => b.id === firstBird.paiId) : null;
+      const motherBird = firstBird.maeId ? birds.find(b => b.id === firstBird.maeId) : null;
+      const enrichedFirstBird = {
+        ...firstBird,
+        paiId: firstBird.paiId || '',
+        maeId: firstBird.maeId || '',
+        isPaiExterno: firstBird.isPaiExterno,
+        isMaeExterno: firstBird.isMaeExterno,
+        paiNome: firstBird.isPaiExterno ? firstBird.paiId : (fatherBird ? (fatherBird.nome ? `${fatherBird.anilha} (${fatherBird.nome})` : `Anilha ${fatherBird.anilha}`) : ''),
+        maeNome: firstBird.isMaeExterno ? firstBird.maeId : (motherBird ? (motherBird.nome ? `${motherBird.anilha} (${motherBird.nome})` : `Anilha ${motherBird.anilha}`) : ''),
+        paiAnilha: fatherBird?.anilha || '',
+        maeAnilha: motherBird?.anilha || '',
+      };
+
       await publishShowcase({
         id: user?.id || 'meu-criatorio',
         isVitrineOnly: true,
-        bird: firstBird,
+        bird: enrichedFirstBird,
         farmSettings: {
           name: farmSettings?.name,
           responsible: farmSettings?.responsible,
@@ -76,23 +91,35 @@ export function Vitrine() {
           whatsapp: activePhone
         },
         mode: 'public',
-        vitrineBirds: vitrineBirds.map(b => ({
-          ...b,
-          id: b.id,
-          anilha: b.anilha,
-          nome: b.nome || '',
-          raca: b.raca || '',
-          sexo: b.sexo || '',
-          status: b.status || 'Disponível',
-          peso: b.peso || '',
-          dataNascimento: b.dataNascimento || '',
-          vacinas: b.vacinas || '',
-          observacoes: b.observacoes || '',
-          imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
-          imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
-          vitrinePrice: b.vitrinePrice || vitrineConfig[b.id]?.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
-          vitrineStatus: b.vitrineStatus || vitrineConfig[b.id]?.vitrineStatus || 'Disponível'
-        })),
+        vitrineBirds: vitrineBirds.map(b => {
+          const f = b.paiId ? birds.find(x => x.id === b.paiId) : null;
+          const m = b.maeId ? birds.find(x => x.id === b.maeId) : null;
+          return {
+            ...b,
+            id: b.id,
+            anilha: b.anilha,
+            nome: b.nome || '',
+            raca: b.raca || '',
+            sexo: b.sexo || '',
+            status: b.status || 'Disponível',
+            peso: b.peso || '',
+            dataNascimento: b.dataNascimento || '',
+            vacinas: b.vacinas || '',
+            observacoes: b.observacoes || '',
+            imagem: b.imagem || (b.imagens && b.imagens[0]) || '',
+            imagens: b.imagens && b.imagens.length > 0 ? b.imagens : (b.imagem ? [b.imagem] : []),
+            vitrinePrice: b.vitrinePrice || vitrineConfig[b.id]?.vitrinePrice || (b.valorEstimado ? `R$ ${b.valorEstimado}` : ''),
+            vitrineStatus: b.vitrineStatus || vitrineConfig[b.id]?.vitrineStatus || 'Disponível',
+            paiId: b.paiId || '',
+            maeId: b.maeId || '',
+            isPaiExterno: b.isPaiExterno,
+            isMaeExterno: b.isMaeExterno,
+            paiNome: b.isPaiExterno ? b.paiId : (f ? (f.nome ? `${f.anilha} (${f.nome})` : `Anilha ${f.anilha}`) : ''),
+            maeNome: b.isMaeExterno ? b.maeId : (m ? (m.nome ? `${m.anilha} (${m.nome})` : `Anilha ${m.anilha}`) : ''),
+            paiAnilha: f?.anilha || '',
+            maeAnilha: m?.anilha || '',
+          };
+        }),
         createdAt: new Date().toISOString()
       });
     } catch (err) {
