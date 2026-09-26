@@ -73,8 +73,12 @@ function AppContent() {
             <TrialPopupModal
               remainingDays={trialInfo.remainingDays}
               totalTrialDays={7}
+              expiresAt={trialInfo.expiresAt}
               onClose={async () => {
                 setShowTrialPopup(false);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('trial-popup-dismissed'));
+                }
                 // Após o usuário fechar o popup, agenda notificação push para o dia seguinte
                 const granted = await requestPushPermission();
                 if (granted) {
@@ -84,13 +88,25 @@ function AppContent() {
               onUpgrade={() => {
                 setShowTrialPopup(false);
                 setShowUpgradeFromPopup(true);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('trial-popup-dismissed'));
+                }
               }}
             />
           )}
 
           {/* App Routes com resposta síncrona instantânea (0ms sem desmontagem de telas) */}
           <Routes>
-            <Route path="/" element={<Layout showUpgradeModal={showUpgradeFromPopup} onUpgradeModalClose={() => setShowUpgradeFromPopup(false)} />}>
+            <Route
+              path="/"
+              element={
+                <Layout
+                  showUpgradeModal={showUpgradeFromPopup}
+                  onUpgradeModalClose={() => setShowUpgradeFromPopup(false)}
+                  isTrialPopupOpen={showTrialPopup}
+                />
+              }
+            >
               <Route index element={null} />
               <Route path="birds" element={null} />
               <Route path="vitrine" element={null} />

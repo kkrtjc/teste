@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Sparkles, 
   ChevronRight, 
   ChevronLeft, 
   X, 
@@ -85,7 +84,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     return null;
   }, [currentStep]);
 
-  // Rola suavemente até o elemento em foco quando o passo muda
+  // Rola suavemente até o elemento em foco garantindo visibilidade total sem colisão com o card
   useEffect(() => {
     if (!isOpen || !currentStep) return;
 
@@ -95,9 +94,20 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       if (el) {
         const rect = el.getBoundingClientRect();
         const screenHeight = window.innerHeight;
-        const isOutOfView = rect.top < 70 || rect.bottom > screenHeight - 90;
+        const isMobile = window.innerWidth < 768;
 
-        if (isOutOfView) {
+        if (isMobile) {
+          // No mobile:
+          // Se o elemento estiver abaixo do terço superior (rect.top > screenHeight * 0.40),
+          // o card ficará no topo da tela. Portanto, rolamos para a parte inferior (block: 'end').
+          // Se o elemento estiver no topo, o card ficará no rodapé, então rolamos para o topo (block: 'start').
+          const placeCardAtTop = rect.top > (screenHeight * 0.40);
+          el.scrollIntoView({
+            behavior: 'smooth',
+            block: placeCardAtTop ? 'end' : 'start',
+            inline: 'nearest'
+          });
+        } else {
           el.scrollIntoView({
             behavior: 'smooth',
             block: 'center',
@@ -105,7 +115,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
           });
         }
       }
-    }, 150);
+    }, 180);
 
     return () => clearTimeout(timer);
   }, [isOpen, currentStep, findTargetElement]);
@@ -180,25 +190,27 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
     if (!targetRect) {
       return isMobile 
         ? { position: 'fixed', bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 84px)', left: '12px', right: '12px', zIndex: 10002 }
-        : { position: 'fixed', bottom: '32px', right: '32px', width: '420px', zIndex: 10002 };
+        : { position: 'fixed', bottom: '32px', right: '32px', width: '400px', zIndex: 10002 };
     }
 
     const screenHeight = window.innerHeight;
+    const screenWidth = window.innerWidth;
     const targetCenterY = targetRect.top + targetRect.height / 2;
     const targetCenterX = targetRect.left + targetRect.width / 2;
 
     if (isMobile) {
-      if (targetCenterY > screenHeight * 0.45) {
-        // Elemento destacado está na metade inferior da tela -> Card fica no topo livre!
+      // No mobile:
+      // Se o elemento estiver abaixo de 40% da tela, o card fica no topo livre
+      if (targetCenterY > screenHeight * 0.40) {
         return {
           position: 'fixed',
-          top: 'calc(max(env(safe-area-inset-top, 0px), 16px) + 52px)',
+          top: 'calc(max(env(safe-area-inset-top, 0px), 12px) + 12px)',
           left: '12px',
           right: '12px',
           zIndex: 10002,
         };
       } else {
-        // Elemento destacado está na metade superior da tela -> Card fica abaixo com folga segura da barra!
+        // Se o elemento estiver na metade superior, o card fica no rodapé (acima da dock)
         return {
           position: 'fixed',
           bottom: 'calc(max(env(safe-area-inset-bottom, 0px), 16px) + 84px)',
@@ -209,33 +221,28 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
       }
     }
 
-    // Desktop
-    if (targetCenterX < 280) {
-      // Elemento na barra lateral esquerda -> Posiciona à direita dele
-      const topPos = Math.max(80, Math.min(targetRect.top - 20, screenHeight - 340));
+    // Desktop:
+    // Analisa a posição do elemento para garantir 0% de sobreposição
+    const isTargetOnRight = targetCenterX > (screenWidth / 2);
+    const isTargetOnBottom = targetCenterY > (screenHeight / 2);
+
+    if (isTargetOnRight) {
+      // Elemento no lado direito -> posiciona o card no lado esquerdo
       return {
         position: 'fixed',
-        left: `${targetRect.right + 24}px`,
-        top: `${topPos}px`,
-        width: '420px',
-        zIndex: 10002,
-      };
-    } else if (targetCenterY < 180) {
-      // Elemento no topo -> Posiciona abaixo dele
-      return {
-        position: 'fixed',
-        right: '32px',
-        top: `${targetRect.bottom + 20}px`,
-        width: '420px',
+        left: screenWidth > 960 ? '280px' : '32px',
+        top: isTargetOnBottom ? '80px' : `${Math.max(80, Math.min(targetRect.bottom + 20, screenHeight - 320))}px`,
+        width: '400px',
         zIndex: 10002,
       };
     } else {
-      // Posição segura no canto inferior direito
+      // Elemento no lado esquerdo -> posiciona o card no lado direito
+      const verticalPos = isTargetOnBottom ? { top: '80px' } : { bottom: '32px' };
       return {
         position: 'fixed',
         right: '32px',
-        bottom: '32px',
-        width: '420px',
+        ...verticalPos,
+        width: '400px',
         zIndex: 10002,
       };
     }
@@ -243,62 +250,85 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
-      {/* ── Backdrop Escurecido que fecha com clique no fundo ── */}
-      <div 
+      {/* ── Backdrop Escurecido com RECORTE TRANSPARENTE 100% NÍTIDO no Alvo (SVG Cutout Mask) ── */}
+      {/* O furo recortado tem 0% de opacidade e 0px de blur, permitindo leitura cristalina de todas as opções */}
+      <svg 
+        className="fixed inset-0 w-full h-full z-[10000] pointer-events-auto select-none"
+        style={{ width: '100vw', height: '100vh' }}
         onClick={onClose}
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-[2px] transition-opacity duration-300 z-[10000]"
-      />
+      >
+        <defs>
+          <mask id="assistant-spotlight-cutout">
+            {/* 1. Tudo Branco = fundo escuro cobre a página inteira */}
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {/* 2. Recorte Preto = 100% TRANSPARENTE (furo perfeito sem NENHUMA opacidade sobre o elemento) */}
+            {targetRect && (
+              <rect
+                x={Math.max(2, targetRect.left - 6)}
+                y={Math.max(2, targetRect.top - 6)}
+                width={targetRect.width + 12}
+                height={targetRect.height + 12}
+                rx="16"
+                ry="16"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        {/* Retângulo escurecido cobrindo a tela inteira EXCETO o furo do recorte */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(5, 7, 15, 0.78)"
+          mask="url(#assistant-spotlight-cutout)"
+          className="cursor-pointer"
+        />
+      </svg>
 
-      {/* ── Spotlight com Borda Pulsante Elegante & Recorte Translúcido ── */}
+      {/* ── Borda Pulsante Elegante em volta do Recorte ── */}
       {targetRect && (
         <div
           className="fixed z-[10001] border-2 border-amber-400 rounded-2xl pointer-events-none transition-all duration-300 assistant-spotlight-pulse"
           style={{
-            left: Math.max(4, targetRect.left - 6),
-            top: Math.max(4, targetRect.top - 6),
+            left: Math.max(2, targetRect.left - 6),
+            top: Math.max(2, targetRect.top - 6),
             width: targetRect.width + 12,
             height: targetRect.height + 12,
-            boxShadow: '0 0 0 9999px rgba(8, 10, 20, 0.72), 0 0 35px rgba(245, 158, 11, 0.9)',
+            boxShadow: '0 0 25px rgba(245, 158, 11, 0.85), inset 0 0 15px rgba(245, 158, 11, 0.15)',
           }}
         />
       )}
-
-      {/* Top Banner de Contexto de IA */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10002] bg-slate-900/95 border border-amber-500/50 px-4 py-1.5 rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.8)] backdrop-blur-md flex items-center gap-2 pointer-events-none animate-bounce-subtle">
-        <Sparkles size={14} className="text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-        <span className="text-[11px] font-black text-white tracking-wide">
-          Instruções: <strong className="text-amber-400">{activeGuide.tabTitle}</strong>
-        </span>
-      </div>
 
       {/* ── Card Flutuante da Assistente Mura IA (Fala & Legenda na Tela) ── */}
       <div 
         style={getFluidCardStyle()}
         className="transition-all duration-400 ease-out animate-scale-up z-[10002]"
       >
-        <div className="bg-[#0f111a]/95 border-2 border-amber-500/40 rounded-3xl p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3.5">
+        <div className="bg-[#0f111a]/98 border-2 border-amber-500/40 rounded-3xl p-4 sm:p-5 shadow-[0_25px_60px_rgba(0,0,0,0.95)] backdrop-blur-xl relative overflow-hidden flex flex-col gap-3">
           
           {/* Header da Assistente */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2.5">
               {/* Avatar da IA com Brilho Pulsante */}
               <div className="relative">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center">
                   <div className="w-full h-full bg-[#121420] rounded-[14px] flex items-center justify-center text-amber-400">
-                    <Bot size={20} />
+                    <Bot size={18} />
                   </div>
                 </div>
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-[#121420] rounded-full animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#121420] rounded-full animate-pulse" />
               </div>
 
               <div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-xs font-black text-white tracking-tight">Mura IA</span>
-                  <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    Assistente
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {activeGuide.tabTitle}
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-zinc-400 block leading-tight">
+                <span className="text-[10px] font-bold text-amber-400/90 block leading-tight mt-0.5">
                   {currentStep.badge}
                 </span>
               </div>
@@ -360,7 +390,7 @@ export const SmartAssistantModal = memo(function SmartAssistantModal({
             </h3>
             
             {/* Texto Falado Escrito na Tela (Legenda) */}
-            <div className="text-xs text-zinc-300 leading-relaxed font-normal bg-black/30 p-3 rounded-2xl border border-white/5 space-y-2">
+            <div className="text-xs text-zinc-300 leading-relaxed font-normal bg-black/40 p-2.5 sm:p-3 rounded-xl border border-white/5 space-y-2">
               <p>{renderFormattedText(currentStep.description)}</p>
 
               {/* Botão amigável de desbloqueio de áudio em navegadores com bloqueio de autoplay */}

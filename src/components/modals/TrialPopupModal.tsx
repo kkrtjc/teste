@@ -28,6 +28,7 @@ export function markTrialPopupShown(): void {
 interface TrialPopupModalProps {
   remainingDays: number;
   totalTrialDays?: number;           // padrão 7
+  expiresAt?: string | null;
   onClose: () => void;
   onUpgrade: () => void;
 }
@@ -35,6 +36,7 @@ interface TrialPopupModalProps {
 export function TrialPopupModal({
   remainingDays,
   totalTrialDays = 7,
+  expiresAt,
   onClose,
   onUpgrade,
 }: TrialPopupModalProps) {
@@ -42,6 +44,32 @@ export function TrialPopupModal({
   const [countdown, setCountdown] = useState(Math.ceil(CLOSE_DELAY_MS / 1000));
   const [canClose, setCanClose] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Live countdown timer dos 7 dias com segundos, minutos, horas e dias
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const targetMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + remainingDays * 86400000;
+    const diff = Math.max(0, targetMs - Date.now());
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((diff % (1000 * 60)) / 1000),
+    };
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const targetMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + remainingDays * 86400000;
+      const diff = Math.max(0, targetMs - Date.now());
+      setTimeLeft({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [expiresAt, remainingDays]);
 
   const daysUsed = totalTrialDays - remainingDays;
   const progressPct = Math.min(100, Math.round((daysUsed / totalTrialDays) * 100));
@@ -88,7 +116,7 @@ export function TrialPopupModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in">
+    <div id="trial-popup-overlay" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in">
       {/* ── Backdrop escuro com leve blur ── */}
       <div className="absolute inset-0 bg-black/75" />
 
@@ -139,17 +167,27 @@ export function TrialPopupModal({
             </button>
           </div>
 
-          {/* ── Dias restantes + barra de progresso ── */}
+          {/* ── Dias restantes + timer regressivo dos 7 dias + barra de progresso ── */}
           <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-theme-text-muted uppercase tracking-wider">Dias restantes</p>
-                <p className={`text-3xl font-black ${urgencyColor.text} leading-none mt-1`}>
-                  {remainingDays}
-                  <span className="text-base font-bold text-theme-text-muted ml-1">
-                    / {totalTrialDays}
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className={`text-3xl font-black ${urgencyColor.text} leading-none`}>
+                    {remainingDays}
                   </span>
-                </p>
+                  <span className="text-sm font-bold text-theme-text-muted">
+                    / {totalTrialDays} dias
+                  </span>
+                </div>
+
+                {/* Timer pequenininho regressivo descendo os 7 dias com segundos, minutos, horas e dias */}
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold shadow-inner">
+                  <Clock size={12} className="text-amber-400 shrink-0 animate-pulse" />
+                  <span>
+                    {timeLeft.days}d {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
+                  </span>
+                </div>
               </div>
               <div className={`p-3 rounded-xl border ${urgencyColor.badge}`}>
                 <Clock size={20} className={urgencyColor.text} />

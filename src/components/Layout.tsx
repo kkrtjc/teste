@@ -79,6 +79,7 @@ export const formatCPF = (cpf: string) => {
 interface LayoutProps {
   showUpgradeModal?: boolean;
   onUpgradeModalClose?: () => void;
+  isTrialPopupOpen?: boolean;
 }
 
 const AdminAddClientForm = memo(function AdminAddClientForm({
@@ -271,7 +272,7 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
   );
 });
 
-export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: LayoutProps) {
+export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialPopupOpen = false }: LayoutProps) {
   const { 
     farmSettings, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
     isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup, showToast,
@@ -282,6 +283,8 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
   const location = useLocation();
   const { triggerLight } = useHaptics();
   const { isLocalMode, isAdmin, trialInfo, cpf, hasModuleAccess, user, activateSubscription, isExpired } = useAuth();
+
+  const isBlocked = isTrialPopupOpen || showUpgradeModal || isProfileSetupOpen || globalIsUpgradeModalOpen;
 
   const {
     isOpen: isAssistantOpen,
@@ -296,7 +299,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose }: Layout
     prevStep,
     toggleMute,
     repeatSpeech
-  } = useSmartAssistant();
+  } = useSmartAssistant({ isBlocked });
 
   // Redireciona qualquer chamada legada de startTour para a assistente inteligente
   useEffect(() => {

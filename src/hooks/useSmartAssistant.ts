@@ -16,7 +16,8 @@ import {
 
 const SEEN_TABS_STORAGE_PREFIX = '@mura-manager:assistant-seen-tabs:';
 
-export function useSmartAssistant() {
+export function useSmartAssistant(options?: { isBlocked?: boolean }) {
+  const isBlocked = Boolean(options?.isBlocked);
   const location = useLocation();
   const { user } = useAuth();
   const userId = user?.id || 'guest';
@@ -153,8 +154,16 @@ export function useSmartAssistant() {
 
   // ── DETECTOR INTELIGENTE DE PRIMEIRA VISITA POR ABA ──
   // Quando o usuário navega para uma aba pela primeira vez, ativa a assistente automaticamente
+  // NÃO dispara se houver modal de boas-vindas / teste grátis ativo (ordem estrita de exibição)
   useEffect(() => {
     clearTimeout(autoTriggerTimerRef.current);
+
+    if (isBlocked) return;
+
+    // Checagem de segurança no DOM: se o popup de teste grátis estiver visível, aguarda
+    if (typeof document !== 'undefined' && document.getElementById('trial-popup-overlay')) {
+      return;
+    }
 
     const currentTab = getTabIdFromPath(location.pathname);
     if (!currentTab || !ASSISTANT_GUIDES[currentTab]) return;
@@ -165,18 +174,41 @@ export function useSmartAssistant() {
     const seenTabs = getSeenTabs();
     if (seenTabs.includes(currentTab)) return;
 
-    // Aguarda a renderização completa da tela (850ms) antes de mostrar
+    // Aguarda a renderização completa da tela (900ms) antes de mostrar
     autoTriggerTimerRef.current = setTimeout(() => {
-      // Verifica novamente se a rota ainda é a mesma
+      // Verifica novamente se a rota ainda é a mesma e nenhum popup abriu
       const checkTab = getTabIdFromPath(window.location.pathname);
-      if (checkTab === currentTab && !isOpen) {
+      const isPopupInDOM = typeof document !== 'undefined' && Boolean(document.getElementById('trial-popup-overlay'));
+      if (checkTab === currentTab && !isOpen && !isBlocked && !isPopupInDOM) {
         lastAutoTriggeredTabRef.current = currentTab;
         openAssistant(currentTab);
       }
-    }, 850);
+    }, 900);
 
     return () => {
       clearTimeout(autoTriggerTimerRef.current);
+    };
+  }, [location.pathname, getSeenTabs, isOpen, openAssistant, isBlocked]);
+
+  // Quando o popup de teste grátis for fechado pelo usuário, agora sim ativa a assistente!
+  useEffect(() => {
+    const handleTrialDismissed = () => {
+      const currentTab = getTabIdFromPath(location.pathname);
+      if (!currentTab || !ASSISTANT_GUIDES[currentTab]) return;
+      const seenTabs = getSeenTabs();
+      if (!seenTabs.includes(currentTab)) {
+        setTimeout(() => {
+          if (!isOpen) {
+            lastAutoTriggeredTabRef.current = currentTab;
+            openAssistant(currentTab);
+          }
+        }, 700);
+      }
+    };
+
+    window.addEventListener('trial-popup-dismissed', handleTrialDismissed);
+    return () => {
+      window.removeEventListener('trial-popup-dismissed', handleTrialDismissed);
     };
   }, [location.pathname, getSeenTabs, isOpen, openAssistant]);
 
