@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -10,6 +10,7 @@ import {
 import { ConfirmDialog } from './modals/ConfirmDialog';
 import { SmartAssistantModal } from './assistant/SmartAssistantModal';
 import { useSmartAssistant } from '../hooks/useSmartAssistant';
+import { OnboardingTour } from './OnboardingTour';
 
 // Code-splitting dos modais pesados para alívio de memória e boot instantâneo
 const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ default: m.AddBirdModal })));
@@ -308,6 +309,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
       openAssistant();
     }
   }, [isTourOpen, closeTour, openAssistant]);
+
+  // ── Onboarding Tour: navega para a aba indicada pelo tour sem remontar ──
+  const handleOnboardingNavigate = useCallback((path: string) => {
+    navigate(path, { replace: true });
+  }, [navigate]);
+
 
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
@@ -972,8 +979,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
       </div>
       </div>
 
+      {/* ── Onboarding Tour (primeira visita — guia interativo das abas) ── */}
+      <OnboardingTour onNavigateToTab={handleOnboardingNavigate} />
+
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(
+
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in"
           onClick={() => setIsAdminModalOpen(false)}
