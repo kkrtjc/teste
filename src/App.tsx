@@ -1,11 +1,11 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider, useAppContext } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { PaywallScreen } from './components/PaywallScreen';
 import { SplashScreen } from './components/SplashScreen';
-import { TrialPopupModal, shouldShowTrialPopup } from './components/modals/TrialPopupModal';
+import { TrialPopupModal, shouldShowTrialPopup, markTrialPopupShown } from './components/modals/TrialPopupModal';
 import { requestPushPermission, scheduleDailyTrialReminder } from './lib/pushNotifications';
 import { AutoUpdater } from './components/AutoUpdater';
 
@@ -31,18 +31,19 @@ function AppContent() {
     );
   }
 
-  // ── Estado do popup de trial ──
-  const [showTrialPopup, setShowTrialPopup] = useState(false);
+  // ── Estado do popup de trial: determinado sincronicamente para evitar sobreposição ──
+  const [trialDismissed, setTrialDismissed] = useState(false);
   const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
 
-  // Decide se deve mostrar o popup de trial
-  useEffect(() => {
-    if (!user || !isReady || isExpired || isAdmin) return;
-
-    if (shouldShowTrialPopup(trialInfo.isTrial, isAdmin)) {
-      setShowTrialPopup(true);
-    }
-  }, [user, isReady, isExpired, isAdmin, trialInfo.isTrial]);
+  // Computado de forma 100% síncrona: se for elegível, já inicia como true imediatamente (zero delay/flicker)
+  const showTrialPopup = Boolean(
+    !trialDismissed &&
+    user &&
+    isReady &&
+    !isExpired &&
+    !isAdmin &&
+    shouldShowTrialPopup(trialInfo.isTrial, isAdmin)
+  );
 
   // Se não estiver autenticado e a checagem inicial já concluiu, exibe a tela de login imediatamente
   if (!user && !authLoading) {
@@ -75,7 +76,8 @@ function AppContent() {
               totalTrialDays={7}
               expiresAt={trialInfo.expiresAt}
               onClose={async () => {
-                setShowTrialPopup(false);
+                setTrialDismissed(true);
+                markTrialPopupShown();
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('trial-popup-dismissed'));
                 }
@@ -86,8 +88,9 @@ function AppContent() {
                 }
               }}
               onUpgrade={() => {
-                setShowTrialPopup(false);
+                setTrialDismissed(true);
                 setShowUpgradeFromPopup(true);
+                markTrialPopupShown();
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('trial-popup-dismissed'));
                 }

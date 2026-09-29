@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronRight, LayoutDashboard, Bird, Store, Layers, Egg } from 'lucide-react';
 
-// ── Step definitions ──────────────────────────────────────────────────────────
+// ── Definição dos passos do tour guiado ──────────────────────────────────────
 const TOUR_STEPS = [
   {
     tabId: 'mobile-nav-link-dashboard',
@@ -55,9 +55,9 @@ interface TabRect {
 }
 
 interface OnboardingTourProps {
-  /** Called when the tour navigates to a step, so Layout can switch the active tab */
+  /** Chamado quando o tour avança de passo para alternar a aba ativa */
   onNavigateToTab: (path: string) => void;
-  /** When true (e.g. trial popup is showing), tour must NOT appear */
+  /** Quando true (ex: popup de teste grátis ou checkout ativo), o tour NUNCA é exibido */
   isBlocked?: boolean;
 }
 
@@ -69,49 +69,91 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
   const [tabRect, setTabRect] = useState<TabRect | null>(null);
   const [entering, setEntering] = useState(false);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
-  // Tracks whether onboarding is pending (ready to show once unblocked)
   const pendingRef = useRef(false);
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isDone = () => localStorage.getItem(ONBOARDING_KEY) === 'true';
+  const isDone = () => {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  };
 
-  // Function that actually shows the tour
-  const showTour = useCallback(() => {
+  const isTrialPopupInDOM = () => {
+    return typeof document !== 'undefined' && Boolean(document.getElementById('trial-popup-overlay'));
+  };
+
+  const scheduleShow = useCallback((delay = 800) => {
     if (isDone()) return;
-    setVisible(true);
-  }, []);
+    if (showTimerRef.current) clearTimeout(showTimerRef.current);
 
-  // On mount: if not blocked and not done, schedule show after 700ms
-  // If blocked, mark as pending — will show once unblocked
+    showTimerRef.current = setTimeout(() => {
+      if (isDone()) return;
+      if (isBlocked || isTrialPopupInDOM()) {
+        pendingRef.current = true;
+        return;
+      }
+      setVisible(true);
+    }, delay);
+  }, [isBlocked]);
+
+  // Se for bloqueado ou se o popup de trial estiver ativo, fecha o tour imediatamente
+  useEffect(() => {
+    if (isBlocked || isTrialPopupInDOM()) {
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      if (visible) setVisible(false);
+      pendingRef.current = true;
+    }
+  }, [isBlocked, visible]);
+
+  // Ao montar: só agenda se não houver NENHUM bloqueio ou popup de trial
   useEffect(() => {
     if (isDone()) return;
 
-    if (!isBlocked) {
-      showTimerRef.current = setTimeout(showTour, 700);
-    } else {
+    if (isBlocked || isTrialPopupInDOM()) {
       pendingRef.current = true;
+    } else {
+      scheduleShow(1200);
     }
 
     return () => {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  }, []);
 
-  // When isBlocked changes from true -> false, show the tour if it was pending
+  // Quando isBlocked transitar de true para false, inicia o tour após o delay
   const prevBlockedRef = useRef(isBlocked);
   useEffect(() => {
     const wasBlocked = prevBlockedRef.current;
     prevBlockedRef.current = isBlocked;
 
-    if (wasBlocked && !isBlocked && pendingRef.current && !isDone()) {
-      pendingRef.current = false;
+    if (isBlocked) {
       if (showTimerRef.current) clearTimeout(showTimerRef.current);
-      showTimerRef.current = setTimeout(showTour, 700);
+      if (visible) setVisible(false);
+      pendingRef.current = true;
+    } else if (wasBlocked && !isBlocked && pendingRef.current && !isDone()) {
+      pendingRef.current = false;
+      scheduleShow(800);
     }
-  }, [isBlocked, showTour]);
+  }, [isBlocked, visible, scheduleShow]);
 
-  // Measure the position of the current tab icon
+  // Ouve o evento de dispensa do aviso de teste grátis
+  useEffect(() => {
+    const handleTrialDismissed = () => {
+      if (isDone()) return;
+      pendingRef.current = true;
+      scheduleShow(800);
+    };
+
+    window.addEventListener('trial-popup-dismissed', handleTrialDismissed);
+    return () => {
+      window.removeEventListener('trial-popup-dismissed', handleTrialDismissed);
+    };
+  }, [scheduleShow]);
+
+  // Mede a posição do ícone da aba correspondente
   const measureTab = useCallback((index: number) => {
     const step = TOUR_STEPS[index];
     const el = document.getElementById(step.tabId);
@@ -128,7 +170,7 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
     });
   }, []);
 
-  // Re-measure when step changes or on resize
+  // Recalcula medição ao alterar passo ou redimensionar tela
   useEffect(() => {
     if (!visible) return;
     measureTab(stepIndex);
@@ -144,7 +186,7 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
     return () => resizeObserverRef.current?.disconnect();
   }, [visible, stepIndex, measureTab]);
 
-  // Navigate the app to the matching tab on each step
+  // Navega visualmente para a aba correspondente a cada passo
   useEffect(() => {
     if (!visible) return;
     onNavigateToTab(TAB_PATHS[stepIndex]);
@@ -171,7 +213,8 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
     setVisible(false);
   };
 
-  if (!visible) return null;
+  // Trava de segurança absoluta: se estiver bloqueado ou se o popup de trial estiver no DOM, NUNCA renderiza
+  if (!visible || isBlocked || isTrialPopupInDOM()) return null;
 
   const step = TOUR_STEPS[stepIndex];
   const isLast = stepIndex === TOUR_STEPS.length - 1;
@@ -189,13 +232,13 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
       role="dialog"
       aria-label={`Tour de apresentação — ${step.title}`}
     >
-      {/* Dark backdrop */}
+      {/* Backdrop escuro com bloqueio total de cliques no restante do app */}
       <div
         className="absolute inset-0 bg-black/75"
         style={{ backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)' }}
       />
 
-      {/* Pulsing ring around current tab icon */}
+      {/* Anel luminoso pulsante sobre o ícone da aba */}
       {tabRect && (
         <>
           <div
@@ -210,7 +253,7 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
             }}
           />
 
-          {/* Pulsing arrow pointing down toward the tab */}
+          {/* Setinha animada apontando para o ícone */}
           <div
             className="absolute pointer-events-none"
             style={{
@@ -234,7 +277,7 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
         </>
       )}
 
-      {/* Info card above nav bar */}
+      {/* Card explicativo flutuando acima da barra de navegação */}
       <div
         className="absolute pointer-events-auto"
         style={{
