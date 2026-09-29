@@ -143,7 +143,7 @@ export function Settings() {
     coupleEggs, incubationLots,
     importBackup, showToast, recoverAllBirds
   } = useAppContext();
-  const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, isExpired, activateSubscription } = useAuth();
+  const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
   const [email, setEmail] = useState(farmSettings.email || user?.email || '');
@@ -718,7 +718,7 @@ export function Settings() {
       </div>
 
       {/* 💳 CHECKOUT OFICIAL / MODAL DE RENOVAÇÃO INTELIGENTE */}
-      {(trialInfo?.isPaid || isExpired) ? (
+      {(trialInfo?.isPaid && !trialInfo?.isTrial) ? (
         <RenewalModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
@@ -739,15 +739,16 @@ export function Settings() {
         <LandingCheckoutModal
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
-          initialPlan="yearly"
+          initialPlan="pro_monthly"
+          startStep="plans"
           currentUser={{
             cpf,
             nome: name || farmSettings.name,
             email: email || farmSettings.email || user?.email,
             whatsapp: phone || farmSettings.phone,
           }}
-          onSuccess={async () => {
-            await activateSubscription('yearly');
+          onSuccess={async (activatedPlan) => {
+            await activateSubscription(activatedPlan || 'pro_monthly');
             showToast('Assinatura ativada com sucesso! Seu criatório está liberado.', 'success');
           }}
         />

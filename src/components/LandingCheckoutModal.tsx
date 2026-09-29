@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
-  CreditCard, QrCode, ShieldCheck, Star, ArrowRight, Zap, ShoppingBag
+  CreditCard, QrCode, ShieldCheck, Star, ArrowRight, ArrowLeft, Zap, ShoppingBag
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
@@ -70,7 +70,8 @@ function getDetectedBrand(cleanCardDigits: string) {
 export interface LandingCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialPlan: SubscriptionPlan;
+  initialPlan?: SubscriptionPlan;
+  startStep?: 'plans' | 'form';
   signIn?: (identifier: string, pass: string) => Promise<{ error: any }>;
   currentUser?: {
     cpf?: string;
@@ -78,18 +79,19 @@ export interface LandingCheckoutModalProps {
     email?: string;
     whatsapp?: string;
   };
-  onSuccess?: () => void;
+  onSuccess?: (plan?: SubscriptionPlan) => void;
 }
 
 export function LandingCheckoutModal({
   isOpen,
   onClose,
-  initialPlan,
+  initialPlan = 'pro_monthly',
+  startStep = 'plans',
   signIn,
   currentUser,
   onSuccess,
 }: LandingCheckoutModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(initialPlan);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(initialPlan || 'pro_monthly');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
 
   // Dados da Conta
@@ -115,7 +117,7 @@ export function LandingCheckoutModal({
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'form' | 'pix' | 'success'>('form');
+  const [step, setStep] = useState<'plans' | 'form' | 'pix' | 'success'>(startStep || 'plans');
   const [pixData, setPixData] = useState<any>(null);
   const [generatedPixDetails, setGeneratedPixDetails] = useState<{
     plan: string;
@@ -129,8 +131,8 @@ export function LandingCheckoutModal({
 
   // Limpa estado quando modal abre/fecha ou troca de plano inicial
   useEffect(() => {
-    setSelectedPlan(initialPlan);
-    setStep('form');
+    setSelectedPlan(initialPlan || 'pro_monthly');
+    setStep(startStep || 'plans');
     setError('');
     setPixData(null);
     setGeneratedPixDetails(null);
@@ -144,7 +146,7 @@ export function LandingCheckoutModal({
       if (currentUser.whatsapp) setWhatsapp(currentUser.whatsapp);
       if (currentUser.cpf) setCpf(currentUser.cpf);
     }
-  }, [initialPlan, isOpen, currentUser]);
+  }, [initialPlan, isOpen, currentUser, startStep]);
 
   // Se o cliente já gerou um PIX e mudar de plano dentro do checkout, invalida o PIX anterior para forçar a geração de um novo com o valor correto
   useEffect(() => {
@@ -171,33 +173,57 @@ export function LandingCheckoutModal({
 
   if (!isOpen) return null;
 
-  // Planos com ancoragem de preço (riscado) e lista de benefícios
-  const planInfo = {
+  // Todos os planos oficiais com descrições e benefícios detalhados
+  const allPlans: Record<SubscriptionPlan, {
+    id: SubscriptionPlan;
+    title: string;
+    originalPrice: string;
+    price: number;
+    priceFormatted: string;
+    discountBadge: string;
+    period: string;
+    periodLabel: string;
+    days: number;
+    tag: string;
+    highlightBadge?: string;
+    isPopular?: boolean;
+    isBestValue?: boolean;
+    description: string;
+    benefits: string[];
+  }> = {
     monthly: {
+      id: 'monthly',
       title: 'Mensal Comum',
       originalPrice: 'R$ 59,90',
       price: 39.90,
       priceFormatted: 'R$ 39,90',
       discountBadge: '33% OFF',
       period: 'mês',
+      periodLabel: '/mês',
       days: 30,
       tag: '[COMUM]',
+      description: 'Ideal para quem foca no controle individual de aves, genealogia e vendas.',
       benefits: [
         'Cadastro ilimitado de aves, linhagens e baias',
-        'Ficha técnica genealógica com fotos em alta definição',
+        'Ficha genealógica completa com fotos em alta definição',
         'Vitrine Digital exclusiva para vendas no WhatsApp',
         'Sincronização em tempo real entre celular e computador'
       ]
     },
     pro_monthly: {
+      id: 'pro_monthly',
       title: 'Mensal Completo',
       originalPrice: 'R$ 89,90',
       price: 59.80,
       priceFormatted: 'R$ 59,80',
       discountBadge: '33% OFF',
       period: 'mês',
+      periodLabel: '/mês',
       days: 30,
       tag: '[COMPLETO]',
+      highlightBadge: 'MAIS ESCOLHIDO',
+      isPopular: true,
+      description: 'Gestão 360° do plantel: Aves individuais + Lotes inteiros e Ovos.',
       benefits: [
         'Tudo do Plano Comum (Aves, Fotos e Vitrine)',
         'Controle completo de Lotes de Postura e Engorda',
@@ -206,22 +232,29 @@ export function LandingCheckoutModal({
       ]
     },
     yearly: {
+      id: 'yearly',
       title: 'Anual Completo',
       originalPrice: 'R$ 717,60',
       price: 567.90,
       priceFormatted: 'R$ 567,90',
       discountBadge: '21% OFF • ECONOMIZE R$ 149,70',
       period: 'ano',
+      periodLabel: '/ano (12x R$ 47,32)',
       days: 365,
       tag: '[ANUAL]',
+      highlightBadge: 'MELHOR CUSTO-BENEFÍCIO',
+      isBestValue: true,
+      description: '365 dias de acesso irrestrito com máxima economia e suporte VIP.',
       benefits: [
         'Acesso 100% irrestrito a todos os recursos por 1 ano',
         'Aves, Vitrine + Lotes inteiros e Gestão de Ovos inclusos',
-        'Equivale a apenas R$ 47,32/mês com desconto total',
+        'Equivale a apenas R$ 47,32/mês (Até 12x no cartão)',
         'Suporte prioritário VIP direto com o desenvolvedor'
       ]
     }
-  }[selectedPlan];
+  };
+
+  const planInfo = allPlans[selectedPlan];
 
   // Opções de parcelas inteligentes (até 12x no anual, até 4x no mensal)
   const maxInstallments = selectedPlan === 'yearly' ? 12 : 4;
@@ -329,7 +362,7 @@ export function LandingCheckoutModal({
 
       setTimeout(async () => {
         if (onSuccess) {
-          onSuccess();
+          onSuccess(selectedPlan);
         } else if (signIn && userSenha) {
           await signIn(cleanEmail, userSenha);
         }
@@ -583,14 +616,14 @@ export function LandingCheckoutModal({
     if (pollingRef.current) clearInterval(pollingRef.current);
     setPixData(null);
     setGeneratedPixDetails(null);
-    setStep('form');
+    setStep(startStep || 'plans');
     setError('');
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto">
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]">
+      <div className="w-full max-w-lg sm:max-w-xl md:max-w-2xl rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]">
         
         {/* ══════════════════════════════════════════════════════ */}
         {/* FOTO FIXA DE FUNDO: O GALO DA PÁGINA INICIAL          */}
@@ -649,54 +682,133 @@ export function LandingCheckoutModal({
         <div className="p-5 sm:p-6 space-y-4 flex-1 overflow-y-auto relative z-10 overscroll-contain modal-scrollable-content">
           
           {/* ══════════════════════════════════════════════════════ */}
-          {/* CARD DE PLANO SELECIONADO (SOBREPOSIÇÃO + BENEFÍCIOS)  */}
+          {/* ETAPA 0: ESCOLHA ENTRE OS 3 PLANOS OFICIAIS           */}
           {/* ══════════════════════════════════════════════════════ */}
-          <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/40 shadow-lg space-y-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
-                    Plano Selecionado
-                  </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">
-                    {planInfo.discountBadge}
-                  </span>
-                </div>
-                <h4 className="text-lg font-black text-white mt-1">{planInfo.title}</h4>
-              </div>
-
-              {/* Preço com ancoragem / corte */}
-              <div className="text-right">
-                <span className="text-xs line-through text-white/40 font-bold block">
-                  {planInfo.originalPrice}
+          {step === 'plans' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-0.5 rounded-full border border-amber-500/20 inline-block font-mono">
+                  Escolha Seu Acesso
                 </span>
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-2xl font-black text-amber-400 tracking-tight">
-                    {planInfo.priceFormatted}
-                  </span>
-                  <span className="text-[10px] text-white/50 font-bold">/{planInfo.period}</span>
-                </div>
+                <h3 className="text-base sm:text-xl font-black text-white">
+                  Escolha o Plano Ideal para seu Criatório
+                </h3>
+                <p className="text-[11px] sm:text-xs text-white/60 max-w-md mx-auto leading-relaxed">
+                  Compare as 3 opções abaixo e selecione a que melhor combina com a sua criação:
+                </p>
               </div>
-            </div>
 
-            {/* Lista resumida de benefícios */}
-            <div className="pt-2 border-t border-white/[0.1] space-y-1.5">
-              {planInfo.benefits.map((b, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-[11px] text-white/90">
-                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                    <Check size={8} className="text-emerald-400" />
-                  </div>
-                  <span>{b}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+              {/* Lista dos 3 Planos em cards interativos */}
+              <div className="space-y-3">
+                {(Object.values(allPlans) as typeof allPlans[SubscriptionPlan][]).map((p) => {
+                  const isSelected = selectedPlan === p.id;
+                  const isYearly = p.id === 'yearly';
 
-          {/* MENSAGEM DE ERRO */}
-          {error && (
-            <div className="p-3 rounded-xl text-xs font-bold flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400">
-              <AlertCircle size={15} className="shrink-0" />
-              <span>{error}</span>
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => setSelectedPlan(p.id)}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
+                        isSelected
+                          ? isYearly
+                            ? 'bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-black/90 border-emerald-400 ring-2 ring-emerald-400/30 shadow-lg shadow-emerald-500/15'
+                            : 'bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-black/90 border-amber-400 ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/15'
+                          : 'bg-black/50 border-white/10 hover:border-white/20 hover:bg-black/70'
+                      }`}
+                    >
+                      {/* Top badges + radio indicator */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {p.highlightBadge && (
+                            <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-full ${
+                              isYearly 
+                                ? 'bg-emerald-500 text-black shadow-sm'
+                                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-sm'
+                            }`}>
+                              {p.highlightBadge}
+                            </span>
+                          )}
+                          <span className="text-[8.5px] font-bold uppercase text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                            {p.tag}
+                          </span>
+                          <span className="text-[8.5px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            {p.discountBadge}
+                          </span>
+                        </div>
+
+                        {/* Radio indicador de seleção */}
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                          isSelected
+                            ? isYearly
+                              ? 'border-emerald-400 bg-emerald-400 text-black'
+                              : 'border-amber-400 bg-amber-400 text-black'
+                            : 'border-white/30 bg-white/5'
+                        }`}>
+                          {isSelected && <Check size={12} className="stroke-[3]" />}
+                        </div>
+                      </div>
+
+                      {/* Título e Preço */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="text-sm sm:text-base font-black text-white">{p.title}</h4>
+                          <p className="text-[11px] text-white/60 mt-0.5">{p.description}</p>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-[11px] line-through text-white/40 block">
+                            {p.originalPrice}
+                          </span>
+                          <div className="flex items-baseline justify-end gap-1">
+                            <span className={`text-xl sm:text-2xl font-black tracking-tight ${
+                              isSelected ? (isYearly ? 'text-emerald-400' : 'text-amber-400') : 'text-white'
+                            }`}>
+                              {p.priceFormatted}
+                            </span>
+                            <span className="text-[10px] text-white/50 font-bold">/{p.period}</span>
+                          </div>
+                          {isYearly && (
+                            <span className="text-[9.5px] text-emerald-400 font-bold block mt-0.5">
+                              12x de R$ 47,32
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Benefícios */}
+                      <div className="mt-2.5 pt-2 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {p.benefits.map((b, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5 text-[11px] text-white/80">
+                            <Check size={11} className={`shrink-0 ${isSelected ? (isYearly ? 'text-emerald-400' : 'text-amber-400') : 'text-white/40'}`} />
+                            <span className="truncate">{b}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Botão de prosseguir para o formulário */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep('form')}
+                  className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl cursor-pointer ${
+                    selectedPlan === 'yearly'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-emerald-500/20'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black shadow-amber-500/20'
+                  }`}
+                >
+                  <span>Continuar com {allPlans[selectedPlan].title} ({allPlans[selectedPlan].priceFormatted})</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <p className="text-[10px] text-center text-white/40 mt-2 flex items-center justify-center gap-1">
+                  <ShieldCheck size={12} className="text-emerald-400" />
+                  <span>Liberação imediata via Pix ou Cartão em até 12x • Criptografia Bancária SSL</span>
+                </p>
+              </div>
             </div>
           )}
 
@@ -704,7 +816,88 @@ export function LandingCheckoutModal({
           {/* ETAPA 1: FORMULÁRIO DE DADOS E PAGAMENTO              */}
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'form' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
+              {/* Barra superior de retorno / troca rápida de plano */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pb-1 border-b border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setStep('plans')}
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer w-fit py-1"
+                >
+                  <ArrowLeft size={14} />
+                  <span>← Ver todos os 3 planos</span>
+                </button>
+
+                {/* Mini-pills de seleção rápida de plano */}
+                <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 self-start sm:self-auto overflow-x-auto max-w-full">
+                  {(['monthly', 'pro_monthly', 'yearly'] as SubscriptionPlan[]).map(pId => (
+                    <button
+                      key={pId}
+                      type="button"
+                      onClick={() => setSelectedPlan(pId)}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        selectedPlan === pId
+                          ? pId === 'yearly'
+                            ? 'bg-emerald-500 text-black shadow-sm font-black'
+                            : 'bg-amber-500 text-black shadow-sm font-black'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {pId === 'monthly' ? 'Comum R$ 39,90' : pId === 'pro_monthly' ? 'Completo R$ 59,80' : 'Anual R$ 567,90'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* CARD DE PLANO SELECIONADO (RESUMO + BENEFÍCIOS) */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-black/60 border border-amber-500/40 shadow-lg space-y-2.5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                        Plano Selecionado
+                      </span>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">
+                        {planInfo.discountBadge}
+                      </span>
+                    </div>
+                    <h4 className="text-base sm:text-lg font-black text-white mt-1">{planInfo.title}</h4>
+                  </div>
+
+                  {/* Preço com ancoragem / corte */}
+                  <div className="text-right">
+                    <span className="text-xs line-through text-white/40 font-bold block">
+                      {planInfo.originalPrice}
+                    </span>
+                    <div className="flex items-baseline justify-end gap-1">
+                      <span className="text-xl sm:text-2xl font-black text-amber-400 tracking-tight">
+                        {planInfo.priceFormatted}
+                      </span>
+                      <span className="text-[10px] text-white/50 font-bold">/{planInfo.period}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista resumida de benefícios */}
+                <div className="pt-2 border-t border-white/[0.1] space-y-1">
+                  {planInfo.benefits.map((b, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-[11px] text-white/90">
+                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                        <Check size={8} className="text-emerald-400" />
+                      </div>
+                      <span>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* MENSAGEM DE ERRO */}
+              {error && (
+                <div className="p-3 rounded-xl text-xs font-bold flex items-center gap-2 bg-red-500/15 border border-red-500/30 text-red-400">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
               {/* Formulário Principal */}
               <form onSubmit={paymentMethod === 'pix' ? handleGerarPix : handlePagarCartao} className="space-y-3">
                 
@@ -1447,6 +1640,21 @@ export function LandingCheckoutModal({
           {/* ══════════════════════════════════════════════════════ */}
           {step === 'pix' && pixData && (
             <div className="space-y-4 text-center">
+              {/* Barra superior de retorno para reescolher o plano ou dados */}
+              <div className="flex items-center justify-between pb-1 border-b border-white/10 text-left">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pollingRef.current) clearInterval(pollingRef.current);
+                    setStep('form');
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer py-1"
+                >
+                  <ArrowLeft size={14} />
+                  <span>← Alterar dados ou forma de pagamento</span>
+                </button>
+              </div>
+
               {/* Card de Detalhes do Pedido PIX */}
               <div className="p-3.5 bg-[#161620] border border-amber-500/30 rounded-2xl text-left space-y-2 shadow-lg">
                 <div className="flex items-center justify-between">

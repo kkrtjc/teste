@@ -5,16 +5,16 @@ import {
   Egg, AlertTriangle, TrendingUp, ShoppingBag, Scale
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth, isUserAdmin } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots } = useAppContext();
-  const { user } = useAuth();
+  const { birds, farmSettings, breeds, eggLots, meatLots, isReady } = useAppContext();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
 
-  // Snapshot síncrono do localStorage para carregamento instantâneo a 0ms
+  // Snapshot síncrono do localStorage para carregamento instantâneo a 0ms (estritamente isolado pelo usuário)
   const [cachedStats, setCachedStats] = useState<{
     totalAves: number;
     totalMachos: number;
@@ -25,13 +25,13 @@ export function Dashboard() {
   } | null>(() => {
     try {
       const u = localStorage.getItem('@mura-manager:cached-user');
-      const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
-      const raw = localStorage.getItem(`@mura-manager:dashboard-stats:${uid}`) || localStorage.getItem('@mura-manager:dashboard-stats');
+      const parsedUser = (user && user.id) ? user : (u ? JSON.parse(u) : null);
+      if (!parsedUser || !parsedUser.id) return null;
+      const isAdm = isAdmin || isUserAdmin(parsedUser.email) || isUserAdmin(parsedUser.id);
+      const cacheKey = isAdm ? '@mura-manager:admin:dashboard-stats' : `@mura-manager:dashboard-stats:${parsedUser.id}`;
+      const raw = localStorage.getItem(cacheKey);
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && (parsed.totalAves > 0 || parsed.totalLotes > 0)) {
-          return parsed;
-        }
+        return JSON.parse(raw);
       }
     } catch {}
     return null;
@@ -171,21 +171,47 @@ export function Dashboard() {
     return { kg, date, baia: bestBaia };
   }, [meatLots]);
 
-  // Persiste snapshot no localStorage APENAS quando há números concretos (> 0)
+  // Limpeza preventiva de chave global legada (evita vazamento de estatísticas entre contas)
   useEffect(() => {
-    if (stats.totalAves > 0 || stats.totalLotes > 0) {
-      setCachedStats(stats);
-      try {
-        const uid = user?.id || 'guest';
-        localStorage.setItem(`@mura-manager:dashboard-stats:${uid}`, JSON.stringify(stats));
-        localStorage.setItem('@mura-manager:dashboard-stats', JSON.stringify(stats));
-      } catch {}
-    }
-  }, [stats, user?.id]);
+    try {
+      localStorage.removeItem('@mura-manager:dashboard-stats');
+    } catch {}
+  }, []);
 
-  // Estado de carregamento
-  const hasRealData = stats.totalAves > 0 || stats.totalLotes > 0;
-  const displayStats = hasRealData ? stats : (cachedStats || stats);
+  // Sincroniza cachedStats quando o usuário autenticado mudar
+  useEffect(() => {
+    try {
+      if (!user || !user.id) {
+        setCachedStats(null);
+        return;
+      }
+      const isAdm = isAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
+      const cacheKey = isAdm ? '@mura-manager:admin:dashboard-stats' : `@mura-manager:dashboard-stats:${user.id}`;
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) {
+        setCachedStats(JSON.parse(raw));
+      } else {
+        setCachedStats(null);
+      }
+    } catch {
+      setCachedStats(null);
+    }
+  }, [user?.id, user?.email, isAdmin]);
+
+  // Persiste snapshot no localStorage isolado exclusivamente pelo ID do usuário autenticado
+  useEffect(() => {
+    if (!user || !user.id) return;
+    try {
+      const isAdm = isAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
+      const cacheKey = isAdm ? '@mura-manager:admin:dashboard-stats' : `@mura-manager:dashboard-stats:${user.id}`;
+      localStorage.setItem(cacheKey, JSON.stringify(stats));
+      setCachedStats(stats);
+    } catch {}
+  }, [stats, user?.id, user?.email, isAdmin]);
+
+  // Se os dados reais do contexto já foram carregados (isReady === true), exibe stats reais (mesmo que seja 0).
+  // cachedStats só é usado como fallback imediato nos milissegundos antes de isReady estar pronto.
+  const displayStats = isReady ? stats : (cachedStats || stats);
   const hasEggLots = eggLots.some(l => l.status === 'Ativo');
 
   return (

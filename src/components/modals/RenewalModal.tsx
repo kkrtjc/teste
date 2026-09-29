@@ -453,6 +453,29 @@ export function RenewalModal({
                 </div>
               </div>
 
+              {/* Seletor rápido dos 3 Planos Disponíveis */}
+              <div className="flex items-center gap-1 bg-black/40 p-1 rounded-2xl border border-white/10">
+                {(['monthly', 'pro_monthly', 'yearly'] as SubscriptionPlan[]).map(pId => (
+                  <button
+                    key={pId}
+                    type="button"
+                    onClick={() => {
+                      setSelectedRenewPlan(pId);
+                      generatePixForPlan(pId);
+                    }}
+                    className={`flex-1 py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all cursor-pointer text-center ${
+                      selectedRenewPlan === pId
+                        ? pId === 'yearly'
+                          ? 'bg-emerald-500 text-black font-black shadow-sm'
+                          : 'bg-amber-500 text-black font-black shadow-sm'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {pId === 'monthly' ? 'Comum R$ 39,90' : pId === 'pro_monthly' ? 'Completo R$ 59,80' : 'Anual R$ 567,90'}
+                  </button>
+                ))}
+              </div>
+
               {/* ── CASO 1: CLIENTE COM PLANO MENSAL COMUM -> OFERTA UPSELL LOTES ── */}
               {activePlan === 'monthly' && (
                 <div className="space-y-3">

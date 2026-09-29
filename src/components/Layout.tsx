@@ -1175,14 +1175,15 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
         isOpen={effectiveUpgradeModalOpen}
         onClose={handleUpgradeModalClose}
         initialPlan={effectiveUpgradePlan}
+        startStep="plans"
         currentUser={{
           cpf,
           nome: farmSettings.name,
           email: user?.email,
           whatsapp: farmSettings.phone,
         }}
-        onSuccess={async () => {
-          await activateSubscription(effectiveUpgradePlan);
+        onSuccess={async (activatedPlan) => {
+          await activateSubscription(activatedPlan || effectiveUpgradePlan || 'pro_monthly');
           showToast('Assinatura ativada com sucesso! Seu criatório está liberado.', 'success');
         }}
       />
