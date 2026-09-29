@@ -48,37 +48,68 @@ const TOUR_STEPS = [
 
 const ONBOARDING_KEY = '@mura-manager:onboarding-done-v2';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 interface TabRect {
-  cx: number; // center x of the tab button
-  cy: number; // center y of the tab button (top edge of nav bar)
-  navBottom: number; // bottom of the nav bar
+  cx: number;
+  cy: number;
+  navBottom: number;
 }
 
 interface OnboardingTourProps {
   /** Called when the tour navigates to a step, so Layout can switch the active tab */
   onNavigateToTab: (path: string) => void;
+  /** When true (e.g. trial popup is showing), tour must NOT appear */
+  isBlocked?: boolean;
 }
 
 const TAB_PATHS = ['/', '/birds', '/vitrine', '/lots', '/eggs'];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
+export function OnboardingTour({ onNavigateToTab, isBlocked = false }: OnboardingTourProps) {
   const [visible, setVisible] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [tabRect, setTabRect] = useState<TabRect | null>(null);
   const [entering, setEntering] = useState(false);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // Tracks whether onboarding is pending (ready to show once unblocked)
+  const pendingRef = useRef(false);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Check if tour should show on mount
-  useEffect(() => {
-    const done = localStorage.getItem(ONBOARDING_KEY);
-    if (!done) {
-      // Short delay so the app UI renders first — looks cleaner
-      const t = setTimeout(() => setVisible(true), 600);
-      return () => clearTimeout(t);
-    }
+  const isDone = () => localStorage.getItem(ONBOARDING_KEY) === 'true';
+
+  // Function that actually shows the tour
+  const showTour = useCallback(() => {
+    if (isDone()) return;
+    setVisible(true);
   }, []);
+
+  // On mount: if not blocked and not done, schedule show after 700ms
+  // If blocked, mark as pending — will show once unblocked
+  useEffect(() => {
+    if (isDone()) return;
+
+    if (!isBlocked) {
+      showTimerRef.current = setTimeout(showTour, 700);
+    } else {
+      pendingRef.current = true;
+    }
+
+    return () => {
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // When isBlocked changes from true -> false, show the tour if it was pending
+  const prevBlockedRef = useRef(isBlocked);
+  useEffect(() => {
+    const wasBlocked = prevBlockedRef.current;
+    prevBlockedRef.current = isBlocked;
+
+    if (wasBlocked && !isBlocked && pendingRef.current && !isDone()) {
+      pendingRef.current = false;
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      showTimerRef.current = setTimeout(showTour, 700);
+    }
+  }, [isBlocked, showTour]);
 
   // Measure the position of the current tab icon
   const measureTab = useCallback((index: number) => {
@@ -102,7 +133,6 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
     if (!visible) return;
     measureTab(stepIndex);
 
-    // Observe nav container for size changes (orientation change, etc.)
     const navEl = document.getElementById('mobile-nav-main-menu');
     if (navEl && 'ResizeObserver' in window) {
       resizeObserverRef.current?.disconnect();
@@ -147,30 +177,27 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
   const isLast = stepIndex === TOUR_STEPS.length - 1;
   const StepIcon = step.Icon;
 
-  // Card sits above the nav bar — position it relative to measured rect
   const navTop = tabRect?.cy ?? window.innerHeight * 0.85;
-  const cardBottom = window.innerHeight - navTop + 16; // px from bottom of screen
+  const cardBottom = window.innerHeight - navTop + 16;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[99999] pointer-events-auto"
-      // Prevent any touch/click going through to the app
       onTouchMove={(e) => e.preventDefault()}
       style={{ touchAction: 'none' }}
       aria-modal="true"
       role="dialog"
       aria-label={`Tour de apresentação — ${step.title}`}
     >
-      {/* Dark backdrop — full screen blocking overlay */}
+      {/* Dark backdrop */}
       <div
         className="absolute inset-0 bg-black/75"
         style={{ backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)' }}
       />
 
-      {/* ── Pulsing ring + arrow around the current tab icon ── */}
+      {/* Pulsing ring around current tab icon */}
       {tabRect && (
         <>
-          {/* Glow ring around the tab icon */}
           <div
             className="absolute onboarding-tab-ring pointer-events-none"
             style={{
@@ -183,7 +210,7 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
             }}
           />
 
-          {/* Pulsing arrow pointing UP toward the tab icon */}
+          {/* Pulsing arrow pointing down toward the tab */}
           <div
             className="absolute pointer-events-none"
             style={{
@@ -193,7 +220,6 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
             }}
           >
             <div className="onboarding-arrow">
-              {/* Arrow chevron pointing down toward the nav */}
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M12 4 L12 18 M6 12 L12 18 L18 12"
@@ -208,26 +234,26 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
         </>
       )}
 
-      {/* ── Info card — positioned above the nav bar ── */}
+      {/* Info card above nav bar */}
       <div
-        className="absolute left-4 right-4 pointer-events-auto"
+        className="absolute pointer-events-auto"
         style={{
           bottom: cardBottom,
           zIndex: 100003,
-          maxWidth: 480,
           left: '50%',
           transform: 'translateX(-50%)',
           width: 'calc(100% - 32px)',
+          maxWidth: 480,
         }}
       >
         <div
-          className={`onboarding-card bg-[#18181f] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden ${entering ? 'onboarding-card-exit' : 'onboarding-card-enter'}`}
+          className={`onboarding-card bg-[#18181f] border border-amber-500/30 rounded-2xl shadow-2xl overflow-hidden ${
+            entering ? 'onboarding-card-exit' : 'onboarding-card-enter'
+          }`}
         >
-          {/* Amber glow top stripe */}
           <div className="h-[3px] w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
 
           <div className="p-5">
-            {/* Header row */}
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0">
@@ -250,7 +276,6 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
               </button>
             </div>
 
-            {/* Step dots */}
             <div className="flex items-center gap-1.5 mb-3">
               {TOUR_STEPS.map((_, i) => (
                 <div
@@ -265,10 +290,8 @@ export function OnboardingTour({ onNavigateToTab }: OnboardingTourProps) {
               ))}
             </div>
 
-            {/* Description */}
             <p className="text-sm text-white/75 leading-relaxed mb-4">{step.description}</p>
 
-            {/* Action buttons */}
             <div className="flex items-center gap-2">
               {stepIndex > 0 && (
                 <button

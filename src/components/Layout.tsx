@@ -8,8 +8,6 @@ import {
   Zap, Store, ArrowLeft, Lock
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
-import { SmartAssistantModal } from './assistant/SmartAssistantModal';
-import { useSmartAssistant } from '../hooks/useSmartAssistant';
 import { OnboardingTour } from './OnboardingTour';
 
 // Code-splitting dos modais pesados para alívio de memória e boot instantâneo
@@ -276,7 +274,7 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
 export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialPopupOpen = false }: LayoutProps) {
   const { 
     farmSettings, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
-    isTourOpen, isProfileSetupOpen, closeTour, finishProfileSetup, showToast,
+    isProfileSetupOpen, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal
   } = useAppContext();
@@ -284,31 +282,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
   const location = useLocation();
   const { triggerLight } = useHaptics();
   const { isLocalMode, isAdmin, trialInfo, cpf, hasModuleAccess, user, activateSubscription, isExpired } = useAuth();
-
-  const isBlocked = isTrialPopupOpen || showUpgradeModal || isProfileSetupOpen || globalIsUpgradeModalOpen;
-
-  const {
-    isOpen: isAssistantOpen,
-    activeGuide,
-    currentStep,
-    stepIndex,
-    openAssistant,
-    closeAssistant,
-    nextStep,
-    prevStep
-  } = useSmartAssistant({ 
-    isBlocked,
-    isAddBirdModalOpen,
-    onCloseAddBirdModal: closeModals
-  });
-
-  // Redireciona qualquer chamada legada de startTour para a assistente inteligente
-  useEffect(() => {
-    if (isTourOpen) {
-      closeTour?.();
-      openAssistant();
-    }
-  }, [isTourOpen, closeTour, openAssistant]);
 
   // ── Onboarding Tour: navega para a aba indicada pelo tour sem remontar ──
   const handleOnboardingNavigate = useCallback((path: string) => {
@@ -549,7 +522,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
-  const isAnyModalActive = isAddBirdModalOpen || !!selectedBirdProfileId || isTourOpen || isProfileSetupOpen || isAdminModalOpen;
+  const isAnyModalActive = isAddBirdModalOpen || !!selectedBirdProfileId || isProfileSetupOpen || isAdminModalOpen;
 
   useEffect(() => {
     if (isAnyModalActive) {
@@ -660,17 +633,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
           {selectedBirdProfileId && <BirdProfileModal />}
           {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
         </Suspense>
-
-        {/* ── Assistente Inteligente Mura IA (Contextual por Aba - Visual & Fluida 60+ FPS) ── */}
-        <SmartAssistantModal
-          isOpen={isAssistantOpen}
-          activeGuide={activeGuide}
-          currentStep={currentStep}
-          stepIndex={stepIndex}
-          onNext={nextStep}
-          onPrev={prevStep}
-          onClose={closeAssistant}
-        />
       
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r border-theme-border bg-theme-surface hidden md:flex flex-col">
@@ -738,20 +700,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
               <span>{isOnline ? 'Sincronizado' : 'Modo Offline'}</span>
             </div>
           </div>
-          
-          {/* Assistente Inteligente Mura IA Trigger */}
-          <button
-            id="header-assistant-button"
-            onClick={() => {
-              triggerLight();
-              openAssistant();
-            }}
-            className="p-2 hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 border border-amber-500/25 hover:border-amber-500/50 rounded-xl transition-all active:scale-95 shrink-0 ml-auto mr-2 flex items-center gap-1.5 text-xs font-black shadow-sm shadow-amber-500/10 cursor-pointer"
-            title="Abrir Assistente Inteligente Mura IA (Explicação das ferramentas desta aba)"
-          >
-            <Sparkles size={16} className="text-amber-400 animate-pulse" />
-            <span className="hidden sm:inline">Assistente IA</span>
-          </button>
 
           {/* Admin panel button if CPF is admin */}
           {isAdmin && (
@@ -980,7 +928,11 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
       </div>
 
       {/* ── Onboarding Tour (primeira visita — guia interativo das abas) ── */}
-      <OnboardingTour onNavigateToTab={handleOnboardingNavigate} />
+      {/* isBlocked=true enquanto trial popup ou upgrade modal estiver aberto */}
+      <OnboardingTour
+        onNavigateToTab={handleOnboardingNavigate}
+        isBlocked={isTrialPopupOpen || effectiveUpgradeModalOpen || isProfileSetupOpen}
+      />
 
       {/* Admin CPF Registration Modal Portal */}
       {isAdminModalOpen && createPortal(

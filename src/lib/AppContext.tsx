@@ -425,14 +425,10 @@ export type AppContextType = {
   toggleBirdVitrine: (birdId: string, inVitrine: boolean, price?: string, status?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque') => void;
 
   // Onboarding & Profile Setup Optional Helpers
-  isTourOpen?: boolean;
   isProfileSetupOpen?: boolean;
   openProfileSetup?: () => void;
   closeProfileSetup?: () => void;
   finishProfileSetup?: () => void;
-  startTour?: () => void;
-  closeTour?: () => void;
-  finishTour?: () => void;
 
   // Limite de Compartilhamento no Período de Teste & Upgrade Modal
   trialSharedBirdIds: string[];
@@ -3450,26 +3446,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [getStorageKey, user]);
 
-  const [isTourOpen, setIsTourOpen] = useState<boolean>(false);
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
-
-  const startTour = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('open-smart-assistant'));
-    }
-  }, []);
-  const closeTour = useCallback(() => {
-    setIsTourOpen(false);
-    try {
-      localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-    } catch {}
-  }, []);
-  const finishTour = useCallback(() => {
-    setIsTourOpen(false);
-    try {
-      localStorage.setItem('@mura-manager:hasSeenTour_v1', 'true');
-    } catch {}
-  }, []);
 
   const { triggerSuccess, triggerWarning, triggerError, triggerLight } = useHaptics();
 
@@ -3576,8 +3553,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast,
     recoverAllBirds,
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
-    isTourOpen, isProfileSetupOpen,
-    startTour, closeTour, finishTour,
+    isProfileSetupOpen,
     openProfileSetup, closeProfileSetup, finishProfileSetup,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
@@ -3585,7 +3561,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [
     isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isTourOpen, isProfileSetupOpen,
+    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isProfileSetupOpen,
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
