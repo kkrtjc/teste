@@ -242,24 +242,25 @@ export async function deepScanAllStorage(currentUserId?: string): Promise<{ coun
   // 6. Consolidação e Blindagem: Salva em TODAS as gavetas locais
   if (finalBirds.length > 0) {
     try {
-      const keysToPopulate = [
-        '@mura-manager:admin:birds',
-        '@mura-manager:birds',
-        `@mura-manager:${ADMIN_CPF}:birds`,
-        `@mura-manager:${ADMIN_CANONICAL_ID}:birds`,
-        `@mura-manager:admin-${ADMIN_CPF}:birds`,
-      ];
-      if (currentUserId) {
+      const isAdmin = Boolean(currentUserId && isUserAdmin(currentUserId));
+      const keysToPopulate: string[] = [];
+      if (isAdmin) {
+        keysToPopulate.push(
+          '@mura-manager:admin:birds',
+          `@mura-manager:${ADMIN_CPF}:birds`,
+          `@mura-manager:${ADMIN_CANONICAL_ID}:birds`,
+          `@mura-manager:admin-${ADMIN_CPF}:birds`
+        );
+        localStorage.setItem('@mura-manager:emergency-birds-backup', JSON.stringify(finalBirds));
+        localStorage.setItem('@mura-manager:emergency-backup-date', new Date().toISOString());
+      } else if (currentUserId) {
         keysToPopulate.push(`@mura-manager:${currentUserId}:birds`);
       }
 
       for (const k of keysToPopulate) {
         await localforage.setItem(k, finalBirds).catch(() => {});
       }
-
-      localStorage.setItem('@mura-manager:emergency-birds-backup', JSON.stringify(finalBirds));
-      localStorage.setItem('@mura-manager:emergency-backup-date', new Date().toISOString());
-      logEntries.push(`Consolidação concluída: salvas em ${keysToPopulate.length} chaves locais e localStorage.`);
+      logEntries.push(`Consolidação concluída: salvas em ${keysToPopulate.length} chaves locais.`);
     } catch (saveErr) {
       logEntries.push(`! Erro ao salvar aves consolidadas: ${saveErr}`);
     }
@@ -267,7 +268,7 @@ export async function deepScanAllStorage(currentUserId?: string): Promise<{ coun
     // 7. Envio para o Supabase para segurança permanente na nuvem
     if (supabase) {
       try {
-        const isAdmin = isUserAdmin(currentUserId) || !currentUserId;
+        const isAdmin = Boolean(currentUserId && isUserAdmin(currentUserId));
         const targetUserId = isAdmin ? ADMIN_CANONICAL_ID : currentUserId;
 
         // Se for admin, garante sessão autenticada no Supabase para aprovação das regras de RLS

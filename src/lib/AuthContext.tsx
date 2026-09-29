@@ -477,6 +477,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (isUserAdmin(u.email) || isUserAdmin(u.id)) {
             localStorage.setItem('@mura-manager:user-cpf', ADMIN_CPF);
             setLinkedCpf(ADMIN_CPF);
+          } else {
+            const currentCpf = localStorage.getItem('@mura-manager:user-cpf');
+            if (currentCpf === ADMIN_CPF) {
+              localStorage.removeItem('@mura-manager:user-cpf');
+              setLinkedCpf('');
+            }
           }
         } catch {}
         validateUserAccess(u);
@@ -647,6 +653,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!error && data.session) {
+        const isAdm = isUserAdmin(data.user.email) || isUserAdmin(data.user.id);
+        if (!isAdm) {
+          try {
+            const currentCpf = localStorage.getItem('@mura-manager:user-cpf');
+            if (currentCpf === ADMIN_CPF) {
+              localStorage.removeItem('@mura-manager:user-cpf');
+              setLinkedCpf('');
+            }
+          } catch {}
+        }
         setSession(data.session);
         setUser(data.user);
         try {
@@ -830,7 +846,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Erro ao limpar cache local de sessão:', err);
     }
 
-    // 3. Notifica o Supabase em segundo plano sem travar a navegação
+    // 3. Notifica a aplicação para resetar o estado em memória e prevenir contaminação entre contas
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mura-user-signed-out'));
+    }
+
+    // 4. Notifica o Supabase em segundo plano sem travar a navegação
     if (supabase) {
       supabase.auth.signOut().catch(err => {
         console.error('Erro ao deslogar do Supabase:', err);
@@ -840,13 +861,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getCpf = () => {
     if (linkedCpf) return linkedCpf;
-    try {
-      const stored = localStorage.getItem('@mura-manager:user-cpf');
-      if (stored) return stored;
-    } catch {}
     if (user?.email && user.email.includes('@mura.com')) {
       return user.email.split('@')[0].replace(/\D/g, '');
     }
+    try {
+      const stored = localStorage.getItem('@mura-manager:user-cpf');
+      if (stored) {
+        // Se há um usuário logado que NÃO é admin, um CPF de admin no storage é resíduo e deve ser purgado
+        if (user && !isUserAdmin(user.email) && !isUserAdmin(user.id) && stored === ADMIN_CPF) {
+          localStorage.removeItem('@mura-manager:user-cpf');
+          return '';
+        }
+        return stored;
+      }
+    } catch {}
     return '';
   };
 
@@ -1266,8 +1294,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       isLocalMode: !isSupabaseConfigured,
-      isExpired: (isUserAdmin(user?.email) || isUserAdmin(getCpf())) ? false : isExpired,
-      isAdmin: isUserAdmin(user?.email) || isUserAdmin(getCpf()),
+      isExpired: (user ? (isUserAdmin(user.email) || isUserAdmin(user.id)) : isUserAdmin(getCpf())) ? false : isExpired,
+      isAdmin: Boolean(user ? (isUserAdmin(user.email) || isUserAdmin(user.id)) : isUserAdmin(getCpf())),
       trialInfo,
       hasModuleAccess,
       lastWebhookConfirmation,

@@ -240,6 +240,15 @@ export type FarmSettings = {
   whatsapp?: string;
 };
 
+export const DEFAULT_FARM_SETTINGS: FarmSettings = {
+  name: '',
+  photo: '',
+  email: '',
+  phone: '',
+  city: '',
+  state: ''
+};
+
 /**
  * Empacota metadados completos do lote de postura dentro do campo JSONB 'registros' do Supabase.
  * Isso garante que observações, observações adicionais, movimentações, raça e custos sejam 100% persistidos na nuvem sem erro de coluna.
@@ -529,10 +538,9 @@ export const DEFAULT_BREEDS: Breed[] = [
 export function AppProvider({ children }: { children: ReactNode }) {
   const { user, cpf, isAdmin: isAuthAdmin, trialInfo } = useAuth();
   const isCurrentUserAdmin = Boolean(
-    isAuthAdmin ||
-    (user && isUserAdmin(user.email)) ||
-    (user && isUserAdmin(user.id)) ||
-    isUserAdmin(cpf)
+    user
+      ? (isUserAdmin(user.email) || isUserAdmin(user.id))
+      : (isAuthAdmin || isUserAdmin(cpf))
   );
 
   // ── Limite de Compartilhamento no Período de Teste (Máximo 5 fichas) ──
@@ -639,128 +647,147 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [farmSettings, setFarmSettings] = useState<FarmSettings>(() => {
     try {
       const u = localStorage.getItem('@mura-manager:cached-user');
-      const uid = (user && user.id) || (u ? JSON.parse(u)?.id : null) || 'guest';
-      const raw = localStorage.getItem(`@mura-manager:cached-farm-settings:${uid}`) || localStorage.getItem('@mura-manager:cached-farm-settings');
-      if (raw) {
-        const parsed = JSON.parse(raw);
+      const parsedUser = (user && user.id) ? user : (u ? JSON.parse(u) : null);
+      const isAdm = parsedUser ? (isUserAdmin(parsedUser.email) || isUserAdmin(parsedUser.id)) : false;
+      const uid = parsedUser?.id || 'guest';
+      const scopedRaw = localStorage.getItem(`@mura-manager:cached-farm-settings:${uid}`);
+      if (scopedRaw) {
+        const parsed = JSON.parse(scopedRaw);
         if (parsed && typeof parsed === 'object') return parsed;
       }
+      if (isAdm) {
+        const raw = localStorage.getItem('@mura-manager:cached-farm-settings');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      }
     } catch {}
-    return {
-      name: '',
-      photo: '',
-      email: '',
-      phone: '',
-      city: '',
-      state: ''
-    };
+    return { ...DEFAULT_FARM_SETTINGS };
   });
 
   // ── Gestão de Tombstones para Exclusão Permanente (evita ressurreição de aves deletadas) ──
   // Lê sincronamente do localStorage (apenas como fallback rápido no render inicial)
+  const getUserScope = useCallback(() => {
+    if (isCurrentUserAdmin) return 'admin';
+    if (!user) return 'guest';
+    return user.id;
+  }, [user, isCurrentUserAdmin]);
+
+  // Lê sincronamente do localStorage (apenas como fallback rápido no render inicial)
   const getDeletedBirdIds = useCallback((): Set<string> => {
     try {
-      const raw = localStorage.getItem('@mura-manager:deleted-bird-ids');
+      const scope = getUserScope();
+      const raw = localStorage.getItem(`@mura-manager:${scope}:deleted-bird-ids`);
       if (raw) return new Set(JSON.parse(raw));
     } catch {}
     return new Set();
-  }, []);
+  }, [getUserScope]);
 
   // Versão assíncrona: lê do IndexedDB (fonte primária) com fallback para localStorage
   const getDeletedBirdIdsAsync = useCallback(async (): Promise<Set<string>> => {
+    const scope = getUserScope();
     try {
-      const fromIDB = await localforage.getItem<string[]>('@mura-manager:deleted-bird-ids');
+      const fromIDB = await localforage.getItem<string[]>(`@mura-manager:${scope}:deleted-bird-ids`);
       if (fromIDB && Array.isArray(fromIDB) && fromIDB.length > 0) {
         // Sincroniza de volta pro localStorage para que o getter síncrono fique atualizado
-        try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(fromIDB)); } catch {}
+        try { localStorage.setItem(`@mura-manager:${scope}:deleted-bird-ids`, JSON.stringify(fromIDB)); } catch {}
         return new Set(fromIDB);
       }
     } catch {}
     // Fallback: lê do localStorage
     try {
-      const raw = localStorage.getItem('@mura-manager:deleted-bird-ids');
+      const raw = localStorage.getItem(`@mura-manager:${scope}:deleted-bird-ids`);
       if (raw) return new Set(JSON.parse(raw));
     } catch {}
     return new Set();
-  }, []);
+  }, [getUserScope]);
 
   const recordDeletedBirdId = useCallback((id: string) => {
+    const scope = getUserScope();
     try {
       const set = getDeletedBirdIds();
       set.add(id);
       const arr = Array.from(set).slice(-1000);
       // IndexedDB é a fonte primária (iOS não limpa automaticamente)
-      localforage.setItem('@mura-manager:deleted-bird-ids', arr).catch(() => {});
+      localforage.setItem(`@mura-manager:${scope}:deleted-bird-ids`, arr).catch(() => {});
       // localStorage como backup síncrono imediato
-      try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr)); } catch {}
+      try { localStorage.setItem(`@mura-manager:${scope}:deleted-bird-ids`, JSON.stringify(arr)); } catch {}
     } catch {}
-  }, [getDeletedBirdIds]);
+  }, [getUserScope, getDeletedBirdIds]);
 
   const clearDeletedBirdId = useCallback((id: string) => {
+    const scope = getUserScope();
     try {
       const set = getDeletedBirdIds();
       if (set.has(id)) {
         set.delete(id);
         const arr = Array.from(set);
-        localforage.setItem('@mura-manager:deleted-bird-ids', arr).catch(() => {});
-        try { localStorage.setItem('@mura-manager:deleted-bird-ids', JSON.stringify(arr)); } catch {}
+        localforage.setItem(`@mura-manager:${scope}:deleted-bird-ids`, arr).catch(() => {});
+        try { localStorage.setItem(`@mura-manager:${scope}:deleted-bird-ids`, JSON.stringify(arr)); } catch {}
       }
     } catch {}
-  }, [getDeletedBirdIds]);
+  }, [getUserScope, getDeletedBirdIds]);
 
   // ── Rastreamento de Aves Criadas Offline (evita re-upload indevido de aves excluídas em outros aparelhos) ──
   const getOfflinePendingBirdIds = useCallback(async (): Promise<Set<string>> => {
+    const scope = getUserScope();
     try {
-      const arr = await localforage.getItem<string[]>('@mura-manager:offline-pending-birds');
+      const arr = await localforage.getItem<string[]>(`@mura-manager:${scope}:offline-pending-birds`);
       if (arr && Array.isArray(arr)) return new Set(arr);
     } catch {}
     return new Set();
-  }, []);
+  }, [getUserScope]);
 
   const markPendingOfflineBird = useCallback(async (id: string) => {
+    const scope = getUserScope();
     try {
       const set = await getOfflinePendingBirdIds();
       set.add(id);
-      await localforage.setItem('@mura-manager:offline-pending-birds', Array.from(set));
+      await localforage.setItem(`@mura-manager:${scope}:offline-pending-birds`, Array.from(set));
     } catch {}
-  }, [getOfflinePendingBirdIds]);
+  }, [getUserScope, getOfflinePendingBirdIds]);
 
   const clearPendingOfflineBird = useCallback(async (id: string) => {
+    const scope = getUserScope();
     try {
       const set = await getOfflinePendingBirdIds();
       if (set.has(id)) {
         set.delete(id);
-        await localforage.setItem('@mura-manager:offline-pending-birds', Array.from(set));
+        await localforage.setItem(`@mura-manager:${scope}:offline-pending-birds`, Array.from(set));
       }
     } catch {}
-  }, [getOfflinePendingBirdIds]);
+  }, [getUserScope, getOfflinePendingBirdIds]);
 
   // ── Rastreamento de Exclusões Pendentes Offline ──
   const getPendingDeleteBirdIds = useCallback(async (): Promise<Set<string>> => {
+    const scope = getUserScope();
     try {
-      const arr = await localforage.getItem<string[]>('@mura-manager:pending-delete-birds');
+      const arr = await localforage.getItem<string[]>(`@mura-manager:${scope}:pending-delete-birds`);
       if (arr && Array.isArray(arr)) return new Set(arr);
     } catch {}
     return new Set();
-  }, []);
+  }, [getUserScope]);
 
   const markPendingDeleteBird = useCallback(async (id: string) => {
+    const scope = getUserScope();
     try {
       const set = await getPendingDeleteBirdIds();
       set.add(id);
-      await localforage.setItem('@mura-manager:pending-delete-birds', Array.from(set));
+      await localforage.setItem(`@mura-manager:${scope}:pending-delete-birds`, Array.from(set));
     } catch {}
-  }, [getPendingDeleteBirdIds]);
+  }, [getUserScope, getPendingDeleteBirdIds]);
 
   const clearPendingDeleteBird = useCallback(async (id: string) => {
+    const scope = getUserScope();
     try {
       const set = await getPendingDeleteBirdIds();
       if (set.has(id)) {
         set.delete(id);
-        await localforage.setItem('@mura-manager:pending-delete-birds', Array.from(set));
+        await localforage.setItem(`@mura-manager:${scope}:pending-delete-birds`, Array.from(set));
       }
     } catch {}
-  }, [getPendingDeleteBirdIds]);
+  }, [getUserScope, getPendingDeleteBirdIds]);
 
   // Canal Realtime Broadcast para sincronização ultrarrápida (<100ms) entre dispositivos conectados
   const realtimeBroadcastChannelRef = useRef<any>(null);
@@ -802,10 +829,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const [userVal, guestVal, legacyVal] = await Promise.all([
           localforage.getItem<any>(userKey),
           localforage.getItem<any>(guestKey),
-          localforage.getItem<any>(legacyKey)
+          isCurrentUserAdmin ? localforage.getItem<any>(legacyKey) : Promise.resolve(null)
         ]);
 
-        // Migração de coleções em array (aves, lotes, casais, etc.)
+        // Migração de coleções em array criadas em modo convidado local deste aparelho
         if (Array.isArray(guestVal) && guestVal.length > 0) {
           const existingArr = Array.isArray(userVal) ? userVal : [];
           const existingIds = new Set(existingArr.map((x: any) => x?.id).filter(Boolean));
@@ -820,31 +847,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           }
           await localforage.setItem(userKey, merged);
+          await localforage.removeItem(guestKey);
         } else if (!userVal && guestVal) {
           await localforage.setItem(userKey, guestVal);
+          await localforage.removeItem(guestKey);
         }
 
-        // Se ainda não tinha nada no userKey mas tem dados legados (@mura-manager:${s})
-        const currUserVal = await localforage.getItem<any>(userKey);
-        if ((!currUserVal || (Array.isArray(currUserVal) && currUserVal.length === 0)) && Array.isArray(legacyVal) && legacyVal.length > 0) {
-          const existingArr = Array.isArray(currUserVal) ? currUserVal : [];
-          const existingIds = new Set(existingArr.map((x: any) => x?.id).filter(Boolean));
-          const merged = [...existingArr];
-          for (const item of legacyVal) {
-            if (item && item.id && !existingIds.has(item.id)) {
-              merged.push(item);
-              existingIds.add(item.id);
-              if (s === 'birds') {
-                await markPendingOfflineBird(item.id);
+        // DADOS LEGADOS: APENAS o Administrador Principal tem permissão de herdar @mura-manager:${s}!
+        // Usuários comuns JAMAIS herdam ou tocam nos dados da chave legada.
+        if (isCurrentUserAdmin && legacyVal) {
+          const currUserVal = await localforage.getItem<any>(userKey);
+          if ((!currUserVal || (Array.isArray(currUserVal) && currUserVal.length === 0)) && Array.isArray(legacyVal) && legacyVal.length > 0) {
+            const existingArr = Array.isArray(currUserVal) ? currUserVal : [];
+            const existingIds = new Set(existingArr.map((x: any) => x?.id).filter(Boolean));
+            const merged = [...existingArr];
+            for (const item of legacyVal) {
+              if (item && item.id && !existingIds.has(item.id)) {
+                merged.push(item);
+                existingIds.add(item.id);
+                if (s === 'birds') {
+                  await markPendingOfflineBird(item.id);
+                }
               }
             }
+            await localforage.setItem(userKey, merged);
+          } else if (!currUserVal && legacyVal) {
+            await localforage.setItem(userKey, legacyVal);
           }
-          await localforage.setItem(userKey, merged);
-        } else if (!currUserVal && legacyVal) {
-          await localforage.setItem(userKey, legacyVal);
-        }
 
-        if (isCurrentUserAdmin) {
           const finalVal = await localforage.getItem<any>(userKey);
           if (finalVal) {
             await localforage.setItem(`@mura-manager:admin:${s}`, finalVal);
@@ -964,22 +994,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (adminData && (!Array.isArray(adminData) || adminData.length > 0)) {
             data = adminData;
           }
-        }
-        if (!data || (Array.isArray(data) && data.length === 0)) {
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            const legacyData: any = await localforage.getItem(`@mura-manager:${item.suffix}`);
+            if (legacyData && (!Array.isArray(legacyData) || legacyData.length > 0)) {
+              data = legacyData;
+            }
+          }
+        } else if (!user && isDataEmpty) {
+          // Apenas visitante anônimo não-autenticado pode ler dados de teste local
           const guestData: any = await localforage.getItem(`@mura-manager:guest:${item.suffix}`);
           if (guestData && (!Array.isArray(guestData) || guestData.length > 0)) {
             data = guestData;
           }
         }
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          const legacyData: any = await localforage.getItem(`@mura-manager:${item.suffix}`);
-          if (legacyData && (!Array.isArray(legacyData) || legacyData.length > 0)) {
-            data = legacyData;
-          }
-        }
+        // Para qualquer usuário comum logado (!isCurrentUserAdmin && user):
+        // NUNCA recorre a adminData, legacyData ou guestData! O isolamento é absoluto.
 
         if (data !== null && data !== undefined) {
           item.setter(data);
+        } else if (user && !isCurrentUserAdmin) {
+          // Garante estado limpo e seguro para a conta comum
+          item.setter(item.suffix === 'breeds' ? DEFAULT_BREEDS : (item.suffix === 'settings' ? DEFAULT_FARM_SETTINGS : (item.suffix === 'vitrine-config' ? {} : [])));
         }
       } catch (error) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
@@ -1003,17 +1038,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isSyncingRef.current = true;
     lastSyncTimeRef.current = now;
     try {
-      const isAdmin = isCurrentUserAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
+      const isAdmin = Boolean(
+        user
+          ? (isUserAdmin(user.email) || isUserAdmin(user.id))
+          : (isCurrentUserAdmin || isUserAdmin(cpf))
+      );
       const targetUserId = isAdmin ? ADMIN_CANONICAL_ID : user.id;
 
       // Validação estrita de formato UUID (PostgreSQL rejeita com erro 22P02 se não for UUID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const candidateAdminIds = [
         ADMIN_CANONICAL_ID,
-        user.id,
         '99591207-6ed9-4260-8bdb-1a507b67f9af',
         '5f321f02-a40c-48c4-81be-87e8f835d981'
       ];
+      if (isAdmin && user?.id) {
+        candidateAdminIds.push(user.id);
+      }
       const adminUserIds = Array.from(new Set(candidateAdminIds)).filter(id => typeof id === 'string' && uuidRegex.test(id));
 
       const [
@@ -1887,16 +1928,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else {
         let recoveredSettings: any = null;
         try {
-          const raw = localStorage.getItem(`@mura-manager:cached-farm-settings:${targetUserId}`) || localStorage.getItem('@mura-manager:cached-farm-settings');
+          const raw = localStorage.getItem(`@mura-manager:cached-farm-settings:${targetUserId}`) || (isAdmin ? localStorage.getItem('@mura-manager:cached-farm-settings') : null);
           if (raw) recoveredSettings = JSON.parse(raw);
         } catch {}
         if (recoveredSettings && (recoveredSettings.name || recoveredSettings.photo)) {
           setFarmSettings(recoveredSettings);
           await safeStorageSet(getStorageKey('settings'), recoveredSettings);
         } else {
-          const defaultSettings = { name: '', photo: '', email: '', phone: '', city: '', state: '' };
-          setFarmSettings(defaultSettings);
-          await safeStorageSet(getStorageKey('settings'), defaultSettings);
+          setFarmSettings(DEFAULT_FARM_SETTINGS);
+          await safeStorageSet(getStorageKey('settings'), DEFAULT_FARM_SETTINGS);
         }
       }
 
@@ -1915,12 +1955,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [user, loadFromLocalForage]);
 
+  const resetAllStateToEmpty = useCallback(() => {
+    setBirds([]);
+    birdsRef.current = [];
+    setBreeds(DEFAULT_BREEDS);
+    setCouples([]);
+    setEggLots([]);
+    eggLotsRef.current = [];
+    setMeatLots([]);
+    meatLotsRef.current = [];
+    setCoupleEggs([]);
+    setIncubationLots([]);
+    setFarmSettings(DEFAULT_FARM_SETTINGS);
+    setVitrineConfig({});
+  }, []);
+
+  useEffect(() => {
+    const handleSignOutEvent = () => {
+      resetAllStateToEmpty();
+      lastLoadedUserIdRef.current = null;
+      const suffixes = ['birds', 'breeds', 'couples', 'couple-eggs', 'egglots', 'meatlots', 'incubation-lots', 'settings', 'vitrine-config'];
+      for (const s of suffixes) {
+        localforage.removeItem(`@mura-manager:guest:${s}`).catch(() => {});
+      }
+    };
+    window.addEventListener('mura-user-signed-out', handleSignOutEvent);
+    return () => window.removeEventListener('mura-user-signed-out', handleSignOutEvent);
+  }, [resetAllStateToEmpty]);
+
   const lastLoadedUserIdRef = useRef<string | null>(null);
 
   // Carregamento inicial de dados ao iniciar ou trocar de usuário
   useEffect(() => {
     async function loadData() {
       if (!user) {
+        if (lastLoadedUserIdRef.current !== null) {
+          resetAllStateToEmpty();
+        }
         lastLoadedUserIdRef.current = null;
         // Se ainda está determinando a sessão e há usuário em cache no localStorage, NÃO limpa a tela
         const hasCachedUser = !!localStorage.getItem('@mura-manager:cached-user');
@@ -1933,6 +2004,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setIsReady(true);
         setIsInitialSyncDone(true);
         return;
+      }
+
+      // Se o usuário trocou (ex: login de outra conta ou nova conta), reseta imediatamente a memória
+      if (lastLoadedUserIdRef.current !== user.id) {
+        resetAllStateToEmpty();
       }
 
       // Evita execuções duplicadas e concorrentes para o mesmo usuário se já há dados carregados
@@ -2363,7 +2439,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
-        localforage.setItem('@mura-manager:birds', next).catch(() => {});
       }
 
       if (bird.inVitrine) {
@@ -2483,7 +2558,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
-        localforage.setItem('@mura-manager:birds', next).catch(() => {});
       }
 
       // Persistência robusta de vitrineConfig (isolada e imune a sobrescritas de sync)
@@ -2572,7 +2646,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
-        localforage.setItem('@mura-manager:birds', next).catch(() => {});
       }
 
       // Purga também do backup de emergência no localStorage para não haver risco de restauração
@@ -2634,7 +2707,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
-        localforage.setItem('@mura-manager:birds', next).catch(() => {});
       }
       
       if (isSupabaseConfigured && user) {
@@ -3101,7 +3173,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('egglots'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:egglots', next).catch(() => {});
-        localforage.setItem('@mura-manager:egglots', next).catch(() => {});
       }
       
       if (isSupabaseConfigured && user) {
@@ -3132,7 +3203,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localforage.setItem(getStorageKey('meatlots'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:meatlots', next).catch(() => {});
-        localforage.setItem('@mura-manager:meatlots', next).catch(() => {});
       }
       
       if (isSupabaseConfigured && user) {
@@ -3444,7 +3514,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await localforage.setItem(getStorageKey('birds'), validBirds);
       if (isCurrentUserAdmin) {
         await localforage.setItem('@mura-manager:admin:birds', validBirds);
-        await localforage.setItem('@mura-manager:birds', validBirds);
       }
       showToast(`${validBirds.length} ave(s) recuperada(s) com sucesso!`, 'success');
     } else {
