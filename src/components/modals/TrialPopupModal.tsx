@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X, Clock, ShieldAlert, Zap, CheckCircle2, Copy, ArrowRight } from 'lucide-react';
+import { Sparkles, X, Clock, ShieldAlert, Zap, CheckCircle2, ArrowRight, Crown } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes de controle — chave no localStorage para marcar "visto hoje"
@@ -43,7 +43,6 @@ export function TrialPopupModal({
   // Countdown de segundos até liberar o botão de fechar
   const [countdown, setCountdown] = useState(Math.ceil(CLOSE_DELAY_MS / 1000));
   const [canClose, setCanClose] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   // Live countdown timer dos 7 dias com segundos, minutos, horas e dias
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -106,14 +105,6 @@ export function TrialPopupModal({
     markTrialPopupShown();
     onUpgrade();
   }, [onUpgrade]);
-
-  const pixKey = 'mura.manager.pay@gmail.com';
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(pixKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
 
   return createPortal(
     <div id="trial-popup-overlay" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in">
@@ -218,54 +209,44 @@ export function TrialPopupModal({
               : `Você tem ${remainingDays} dias para explorar todos os recursos. Assine antes que o desconto termine!`}
           </p>
 
-          {/* ── Chave Pix rápida ── */}
-          <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-3.5 space-y-2">
-            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
-              Pagamento via Pix — ativação instantânea
-            </p>
-            <div className="flex items-center justify-between bg-black/30 border border-white/[0.06] rounded-xl px-3 py-2">
-              <span className="font-mono text-[11px] text-white truncate">{pixKey}</span>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 text-[10px] font-black text-amber-400 hover:text-amber-300 transition-colors ml-2 shrink-0"
-              >
-                {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
-                <span>{copied ? 'Copiado!' : 'Copiar'}</span>
-              </button>
+          {/* ── Card de Conversão e Escolha de Planos ── */}
+          <div className="bg-gradient-to-b from-amber-500/[0.08] to-amber-500/[0.02] border border-amber-500/20 rounded-2xl p-4 space-y-3 shadow-inner">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <Crown size={16} className="text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block">
+                  Acesso Profissional Ilimitado
+                </span>
+                <h3 className="text-sm font-black text-white leading-tight">
+                  Escolha o plano ideal para seu criatório
+                </h3>
+              </div>
             </div>
-            {/* Mini planos clicáveis */}
-            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                className="bg-black/30 hover:bg-black/60 border border-white/[0.08] hover:border-amber-500/50 rounded-xl p-2 text-center cursor-pointer active:scale-95 transition-all group"
-                title="Clique para ver o Plano Mensal Comum"
-              >
-                <p className="text-[8px] text-theme-text-muted font-bold uppercase group-hover:text-amber-300">Comum</p>
-                <p className="text-xs sm:text-sm font-black text-white mt-0.5">R$ 39,90</p>
-                <p className="text-[7px] text-amber-400/80 group-hover:text-amber-300 underline mt-0.5 font-bold">Ver →</p>
-              </button>
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                className="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/70 rounded-xl p-2 text-center cursor-pointer active:scale-95 transition-all group"
-                title="Clique para ver o Plano Mensal Completo"
-              >
-                <p className="text-[8px] text-amber-300 font-bold uppercase group-hover:text-amber-200">Completo</p>
-                <p className="text-xs sm:text-sm font-black text-amber-300 mt-0.5">R$ 59,80</p>
-                <p className="text-[7px] text-amber-400/80 group-hover:text-amber-300 underline mt-0.5 font-bold">Ver →</p>
-              </button>
-              <button
-                type="button"
-                onClick={handleUpgrade}
-                className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/70 rounded-xl p-2 text-center relative overflow-hidden cursor-pointer active:scale-95 transition-all group"
-                title="Clique para ver o Plano Anual (21% OFF)"
-              >
-                <span className="absolute top-0 right-0 bg-emerald-500 text-black text-[6px] font-black px-1 py-0.2 rounded-bl-md">21% OFF</span>
-                <p className="text-[8px] text-emerald-400 font-bold uppercase group-hover:text-emerald-300">Anual</p>
-                <p className="text-xs sm:text-sm font-black text-emerald-400 mt-0.5">R$ 567,90</p>
-                <p className="text-[7px] text-emerald-400 group-hover:text-emerald-300 underline mt-0.5 font-bold">Ver →</p>
-              </button>
+
+            <p className="text-xs text-theme-text-muted leading-relaxed">
+              Escolha agora o plano que melhor combina com a sua criação e garanta seu acesso contínuo. Mantenha todas as suas aves, genealogias, baias e métricas sempre salvas e 100% disponíveis na nuvem!
+            </p>
+
+            {/* Destaques dos benefícios */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.06]">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/90">
+                <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                <span>Plantel Ilimitado</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/90">
+                <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                <span>Nuvem em Tempo Real</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/90">
+                <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                <span>Genealogia & Baias</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-white/90">
+                <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                <span>Liberação Imediata</span>
+              </div>
             </div>
           </div>
 
