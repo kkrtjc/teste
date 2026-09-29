@@ -148,7 +148,7 @@ export function OnboardingTour({
 
     if (!targetRect) {
       return isMobile 
-        ? { position: 'fixed', top: '64px', left: '12px', right: '12px', zIndex: 10001 }
+        ? { position: 'fixed', top: 'calc(max(env(safe-area-inset-top), 16px) + 48px)', left: '12px', right: '12px', zIndex: 10001 }
         : { position: 'fixed', bottom: '32px', right: '32px', width: '420px', zIndex: 10001 };
     }
 
@@ -163,17 +163,17 @@ export function OnboardingTour({
         // -> Put card at VERY TOP (below top badge), leaving bottom navbar 100% visible!
         return {
           position: 'fixed',
-          top: '64px',
+          top: 'calc(max(env(safe-area-inset-top), 16px) + 48px)',
           left: '12px',
           right: '12px',
           zIndex: 10001,
         };
       } else {
         // Target is in header or top screen area
-        // -> Put card near bottom with clearance above bottom navbar (bottom: 96px)
+        // -> Put card near bottom with clearance above bottom navbar
         return {
           position: 'fixed',
-          bottom: '96px',
+          bottom: 'calc(max(env(safe-area-inset-bottom), 16px) + 80px)',
           left: '12px',
           right: '12px',
           zIndex: 10001,
@@ -240,7 +240,7 @@ export function OnboardingTour({
       )}
 
       {/* Spotlight Top Badge Banner */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[10001] bg-theme-surface/95 border border-theme-primary/40 px-4 py-1 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
+      <div className="fixed top-[max(env(safe-area-inset-top),16px)] left-1/2 -translate-x-1/2 z-[10001] bg-theme-surface/95 border border-theme-primary/40 px-4 py-1 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-subtle pointer-events-none">
         <Sparkles size={14} className="text-theme-primary" />
         <span className="text-[11px] font-bold text-white tracking-wide">
           Demonstrando: <strong className="text-theme-primary">{currentStep.title}</strong>

@@ -269,7 +269,7 @@ export function BirdProfileModal() {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] bg-black/85 overflow-hidden animate-fade-in" 
       onClick={closeModals}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
@@ -415,7 +415,7 @@ export function BirdProfileModal() {
             </div>
           </div>
 
-          <div className="p-5 pt-14 space-y-5">
+          <div className="p-5 pt-14 pb-[max(2rem,env(safe-area-inset-bottom))] space-y-5">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {/* Anilha */}
               <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">

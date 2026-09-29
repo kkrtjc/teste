@@ -589,8 +589,8 @@ export function LandingCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 overflow-y-auto">
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]">
         
         {/* ══════════════════════════════════════════════════════ */}
         {/* FOTO FIXA DE FUNDO: O GALO DA PÁGINA INICIAL          */}
@@ -646,7 +646,7 @@ export function LandingCheckoutModal({
           </button>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-4 max-h-[84vh] overflow-y-auto relative z-10 overscroll-contain">
+        <div className="p-5 sm:p-6 space-y-4 flex-1 overflow-y-auto relative z-10 overscroll-contain modal-scrollable-content">
           
           {/* ══════════════════════════════════════════════════════ */}
           {/* CARD DE PLANO SELECIONADO (SOBREPOSIÇÃO + BENEFÍCIOS)  */}

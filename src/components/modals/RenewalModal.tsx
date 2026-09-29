@@ -368,11 +368,11 @@ export function RenewalModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div 
-        className="bg-[#121218] border border-theme-border/80 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up my-auto flex flex-col max-h-[92vh]"
+        className="bg-[#121218] border border-theme-border/80 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up my-auto flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]"
         onClick={e => e.stopPropagation()}
       >
         {/* Marca d'água sutil do galo no fundo do modal */}

@@ -96,14 +96,14 @@ export function UserProfileSetupModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 backdrop-blur-sm animate-fade-in overflow-y-auto"
       onClick={handleDismiss}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-3xl shadow-2xl relative my-auto animate-scale-up flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-3xl shadow-2xl relative my-auto animate-scale-up flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >

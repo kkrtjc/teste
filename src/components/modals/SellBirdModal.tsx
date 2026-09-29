@@ -66,14 +66,14 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),0px)] bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[92dvh] animate-scale-up relative"
+        className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-16px)] animate-scale-up relative"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -213,7 +213,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
           </div>
 
           {/* Buttons */}
-          <div className="pt-2 flex gap-3">
+          <div className="pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] flex gap-3">
             <button
               type="button"
               onClick={onClose}

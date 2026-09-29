@@ -104,14 +104,14 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/85 overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto animate-fade-in"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90dvh] overflow-hidden animate-scale-up"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden animate-scale-up"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >

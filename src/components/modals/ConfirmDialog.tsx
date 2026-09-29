@@ -77,11 +77,11 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none animate-fade-in"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/80 backdrop-blur-sm select-none animate-fade-in overflow-y-auto"
       onClick={handleCancel}
     >
       <div
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-sm sm:max-w-md rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-scale-up relative overflow-hidden"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-sm sm:max-w-md rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-scale-up relative overflow-hidden my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-y-auto modal-scrollable-content"
         onClick={e => e.stopPropagation()}
       >
         {/* Glow de fundo */}

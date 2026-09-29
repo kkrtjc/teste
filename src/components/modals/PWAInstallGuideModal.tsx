@@ -58,14 +58,14 @@ export function PWAInstallGuideModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="w-full max-w-lg bg-[#0f0f14] border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-200"
+        className="w-full max-w-lg bg-[#0f0f14] border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
       >

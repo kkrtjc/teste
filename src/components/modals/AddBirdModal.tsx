@@ -1018,7 +1018,7 @@ export function AddBirdModal() {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] bg-black/85 overflow-hidden animate-fade-in" 
       onClick={closeModals}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
@@ -1070,7 +1070,7 @@ export function AddBirdModal() {
         </div>
 
         {/* Footer nav */}
-        <div className="px-5 py-4 border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0 touch-none select-none">
+        <div className="px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-theme-border bg-theme-base/50 flex justify-between items-center shrink-0 touch-none select-none">
           {step > 0 ? (
             <button
               onClick={() => setStep(s => s - 1)}
