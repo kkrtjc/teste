@@ -14,6 +14,7 @@ import { QuickBreedModal } from '../components/modals/QuickBreedModal';
 import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { LotNotesModal } from '../components/modals/LotNotesModal';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 // PDF generator is dynamically imported on demand to keep the initial bundle small
 import { calculateLotProduction } from '../lib/lotProduction';
 
@@ -815,16 +816,7 @@ export function Lots() {
   });
 
   const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || notesModal.isOpen || showQuickBreedModal || weighModal.isOpen;
-  useEffect(() => {
-    if (isAnyModalOpen) {
-      document.body.classList.add('modal-open-lock');
-    } else {
-      document.body.classList.remove('modal-open-lock');
-    }
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, [isAnyModalOpen]);
+  useModalScrollLock(isAnyModalOpen);
 
   const openTransferModal = (lote: any) => {
     setConfirmTransfer({ isOpen: true, lote });
@@ -1966,14 +1958,14 @@ export function Lots() {
       {/* ── MODAL POSTURA ── */}
       {showPostura && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
           onClick={resetPostura}
           onTouchMove={e => {
             if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
           }}
         >
           <div 
-            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up overscroll-contain" 
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -2087,14 +2079,14 @@ export function Lots() {
       {/* ── MODAL ENGORDA ── */}
       {showEngorda && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
           onClick={resetEngorda}
           onTouchMove={e => {
             if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
           }}
         >
           <div 
-            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up overscroll-contain" 
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -2372,14 +2364,14 @@ export function Lots() {
       {/* ── MODAL PINTINHOS ── */}
       {showPintinhos && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
           onClick={resetPintinhos}
           onTouchMove={e => {
             if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
           }}
         >
           <div 
-            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up" 
+            className="bg-theme-surface border border-theme-border/80 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden animate-scale-up overscroll-contain" 
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -2600,7 +2592,7 @@ export function Lots() {
           onTouchMove={e => e.preventDefault()}
         >
           <div 
-            className="bg-theme-surface border-2 border-theme-primary/50 w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up overflow-hidden" 
+            className="bg-theme-surface border-2 border-theme-primary/50 w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up overflow-hidden overscroll-contain" 
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -2699,8 +2691,18 @@ export function Lots() {
 
       {/* ── MODAL DE CONFIRMAÇÃO DE TRANSFERÊNCIA DE LOTE ── */}
       {confirmTransfer.isOpen && confirmTransfer.lote && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in overflow-x-hidden touch-pan-y" onClick={() => setConfirmTransfer({ isOpen: false, lote: null })}>
-          <div className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5 animate-scale-up" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in overflow-hidden touch-none select-none" 
+          onClick={() => setConfirmTransfer({ isOpen: false, lote: null })}
+          onTouchMove={e => {
+            if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+          }}
+        >
+          <div 
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5 animate-scale-up overscroll-contain" 
+            onClick={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-lg">
                 ❓

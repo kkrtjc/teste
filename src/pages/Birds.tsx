@@ -11,6 +11,7 @@ import { compressImage } from '../lib/imageCompression';
 import { uploadBreedPhoto } from '../lib/storageService';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { SmartBirdImage } from '../components/ui/SmartBirdImage';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // Singleton de Collator natural para pt-BR (reutilizado em todas as ordenações para 0 overhead)
 const ringNaturalCollator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
@@ -211,6 +212,7 @@ const BreedFormModal = memo(function BreedFormModal({
   breedToEdit,
   onSave,
 }: BreedFormModalProps) {
+  useModalScrollLock(isOpen);
   const { user } = useAuth();
   const [newBreedName, setNewBreedName] = useState('');
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
@@ -323,14 +325,14 @@ const BreedFormModal = memo(function BreedFormModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 animate-fade-in touch-manipulation"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 animate-fade-in overflow-hidden touch-none select-none"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-hidden animate-scale-up" 
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[90vh] overflow-hidden animate-scale-up overscroll-contain" 
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -774,17 +776,6 @@ export function Birds() {
     observer.observe(target);
     return () => observer.disconnect();
   }, [visibleCount, filteredBirds.length]);
-
-  useEffect(() => {
-    if (showNewBreedModal) {
-      document.body.classList.add('modal-open-lock');
-    } else {
-      document.body.classList.remove('modal-open-lock');
-    }
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, [showNewBreedModal]);
 
   return (
     <div className="space-y-5 animate-fade-in max-w-7xl mx-auto w-full overflow-x-hidden">

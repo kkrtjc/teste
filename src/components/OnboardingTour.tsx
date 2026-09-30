@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronRight, ChevronLeft, LayoutDashboard, Bird, Store, Layers, Egg, Check } from 'lucide-react';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // ── Definição dos passos do tour guiado ──────────────────────────────────────
 interface TourStep {
@@ -79,6 +80,7 @@ const TAB_PATHS = ['/', '/birds', '/vitrine', '/lots', '/eggs'];
 
 export function OnboardingTour({ onNavigateToTab, isBlocked = false }: OnboardingTourProps) {
   const [visible, setVisible] = useState(false);
+  useModalScrollLock(visible);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetGeo, setTargetGeo] = useState<TargetGeometry | null>(null);
   const [entering, setEntering] = useState(false);
@@ -341,7 +343,7 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99990] pointer-events-auto touch-manipulation select-none"
+      className="fixed inset-0 z-[99990] pointer-events-auto touch-none select-none overflow-hidden"
       onTouchMove={(e) => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
@@ -448,9 +450,9 @@ export function OnboardingTour({ onNavigateToTab, isBlocked = false }: Onboardin
       )}
 
       {/* ── CARD DE APRESENTAÇÃO PREMIUM ── */}
-      <div style={cardStyle}>
+      <div style={cardStyle} onTouchMove={e => e.stopPropagation()}>
         <div
-          className={`relative bg-[#151722]/95 backdrop-blur-xl border border-amber-500/35 rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85),0_0_30px_rgba(245,158,11,0.18)] overflow-hidden ${
+          className={`relative bg-[#151722]/95 backdrop-blur-xl border border-amber-500/35 rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85),0_0_30px_rgba(245,158,11,0.18)] overflow-hidden overscroll-contain ${
             entering ? 'onboarding-card-exit' : 'onboarding-card-enter'
           }`}
         >

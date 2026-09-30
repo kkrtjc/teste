@@ -15,6 +15,7 @@ import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { LotNotesModal } from '../components/modals/LotNotesModal';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 import { calculateLotProduction } from '../lib/lotProduction';
 
 // helpers
@@ -838,12 +839,7 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [searchFemeas, setSearchFemeas] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    document.body.classList.add('modal-open-lock');
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, []);
+  useModalScrollLock(true);
 
   const availableFemeas = useMemo(() => {
     return birds.filter(b => {
@@ -909,14 +905,14 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden animate-fade-in" 
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated" 
+        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated overscroll-contain" 
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -1153,6 +1149,7 @@ function SellFromStockModal({
   onClose: () => void;
   onConfirm: (count: number, pricePerDozen: number) => void;
 }) {
+  useModalScrollLock(true);
   const [quantity, setQuantity] = useState(String(availableStock));
   const [pricePerDozen, setPricePerDozen] = useState(lot.precoVendaPadrao !== undefined ? String(lot.precoVendaPadrao) : '');
   const [error, setError] = useState('');
@@ -1177,8 +1174,18 @@ function SellFromStockModal({
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2 text-xs text-white focus:border-theme-primary outline-none";
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" onClick={onClose}>
-      <div className="bg-theme-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-green-500/30 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
+      onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
+      <div 
+        className="bg-theme-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-green-500/30 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up p-5 space-y-4 overscroll-contain" 
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-theme-border pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center">
@@ -1273,6 +1280,7 @@ function RegisterDaySheet({
   onClose: () => void;
   onSave: (rec: EggDailyRecord) => void;
 }) {
+  useModalScrollLock(true);
   const [form, setForm] = useState<RegForm>(() => ({
     data: editingRecord?.data || initialDate || todayISO(),
     coletados: editingRecord ? String(editingRecord.coletados) : '',
@@ -1343,14 +1351,14 @@ function RegisterDaySheet({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-x-hidden touch-pan-y animate-fade-in" 
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in" 
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-x-hidden touch-pan-y animate-scale-up gpu-accelerated" 
+        className="bg-theme-surface w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-theme-border/60 shadow-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-scale-up gpu-accelerated overscroll-contain" 
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -1367,7 +1375,7 @@ function RegisterDaySheet({
           </button>
         </div>
 
-        <div className="overflow-y-auto smooth-scroll flex-1 min-h-0 p-5 space-y-4 modal-scrollable-content touch-pan-y">
+        <div className="overflow-y-auto smooth-scroll flex-1 min-h-0 p-5 space-y-4 modal-scrollable-content overscroll-contain touch-pan-y">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400 font-bold">
               <AlertCircle size={14} />
@@ -1452,6 +1460,7 @@ function EggLotRecordsModal({
   onDeleteRecord: (lot: EggLot, recordId: string) => void;
   onRegisterWithDate?: (lot: EggLot, initialDate: string) => void;
 }) {
+  useModalScrollLock(true);
   const [filterType, setFilterType] = useState<'todos' | 'coletas' | 'sem_registro' | 'criticos'>('todos');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -1514,12 +1523,16 @@ function EggLotRecordsModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-hidden touch-none select-none"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div
-        className="bg-theme-surface w-full max-w-lg rounded-2xl border border-theme-border/70 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up"
+        className="bg-theme-surface w-full max-w-lg rounded-2xl border border-theme-border/70 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up overscroll-contain"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* Cabeçalho do Modal */}
         <div className="px-5 py-4 border-b border-theme-border flex items-center justify-between shrink-0 bg-theme-surface">

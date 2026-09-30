@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X } from 'lucide-react';
 import { useAppContext, type Breed } from '../../lib/AppContext';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface QuickBreedModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function QuickBreedModal({
   initialBreedName = '',
   onBreedSaved
 }: QuickBreedModalProps) {
+  useModalScrollLock(isOpen);
   const { addBreed, showToast } = useAppContext();
 
   const [nome, setNome] = useState(initialBreedName);
@@ -89,14 +91,14 @@ export function QuickBreedModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-hidden touch-none select-none animate-fade-in"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl shadow-2xl flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden animate-scale-up"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-md rounded-2xl shadow-2xl flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden animate-scale-up overscroll-contain"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -114,7 +116,7 @@ export function QuickBreedModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
           <div className="space-y-1">
             <label className={labelCls}>Nome da Raça *</label>
             <input

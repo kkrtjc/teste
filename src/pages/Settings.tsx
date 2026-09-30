@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Camera, Save, Phone, Mail, Home, LogOut, Sparkles, 
+  Camera, Save, Phone, Mail, Home, LogOut, Apple, 
   Download, Upload, CheckCircle2, AlertCircle, 
   Database, Smartphone, Zap
 } from 'lucide-react';
@@ -181,6 +181,13 @@ export function Settings() {
   // Estado para Modal de Pagamento Antecipado da Assinatura
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
+
+  // Detecção de plataforma para personalizar o card de instalação
+  const isIOS = typeof navigator !== 'undefined' && (
+    /iPad|iPhone|iPod/i.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
   // Detecta se o app já está instalado na tela inicial ou rodando como aplicativo
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
@@ -432,19 +439,27 @@ export function Settings() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/10">
-                <Smartphone size={24} />
+                {isIOS ? <Apple size={24} /> : isAndroid ? <Download size={24} /> : <Smartphone size={24} />}
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black text-white">
-                    Instalar Aplicativo no Celular
+                    {isIOS 
+                      ? 'Instalar Aplicativo no iPhone' 
+                      : isAndroid 
+                        ? 'Instalar Aplicativo no Android (APK)' 
+                        : 'Instalar Aplicativo no Celular'}
                   </h3>
                   <span className="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                    Recomendado
+                    {isIOS ? 'iPhone Detectado' : isAndroid ? 'Android Detectado' : 'Recomendado'}
                   </span>
                 </div>
                 <p className="text-xs text-amber-200/80 mt-1 max-w-xl">
-                  Adicione o ícone do Mura Manager na tela inicial do seu <strong>iPhone</strong> ou <strong>Android</strong>. Abre em tela cheia instantaneamente e mantém seu login sempre salvo!
+                  {isIOS
+                    ? 'Adicione o ícone do Mura Manager na tela de início do seu iPhone (... > Compartilhar > Adicionar à Tela de Início). Abre em tela cheia instantaneamente!'
+                    : isAndroid
+                      ? 'Baixe o APK oficial do Mura Manager para instalar direto no seu celular Android ou acesse em tela cheia com login salvo!'
+                      : 'Adicione o ícone do Mura Manager na tela inicial do seu aparelho. Abre em tela cheia instantaneamente e mantém seu login sempre salvo!'}
                 </p>
               </div>
             </div>
@@ -452,10 +467,10 @@ export function Settings() {
             <button
               type="button"
               onClick={() => setIsPwaGuideOpen(true)}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center justify-center gap-2 shrink-0"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
-              <Smartphone size={16} />
-              <span>Como Instalar (Passo a Passo)</span>
+              {isAndroid ? <Download size={16} /> : <Smartphone size={16} />}
+              <span>{isIOS ? 'Como Instalar no iPhone' : isAndroid ? 'Baixar APK / Como Instalar' : 'Como Instalar (Passo a Passo)'}</span>
             </button>
           </div>
         </div>
@@ -674,26 +689,6 @@ export function Settings() {
         </div>
       </div>
 
-      {/* ── CARD 3: ASSISTENTE INTELIGENTE MURA IA ── */}
-      <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-        <div>
-          <h3 className="text-base font-black text-white flex items-center gap-2">
-            <Sparkles size={18} className="text-amber-400" /> Assistente Inteligente Mura IA
-          </h3>
-          <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
-            Dúvidas sobre como cadastrar matrizes, gerenciar ovos ou ativar sua vitrine? Abra a assistente inteligente para ouvir e ver as explicações detalhadas em qualquer tela.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-smart-assistant'))}
-          className="w-full flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black rounded-xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer"
-        >
-          <Sparkles size={16} />
-          <span>✨ Iniciar Assistente Inteligente Mura IA (Com Voz &amp; Guia)</span>
-        </button>
-      </div>
 
       {/* ── CARD 4: SESSÃO & LOGOUT ── */}
       <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -758,6 +753,7 @@ export function Settings() {
       <PWAInstallGuideModal
         isOpen={isPwaGuideOpen}
         onClose={() => setIsPwaGuideOpen(false)}
+        defaultTab={isAndroid ? 'android' : 'ios'}
       />
 
       {/* Confirmação de Saída de Conta */}

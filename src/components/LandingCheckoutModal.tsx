@@ -3,6 +3,7 @@ import {
   X, Check, Copy, CheckCircle2, AlertCircle, Loader2,
   CreditCard, QrCode, ShieldCheck, Star, ArrowRight, ArrowLeft, Zap, ShoppingBag
 } from 'lucide-react';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import localforage from 'localforage';
 import type { SubscriptionPlan } from '../lib/AuthContext';
@@ -91,6 +92,8 @@ export function LandingCheckoutModal({
   currentUser,
   onSuccess,
 }: LandingCheckoutModalProps) {
+  useModalScrollLock(isOpen);
+
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(initialPlan || 'pro_monthly');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
 
@@ -622,8 +625,17 @@ export function LandingCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto">
-      <div className="w-full max-w-lg sm:max-w-xl md:max-w-2xl rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-hidden touch-none select-none"
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
+    >
+      <div
+        className="w-full max-w-lg sm:max-w-xl md:max-w-2xl rounded-3xl overflow-hidden shadow-2xl bg-[#111116] border border-white/20 my-auto relative transform-gpu flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overscroll-contain"
+        onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
+      >
         
         {/* ══════════════════════════════════════════════════════ */}
         {/* FOTO FIXA DE FUNDO: O GALO DA PÁGINA INICIAL          */}

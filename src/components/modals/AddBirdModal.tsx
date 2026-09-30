@@ -8,6 +8,7 @@ import { uploadBirdPhoto } from '../../lib/storageService';
 import { calculateExactAge } from '../../lib/utils';
 import { QuickBreedModal } from './QuickBreedModal';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 // ─── Step indicator ──────────────────────────────────────────────────────────
 function StepDots({ total, current }: { total: number; current: number }) {
@@ -244,12 +245,7 @@ export function AddBirdModal() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Lock body scroll while modal is open ──
-  useEffect(() => {
-    document.body.classList.add('modal-open-lock');
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, []);
+  useModalScrollLock(true);
 
   // ── Populate when editing ──
   useEffect(() => {

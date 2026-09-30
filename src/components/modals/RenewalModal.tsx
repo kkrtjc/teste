@@ -4,6 +4,7 @@ import {
   CreditCard, QrCode, ShieldCheck, Sparkles, 
   RefreshCw, Star, ArrowLeft
 } from 'lucide-react';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import type { SubscriptionPlan } from '../../lib/AuthContext';
 import roosterImg from '../../assets/rooster_sticker.png';
 import muraLogo from '../../assets/mura_logo.jpg';
@@ -68,6 +69,8 @@ export function RenewalModal({
   currentUser,
   onRenewSuccess,
 }: RenewalModalProps) {
+  useModalScrollLock(isOpen);
+
   // Planos disponíveis para a renovação
   const planDetails: Record<SubscriptionPlan, { title: string; price: number; priceFormatted: string; period: string }> = {
     monthly: {
@@ -368,12 +371,16 @@ export function RenewalModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] animate-fade-in overflow-hidden touch-none select-none"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div 
-        className="bg-[#121218] border border-theme-border/80 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up my-auto flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]"
+        className="bg-[#121218] border border-theme-border/80 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up my-auto flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overscroll-contain"
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* Marca d'água sutil do galo no fundo do modal */}
         <div 

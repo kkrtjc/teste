@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X, Clock, ShieldAlert, Zap, CheckCircle2, ArrowRight, Crown } from 'lucide-react';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes de controle — chave no localStorage para marcar "visto hoje"
@@ -101,6 +102,8 @@ export function TrialPopupModal({
     onClose();
   }, [canClose, onClose]);
 
+  useModalScrollLock(true);
+
   const handleUpgrade = useCallback(() => {
     markTrialPopupShown();
     onUpgrade();
@@ -109,16 +112,26 @@ export function TrialPopupModal({
   return createPortal(
     <div
       id="trial-popup-overlay"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] animate-fade-in overflow-hidden touch-none select-none"
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       {/* ── Backdrop escuro com leve blur ── */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={canClose ? handleClose : undefined} />
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm modal-fixed-backdrop" 
+        onClick={canClose ? handleClose : undefined}
+        onTouchMove={e => {
+          if (e.cancelable) e.preventDefault();
+        }}
+      />
 
       {/* ── Card central (100% contido na safe-zone e com altura máxima dinâmica) ── */}
       <div
-        className={`relative bg-[#0f1117] border ${urgencyColor.ring} rounded-3xl w-full max-w-sm shadow-2xl ${urgencyColor.glow} overflow-hidden animate-scale-up my-auto flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)]`}
+        className={`relative bg-[#0f1117] border ${urgencyColor.ring} rounded-3xl w-full max-w-sm shadow-2xl ${urgencyColor.glow} overflow-hidden animate-scale-up my-auto flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overscroll-contain`}
         style={{ boxShadow: `0 0 50px 0 rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)` }}
         onClick={e => e.stopPropagation()}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* ── Faixa decorativa topo (Fixa) ── */}
         <div className="h-1 w-full bg-gradient-to-r from-amber-600 via-yellow-400 to-amber-600 shrink-0" />

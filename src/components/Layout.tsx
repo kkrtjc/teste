@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
 import { OnboardingTour } from './OnboardingTour';
+import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // Code-splitting dos modais pesados para alívio de memória e boot instantâneo
 const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ default: m.AddBirdModal })));
@@ -522,49 +523,20 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
-  const isAnyModalActive = isAddBirdModalOpen || !!selectedBirdProfileId || isProfileSetupOpen || isAdminModalOpen;
+  const isAnyModalActive = Boolean(
+    isAddBirdModalOpen ||
+    selectedBirdProfileId ||
+    isProfileSetupOpen ||
+    isAdminModalOpen ||
+    isTrialPopupOpen ||
+    effectiveUpgradeModalOpen ||
+    isRenewalModalOpen ||
+    isPwaGuideOpen ||
+    revokeCpfConfirm
+  );
 
-  useEffect(() => {
-    if (isAnyModalActive) {
-      document.body.classList.add('modal-open-lock');
-      if (mainScrollRef.current) {
-        mainScrollRef.current.style.overflow = 'hidden';
-      }
-    } else {
-      document.body.classList.remove('modal-open-lock');
-      if (mainScrollRef.current) {
-        mainScrollRef.current.style.overflow = '';
-      }
-    }
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-      if (mainScrollRef.current) {
-        mainScrollRef.current.style.overflow = '';
-      }
-    };
-  }, [isAnyModalActive]);
-
-  useEffect(() => {
-    if (!isAnyModalActive) return;
-
-    const handleGlobalTouchMove = (e: TouchEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      // Permite rolagem livre dentro de qualquer modal, overlay, formulário ou elemento rolável
-      const isInteractiveOrModal = target.closest(
-        '.modal-scrollable-content, .overflow-y-auto, .overflow-auto, [role="dialog"], .fixed, form, input, select, textarea, button'
-      );
-      if (isInteractiveOrModal) return;
-
-      if (e.cancelable) e.preventDefault();
-    };
-
-    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-    return () => {
-      window.removeEventListener('touchmove', handleGlobalTouchMove);
-    };
-  }, [isAnyModalActive]);
+  // Trava de alta precisão com contagem de referências: congela o fundo 100% estático
+  useModalScrollLock(isAnyModalActive);
 
   // ── 🌟 ARQUITETURA KEEP-ALIVE (Padrão Linear.app: 0ms de latência e preservação de estado/scroll) ──
   const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'lots' | 'eggs' | 'settings' | 'other' => {
@@ -851,7 +823,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
           </div>
         )}
 
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-24 md:pb-6 gpu-accelerated">
+        <div ref={mainScrollRef} id="main-scroll-container" className="flex-1 overflow-y-auto smooth-scroll overflow-x-hidden p-4 sm:p-6 z-10 relative pb-24 md:pb-6 gpu-accelerated main-app-scroll">
           {/* 🌟 ARQUITETURA KEEP-ALIVE (0ms DE TROCA DE ABAS / SEM REMOUNT DESTRUTIVO) */}
           <Suspense fallback={<TabLoadingFallback />}>
             {visitedTabs.has('dashboard') && (
@@ -938,14 +910,14 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
       {isAdminModalOpen && createPortal(
 
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 animate-fade-in"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 overflow-hidden touch-none select-none animate-fade-in"
           onClick={() => setIsAdminModalOpen(false)}
           onTouchMove={e => {
             if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
           }}
         >
           <div 
-            className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up"
+            className="bg-theme-surface border border-theme-border/80 w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up overscroll-contain"
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -964,7 +936,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
             </div>
             
             {/* Content */}
-            <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
+            <div className="p-5 overflow-y-auto space-y-5 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
               <p className="text-xs text-theme-text-muted leading-relaxed">
                 Cadastre novos clientes autorizados, defina o prazo de vencimento da mensalidade e receba alertas automáticos de vencimento.
               </p>

@@ -12,6 +12,7 @@ import { ShareBirdModal } from './ShareBirdModal';
 import { SellBirdModal } from './SellBirdModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { SmartBirdImage } from '../ui/SmartBirdImage';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 function PedigreeTreeNode({
   label,
@@ -140,16 +141,7 @@ export function BirdProfileModal() {
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
   // ── Lock body scroll while modal is open ──
-  useEffect(() => {
-    if (selectedBirdProfileId) {
-      document.body.classList.add('modal-open-lock');
-    } else {
-      document.body.classList.remove('modal-open-lock');
-    }
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, [selectedBirdProfileId]);
+  useModalScrollLock(Boolean(selectedBirdProfileId));
 
   useEffect(() => {
     setCurrentImgIndex(0);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FileText, X, Plus, Calendar, Trash2, Check, Clock, MessageSquare } from 'lucide-react';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import type { LotNote } from '../../lib/AppContext';
 
 interface LotNotesModalProps {
@@ -43,6 +44,7 @@ export function LotNotesModal({
   editMeatLot,
   showToast
 }: LotNotesModalProps) {
+  useModalScrollLock(isOpen);
   const [activeTab, setActiveTab] = useState<'existentes' | 'adicionar'>('existentes');
   const [noteDate, setNoteDate] = useState(todayISO());
   const [noteText, setNoteText] = useState('');
@@ -116,14 +118,14 @@ export function LotNotesModal({
     <>
       {createPortal(
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] overflow-y-auto"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] overflow-hidden touch-none select-none animate-fade-in"
           onClick={onClose}
           onTouchMove={e => {
             if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
           }}
         >
           <div
-            className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 animate-scale-up my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] flex flex-col overflow-hidden"
+            className="bg-theme-surface border border-theme-border w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 animate-scale-up my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] flex flex-col overflow-hidden overscroll-contain"
             onClick={e => e.stopPropagation()}
             onTouchMove={e => e.stopPropagation()}
           >
@@ -183,7 +185,7 @@ export function LotNotesModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 modal-scrollable-content touch-pan-y">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 modal-scrollable-content overscroll-contain touch-pan-y">
               {activeTab === 'existentes' ? (
                 <div className="space-y-3">
                   {/* Observação Inicial do Cadastro (se houver) */}

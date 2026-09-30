@@ -32,9 +32,37 @@
 }
 
 /* ── BLOQUEIO DE ROLAGEM DO FUNDO QUANDO MODAIS ESTÃO ABERTOS ── */
+html.modal-open-lock,
 body.modal-open-lock {
   overflow: hidden !important;
+  touch-action: none !important;
+  overscroll-behavior: none !important;
 }
+
+body.modal-open-lock #main-scroll-container,
+body.modal-open-lock .main-app-scroll,
+.main-scroll-locked {
+  overflow: hidden !important;
+  pointer-events: none !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Modais: conteúdo rolável isolado com containment para impedir escape de rolagem para o fundo */
+.modal-scrollable-content {
+  overscroll-behavior: contain !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Elementos fixos do modal que não devem reagir a gestos de puxar */
+.modal-fixed-backdrop {
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+
 
 .app-safe-frame {
   padding-top: var(--safe-top);

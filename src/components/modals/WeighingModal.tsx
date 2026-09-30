@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Scale, History, Check, Trash2, X, Calculator } from 'lucide-react';
 import { useAppContext, type MeatLot, type WeightRecord } from '../../lib/AppContext';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface WeighingModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ function fmtDate(iso: string) {
 }
 
 export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
+  useModalScrollLock(isOpen);
   const { editMeatLot, showToast } = useAppContext();
 
   const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
@@ -104,14 +106,14 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 overflow-hidden touch-none select-none animate-fade-in"
       onClick={onClose}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden animate-scale-up"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col my-auto max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden animate-scale-up overscroll-contain"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
@@ -135,7 +137,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content touch-pan-y">
+        <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
           
           {/* Instrução simples */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">

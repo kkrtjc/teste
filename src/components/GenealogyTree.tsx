@@ -329,8 +329,11 @@ function MiniCard({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200]"
+      className="fixed inset-0 z-[200] touch-none select-none"
       onClick={onClose}
+      onTouchMove={e => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div
         style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
@@ -344,7 +347,8 @@ function MiniCard({
             pointerEvents: 'all',
           }}
           onClick={e => e.stopPropagation()}
-          className="bg-[#0F172A]/95 backdrop-blur-md border border-white/15 rounded-2xl shadow-2xl overflow-hidden animate-scale-up"
+          onTouchMove={e => e.stopPropagation()}
+          className="bg-[#0F172A]/95 backdrop-blur-md border border-white/15 rounded-2xl shadow-2xl overflow-hidden animate-scale-up overscroll-contain"
         >
           {/* Header photo */}
           <div className="h-20 bg-theme-base relative flex items-center justify-center overflow-hidden">

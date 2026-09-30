@@ -10,6 +10,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { publishShowcase, generateQrCodeUrl } from '../../lib/showcaseShare';
 // PDF generator is dynamically imported on demand to keep the initial bundle small
 import { useHaptics } from '../../hooks/useHaptics';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface ShareBirdModalProps {
   bird: Bird;
@@ -26,6 +27,8 @@ export function ShareBirdModal({
   inbreeding = 0,
   onClose
 }: ShareBirdModalProps) {
+  useModalScrollLock(true);
+
   const { 
     birds, farmSettings, updateFarmSettings, vitrineBirds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 

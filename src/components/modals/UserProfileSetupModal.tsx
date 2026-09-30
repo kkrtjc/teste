@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { User, Mail, Camera, Check, Sparkles, Building2, Phone, X } from 'lucide-react';
 import { useAppContext } from '../../lib/AppContext';
 import { useAuth, isUserAdmin, ADMIN_EMAIL } from '../../lib/AuthContext';
+import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 export function UserProfileSetupModal({
   isOpen,
@@ -81,29 +82,20 @@ export function UserProfileSetupModal({
     onComplete();
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add('modal-open-lock');
-    } else {
-      document.body.classList.remove('modal-open-lock');
-    }
-    return () => {
-      document.body.classList.remove('modal-open-lock');
-    };
-  }, [isOpen]);
+  useModalScrollLock(isOpen);
 
   if (!isOpen) return null;
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] bg-black/85 backdrop-blur-sm animate-fade-in overflow-hidden touch-none select-none"
       onClick={handleDismiss}
       onTouchMove={e => {
         if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
       }}
     >
       <div 
-        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-3xl shadow-2xl relative my-auto animate-scale-up flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden"
+        className="bg-theme-surface border border-theme-border/80 w-full max-w-lg rounded-3xl shadow-2xl relative my-auto animate-scale-up flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-24px)] overflow-hidden overscroll-contain"
         onClick={e => e.stopPropagation()}
         onTouchMove={e => e.stopPropagation()}
       >
