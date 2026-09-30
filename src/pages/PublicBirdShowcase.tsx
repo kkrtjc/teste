@@ -40,7 +40,7 @@ export function PublicBirdShowcase() {
     ? data.vitrineBirds
     : (data?.bird ? [data.bird] : []);
 
-  const vitrineList = rawVitrineList.filter(isBirdAliveAndAvailable);
+  const vitrineList = rawVitrineList.filter(isBirdAliveAndAvailable).slice(0, 30);
 
   const filteredCatalogBirds = vitrineList.filter((b: any) => {
     if (!catalogSearch.trim()) return true;

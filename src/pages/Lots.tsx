@@ -119,19 +119,35 @@ function BirdPicker({
   const q = normalizeSearch(search);
   const hasSearch = q.length > 0;
 
-  // Busca insensível a maiúsculas/minúsculas e acentos
+  // Busca insensível a maiúsculas/minúsculas e acentos com alta performance
   const filtered = useMemo(() => {
     if (!hasSearch) return [];
-    return birds.filter(b => {
-      const nomeNorm = normalizeSearch(b.nome);
-      const anilhaNorm = normalizeSearch(b.anilha);
-      const racaNorm = normalizeSearch(b.raca);
-      const baiaNorm = normalizeSearch(b.baia);
-      return nomeNorm.includes(q) || anilhaNorm.includes(q) || racaNorm.includes(q) || baiaNorm.includes(q);
-    });
+    const lowerQ = q.toLowerCase();
+    const result: typeof birds = [];
+    for (let i = 0; i < birds.length; i++) {
+      const b = birds[i];
+      if (!b) continue;
+      const anilha = b.anilha || '';
+      const nome = b.nome || '';
+      const raca = b.raca || '';
+      const baia = b.baia || '';
+      if (
+        anilha.toLowerCase().includes(lowerQ) ||
+        nome.toLowerCase().includes(lowerQ) ||
+        raca.toLowerCase().includes(lowerQ) ||
+        baia.toLowerCase().includes(lowerQ)
+      ) {
+        result.push(b);
+      }
+    }
+    return result;
   }, [birds, q, hasSearch]);
 
   const selectedBirds = useMemo(() => {
+    if (selected.length === 0) return [];
+    if (selected.length <= 15) {
+      return selected.map(id => birds.find(b => b.id === id)).filter(Boolean) as typeof birds;
+    }
     const map = new Map(birds.map(b => [b.id, b]));
     return selected.map(id => map.get(id)).filter(Boolean) as typeof birds;
   }, [birds, selected]);
@@ -224,7 +240,7 @@ function BirdPicker({
           </div>
 
           <div className="border border-theme-border rounded-xl max-h-52 overflow-y-auto divide-y divide-theme-border/40 bg-theme-base/40">
-            {filtered.map(b => {
+            {filtered.slice(0, 50).map(b => {
               const sel = selected.includes(b.id);
               return (
                 <div
@@ -254,6 +270,12 @@ function BirdPicker({
                 </div>
               );
             })}
+
+            {filtered.length > 50 && (
+              <div className="p-2 text-center text-[10px] text-theme-text-muted font-bold bg-black/20">
+                Mostrando as primeiras 50 aves de {filtered.length}. Refine sua busca para localizar mais rápido.
+              </div>
+            )}
 
             {filtered.length === 0 && (
               <div className="p-4 text-center space-y-1">

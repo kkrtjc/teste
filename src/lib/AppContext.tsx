@@ -3526,13 +3526,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showToast('Esta ave está vendida ou baixada e não pode ser colocada na vitrine.', 'warning');
       return;
     }
+    // Trava rigorosa: A vitrine suporta no máximo 30 aves ao todo
+    if (inVitrine) {
+      const isAlreadyInVitrine = Boolean(
+        target?.inVitrine !== undefined 
+          ? target.inVitrine 
+          : vitrineConfig[birdId]?.inVitrine
+      );
+      if (!isAlreadyInVitrine && vitrineBirds.length >= 30) {
+        showToast('A vitrine atingiu a capacidade máxima de 30 aves ao todo. Remova alguma ave para adicionar esta.', 'warning');
+        return;
+      }
+    }
     editBird(birdId, {
       inVitrine,
       ...(price !== undefined ? { vitrinePrice: price } : {}),
       ...(status !== undefined ? { vitrineStatus: status } : {})
     });
     showToast(inVitrine ? 'Ave adicionada à vitrine pública!' : 'Ave removida da vitrine.', 'info');
-  }, [birds, editBird, showToast, isBirdAvailableForVitrine]);
+  }, [birds, editBird, showToast, isBirdAvailableForVitrine, vitrineBirds.length, vitrineConfig]);
 
   const contextValue = useMemo(() => ({
     isReady,

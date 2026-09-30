@@ -9,9 +9,30 @@ const imageDb = localforage.createInstance({
   storeName: 'bird-images-cache'
 });
 
-// Fast in-memory cache for synchronous 0ms lookups during UI renders
+// Fast bounded LRU in-memory cache to maintain high FPS and low RAM usage (max 100 images in memory)
+const MAX_MEMORY_CACHE_ENTRIES = 100;
 const memoryCache = new Map<string, string>();
 const pendingFetches = new Map<string, Promise<string | null>>();
+
+function putInMemoryCache(key: string, value: string): void {
+  if (memoryCache.has(key)) {
+    memoryCache.delete(key);
+  } else if (memoryCache.size >= MAX_MEMORY_CACHE_ENTRIES) {
+    const oldestKey = memoryCache.keys().next().value;
+    if (oldestKey) memoryCache.delete(oldestKey);
+  }
+  memoryCache.set(key, value);
+}
+
+function getFromMemoryCache(key: string): string | null {
+  const val = memoryCache.get(key);
+  if (val) {
+    memoryCache.delete(key);
+    memoryCache.set(key, val);
+    return val;
+  }
+  return null;
+}
 
 /**
  * Synchronous memory cache check (0ms).
@@ -19,7 +40,7 @@ const pendingFetches = new Map<string, Promise<string | null>>();
 export function getSyncCachedImage(urlOrKey?: string | null): string | null {
   if (!urlOrKey) return null;
   if (urlOrKey.startsWith('data:')) return urlOrKey;
-  return memoryCache.get(urlOrKey) || null;
+  return getFromMemoryCache(urlOrKey);
 }
 
 /**
@@ -27,7 +48,7 @@ export function getSyncCachedImage(urlOrKey?: string | null): string | null {
  */
 export async function cacheLocalBirdImage(keyOrUrl: string, dataUrl: string): Promise<void> {
   if (!keyOrUrl || !dataUrl) return;
-  memoryCache.set(keyOrUrl, dataUrl);
+  putInMemoryCache(keyOrUrl, dataUrl);
   try {
     await imageDb.setItem(keyOrUrl, dataUrl);
   } catch (err) {
@@ -46,19 +67,19 @@ export async function getCachedBirdImage(urlOrKey?: string | null): Promise<stri
 
   // Base64 already local
   if (urlOrKey.startsWith('data:')) {
-    memoryCache.set(urlOrKey, urlOrKey);
+    putInMemoryCache(urlOrKey, urlOrKey);
     return urlOrKey;
   }
 
   // 1. In-memory check
-  const inMem = memoryCache.get(urlOrKey);
+  const inMem = getFromMemoryCache(urlOrKey);
   if (inMem) return inMem;
 
   // 2. IndexedDB local storage check
   try {
     const fromDb = await imageDb.getItem<string>(urlOrKey);
     if (fromDb) {
-      memoryCache.set(urlOrKey, fromDb);
+      putInMemoryCache(urlOrKey, fromDb);
       return fromDb;
     }
   } catch (err) {
@@ -86,7 +107,7 @@ export async function getCachedBirdImage(urlOrKey?: string | null): Promise<stri
         });
 
         if (base64) {
-          memoryCache.set(urlOrKey, base64);
+          putInMemoryCache(urlOrKey, base64);
           await imageDb.setItem(urlOrKey, base64);
           return base64;
         }

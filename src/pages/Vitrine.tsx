@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Store, Lock, Plus, Copy, Check, Share2, 
   Search, CheckCircle2
@@ -56,6 +56,37 @@ export function Vitrine() {
       return true;
     });
   }, [availableBirds, vitrineConfig, searchQuery, filterMode]);
+
+  const PAGE_SIZE = 30;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, filterMode]);
+
+  const visibleBirds = useMemo(() => {
+    return filteredBirds.slice(0, visibleCount);
+  }, [filteredBirds, visibleCount]);
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+    if (visibleCount >= filteredBirds.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => Math.min(prev + PAGE_SIZE, filteredBirds.length));
+        }
+      },
+      { threshold: 0.1, rootMargin: '300px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [visibleCount, filteredBirds.length]);
 
   const syncVitrineOnline = async () => {
     if (vitrineBirds.length === 0) return;
@@ -262,12 +293,30 @@ export function Vitrine() {
               <span className="text-[10px] text-zinc-400 block font-bold uppercase">Disponíveis</span>
               <span className="text-base font-mono font-black text-white">{availableBirds.length}</span>
             </div>
-            <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-center" title="Aves ativas atualmente expostas na vitrine pública">
+            <div 
+              className={`px-3 py-2 border rounded-xl text-center ${vitrineBirds.length >= 30 ? 'bg-amber-500/20 border-amber-500/60' : 'bg-amber-500/10 border-amber-500/30'}`} 
+              title="Aves ativas atualmente expostas na vitrine pública (Limite máximo de 30 aves ao todo)"
+            >
               <span className="text-[10px] text-amber-400 block font-bold uppercase">Na Vitrine</span>
-              <span className="text-base font-mono font-black text-amber-400">{vitrineBirds.length}</span>
+              <span className="text-base font-mono font-black text-amber-400">{vitrineBirds.length} / 30</span>
             </div>
           </div>
         </div>
+
+        {/* Aviso de Capacidade Máxima (30 Aves) */}
+        {vitrineBirds.length >= 30 && (
+          <div className="p-3.5 bg-amber-500/15 border-2 border-amber-500/50 rounded-2xl flex items-start gap-3 shadow-lg shadow-amber-500/5 animate-fade-in">
+            <span className="text-xl shrink-0">⚠️</span>
+            <div className="text-xs space-y-0.5">
+              <h4 className="font-black text-amber-400 uppercase tracking-wide">
+                Capacidade Máxima da Vitrine (30 / 30 aves)
+              </h4>
+              <p className="text-amber-100/90 leading-relaxed">
+                A vitrine suporta no máximo <strong>30 aves ao todo</strong>. Para expor uma nova ave, primeiro desmarque alguma das aves que já estão na vitrine.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Share Vitrine Bar */}
         <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -365,8 +414,9 @@ export function Vitrine() {
           </p>
         </div>
       ) : (
-        <div id="vitrine-bird-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredBirds.map(b => (
+        <>
+          <div id="vitrine-bird-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {visibleBirds.map(b => (
             <div 
               key={b.id}
               className={`p-4 rounded-2xl border transition-all space-y-3 bg-theme-surface ${
@@ -414,6 +464,11 @@ export function Vitrine() {
                       type="checkbox"
                       checked={Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine)}
                       onChange={e => {
+                        const isCurrentlyIn = Boolean(b.inVitrine !== undefined ? b.inVitrine : vitrineConfig[b.id]?.inVitrine);
+                        if (!isCurrentlyIn && e.target.checked && vitrineBirds.length >= 30) {
+                          showToast('A vitrine atingiu a capacidade máxima de 30 aves ao todo. Desmarque alguma ave para adicionar esta.', 'warning');
+                          return;
+                        }
                         toggleBirdVitrine(b.id, e.target.checked);
                         triggerLight();
                       }}
@@ -465,6 +520,23 @@ export function Vitrine() {
             </div>
           ))}
         </div>
+
+        {filteredBirds.length > visibleCount && (
+          <div ref={loadMoreRef} className="flex flex-col items-center justify-center mt-6 gap-2 py-4">
+            <button
+              type="button"
+              onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+              className="px-6 py-2.5 rounded-xl bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/60 hover:border-theme-primary/50 text-white font-bold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md flex items-center gap-2 cursor-pointer"
+            >
+              <Plus size={14} className="text-theme-primary" />
+              <span>Carregar mais aves ({visibleBirds.length} de {filteredBirds.length})</span>
+            </button>
+            <span className="text-[10px] text-theme-text-muted">
+              Mostrando {visibleBirds.length} de {filteredBirds.length} aves
+            </span>
+          </div>
+        )}
+        </>
       )}
 
       {/* Share Bird Modal Portal */}
