@@ -439,7 +439,7 @@ export function Settings() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/10">
-                {isIOS ? <Apple size={24} /> : isAndroid ? <Download size={24} /> : <Smartphone size={24} />}
+                {isIOS ? <Apple size={24} /> : <Smartphone size={24} />}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -447,7 +447,7 @@ export function Settings() {
                     {isIOS 
                       ? 'Instalar Aplicativo no iPhone' 
                       : isAndroid 
-                        ? 'Instalar Aplicativo no Android (APK)' 
+                        ? 'Instalar Aplicativo no Android' 
                         : 'Instalar Aplicativo no Celular'}
                   </h3>
                   <span className="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
@@ -458,7 +458,7 @@ export function Settings() {
                   {isIOS
                     ? 'Adicione o ícone do Mura Manager na tela de início do seu iPhone (... > Compartilhar > Adicionar à Tela de Início). Abre em tela cheia instantaneamente!'
                     : isAndroid
-                      ? 'Baixe o APK oficial do Mura Manager para instalar direto no seu celular Android ou acesse em tela cheia com login salvo!'
+                      ? 'Adicione o ícone do Mura Manager na tela de início do seu Android (... > Instalar aplicativo ou Adicionar à tela inicial). Abre em tela cheia instantaneamente!'
                       : 'Adicione o ícone do Mura Manager na tela inicial do seu aparelho. Abre em tela cheia instantaneamente e mantém seu login sempre salvo!'}
                 </p>
               </div>
@@ -469,8 +469,8 @@ export function Settings() {
               onClick={() => setIsPwaGuideOpen(true)}
               className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
             >
-              {isAndroid ? <Download size={16} /> : <Smartphone size={16} />}
-              <span>{isIOS ? 'Como Instalar no iPhone' : isAndroid ? 'Baixar APK / Como Instalar' : 'Como Instalar (Passo a Passo)'}</span>
+              <Smartphone size={16} />
+              <span>{isIOS ? 'Como Instalar no iPhone' : isAndroid ? 'Como Instalar no Android' : 'Como Instalar (Passo a Passo)'}</span>
             </button>
           </div>
         </div>

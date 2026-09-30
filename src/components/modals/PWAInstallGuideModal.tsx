@@ -9,7 +9,6 @@ import {
   Copy, 
   Sparkles, 
   Apple, 
-  Download,
   AlertCircle,
   MessageCircle,
   MoreHorizontal,
@@ -140,7 +139,7 @@ export function PWAInstallGuideModal({
               }`}
             >
               <Smartphone size={16} />
-              <span>Android (APK)</span>
+              <span>Android</span>
               {detectedIsAndroid && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" title="Seu dispositivo" />
               )}
@@ -280,60 +279,93 @@ export function PWAInstallGuideModal({
           ) : (
             <div className="space-y-4">
               
-              {/* CARD DE DOWNLOAD DO APK ANDROID */}
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-transparent border-2 border-amber-500/50 space-y-4 text-center shadow-xl">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 mx-auto shadow-lg shadow-amber-500/10">
-                  <Download size={24} />
-                </div>
-
-                <div>
-                  <span className="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                    Pacote Oficial Android (.APK)
-                  </span>
-                  <h3 className="text-base sm:text-lg font-black text-white mt-1.5">
-                    Baixar Aplicativo para Android
+              {/* Box de Instrução Principal no Android */}
+              <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/35 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                  <h3 className="font-black text-amber-300 text-sm uppercase tracking-wide">
+                    Como Instalar no Android (Passo a Passo)
                   </h3>
-                  <p className="text-xs text-amber-200/80 mt-1 max-w-sm mx-auto leading-relaxed">
-                    Instale o app direto no seu celular com velocidade máxima, carregamento instantâneo e acesso direto da sua tela inicial.
-                  </p>
                 </div>
 
-                <a
-                  href="/mura-manager.apk"
-                  download="MuraManager.apk"
-                  className="w-full py-4 px-5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-400 text-black font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <Download size={18} />
-                  <span>Baixar Aplicativo (MuraManager.apk)</span>
-                </a>
+                <div className="space-y-3">
+                  {/* Passo 1 */}
+                  <div className="flex items-start gap-3 p-3 bg-black/50 rounded-xl border border-white/5">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500 text-black font-black flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-md">
+                      1
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                        <span>Toque nos</span>
+                        <strong className="text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <MoreHorizontal size={14} /> 3 pontinhos (...)
+                        </strong>
+                      </p>
+                      <p className="text-zinc-300 leading-relaxed">
+                        No navegador do seu Android (Chrome), toque no ícone dos <strong>3 pontinhos (...)</strong> localizado no canto superior direito da tela (ou na barra inferior se usar o Samsung Internet).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Passo 2 */}
+                  <div className="flex items-start gap-3 p-3 bg-black/50 rounded-xl border border-white/5">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500 text-black font-black flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-md">
+                      2
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                        <span>Toque em</span>
+                        <strong className="text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <Smartphone size={13} /> Instalar aplicativo
+                        </strong>
+                        <span className="text-zinc-400 font-normal">ou</span>
+                        <strong className="text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <PlusSquare size={13} /> Adicionar à tela inicial
+                        </strong>
+                      </p>
+                      <p className="text-zinc-300 leading-relaxed">
+                        No menu de opções que se abrir, localize e toque na opção de <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Passo 3 */}
+                  <div className="flex items-start gap-3 p-3 bg-black/50 rounded-xl border border-white/5">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500 text-black font-black flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-md">
+                      3
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <p className="font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                        <span>Confirme tocando em</span>
+                        <strong className="text-amber-400 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                          <CheckCircle2 size={13} /> Instalar / Adicionar
+                        </strong>
+                      </p>
+                      <p className="text-zinc-300 leading-relaxed">
+                        Na janela de confirmação que surgir na tela, confirme em <strong>"Instalar"</strong>. O ícone do Mura Manager será criado na tela inicial do seu aparelho e abrirá em tela cheia!
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Passo a Passo Instalação do APK */}
-              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                <h4 className="font-extrabold text-white text-xs uppercase tracking-wide flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-amber-400" />
-                  <span>Como instalar o APK baixado:</span>
-                </h4>
-
-                <div className="space-y-2.5 text-xs">
-                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
-                    <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0">1</span>
-                    <p className="text-zinc-300">
-                      Toque no botão dourado acima para baixar o arquivo <strong>MuraManager.apk</strong>.
+              {/* CARD DE DESTAQUE: DICAS PARA OUTROS NAVEGADORES */}
+              <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-400/50 space-y-2.5">
+                <div className="flex items-center gap-2 text-amber-300 font-black text-xs uppercase tracking-wide">
+                  <AlertCircle size={16} className="text-amber-400 shrink-0" />
+                  <span>Dicas se não encontrar de primeira:</span>
+                </div>
+                <div className="space-y-2 text-xs text-amber-100/90 leading-relaxed">
+                  <div className="flex items-start gap-2 bg-black/40 p-2.5 rounded-xl border border-amber-500/20">
+                    <span className="font-bold text-amber-400 shrink-0">•</span>
+                    <p>
+                      <strong>Google Chrome:</strong> Se a opção "Instalar aplicativo" não aparecer, role um pouco o menu para baixo e procure por <strong className="text-amber-300">"Adicionar à tela inicial"</strong> logo abaixo de "Compartilhar".
                     </p>
                   </div>
-
-                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
-                    <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0">2</span>
-                    <p className="text-zinc-300">
-                      Ao concluir o download, toque na notificação <strong>"Download concluído"</strong> (ou abra o arquivo na pasta Downloads do seu celular).
-                    </p>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 bg-black/40 rounded-xl border border-white/5">
-                    <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs shrink-0">3</span>
-                    <p className="text-zinc-300">
-                      Toque em <strong>"Instalar"</strong>. Se o Android pedir permissão para instalar fontes desconhecidas para o navegador, toque em "Permitir".
+                  <div className="flex items-start gap-2 bg-black/40 p-2.5 rounded-xl border border-amber-500/20">
+                    <span className="font-bold text-amber-400 shrink-0">•</span>
+                    <p>
+                      <strong>Samsung Internet:</strong> Toque no menu (três risquinhos ☰ ou ⋯ na barra inferior) &gt; toque em <strong className="text-white underline">"Adicionar página a"</strong> &gt; selecione <strong className="text-amber-300">"Tela inicial"</strong>.
                     </p>
                   </div>
                 </div>
@@ -344,10 +376,10 @@ export function PWAInstallGuideModal({
                 <div>
                   <h4 className="font-black text-white text-xs sm:text-sm flex items-center justify-center gap-1.5">
                     <MessageCircle size={16} className="text-emerald-400" />
-                    <span>Precisa de ajuda para instalar no Android?</span>
+                    <span>Caso não consiga, chame nosso assistente!</span>
                   </h4>
                   <p className="text-xs text-emerald-200/80 mt-1">
-                    Fale com nosso assistente no WhatsApp e nós te auxiliamos na hora.
+                    Nosso suporte técnico te ajuda em tempo real a colocar o aplicativo no seu Android.
                   </p>
                 </div>
 
@@ -358,7 +390,7 @@ export function PWAInstallGuideModal({
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <MessageCircle size={18} className="fill-black" />
-                  <span>Falar com Assistente no WhatsApp</span>
+                  <span>Chamar Assistente no WhatsApp</span>
                   <ExternalLink size={14} />
                 </a>
               </div>
