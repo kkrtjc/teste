@@ -147,6 +147,36 @@ export type CoupleEgg = {
   dataIntroducao: string;    // data de introdução ao cruzador
 };
 
+export type FeedEntry = {
+  id: string;
+  data: string;            // YYYY-MM-DD
+  kgRacao: number;         // kg consumed
+  custoKg: number;         // R$ per kg
+  totalCusto: number;      // kgRacao * custoKg
+  tipoRacao?: string;      // ex: "Postura Fase 1", "Crescimento"
+  observacao?: string;
+};
+
+export type VaccinationRecord = {
+  id: string;
+  vacina: string;               // vaccine name
+  dataAplicada?: string;        // YYYY-MM-DD when applied
+  dataProximaDose?: string;     // YYYY-MM-DD next dose
+  intervaloDias?: number;       // days until booster
+  loteIdadeAplicacaoDias?: number; // lot age when applied
+  protocoloId?: string;         // reference to POULTRY_VACCINE_PROTOCOLS id
+  status: 'Aplicada' | 'Pendente' | 'Atrasada';
+  observacao?: string;
+};
+
+export type QuarantineRecord = {
+  ativa: boolean;
+  dataInicio: string;           // YYYY-MM-DD
+  motivoQuarentena: string;
+  dataPrevistaSaida?: string;   // YYYY-MM-DD
+  observacoes?: string;
+};
+
 export type EggDailyRecord = {
   id: string;
   data: string;           // YYYY-MM-DD
@@ -189,6 +219,9 @@ export type EggLot = {
   observacoesAdicionais?: LotNote[];
   registros?: EggDailyRecord[];
   movimentacoes?: LotMovementRecord[];
+  feedEntries?: FeedEntry[];
+  vaccinationRecords?: VaccinationRecord[];
+  quarentena?: QuarantineRecord;
 };
 
 export type WeightRecord = {
@@ -226,6 +259,9 @@ export type MeatLot = {
   ganhoGramasDia?: number;     // Ganho diário estimado em g/dia (ex: 35g/dia com base na ração do protocolo/raça)
   consumoRacaoAve?: number;    // Consumo de ração g/ave/dia (ex: 130g)
   pesagens?: WeightRecord[];   // Registro histórico de pesagens periódicas
+  feedEntries?: FeedEntry[];   // Gastos de ração registrados no lote
+  vaccinationRecords?: VaccinationRecord[]; // Registro de vacinações do lote
+  quarentena?: QuarantineRecord;            // Status de quarentena
 };
 
 export type FarmSettings = {
@@ -263,7 +299,10 @@ export function packageEggLotRegistros(lot: Partial<EggLot>): any[] {
     raca: lot.raca || '',
     qtdFemeas: lot.qtdFemeas || 0,
     precoVendaPadrao: lot.precoVendaPadrao,
-    custoProdPadrao: lot.custoProdPadrao
+    custoProdPadrao: lot.custoProdPadrao,
+    feedEntries: Array.isArray(lot.feedEntries) ? lot.feedEntries : [],
+    vaccinationRecords: Array.isArray(lot.vaccinationRecords) ? lot.vaccinationRecords : [],
+    quarentena: lot.quarentena || null
   };
   return [...cleanRecords, metaEntry];
 }
@@ -284,7 +323,10 @@ export function unpackEggLotRegistros(rawRegistros: any[]): {
       raca: metaEntry.raca || '',
       qtdFemeas: metaEntry.qtdFemeas,
       precoVendaPadrao: metaEntry.precoVendaPadrao,
-      custoProdPadrao: metaEntry.custoProdPadrao
+      custoProdPadrao: metaEntry.custoProdPadrao,
+      feedEntries: Array.isArray(metaEntry.feedEntries) ? metaEntry.feedEntries : [],
+      vaccinationRecords: Array.isArray(metaEntry.vaccinationRecords) ? metaEntry.vaccinationRecords : [],
+      quarentena: metaEntry.quarentena || undefined
     } : undefined
   };
 }
@@ -315,7 +357,10 @@ export function packageMeatLotWeight(lot: Partial<MeatLot>): string {
     qtdAves: lot.qtdAves,
     ganhoGramasDia: lot.ganhoGramasDia,
     consumoRacaoAve: lot.consumoRacaoAve,
-    pesagens: Array.isArray(lot.pesagens) ? lot.pesagens : []
+    pesagens: Array.isArray(lot.pesagens) ? lot.pesagens : [],
+    feedEntries: Array.isArray(lot.feedEntries) ? lot.feedEntries : [],
+    vaccinationRecords: Array.isArray(lot.vaccinationRecords) ? lot.vaccinationRecords : [],
+    quarentena: lot.quarentena || null
   };
   return `${baseWeight}\n[[LOT_META:${JSON.stringify(meta)}]]`.trim();
 }
@@ -352,7 +397,10 @@ export function unpackMeatLotWeight(rawWeight?: string | null): {
         qtdAves: meta.qtdAves,
         ganhoGramasDia: meta.ganhoGramasDia,
         consumoRacaoAve: meta.consumoRacaoAve,
-        pesagens: Array.isArray(meta.pesagens) ? meta.pesagens : []
+        pesagens: Array.isArray(meta.pesagens) ? meta.pesagens : [],
+        feedEntries: Array.isArray(meta.feedEntries) ? meta.feedEntries : [],
+        vaccinationRecords: Array.isArray(meta.vaccinationRecords) ? meta.vaccinationRecords : [],
+        quarentena: meta.quarentena || undefined
       }
     };
   } catch {

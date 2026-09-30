@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, Apple, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Smartphone, Zap
+  Database, Smartphone, Zap, Bell
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, type TrialInfo } from '../lib/AuthContext';
@@ -12,6 +12,15 @@ import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LandingCheckoutModal } from '../components/LandingCheckoutModal';
 import { RenewalModal } from '../components/modals/RenewalModal';
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  triggerDeviceNotification,
+  getNotificationSettings,
+  saveNotificationSettings,
+  DEFAULT_NOTIF_SETTINGS,
+  type NotificationSettings
+} from '../lib/notificationEngine';
 
 function calcTimeLeft(expiresAt: string | null) {
   if (!expiresAt) return null;
@@ -232,6 +241,54 @@ export function Settings() {
 
   const [confirmSignOutOpen, setConfirmSignOutOpen] = useState(false);
   const [backupToImport, setBackupToImport] = useState<File | null>(null);
+
+  // Push Notifications state
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIF_SETTINGS);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [testNotificationSent, setTestNotificationSent] = useState(false);
+
+  useEffect(() => {
+    setNotifPermission(getNotificationPermission());
+    getNotificationSettings().then(cfg => {
+      setNotifSettings(cfg);
+    });
+  }, []);
+
+  const handleUpdateNotifSetting = async (key: keyof NotificationSettings, val: any) => {
+    const updated = { ...notifSettings, [key]: val };
+    setNotifSettings(updated);
+    await saveNotificationSettings(updated);
+    showToast('Preferência de notificação salva!', 'success');
+  };
+
+  const handleEnablePush = async () => {
+    setIsRequestingPermission(true);
+    const granted = await requestNotificationPermission();
+    setNotifPermission(getNotificationPermission());
+    setIsRequestingPermission(false);
+    if (granted) {
+      showToast('Notificações no celular ativadas com sucesso!', 'success');
+      await triggerDeviceNotification('🐓 Mura Manager Conectado!', {
+        body: 'Você receberá avisos automáticos sobre vacinas, ração e lotes.',
+      });
+    } else {
+      showToast('Permissão de notificação negada ou não suportada.', 'error');
+    }
+  };
+
+  const handleTestNotification = async () => {
+    const success = await triggerDeviceNotification('🧪 Notificação de Teste Mura', {
+      body: 'O sistema de avisos push está 100% ativo e operacional!',
+    });
+    if (success) {
+      setTestNotificationSent(true);
+      showToast('Notificação de teste disparada!', 'success');
+      setTimeout(() => setTestNotificationSent(false), 3000);
+    } else {
+      showToast('Ative as notificações acima antes de disparar o teste.', 'info');
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -689,6 +746,154 @@ export function Settings() {
         </div>
       </div>
 
+      {/* ── CARD 3: CENTRAL DE NOTIFICAÇÕES PUSH & LEMBRETES ── */}
+      <div id="settings-notifications-card" className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+        <div className="border-b border-theme-border/40 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <Bell size={18} className="text-theme-primary" /> Notificações Push & Lembretes Diários
+            </h3>
+            <p className="text-xs text-theme-text-muted mt-1 leading-relaxed">
+              Receba alertas no seu celular sobre vacinas vencendo, horários de trato/ração e lotes sem lançamento.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {notifPermission === 'granted' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-black">
+                <CheckCircle2 size={14} /> Notificações Ativadas
+              </span>
+            ) : notifPermission === 'denied' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-400 text-xs font-black">
+                <AlertCircle size={14} /> Bloqueado no Navegador
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                disabled={isRequestingPermission}
+                className="px-4 py-2.5 bg-theme-primary hover:bg-theme-primary-hover text-black font-black text-xs rounded-xl shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Bell size={14} />
+                <span>{isRequestingPermission ? 'Ativando...' : 'Ativar Notificações no Celular'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Test push button */}
+        {notifPermission === 'granted' && (
+          <div className="flex items-center justify-between p-3.5 bg-theme-base/60 border border-theme-border/60 rounded-xl">
+            <div className="text-xs">
+              <span className="font-bold text-white block">Testar Envio Push</span>
+              <span className="text-[11px] text-theme-text-muted">Dispara um aviso teste imediato para a tela do seu celular</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleTestNotification}
+              className="px-3.5 py-1.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-xs font-bold text-white rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <Zap size={14} className="text-amber-400" />
+              <span>{testNotificationSent ? '✓ Enviada!' : 'Disparar Teste'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Toggles */}
+        <div className="divide-y divide-theme-border/40 pt-1">
+          {/* Vacinas */}
+          <div className="py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>💉</span> Vacinas e Reforços de Lotes e Aves
+              </p>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Alerta quando vacinas obrigatórias (Marek, Newcastle, Gumboro, etc.) estiverem no prazo ou atrasadas.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdateNotifSetting('alertVacinas', !notifSettings.alertVacinas)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                notifSettings.alertVacinas ? 'bg-theme-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
+                notifSettings.alertVacinas ? 'left-5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Lotes de Postura Sem Registro */}
+          <div className="py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>🥚</span> Lotes de Postura Sem Lançamento Hoje
+              </p>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Lembrete ao entardecer se alguma baia ativa de postura estiver sem coleta de ovos informada.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdateNotifSetting('alertPosturaSemRegistro', !notifSettings.alertPosturaSemRegistro)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                notifSettings.alertPosturaSemRegistro ? 'bg-theme-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
+                notifSettings.alertPosturaSemRegistro ? 'left-5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Horários de Ração */}
+          <div className="py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>🌾</span> Horários de Trato e Ração dos Lotes
+              </p>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Lembrete diário nos horários habituais de alimentação do criatório (manhã e tarde).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdateNotifSetting('alertRacao', !notifSettings.alertRacao)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                notifSettings.alertRacao ? 'bg-theme-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
+                notifSettings.alertRacao ? 'left-5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Pesagem Engorda */}
+          <div className="py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>⚖️</span> Calibragem de Pesagem (A cada 15 dias)
+              </p>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Avisa quando lotes de frangos de corte completarem 15 dias sem pesagem para recalcular ganho diário.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdateNotifSetting('alertPesagens', !notifSettings.alertPesagens)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                notifSettings.alertPesagens ? 'bg-theme-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
+                notifSettings.alertPesagens ? 'left-5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* ── CARD 4: SESSÃO & LOGOUT ── */}
       <div className="bg-theme-surface border border-theme-border/60 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">

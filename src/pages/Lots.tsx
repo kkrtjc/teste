@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText
+  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText, Wheat, ShieldPlus
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -15,6 +15,11 @@ import { WeighingModal } from '../components/modals/WeighingModal';
 import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { LotNotesModal } from '../components/modals/LotNotesModal';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
+import { FeedEntryModal } from '../components/modals/FeedEntryModal';
+import { LotHealthModal } from '../components/modals/LotHealthModal';
+import { LotCreationHealthSection } from '../components/modals/LotCreationHealthSection';
+import type { FeedEntry, VaccinationRecord, QuarantineRecord } from '../lib/AppContext';
+import { getVaccineSuggestions } from '../lib/vaccinationProtocols';
 // PDF generator is dynamically imported on demand to keep the initial bundle small
 import { calculateLotProduction } from '../lib/lotProduction';
 
@@ -680,6 +685,11 @@ export function Lots() {
 
   // Postura Lot states
   const [showPostura, setShowPostura] = useState(false);
+  const [pCreationTab, setPCreationTab] = useState<'dados' | 'saude'>('dados');
+  const [pQuarentenaAtiva, setPQuarentenaAtiva] = useState(false);
+  const [pQuarentenaMotivo, setPQuarentenaMotivo] = useState('');
+  const [pQuarentenaSaida, setPQuarentenaSaida] = useState('');
+  const [pVaccines, setPVaccines] = useState<VaccinationRecord[]>([]);
   const [pBaia, setPBaia] = useState('');
   const [pRaca, setPRaca] = useState('');
   const [pDataInicio, setPDataInicio] = useState(todayISO());
@@ -691,6 +701,11 @@ export function Lots() {
 
   // Engorda Lot states
   const [showEngorda, setShowEngorda] = useState(false);
+  const [eCreationTab, setECreationTab] = useState<'dados' | 'saude'>('dados');
+  const [eQuarentenaAtiva, setEQuarentenaAtiva] = useState(false);
+  const [eQuarentenaMotivo, setEQuarentenaMotivo] = useState('');
+  const [eQuarentenaSaida, setEQuarentenaSaida] = useState('');
+  const [eVaccines, setEVaccines] = useState<VaccinationRecord[]>([]);
   const [eBaia, setEBaia] = useState('');
   const [eRaca, setERaca] = useState('');
   const [eDataInicio, setEDataInicio] = useState(todayISO());
@@ -720,8 +735,35 @@ export function Lots() {
   // Confirmação profissional de exclusão de lote
   const [deleteLotConfirm, setDeleteLotConfirm] = useState<{ id: string; title: string; message: string } | null>(null);
 
+  // Feed Entry Modal
+  const [feedModal, setFeedModal] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+    loteType: 'postura' | 'engorda' | 'pintinhos';
+  }>({
+    isOpen: false,
+    lote: null,
+    loteType: 'postura',
+  });
+
+  // Health Modal
+  const [healthModal, setHealthModal] = useState<{
+    isOpen: boolean;
+    lote: any | null;
+    loteType: 'postura' | 'engorda' | 'pintinhos';
+  }>({
+    isOpen: false,
+    lote: null,
+    loteType: 'postura',
+  });
+
   // Pintinhos Lot states
   const [showPintinhos, setShowPintinhos] = useState(false);
+  const [piCreationTab, setPiCreationTab] = useState<'dados' | 'saude'>('dados');
+  const [piQuarentenaAtiva, setPiQuarentenaAtiva] = useState(false);
+  const [piQuarentenaMotivo, setPiQuarentenaMotivo] = useState('');
+  const [piQuarentenaSaida, setPiQuarentenaSaida] = useState('');
+  const [piVaccines, setPiVaccines] = useState<VaccinationRecord[]>([]);
   const [piBaia, setPiBaia] = useState('');
   const [piRaca, setPiRaca] = useState('');
   const [piDataNascimento, setPiDataNascimento] = useState(todayISO());
@@ -837,7 +879,7 @@ export function Lots() {
     lotType: 'postura',
   });
 
-  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || notesModal.isOpen || showQuickBreedModal || weighModal.isOpen;
+  const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || notesModal.isOpen || showQuickBreedModal || weighModal.isOpen || feedModal.isOpen || healthModal.isOpen;
   useModalScrollLock(isAnyModalOpen);
 
   const openTransferModal = (lote: any) => {
@@ -898,6 +940,7 @@ export function Lots() {
     setShowPostura(false); setPBaia(''); setPRaca(''); setPDataInicio(todayISO());
     setPMode('select'); setPFemeas([]); setPQtd(''); setPSearch('');
     setPObs('');
+    setPCreationTab('dados'); setPQuarentenaAtiva(false); setPQuarentenaMotivo(''); setPQuarentenaSaida(''); setPVaccines([]);
   };
 
   const handleSavePosturaSubmit = (e: React.FormEvent) => {
@@ -926,8 +969,16 @@ export function Lots() {
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
         observacao: pObs.trim() || undefined,
+        vaccinationRecords: pVaccines,
+        quarentena: pQuarentenaAtiva ? {
+          ativa: true,
+          dataInicio: pDataInicio,
+          motivoQuarentena: pQuarentenaMotivo.trim() || 'Quarentena inicial de introdução',
+          dataPrevistaSaida: pQuarentenaSaida || undefined,
+        } : undefined,
       });
       resetPostura();
+      showToast('Lote de postura criado com sucesso!', 'success');
     };
 
     setConfirmLotModal({
@@ -955,6 +1006,7 @@ export function Lots() {
     setEIdadeDias(''); setEMode('select'); setEAves([]); setEQtd(''); setESearch('');
     setEPesoInicial(''); setEPesoMeta(''); setEObs('');
     setEGanhoGramasDia(''); setEConsumoRacaoAve('');
+    setECreationTab('dados'); setEQuarentenaAtiva(false); setEQuarentenaMotivo(''); setEQuarentenaSaida(''); setEVaccines([]);
   };
 
   const handleSaveEngordaSubmit = (e: React.FormEvent) => {
@@ -989,8 +1041,16 @@ export function Lots() {
         ganhoGramasDia: eGanhoGramasDia.trim() ? (parseFloat(eGanhoGramasDia) || undefined) : undefined,
         consumoRacaoAve: eConsumoRacaoAve.trim() ? (parseFloat(eConsumoRacaoAve) || undefined) : undefined,
         pesagens: [],
+        vaccinationRecords: eVaccines,
+        quarentena: eQuarentenaAtiva ? {
+          ativa: true,
+          dataInicio: eDataInicio,
+          motivoQuarentena: eQuarentenaMotivo.trim() || 'Quarentena inicial de introdução',
+          dataPrevistaSaida: eQuarentenaSaida || undefined,
+        } : undefined,
       });
       resetEngorda();
+      showToast('Lote de engorda criado com sucesso!', 'success');
     };
 
     setConfirmLotModal({
@@ -1015,6 +1075,7 @@ export function Lots() {
     setPiOrigem('');
     setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
     setPiQtd(''); setPiVacinas(''); setPiObs('');
+    setPiCreationTab('dados'); setPiQuarentenaAtiva(false); setPiQuarentenaMotivo(''); setPiQuarentenaSaida(''); setPiVaccines([]);
   };
 
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
@@ -1053,6 +1114,13 @@ export function Lots() {
       observacao: piObs.trim() || undefined,
       vacinas: piVacinas.trim() || undefined,
       pesagens: [],
+      vaccinationRecords: piVaccines,
+      quarentena: piQuarentenaAtiva ? {
+        ativa: true,
+        dataInicio: piDataNascimento,
+        motivoQuarentena: piQuarentenaMotivo.trim() || 'Quarentena inicial de introdução',
+        dataPrevistaSaida: piQuarentenaSaida || undefined,
+      } : undefined,
     });
 
     resetPintinhos();
@@ -1224,7 +1292,11 @@ export function Lots() {
               const avulsasF = Math.max(0, totalF - cadastradasF);
               const prodStats = calculateLotProduction(lote.registros, totalF);
               return (
-                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
+                  lote.quarentena?.ativa
+                    ? 'border-red-500/60 shadow-red-500/10 shadow-lg'
+                    : 'border-theme-border/50 hover:border-theme-primary/50'
+                }`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Egg size={100} /></div>
                   {/* Cabeçalho */}
                   <div className="flex justify-between items-start mb-4">
@@ -1232,7 +1304,7 @@ export function Lots() {
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Postura</h3>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                       <button
                         onClick={() => handleShareLotPdf(lote, 'postura')}
                         disabled={generatingLotId === lote.id}
@@ -1243,6 +1315,24 @@ export function Lots() {
                         <span className="hidden sm:inline">Ficha</span>
                       </button>
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${eggStatusCls(lote.status)}`}>{lote.status}</span>
+                      {/* Quarantine badge */}
+                      {lote.quarentena?.ativa && (
+                        <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+                          🔴 Quarentena
+                        </span>
+                      )}
+                      {/* Vaccination urgency badge */}
+                      {(() => {
+                        const vr = lote.vaccinationRecords || [];
+                        const appliedIds = vr.filter((v: VaccinationRecord) => v.status === 'Aplicada' && v.protocoloId).map((v: VaccinationRecord) => v.protocoloId!);
+                        const { overdue } = getVaccineSuggestions(dias, appliedIds);
+                        if (overdue.length > 0) return (
+                          <span className="text-[10px] font-black bg-rose-500/20 border border-rose-500/40 text-rose-400 px-2 py-0.5 rounded-lg animate-pulse">
+                            💉 {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
+                          </span>
+                        );
+                        return null;
+                      })()}
                     </div>
                   </div>
                   {/* Métricas */}
@@ -1330,21 +1420,56 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
 
+                  {/* Feed summary badge */}
+                  {(() => {
+                    const fe = lote.feedEntries || [];
+                    const now2 = new Date();
+                    const thisM = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`;
+                    const monthFe = fe.filter((e: FeedEntry) => e.data.startsWith(thisM));
+                    const kgMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.kgRacao, 0);
+                    const custoMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.totalCusto, 0);
+                    if (kgMonth <= 0) return null;
+                    return (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px]">
+                        <Wheat size={13} className="text-amber-400 shrink-0" />
+                        <span className="text-amber-300 font-bold">{kgMonth.toFixed(1)}kg ração este mês</span>
+                        <span className="ml-auto text-white font-black">{custoMonth.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Botões do Lote */}
                   <div className="pt-3 border-t border-theme-border/50 space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setNotesModal({ isOpen: true, lote, lotType: 'postura' })}
-                      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group shadow-sm cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2 text-theme-primary font-bold">
-                        <FileText size={15} className="shrink-0" />
-                        <span>Observações Adicionais</span>
-                      </span>
-                      <span className="bg-theme-base px-2 py-0.5 rounded-lg border border-theme-border/60 text-[11px] font-bold text-theme-text-muted group-hover:text-white shrink-0">
-                        {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0)} {(lote.observacoesAdicionais?.length || 0) + (lote.observacao ? 1 : 0) === 1 ? 'nota' : 'notas'}
-                      </span>
-                    </button>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFeedModal({ isOpen: true, lote, loteType: 'postura' })}
+                        className="py-2.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 rounded-xl text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Wheat size={13} className="shrink-0" />
+                        <span>Ração</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHealthModal({ isOpen: true, lote, loteType: 'postura' })}
+                        className={`py-2.5 px-2 border rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          lote.quarentena?.ativa
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 animate-pulse'
+                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-400/50 text-emerald-400'
+                        }`}
+                      >
+                        <ShieldPlus size={13} className="shrink-0" />
+                        <span>Saúde</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotesModal({ isOpen: true, lote, lotType: 'postura' })}
+                        className="py-2.5 px-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <FileText size={13} className="shrink-0 text-theme-primary" />
+                        <span>Notas</span>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
@@ -1473,7 +1598,11 @@ export function Lots() {
               const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
 
               return (
-                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col space-y-4">
+                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col space-y-4 ${
+                  lote.quarentena?.ativa
+                    ? 'border-rose-500/60 shadow-lg shadow-rose-950/20'
+                    : 'border-theme-border/50 hover:border-theme-primary/50'
+                }`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Beef size={110} /></div>
                   
                   {/* Cabeçalho */}
@@ -1484,7 +1613,7 @@ export function Lots() {
                       </span>
                       <h3 className="font-black text-lg text-white">Lote de Engorda</h3>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                       <button
                         onClick={() => handleShareLotPdf(lote, 'engorda')}
                         disabled={generatingLotId === lote.id}
@@ -1497,6 +1626,24 @@ export function Lots() {
                       <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md ${meatStatusCls(lote.status)}`}>
                         {lote.status}
                       </span>
+                      {/* Quarantine badge */}
+                      {lote.quarentena?.ativa && (
+                        <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+                          🔴 Quarentena
+                        </span>
+                      )}
+                      {/* Vaccination urgency badge */}
+                      {(() => {
+                        const vr = lote.vaccinationRecords || [];
+                        const appliedIds = vr.filter((v: VaccinationRecord) => v.status === 'Aplicada' && v.protocoloId).map((v: VaccinationRecord) => v.protocoloId!);
+                        const { overdue } = getVaccineSuggestions(dias, appliedIds);
+                        if (overdue.length > 0) return (
+                          <span className="text-[10px] font-black bg-rose-500/20 border border-rose-500/40 text-rose-400 px-2 py-0.5 rounded-lg animate-pulse">
+                            💉 {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
+                          </span>
+                        );
+                        return null;
+                      })()}
                       <button 
                         onClick={() => setDeleteLotConfirm({
                           id: lote.id,
@@ -1734,8 +1881,48 @@ export function Lots() {
                     {lote.observacao && <p className="text-[10px] text-theme-text-muted mt-2 italic">Obs: {lote.observacao}</p>}
                   </div>
 
+                  {/* Feed summary badge */}
+                  {(() => {
+                    const fe = lote.feedEntries || [];
+                    const now2 = new Date();
+                    const thisM = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`;
+                    const monthFe = fe.filter((e: FeedEntry) => e.data.startsWith(thisM));
+                    const kgMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.kgRacao, 0);
+                    const custoMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.totalCusto, 0);
+                    if (kgMonth <= 0) return null;
+                    return (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] mb-2">
+                        <Wheat size={13} className="text-amber-400 shrink-0" />
+                        <span className="text-amber-300 font-bold">{kgMonth.toFixed(1)}kg ração este mês</span>
+                        <span className="ml-auto text-white font-black">{custoMonth.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Movimentações e Status */}
                   <div className="pt-2 border-t border-theme-border/50">
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setFeedModal({ isOpen: true, lote, loteType: 'engorda' })}
+                        className="py-2.5 px-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 rounded-xl text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Wheat size={14} className="shrink-0" />
+                        <span>Ração</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHealthModal({ isOpen: true, lote, loteType: 'engorda' })}
+                        className={`py-2.5 px-3 border rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          lote.quarentena?.ativa
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 animate-pulse'
+                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-400/50 text-emerald-400'
+                        }`}
+                      >
+                        <ShieldPlus size={14} className="shrink-0" />
+                        <span>Saúde</span>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
@@ -1802,14 +1989,18 @@ export function Lots() {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = (lote.qtdAves !== undefined && lote.qtdAves !== null) ? Number(lote.qtdAves) : (lote.avesIds?.length || 0);
               return (
-                <div key={lote.id} className="premium-card virtualized-lot-card gpu-accelerated p-5 border border-theme-border/50 hover:border-theme-primary/50 transition-all group relative overflow-hidden flex flex-col">
+                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
+                  lote.quarentena?.ativa
+                    ? 'border-rose-500/60 shadow-lg shadow-rose-950/20'
+                    : 'border-theme-border/50 hover:border-theme-primary/50'
+                }`}>
                   <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Baby size={100} className="text-yellow-400" /></div>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <span className="text-xs font-bold text-theme-primary uppercase mb-0.5 block">Baia {lote.baia}{lote.raca ? ` · ${lote.raca}` : ''}</span>
                       <h3 className="font-black text-lg text-white">Lote de Pintinhos</h3>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                       <button
                         onClick={() => handleShareLotPdf(lote, 'pintinhos')}
                         disabled={generatingLotId === lote.id}
@@ -1820,6 +2011,24 @@ export function Lots() {
                         <span className="hidden sm:inline">Ficha</span>
                       </button>
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md ${meatStatusCls(lote.status)}`}>{lote.status}</span>
+                      {/* Quarantine badge */}
+                      {lote.quarentena?.ativa && (
+                        <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse">
+                          🔴 Quarentena
+                        </span>
+                      )}
+                      {/* Vaccination urgency badge */}
+                      {(() => {
+                        const vr = lote.vaccinationRecords || [];
+                        const appliedIds = vr.filter((v: VaccinationRecord) => v.status === 'Aplicada' && v.protocoloId).map((v: VaccinationRecord) => v.protocoloId!);
+                        const { overdue } = getVaccineSuggestions(dias, appliedIds);
+                        if (overdue.length > 0) return (
+                          <span className="text-[10px] font-black bg-rose-500/20 border border-rose-500/40 text-rose-400 px-2 py-0.5 rounded-lg animate-pulse">
+                            💉 {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
+                          </span>
+                        );
+                        return null;
+                      })()}
                       <button 
                         onClick={() => setDeleteLotConfirm({
                           id: lote.id,
@@ -1916,7 +2125,47 @@ export function Lots() {
                   </div>
 
 
+                  {/* Feed summary badge */}
+                  {(() => {
+                    const fe = lote.feedEntries || [];
+                    const now2 = new Date();
+                    const thisM = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`;
+                    const monthFe = fe.filter((e: FeedEntry) => e.data.startsWith(thisM));
+                    const kgMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.kgRacao, 0);
+                    const custoMonth = monthFe.reduce((s: number, e: FeedEntry) => s + e.totalCusto, 0);
+                    if (kgMonth <= 0) return null;
+                    return (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] mb-2">
+                        <Wheat size={13} className="text-amber-400 shrink-0" />
+                        <span className="text-amber-300 font-bold">{kgMonth.toFixed(1)}kg ração este mês</span>
+                        <span className="ml-auto text-white font-black">{custoMonth.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                    );
+                  })()}
+
                   <div className="pt-3 border-t border-theme-border/50 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFeedModal({ isOpen: true, lote, loteType: 'pintinhos' })}
+                        className="py-2.5 px-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 rounded-xl text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Wheat size={14} className="shrink-0" />
+                        <span>Ração</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHealthModal({ isOpen: true, lote, loteType: 'pintinhos' })}
+                        className={`py-2.5 px-3 border rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          lote.quarentena?.ativa
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 animate-pulse'
+                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-400/50 text-emerald-400'
+                        }`}
+                      >
+                        <ShieldPlus size={14} className="shrink-0" />
+                        <span>Saúde</span>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
@@ -1996,6 +2245,40 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Egg className="text-theme-primary" size={20} />Novo Lote de Postura</h3>
               <button type="button" onClick={resetPostura} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
+
+            {/* Abas do Modal: Dados do Lote vs Saúde & Vacinas */}
+            <div className="flex border-b border-theme-border bg-theme-base/60 p-1.5 shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPCreationTab('dados')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pCreationTab === 'dados'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>📋 Dados do Lote</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPCreationTab('saude')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pCreationTab === 'saude'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>💉 Saúde & Vacinas</span>
+                {(pQuarentenaAtiva || pVaccines.length > 0) && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black ${
+                    pQuarentenaAtiva ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-black'
+                  }`}>
+                    {pQuarentenaAtiva ? 'Quarentena' : pVaccines.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <form
               onSubmit={handleSavePosturaSubmit}
               onKeyDown={e => {
@@ -2006,86 +2289,98 @@ export function Lots() {
               className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
             >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <SectionLabel>Baia / Identificação *</SectionLabel>
-                    <input
-                      required
-                      type="text"
-                      value={pBaia}
-                      onChange={e => setPBaia(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') e.preventDefault();
-                      }}
-                      placeholder="Ex: Baia 04"
-                      className={inputCls}
+                {pCreationTab === 'dados' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <SectionLabel>Baia / Identificação *</SectionLabel>
+                        <input
+                          required
+                          type="text"
+                          value={pBaia}
+                          onChange={e => setPBaia(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') e.preventDefault();
+                          }}
+                          placeholder="Ex: Baia 04"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <SectionLabel>Raça (opcional)</SectionLabel>
+                        <div className="relative">
+                          <select value={pRaca} onChange={e => setPRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
+                            <option value="">-- Selecionar --</option>
+                            {breeds.map(br => <option key={br.id} value={br.nome}>{br.nome}</option>)}
+                          </select>
+                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 📍 GESTÃO DE FÊMEAS E MACHOS DETECTADOS NA MESMA BAIA */}
+                    <BaiaBirdsManagementCard
+                      baia={pBaia}
+                      birds={birds}
+                      selectedBirdIds={pFemeas}
+                      onIncludeBirds={ids => setPFemeas(prev => Array.from(new Set([...prev, ...ids])))}
+                      editBird={editBird}
+                      showToast={showToast}
                     />
-                  </div>
-                  <div className="space-y-1">
-                    <SectionLabel>Raça (opcional)</SectionLabel>
-                    <div className="relative">
-                      <select value={pRaca} onChange={e => setPRaca(e.target.value)} className={inputCls + " appearance-none pr-8"}>
-                        <option value="">-- Selecionar --</option>
-                        {breeds.map(br => <option key={br.id} value={br.nome}>{br.nome}</option>)}
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
 
-                {/* 📍 GESTÃO DE FÊMEAS E MACHOS DETECTADOS NA MESMA BAIA */}
-                <BaiaBirdsManagementCard
-                  baia={pBaia}
-                  birds={birds}
-                  selectedBirdIds={pFemeas}
-                  onIncludeBirds={ids => setPFemeas(prev => Array.from(new Set([...prev, ...ids])))}
-                  editBird={editBird}
-                  showToast={showToast}
-                />
-
-                <div className="space-y-1">
-                  <SectionLabel>Data de Início</SectionLabel>
-                  <input type="date" required value={pDataInicio} onChange={e => setPDataInicio(e.target.value)} className={inputCls} />
-                </div>
-
-                {/* FÊMEAS NO LOTE (PRESERVA SELEÇÃO E QUANTIDADE ADICIONAL) */}
-                <div className="space-y-2">
-                  <SectionLabel>Fêmeas no Lote</SectionLabel>
-                  <ModeToggle mode={pMode} onChange={m => setPMode(m)} label1="Selecionar do Criatório" label2="Aves Adicionais / Sem Anilha" />
-
-                  {pMode === 'select' ? (
-                    <BirdPicker birds={activeFemales} selected={pFemeas} onToggle={handleFemaleToggle} onSelectAll={handleFemaleSelectAll} search={pSearch} onSearch={setPSearch} emptyMsg="Nenhuma fêmea disponível no criatório." />
-                  ) : (
                     <div className="space-y-1">
-                      <SectionLabel>Quantidade Adicional de Fêmeas (Sem anilha / Não cadastradas)</SectionLabel>
-                      <input type="number" min="0" inputMode="numeric" placeholder="Ex: 10" value={pQtd}
-                        onKeyDown={onlyNumericKeyDown}
-                        onChange={e => {
-                          const v = sanitizeNumeric(e.target.value);
-                          setPQtd(v);
-                        }}
-                        className={inputCls + " text-2xl font-black text-center py-3"} />
+                      <SectionLabel>Data de Início</SectionLabel>
+                      <input type="date" required value={pDataInicio} onChange={e => setPDataInicio(e.target.value)} className={inputCls} />
                     </div>
-                  )}
 
-                  {/* CÁLCULO TOTAL DE AVES COMBINADAS */}
-                  <div className="bg-theme-base/80 border border-theme-border/60 rounded-xl p-3 flex items-center justify-between text-xs">
-                    <span className="text-theme-text-muted">Total combinado de fêmeas:</span>
-                    <span className="font-black text-white text-sm bg-theme-primary/10 border border-theme-primary/30 px-2.5 py-0.5 rounded-lg text-theme-primary">
-                      {pFemeas.length} selecionadas + {parseInt(pQtd) || 0} adicionais = {pFemeas.length + (parseInt(pQtd) || 0)} aves
-                    </span>
-                  </div>
-                </div>
+                    {/* FÊMEAS NO LOTE (PRESERVA SELEÇÃO E QUANTIDADE ADICIONAL) */}
+                    <div className="space-y-2">
+                      <SectionLabel>Fêmeas no Lote</SectionLabel>
+                      <ModeToggle mode={pMode} onChange={m => setPMode(m)} label1="Selecionar do Criatório" label2="Aves Adicionais / Sem Anilha" />
 
+                      {pMode === 'select' ? (
+                        <BirdPicker birds={activeFemales} selected={pFemeas} onToggle={handleFemaleToggle} onSelectAll={handleFemaleSelectAll} search={pSearch} onSearch={setPSearch} emptyMsg="Nenhuma fêmea disponível no criatório." />
+                      ) : (
+                        <div className="space-y-1">
+                          <SectionLabel>Quantidade Adicional de Fêmeas (Sem anilha / Não cadastradas)</SectionLabel>
+                          <input type="number" min="0" inputMode="numeric" placeholder="Ex: 10" value={pQtd}
+                            onKeyDown={onlyNumericKeyDown}
+                            onChange={e => {
+                              const v = sanitizeNumeric(e.target.value);
+                              setPQtd(v);
+                            }}
+                            className={inputCls + " text-2xl font-black text-center py-3"} />
+                        </div>
+                      )}
 
+                      {/* CÁLCULO TOTAL DE AVES COMBINADAS */}
+                      <div className="bg-theme-base/80 border border-theme-border/60 rounded-xl p-3 flex items-center justify-between text-xs">
+                        <span className="text-theme-text-muted">Total combinado de fêmeas:</span>
+                        <span className="font-black text-white text-sm bg-theme-primary/10 border border-theme-primary/30 px-2.5 py-0.5 rounded-lg text-theme-primary">
+                          {pFemeas.length} selecionadas + {parseInt(pQtd) || 0} adicionais = {pFemeas.length + (parseInt(pQtd) || 0)} aves
+                        </span>
+                      </div>
+                    </div>
 
-
-                <div className="space-y-1">
-                  <SectionLabel>Observação (opcional)</SectionLabel>
-                  <textarea rows={2} placeholder="Ex: Matrizes baia 04..." value={pObs} onChange={e => setPObs(e.target.value)} className={inputCls + " resize-none"} />
-                </div>
-
+                    <div className="space-y-1">
+                      <SectionLabel>Observação (opcional)</SectionLabel>
+                      <textarea rows={2} placeholder="Ex: Matrizes baia 04..." value={pObs} onChange={e => setPObs(e.target.value)} className={inputCls + " resize-none"} />
+                    </div>
+                  </>
+                ) : (
+                  <LotCreationHealthSection
+                    lotAgeDays={calcDays(pDataInicio)}
+                    isQuarantine={pQuarentenaAtiva}
+                    setIsQuarantine={setPQuarentenaAtiva}
+                    quarantineReason={pQuarentenaMotivo}
+                    setQuarantineReason={setPQuarentenaMotivo}
+                    quarantineEnd={pQuarentenaSaida}
+                    setQuarantineEnd={setPQuarentenaSaida}
+                    vaccines={pVaccines}
+                    setVaccines={setPVaccines}
+                    selectedBirdsList={birds.filter(b => pFemeas.includes(b.id))}
+                  />
+                )}
               </div>
 
               <div className="p-4 sm:p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
@@ -2117,6 +2412,39 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Beef className="text-theme-primary" size={20} />Novo Lote de Engorda</h3>
               <button type="button" onClick={resetEngorda} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
+
+            {/* Abas do Modal: Dados do Lote vs Saúde & Vacinas */}
+            <div className="flex border-b border-theme-border bg-theme-base/60 p-1.5 shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setECreationTab('dados')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  eCreationTab === 'dados'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>📋 Dados do Lote</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setECreationTab('saude')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  eCreationTab === 'saude'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>💉 Saúde & Vacinas</span>
+                {(eQuarentenaAtiva || eVaccines.length > 0) && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black ${
+                    eQuarentenaAtiva ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-black'
+                  }`}>
+                    {eQuarentenaAtiva ? 'Quarentena' : eVaccines.length}
+                  </span>
+                )}
+              </button>
+            </div>
             <form
               onSubmit={handleSaveEngordaSubmit}
               onKeyDown={e => {
@@ -2127,7 +2455,8 @@ export function Lots() {
               className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
             >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
-                
+                {eCreationTab === 'dados' ? (
+                  <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <SectionLabel>Baia / Identificação *</SectionLabel>
@@ -2371,7 +2700,21 @@ export function Lots() {
                   <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Frangos corte..." value={eObs} onChange={e => setEObs(e.target.value)} className={inputCls + " resize-none"} />
                 </div>
-
+                  </>
+                ) : (
+                  <LotCreationHealthSection
+                    lotAgeDays={(parseInt(eIdadeDias) || 0) + calcDays(eDataInicio)}
+                    isQuarantine={eQuarentenaAtiva}
+                    setIsQuarantine={setEQuarentenaAtiva}
+                    quarantineReason={eQuarentenaMotivo}
+                    setQuarantineReason={setEQuarentenaMotivo}
+                    quarantineEnd={eQuarentenaSaida}
+                    setQuarantineEnd={setEQuarentenaSaida}
+                    vaccines={eVaccines}
+                    setVaccines={setEVaccines}
+                    selectedBirdsList={birds.filter(b => eAves.includes(b.id))}
+                  />
+                )}
               </div>
               <div className="p-4 sm:p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
                 <button type="button" onClick={resetEngorda} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all">Cancelar</button>
@@ -2402,6 +2745,40 @@ export function Lots() {
               <h3 className="font-black text-lg text-white flex items-center gap-2"><Baby className="text-theme-primary" size={20} />Novo Lote de Pintinhos</h3>
               <button type="button" onClick={resetPintinhos} className="text-theme-text-muted hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             </div>
+
+            {/* Abas do Modal: Dados do Lote vs Saúde & Vacinas */}
+            <div className="flex border-b border-theme-border bg-theme-base/60 p-1.5 shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPiCreationTab('dados')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  piCreationTab === 'dados'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>📋 Dados do Lote</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPiCreationTab('saude')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  piCreationTab === 'saude'
+                    ? 'bg-theme-surface text-white shadow-sm font-black border border-theme-border'
+                    : 'text-theme-text-muted hover:text-white'
+                }`}
+              >
+                <span>💉 Saúde & Vacinas</span>
+                {(piQuarentenaAtiva || piVaccines.length > 0) && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black ${
+                    piQuarentenaAtiva ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-black'
+                  }`}>
+                    {piQuarentenaAtiva ? 'Quarentena' : piVaccines.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <form
               onSubmit={handleSavePintinhosSubmit}
               onKeyDown={e => {
@@ -2412,7 +2789,8 @@ export function Lots() {
               className="flex flex-col overflow-hidden flex-1 min-h-0 max-w-full"
             >
               <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0 modal-scrollable-content overscroll-contain touch-pan-y">
-                
+                {piCreationTab === 'dados' ? (
+                  <>
                 {/* Baia e Raça */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -2594,7 +2972,21 @@ export function Lots() {
                   <SectionLabel>Observação (opcional)</SectionLabel>
                   <textarea rows={2} placeholder="Ex: Nascidos na chocadeira..." value={piObs} onChange={e => setPiObs(e.target.value)} className={inputCls + " resize-none"} />
                 </div>
-
+              </>
+            ) : (
+              <LotCreationHealthSection
+                lotAgeDays={piDataNascimento ? calcDays(piDataNascimento) : 0}
+                isQuarantine={piQuarentenaAtiva}
+                setIsQuarantine={setPiQuarentenaAtiva}
+                quarantineReason={piQuarentenaMotivo}
+                setQuarantineReason={setPiQuarentenaMotivo}
+                quarantineEnd={piQuarentenaSaida}
+                setQuarantineEnd={setPiQuarentenaSaida}
+                vaccines={piVaccines}
+                setVaccines={setPiVaccines}
+                selectedBirdsList={[]}
+              />
+            )}
               </div>
               <div className="p-4 sm:p-5 border-t border-theme-border flex gap-3 shrink-0 bg-theme-surface/50">
                 <button type="button" onClick={resetPintinhos} className="flex-1 py-3 bg-theme-surface border border-theme-border rounded-xl text-sm font-bold text-white hover:border-theme-primary transition-all cursor-pointer">Cancelar</button>
@@ -2830,6 +3222,63 @@ export function Lots() {
           />
         );
       })()}
+
+      {/* ── MODAL DE GASTO DE RAÇÃO ── */}
+      {feedModal.isOpen && feedModal.lote && (
+        <FeedEntryModal
+          isOpen={feedModal.isOpen}
+          onClose={() => setFeedModal({ isOpen: false, lote: null, loteType: 'postura' })}
+          lotName={`${
+            feedModal.loteType === 'postura' ? 'Lote de Postura' :
+            feedModal.loteType === 'pintinhos' ? 'Lote de Pintinhos' :
+            'Lote de Engorda'
+          } — Baia ${feedModal.lote?.baia || ''}`}
+          feedEntries={feedModal.lote?.feedEntries || []}
+          onSave={(entries: FeedEntry[]) => {
+            if (feedModal.loteType === 'postura') {
+              editEggLot(feedModal.lote.id, { feedEntries: entries });
+            } else {
+              editMeatLot(feedModal.lote.id, { feedEntries: entries });
+            }
+          }}
+        />
+      )}
+
+      {/* ── MODAL DE SAÚDE, VACINAS E QUARENTENA ── */}
+      {healthModal.isOpen && healthModal.lote && (
+        <LotHealthModal
+          isOpen={healthModal.isOpen}
+          onClose={() => setHealthModal({ isOpen: false, lote: null, loteType: 'postura' })}
+          lotName={`${
+            healthModal.loteType === 'postura' ? 'Lote de Postura' :
+            healthModal.loteType === 'pintinhos' ? 'Lote de Pintinhos' :
+            'Lote de Engorda'
+          } — Baia ${healthModal.lote?.baia || ''}`}
+          lotAgeDays={
+            healthModal.loteType === 'postura'
+              ? calcDays(healthModal.lote.dataInicio)
+              : healthModal.lote.dataNascimento
+                ? calcDays(healthModal.lote.dataNascimento)
+                : (healthModal.lote.idadeInicialDias || 0) + calcDays(healthModal.lote.dataInicio)
+          }
+          vaccinationRecords={healthModal.lote.vaccinationRecords || []}
+          quarentena={healthModal.lote.quarentena}
+          onSaveVaccinations={(records: VaccinationRecord[]) => {
+            if (healthModal.loteType === 'postura') {
+              editEggLot(healthModal.lote.id, { vaccinationRecords: records });
+            } else {
+              editMeatLot(healthModal.lote.id, { vaccinationRecords: records });
+            }
+          }}
+          onSaveQuarentena={(quarentena: QuarantineRecord | undefined) => {
+            if (healthModal.loteType === 'postura') {
+              editEggLot(healthModal.lote.id, { quarentena });
+            } else {
+              editMeatLot(healthModal.lote.id, { quarentena });
+            }
+          }}
+        />
+      )}
 
       {/* ── CONFIRMAÇÃO DE EXCLUSÃO DE LOTE (SEM WINDOW.CONFIRM) ── */}
       <ConfirmDialog

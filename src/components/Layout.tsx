@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -16,6 +16,7 @@ const AddBirdModal = lazy(() => import('./modals/AddBirdModal').then(m => ({ def
 const BirdProfileModal = lazy(() => import('./modals/BirdProfileModal').then(m => ({ default: m.BirdProfileModal })));
 const UserProfileSetupModal = lazy(() => import('./modals/UserProfileSetupModal').then(m => ({ default: m.UserProfileSetupModal })));
 const PWAInstallGuideModal = lazy(() => import('./modals/PWAInstallGuideModal').then(m => ({ default: m.PWAInstallGuideModal })));
+const NotificationCenterModal = lazy(() => import('./modals/NotificationCenterModal').then(m => ({ default: m.NotificationCenterModal })));
 
 // Code-splitting e carregamento otimizado das páginas principais (Padrão Linear.app)
 const Dashboard = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -61,6 +62,7 @@ import localforage from 'localforage';
 import { useHaptics } from '../hooks/useHaptics';
 import { LandingCheckoutModal } from './LandingCheckoutModal';
 import { RenewalModal } from './modals/RenewalModal';
+import { scanActiveAlerts, checkAndDispatchDailyNotifications } from '../lib/notificationEngine';
 
 export type AllowedCpf = {
   cpf: string;
@@ -277,7 +279,8 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     farmSettings, isAddBirdModalOpen, selectedBirdProfileId, closeModals,
     isProfileSetupOpen, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
-    closeUpgradeModal: globalCloseUpgradeModal
+    closeUpgradeModal: globalCloseUpgradeModal,
+    eggLots, meatLots, birds
   } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -289,7 +292,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     navigate(path, { replace: true });
   }, [navigate]);
 
-
   const isInitialMenu = location.pathname === '/' || location.pathname === '';
 
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -298,6 +300,19 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
   const [hideTrialBanner, setHideTrialBanner] = useState(false);
   const [hideRenewalBanner, setHideRenewalBanner] = useState(false);
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+
+  // Active push alerts count
+  const activeAlerts = useMemo(() => {
+    return scanActiveAlerts(eggLots, meatLots, birds);
+  }, [eggLots, meatLots, birds]);
+
+  // Run daily notification checks automatically (push notifications)
+  useEffect(() => {
+    if (activeAlerts.length > 0) {
+      checkAndDispatchDailyNotifications(activeAlerts);
+    }
+  }, [activeAlerts]);
 
   const isPaidCustomer = Boolean((trialInfo?.isPaid || (!trialInfo?.isTrial && trialInfo?.expiresAt)) && !isAdmin);
   const needsRenewal = isPaidCustomer && ((trialInfo?.remainingDays ?? 999) <= 10 || isExpired);
@@ -532,6 +547,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     effectiveUpgradeModalOpen ||
     isRenewalModalOpen ||
     isPwaGuideOpen ||
+    isNotificationsModalOpen ||
     revokeCpfConfirm
   );
 
@@ -604,6 +620,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
           {isAddBirdModalOpen && <AddBirdModal />}
           {selectedBirdProfileId && <BirdProfileModal />}
           {isProfileSetupOpen && <UserProfileSetupModal isOpen={true} onComplete={finishProfileSetup || (() => {})} />}
+          {isNotificationsModalOpen && (
+            <NotificationCenterModal
+              isOpen={isNotificationsModalOpen}
+              onClose={() => setIsNotificationsModalOpen(false)}
+            />
+          )}
         </Suspense>
       
       {/* Sidebar (Desktop) */}
@@ -689,6 +711,23 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
               )}
             </button>
           )}
+
+          {/* Central de Notificações Inteligente */}
+          <button
+            type="button"
+            id="header-notification-button"
+            onClick={() => setIsNotificationsModalOpen(true)}
+            className="p-2 sm:p-2.5 bg-theme-base/80 hover:bg-theme-surface-hover border border-theme-border/80 hover:border-amber-500/50 rounded-xl text-zinc-300 hover:text-white transition-all active:scale-90 shrink-0 relative mr-2 cursor-pointer group"
+            title="Central de Notificações e Lembretes"
+            aria-label="Central de Notificações"
+          >
+            <Bell size={18} className={activeAlerts.length > 0 ? "text-amber-400 group-hover:scale-110 transition-transform" : "text-zinc-400 group-hover:text-white"} />
+            {activeAlerts.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-black font-black text-[9px] w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse border border-theme-base shadow-lg shadow-amber-500/20">
+                {activeAlerts.length > 9 ? '9+' : activeAlerts.length}
+              </span>
+            )}
+          </button>
 
           {/* Profile photo → goes to settings */}
           <button
