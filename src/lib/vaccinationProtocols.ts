@@ -9,6 +9,7 @@ export interface VaccineProtocol {
   descricao?: string;     // Brief description
   idadeAplicacaoDias: number; // Recommended age for first dose in days
   intervaloReforco?: number;  // Days until booster dose (if applicable)
+  janelaMaximaDias?: number;  // Biological max age to apply (e.g. Marek 3 days)
   obrigatoria?: boolean;      // Considered essential
 }
 
@@ -16,8 +17,9 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
   {
     id: 'marek',
     nome: 'Marek',
-    descricao: 'Aplicar com 1 dia de vida (pintinhos). Protege contra doença de Marek.',
+    descricao: 'Aplicar no 1º dia de vida (incubatório/pintinhos). Não aplicável em aves adultas.',
     idadeAplicacaoDias: 1,
+    janelaMaximaDias: 3,
     obrigatoria: true,
   },
   {
@@ -27,6 +29,14 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
     idadeAplicacaoDias: 7,
     intervaloReforco: 21,
     obrigatoria: true,
+  },
+  {
+    id: 'bronquite',
+    nome: 'Bronquite Infecciosa',
+    descricao: 'Aplicar aos 10 dias. Reforço aos 30 dias.',
+    idadeAplicacaoDias: 10,
+    intervaloReforco: 20,
+    obrigatoria: false,
   },
   {
     id: 'gumboro',
@@ -41,14 +51,6 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
     nome: 'Bouba Aviária',
     descricao: 'Aplicar a partir dos 21 dias.',
     idadeAplicacaoDias: 21,
-    obrigatoria: false,
-  },
-  {
-    id: 'bronquite',
-    nome: 'Bronquite Infecciosa',
-    descricao: 'Aplicar aos 10 dias. Reforço aos 30 dias.',
-    idadeAplicacaoDias: 10,
-    intervaloReforco: 20,
     obrigatoria: false,
   },
   {
@@ -69,22 +71,29 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
 
 /**
  * Given lot age in days and applied vaccine IDs,
- * returns a list of suggestions: upcoming vaccines (next 7 days) and overdue ones.
+ * returns a list of suggestions: upcoming vaccines (next 7 days), due today, and overdue ones.
  */
 export function getVaccineSuggestions(
   lotAgeDays: number,
   appliedVaccineIds: string[]
-): { overdue: VaccineProtocol[]; upcoming: VaccineProtocol[] } {
+): { overdue: VaccineProtocol[]; upcoming: VaccineProtocol[]; dueToday: VaccineProtocol[] } {
   const overdue: VaccineProtocol[] = [];
   const upcoming: VaccineProtocol[] = [];
+  const dueToday: VaccineProtocol[] = [];
 
   for (const v of POULTRY_VACCINE_PROTOCOLS) {
     // Skip if already applied (by protocol id)
     if (appliedVaccineIds.includes(v.id)) continue;
 
+    // Skip incubator-only vaccines if lot is past the biological window
+    if (v.janelaMaximaDias && lotAgeDays > v.janelaMaximaDias) continue;
+
     const daysUntil = v.idadeAplicacaoDias - lotAgeDays;
 
-    if (daysUntil < 0) {
+    if (daysUntil === 0) {
+      dueToday.push(v);
+      upcoming.push(v); // Also in upcoming for backward compat
+    } else if (daysUntil < 0) {
       // Past due
       overdue.push(v);
     } else if (daysUntil <= 7) {
@@ -93,5 +102,5 @@ export function getVaccineSuggestions(
     }
   }
 
-  return { overdue, upcoming };
+  return { overdue, upcoming, dueToday };
 }

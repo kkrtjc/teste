@@ -129,6 +129,25 @@ export function LotHealthModal({
     setIsCustomVaccine(false);
   };
 
+  const handleQuickAddProtocol = (protocoloId: string) => {
+    const p = POULTRY_VACCINE_PROTOCOLS.find(x => x.id === protocoloId);
+    if (!p) return;
+    const dataAplicada = todayISO();
+    const intervalo = p.intervaloReforco || undefined;
+    const proximaDose = intervalo ? addDays(dataAplicada, intervalo) : undefined;
+    const record: VaccinationRecord = {
+      id: uid(),
+      vacina: p.nome,
+      dataAplicada,
+      dataProximaDose: proximaDose,
+      intervaloDias: intervalo,
+      loteIdadeAplicacaoDias: lotAgeDays,
+      protocoloId: p.id,
+      status: 'Aplicada',
+    };
+    setLocalVaccines(prev => [...prev, record]);
+  };
+
   const handleAddVaccine = () => {
     const vacinaName = isCustomVaccine ? vForm.vacina.trim() : vForm.vacina;
     if (!vacinaName || !vForm.dataAplicada) return;
@@ -157,7 +176,29 @@ export function LotHealthModal({
   };
 
   const handleSaveAll = () => {
-    onSaveVaccinations(localVaccines);
+    let finalVaccines = [...localVaccines];
+    const vacinaName = isCustomVaccine
+      ? vForm.vacina.trim()
+      : (vForm.vacina || POULTRY_VACCINE_PROTOCOLS.find(x => x.id === vForm.protocoloId)?.nome);
+
+    if (vacinaName && vForm.dataAplicada) {
+      const intervalo = parseInt(vForm.intervaloDias) || undefined;
+      const proximaDose = intervalo ? addDays(vForm.dataAplicada, intervalo) : undefined;
+      const record: VaccinationRecord = {
+        id: uid(),
+        vacina: vacinaName,
+        dataAplicada: vForm.dataAplicada,
+        dataProximaDose: proximaDose,
+        intervaloDias: intervalo,
+        loteIdadeAplicacaoDias: lotAgeDays,
+        protocoloId: isCustomVaccine ? undefined : vForm.protocoloId || undefined,
+        status: 'Aplicada',
+        observacao: vForm.observacao.trim() || undefined,
+      };
+      finalVaccines = [...finalVaccines, record];
+    }
+
+    onSaveVaccinations(finalVaccines);
 
     const q: QuarantineRecord | undefined = qForm.ativa
       ? {
@@ -256,10 +297,21 @@ export function LotHealthModal({
                           {v.nome} — ATRASADA
                         </p>
                         <p className="text-[10px] text-theme-text-muted">
-                          Recomendada aos {v.idadeAplicacaoDias}d · Lote está com {lotAgeDays}d
+                          Recomendada aos {v.idadeAplicacaoDias}d · Lote com {lotAgeDays}d
                         </p>
                       </div>
-                      <span className="text-[10px] text-red-400 font-bold bg-red-500/20 px-2 py-1 rounded-lg shrink-0">Registrar</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickAddProtocol(v.id);
+                          }}
+                          className="text-[10px] text-black font-black bg-red-400 hover:bg-red-300 px-2.5 py-1.5 rounded-lg shrink-0 shadow transition-all active:scale-95 cursor-pointer"
+                        >
+                          + Aplicar Hoje
+                        </button>
+                      </div>
                     </div>
                   ))}
 
@@ -272,13 +324,24 @@ export function LotHealthModal({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-amber-400 flex items-center gap-1.5">
                           <Clock size={12} />
-                          {v.nome} — em breve
+                          {v.nome} — {v.idadeAplicacaoDias === lotAgeDays ? 'Hoje!' : 'em breve'}
                         </p>
                         <p className="text-[10px] text-theme-text-muted">
-                          Recomendada aos {v.idadeAplicacaoDias}d · Faltam {v.idadeAplicacaoDias - lotAgeDays}d
+                          Recomendada aos {v.idadeAplicacaoDias}d {v.idadeAplicacaoDias === lotAgeDays ? '(dia exato)' : `· Faltam ${v.idadeAplicacaoDias - lotAgeDays}d`}
                         </p>
                       </div>
-                      <span className="text-[10px] text-amber-400 font-bold bg-amber-500/20 px-2 py-1 rounded-lg shrink-0">Selecionar</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickAddProtocol(v.id);
+                          }}
+                          className="text-[10px] text-black font-black bg-amber-400 hover:bg-amber-300 px-2.5 py-1.5 rounded-lg shrink-0 shadow transition-all active:scale-95 cursor-pointer"
+                        >
+                          + Aplicar Hoje
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

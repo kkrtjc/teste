@@ -94,6 +94,25 @@ export function LotCreationHealthSection({
     setIsCustomVaccine(false);
   };
 
+  const handleQuickAddProtocol = (protocoloId: string) => {
+    const p = POULTRY_VACCINE_PROTOCOLS.find(x => x.id === protocoloId);
+    if (!p) return;
+    const dataAplicada = todayISO();
+    const intervalo = p.intervaloReforco || undefined;
+    const proximaDose = intervalo ? addDays(dataAplicada, intervalo) : undefined;
+    const record: VaccinationRecord = {
+      id: uid(),
+      vacina: p.nome,
+      dataAplicada,
+      dataProximaDose: proximaDose,
+      intervaloDias: intervalo,
+      loteIdadeAplicacaoDias: lotAgeDays,
+      protocoloId: p.id,
+      status: 'Aplicada',
+    };
+    setVaccines(prev => [...prev, record]);
+  };
+
   const handleAddVaccine = () => {
     const vacinaName = isCustomVaccine ? vForm.vacina.trim() : vForm.vacina;
     if (!vacinaName || !vForm.dataAplicada) return;
@@ -222,9 +241,16 @@ export function LotCreationHealthSection({
                   </p>
                   <p className="text-[10px] text-theme-text-muted">Aos {v.idadeAplicacaoDias} dias (atrasada)</p>
                 </div>
-                <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-1 rounded-lg shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickAddProtocol(v.id);
+                  }}
+                  className="text-[10px] bg-rose-500 hover:bg-rose-400 text-black font-black px-2.5 py-1 rounded-lg shrink-0 shadow transition-all active:scale-95 cursor-pointer"
+                >
                   + Adicionar
-                </span>
+                </button>
               </div>
             ))}
 
@@ -240,9 +266,16 @@ export function LotCreationHealthSection({
                   </p>
                   <p className="text-[10px] text-theme-text-muted">Aos {v.idadeAplicacaoDias} dias (em breve)</p>
                 </div>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-1 rounded-lg shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickAddProtocol(v.id);
+                  }}
+                  className="text-[10px] bg-amber-500 hover:bg-amber-400 text-black font-black px-2.5 py-1 rounded-lg shrink-0 shadow transition-all active:scale-95 cursor-pointer"
+                >
                   + Adicionar
-                </span>
+                </button>
               </div>
             ))}
           </div>

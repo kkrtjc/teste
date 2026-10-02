@@ -3087,7 +3087,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             updatedLot.raca !== undefined ||
             updatedLot.qtdFemeas !== undefined ||
             updatedLot.precoVendaPadrao !== undefined ||
-            updatedLot.custoProdPadrao !== undefined
+            updatedLot.custoProdPadrao !== undefined ||
+            updatedLot.feedEntries !== undefined ||
+            updatedLot.vaccinationRecords !== undefined ||
+            updatedLot.quarentena !== undefined
           )
         ) {
           dbUpdate.registros = packageEggLotRegistros(fullLot);
@@ -3184,7 +3187,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             updatedLot.maeId !== undefined ||
             updatedLot.paiNome !== undefined ||
             updatedLot.maeNome !== undefined ||
-            updatedLot.paisTexto !== undefined
+            updatedLot.paisTexto !== undefined ||
+            updatedLot.feedEntries !== undefined ||
+            updatedLot.vaccinationRecords !== undefined ||
+            updatedLot.quarentena !== undefined
           )
         ) {
           dbUpdate.peso_medio_inicial = packageMeatLotWeight(fullLot);

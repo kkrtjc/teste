@@ -882,6 +882,60 @@ export function Lots() {
   const isAnyModalOpen = showPostura || showEngorda || showPintinhos || confirmLotModal.isOpen || confirmTransfer.isOpen || movementModal.isOpen || notesModal.isOpen || showQuickBreedModal || weighModal.isOpen || feedModal.isOpen || healthModal.isOpen;
   useModalScrollLock(isAnyModalOpen);
 
+  // ── Deep Linking: Tratamento de Alertas e Abertura Automática de Modais de Saúde, Ração e Pesagem ──
+  useEffect(() => {
+    if (!location.state) return;
+    const stateObj = location.state as any;
+
+    if (stateObj.openHealthLotId) {
+      const targetId = stateObj.openHealthLotId;
+      const eLot = eggLots.find(l => l.id === targetId);
+      if (eLot) {
+        setActiveTab('postura');
+        setHealthModal({ isOpen: true, lote: eLot, loteType: 'postura' });
+      } else {
+        const mLot = meatLots.find(l => l.id === targetId);
+        if (mLot) {
+          const isChick = mLot.id.startsWith('chick-');
+          setActiveTab(isChick ? 'pintinhos' : 'engorda');
+          setHealthModal({ isOpen: true, lote: mLot, loteType: isChick ? 'pintinhos' : 'engorda' });
+        }
+      }
+    } else if (stateObj.openFeedLotId) {
+      const targetId = stateObj.openFeedLotId;
+      const eLot = eggLots.find(l => l.id === targetId);
+      if (eLot) {
+        setActiveTab('postura');
+        setFeedModal({ isOpen: true, lote: eLot, loteType: 'postura' });
+      } else {
+        const mLot = meatLots.find(l => l.id === targetId);
+        if (mLot) {
+          const isChick = mLot.id.startsWith('chick-');
+          setActiveTab(isChick ? 'pintinhos' : 'engorda');
+          setFeedModal({ isOpen: true, lote: mLot, loteType: isChick ? 'pintinhos' : 'engorda' });
+        }
+      }
+    } else if (stateObj.openWeighLotId) {
+      const mLot = meatLots.find(l => l.id === stateObj.openWeighLotId);
+      if (mLot) {
+        setActiveTab('engorda');
+        setWeighModal({ isOpen: true, lote: mLot });
+      }
+    }
+
+    if (stateObj.scrollToLotId) {
+      const targetId = stateObj.scrollToLotId;
+      setTimeout(() => {
+        const el = document.getElementById(`lot-${targetId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-theme-primary');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-theme-primary'), 2500);
+        }
+      }, 200);
+    }
+  }, [location.key, eggLots, meatLots]);
+
   const openTransferModal = (lote: any) => {
     setConfirmTransfer({ isOpen: true, lote });
   };
@@ -1292,7 +1346,7 @@ export function Lots() {
               const avulsasF = Math.max(0, totalF - cadastradasF);
               const prodStats = calculateLotProduction(lote.registros, totalF);
               return (
-                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
+                <div key={lote.id} id={`lot-${lote.id}`} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
                   lote.quarentena?.ativa
                     ? 'border-red-500/60 shadow-red-500/10 shadow-lg'
                     : 'border-theme-border/50 hover:border-theme-primary/50'
@@ -1598,7 +1652,7 @@ export function Lots() {
               const diasParaPesar = Math.max(0, 15 - diasRefPesagem);
 
               return (
-                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col space-y-4 ${
+                <div key={lote.id} id={`lot-${lote.id}`} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col space-y-4 ${
                   lote.quarentena?.ativa
                     ? 'border-rose-500/60 shadow-lg shadow-rose-950/20'
                     : 'border-theme-border/50 hover:border-theme-primary/50'
@@ -1636,7 +1690,8 @@ export function Lots() {
                       {(() => {
                         const vr = lote.vaccinationRecords || [];
                         const appliedIds = vr.filter((v: VaccinationRecord) => v.status === 'Aplicada' && v.protocoloId).map((v: VaccinationRecord) => v.protocoloId!);
-                        const { overdue } = getVaccineSuggestions(dias, appliedIds);
+                        const lotAge = (lote.idadeInicialDias || 0) + dias;
+                        const { overdue } = getVaccineSuggestions(lotAge, appliedIds);
                         if (overdue.length > 0) return (
                           <span className="text-[10px] font-black bg-rose-500/20 border border-rose-500/40 text-rose-400 px-2 py-0.5 rounded-lg animate-pulse">
                             💉 {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
@@ -1989,7 +2044,7 @@ export function Lots() {
               const dias = calcDays(lote.dataNascimento || lote.dataInicio);
               const totalA = (lote.qtdAves !== undefined && lote.qtdAves !== null) ? Number(lote.qtdAves) : (lote.avesIds?.length || 0);
               return (
-                <div key={lote.id} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
+                <div key={lote.id} id={`lot-${lote.id}`} className={`premium-card virtualized-lot-card gpu-accelerated p-5 border transition-all group relative overflow-hidden flex flex-col ${
                   lote.quarentena?.ativa
                     ? 'border-rose-500/60 shadow-lg shadow-rose-950/20'
                     : 'border-theme-border/50 hover:border-theme-primary/50'

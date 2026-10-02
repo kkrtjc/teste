@@ -66,7 +66,7 @@ export function FeedEntryModal({
   const custo = parseFloat(form.custoKg.replace(',', '.')) || 0;
   const totalCusto = kg > 0 && custo > 0 ? kg * custo : 0;
 
-  const canAdd = kg > 0 && custo > 0 && form.data;
+  const canAdd = kg > 0 && Boolean(form.data);
 
   const handleAdd = () => {
     if (!canAdd) return;
@@ -89,7 +89,20 @@ export function FeedEntryModal({
   };
 
   const handleSave = () => {
-    onSave(localEntries);
+    let finalEntries = [...localEntries];
+    if (canAdd) {
+      const entry: FeedEntry = {
+        id: uid(),
+        data: form.data,
+        kgRacao: kg,
+        custoKg: custo,
+        totalCusto,
+        tipoRacao: form.tipoRacao.trim() || undefined,
+        observacao: form.observacao.trim() || undefined,
+      };
+      finalEntries = [...finalEntries, entry].sort((a, b) => a.data.localeCompare(b.data));
+    }
+    onSave(finalEntries);
     onClose();
   };
 
@@ -178,11 +191,11 @@ export function FeedEntryModal({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}><DollarSign size={10} className="inline mr-1" />Preço por kg (R$)</label>
+                <label className={labelCls}><DollarSign size={10} className="inline mr-1" />Preço por kg (R$, opcional)</label>
                 <input
                   type="number"
                   inputMode="decimal"
-                  placeholder="Ex: 3.50"
+                  placeholder="Ex: 3.50 (ou deixe vazio)"
                   value={form.custoKg}
                   onChange={e => setForm(p => ({ ...p, custoKg: e.target.value }))}
                   className={inputCls}
@@ -210,6 +223,16 @@ export function FeedEntryModal({
                 </span>
                 <span className="text-base font-black text-amber-400">
                   = {fmtCurrency(totalCusto)}
+                </span>
+              </div>
+            )}
+            {kg > 0 && custo === 0 && (
+              <div className="flex items-center justify-between p-3 bg-theme-surface border border-theme-border rounded-xl">
+                <span className="text-xs text-theme-text-muted">
+                  {kg.toFixed(1)} kg registrados (sem custo financeiro)
+                </span>
+                <span className="text-xs font-bold text-zinc-300">
+                  Apenas consumo em kg
                 </span>
               </div>
             )}

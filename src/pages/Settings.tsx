@@ -892,6 +892,58 @@ export function Settings() {
               }`} />
             </button>
           </div>
+
+          {/* Quarentena */}
+          <div className="py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>🛡️</span> Lotes em Quarentena e Isolamento
+              </p>
+              <p className="text-[11px] text-theme-text-muted mt-0.5">
+                Avisa e destaca lotes sob isolamento sanitário com suspeitas ou recém-adquiridos.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleUpdateNotifSetting('alertQuarentena', !notifSettings.alertQuarentena)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                notifSettings.alertQuarentena ? 'bg-theme-primary' : 'bg-zinc-700'
+              }`}
+            >
+              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
+                notifSettings.alertQuarentena ? 'left-5' : 'left-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Horários Programados de Trato */}
+          {notifSettings.alertRacao && (
+            <div className="pt-3 pb-1 space-y-2">
+              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider">
+                ⏰ Horários de Trato das Aves (Lembretes Automáticos)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-300">1º Trato (Manhã):</span>
+                  <input
+                    type="time"
+                    value={notifSettings.feedReminderTime1 || '07:30'}
+                    onChange={e => handleUpdateNotifSetting('feedReminderTime1', e.target.value)}
+                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+                  />
+                </div>
+                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-300">2º Trato (Tarde):</span>
+                  <input
+                    type="time"
+                    value={notifSettings.feedReminderTime2 || '16:30'}
+                    onChange={e => handleUpdateNotifSetting('feedReminderTime2', e.target.value)}
+                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
