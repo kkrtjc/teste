@@ -60,7 +60,10 @@ export function QuickBreedModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim()) return;
+    if (!nome.trim()) {
+      showToast('Informe o nome da raça.', 'warning');
+      return;
+    }
 
     const newId = Date.now().toString(36) + Math.random().toString(36).slice(2);
     const ganhoNum = parseFloat(ganho) || undefined;

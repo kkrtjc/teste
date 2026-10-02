@@ -767,7 +767,7 @@ export function Lots() {
   const [piBaia, setPiBaia] = useState('');
   const [piRaca, setPiRaca] = useState('');
   const [piDataNascimento, setPiDataNascimento] = useState(todayISO());
-  const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo' | ''>('');
+  const [piOrigem, setPiOrigem] = useState<'Criatório' | 'Externo'>('Criatório');
   const [piPaiId, setPiPaiId] = useState('');
   const [piMaeId, setPiMaeId] = useState('');
   const [piPaisTexto, setPiPaisTexto] = useState('');
@@ -1028,6 +1028,8 @@ export function Lots() {
         status: 'Ativo',
         raca: pRaca.trim() || undefined,
         observacao: pObs.trim() || undefined,
+        precoVendaPadrao: 6.0,
+        custoProdPadrao: 0.30,
         vaccinationRecords: pVaccines,
         quarentena: pQuarentenaAtiva ? {
           ativa: true,
@@ -1040,16 +1042,20 @@ export function Lots() {
       showToast('Lote de postura criado com sucesso!', 'success');
     };
 
-    setConfirmLotModal({
-      isOpen: true,
-      lotType: 'postura',
-      selectedCount: numSel,
-      extraCount: numExtra,
-      sumTotal,
-      customTotalInput: String(sumTotal),
-      isAskingCustom: false,
-      pendingSaveFn: doSave,
-    });
+    if (numSel > 0 && numExtra > 0) {
+      setConfirmLotModal({
+        isOpen: true,
+        lotType: 'postura',
+        selectedCount: numSel,
+        extraCount: numExtra,
+        sumTotal,
+        customTotalInput: String(sumTotal),
+        isAskingCustom: false,
+        pendingSaveFn: doSave,
+      });
+    } else {
+      doSave(sumTotal);
+    }
   };
 
   const handleBirdToggle = (id: string) => {
@@ -1112,16 +1118,20 @@ export function Lots() {
       showToast('Lote de engorda criado com sucesso!', 'success');
     };
 
-    setConfirmLotModal({
-      isOpen: true,
-      lotType: 'engorda',
-      selectedCount: numSel,
-      extraCount: numExtra,
-      sumTotal,
-      customTotalInput: String(sumTotal),
-      isAskingCustom: false,
-      pendingSaveFn: doSave,
-    });
+    if (numSel > 0 && numExtra > 0) {
+      setConfirmLotModal({
+        isOpen: true,
+        lotType: 'engorda',
+        selectedCount: numSel,
+        extraCount: numExtra,
+        sumTotal,
+        customTotalInput: String(sumTotal),
+        isAskingCustom: false,
+        pendingSaveFn: doSave,
+      });
+    } else {
+      doSave(sumTotal);
+    }
   };
 
   const openWeighModal = (lote: any) => {
@@ -1131,7 +1141,7 @@ export function Lots() {
   // Pintinhos methods
   const resetPintinhos = () => {
     setShowPintinhos(false); setPiBaia(''); setPiRaca(''); setPiDataNascimento(todayISO());
-    setPiOrigem('');
+    setPiOrigem('Criatório');
     setPiPaiId(''); setPiMaeId(''); setPiPaisTexto(''); setPiPaiNome(''); setPiMaeNome('');
     setPiQtd(''); setPiVacinas(''); setPiObs('');
     setPiCreationTab('dados'); setPiQuarentenaAtiva(false); setPiQuarentenaMotivo(''); setPiQuarentenaSaida(''); setPiVaccines([]);
@@ -1139,7 +1149,10 @@ export function Lots() {
 
   const handleSavePintinhosSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!piBaia.trim()) return;
+    if (!piBaia.trim()) {
+      showToast?.('Informe a identificação da Baia.', 'warning');
+      return;
+    }
 
     const qtd = parseInt(piQtd) || 0;
     if (qtd <= 0) {

@@ -424,6 +424,7 @@ export function Settings() {
     });
     
     setIsSaved(true);
+    showToast('Configurações salvas com sucesso!', 'success');
     setTimeout(() => setIsSaved(false), 3000);
   };
 

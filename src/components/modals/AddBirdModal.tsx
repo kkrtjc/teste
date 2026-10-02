@@ -220,7 +220,7 @@ export function AddBirdModal() {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
 
   // ── Origin ──
-  const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(null);
+  const [nascidaAqui, setNascidaAqui] = useState<boolean | null>(true);
   const [paiId, setPaiId] = useState('');
   const [maeId, setMaeId] = useState('');
   const [filtroPai, setFiltroPai] = useState('');
@@ -284,7 +284,7 @@ export function AddBirdModal() {
       setRaca(preSelectedBreedForNewBird || breeds[0]?.nome || '');
       setBaia(''); setStatus('Reprodutor');
       setDataNasc(''); setPeso(''); setValorEstimado(''); setPreviewImages([]);
-      setNascidaAqui(null); setCasalId(''); setPaiId(''); setPaiExterno('');
+      setNascidaAqui(true); setCasalId(''); setPaiId(''); setPaiExterno('');
       setMaeId(''); setMaeExterno(''); setDescricaoOrigem('');
       setSelectedVacs([]);
       setOutrasVacinas('');
@@ -350,7 +350,14 @@ export function AddBirdModal() {
 
   const handleSave = async () => {
     try {
-      if (!anilha.trim() || !raca.trim()) return;
+      if (!anilha.trim()) {
+        showToast('Informe a anilha da ave.', 'warning');
+        return;
+      }
+      if (!raca.trim()) {
+        showToast('Informe a raça da ave.', 'warning');
+        return;
+      }
 
       const isPaiExternoVal = !paiId && !!paiExterno;
       const isMaeExternoVal = !maeId && !!maeExterno;

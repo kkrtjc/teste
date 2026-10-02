@@ -890,6 +890,8 @@ function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (
       femeasIds: selectedFemeas,
       qtdFemeas: countFemeas,
       expectativaDiaria: 0,
+      precoVendaPadrao: 6.0,
+      custoProdPadrao: 0.30,
       dataInicio: todayISO(),
       status: 'Ativo',
       raca: raca || undefined,

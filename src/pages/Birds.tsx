@@ -214,6 +214,7 @@ const BreedFormModal = memo(function BreedFormModal({
 }: BreedFormModalProps) {
   useModalScrollLock(isOpen);
   const { user } = useAuth();
+  const { showToast } = useAppContext();
   const [newBreedName, setNewBreedName] = useState('');
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
   const [newBreedDesc, setNewBreedDesc] = useState('');
@@ -300,7 +301,10 @@ const BreedFormModal = memo(function BreedFormModal({
   };
 
   const handleSave = async () => {
-    if (!newBreedName.trim()) return;
+    if (!newBreedName.trim()) {
+      showToast('Informe o nome da raça.', 'warning');
+      return;
+    }
     const ganho = newBreedGanhoGramasDia ? parseFloat(newBreedGanhoGramasDia) : undefined;
     const conv = newBreedConversaoAlimentar ? parseFloat(newBreedConversaoAlimentar) : undefined;
 

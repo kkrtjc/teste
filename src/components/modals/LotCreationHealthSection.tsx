@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Syringe, ShieldAlert, Shield, Plus, CheckCircle2, 
   Clock, Trash2, Calendar, AlertTriangle, Sparkles 
@@ -140,6 +140,40 @@ export function LotCreationHealthSection({
   const handleDeleteVaccine = (id: string) => {
     setVaccines(prev => prev.filter(v => v.id !== id));
   };
+
+  const vFormRef = useRef({ vForm, isCustomVaccine, lotAgeDays });
+  vFormRef.current = { vForm, isCustomVaccine, lotAgeDays };
+
+  // Auto-commit ao trocar de aba no cadastro do lote
+  useEffect(() => {
+    return () => {
+      const { vForm: curForm, isCustomVaccine: curCustom, lotAgeDays: curAge } = vFormRef.current;
+      const vacinaName = curCustom
+        ? curForm.vacina.trim()
+        : (curForm.vacina || POULTRY_VACCINE_PROTOCOLS.find(x => x.id === curForm.protocoloId)?.nome);
+
+      if (vacinaName && curForm.dataAplicada) {
+        const intervalo = parseInt(curForm.intervaloDias) || undefined;
+        const proximaDose = intervalo ? addDays(curForm.dataAplicada, intervalo) : undefined;
+        setVaccines(prev => {
+          if (prev.some(x => x.vacina === vacinaName && x.dataAplicada === curForm.dataAplicada)) {
+            return prev;
+          }
+          return [...prev, {
+            id: uid(),
+            vacina: vacinaName,
+            dataAplicada: curForm.dataAplicada,
+            dataProximaDose: proximaDose,
+            intervaloDias: intervalo,
+            loteIdadeAplicacaoDias: curAge,
+            protocoloId: curCustom ? undefined : curForm.protocoloId || undefined,
+            status: 'Aplicada',
+            observacao: curForm.observacao.trim() || undefined,
+          }];
+        });
+      }
+    };
+  }, [setVaccines]);
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -319,18 +353,33 @@ export function LotCreationHealthSection({
             className={inputCls}
           />
         ) : (
-          <select
-            value={vForm.protocoloId}
-            onChange={e => handleSelectProtocol(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">-- Escolher do Protocolo BR --</option>
-            {POULTRY_VACCINE_PROTOCOLS.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.nome} ({p.idadeAplicacaoDias}d){p.obrigatoria ? ' ★' : ''}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={vForm.protocoloId}
+              onChange={e => handleSelectProtocol(e.target.value)}
+              className={inputCls + " flex-1"}
+            >
+              <option value="">-- Escolher do Protocolo BR --</option>
+              {POULTRY_VACCINE_PROTOCOLS.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.nome} ({p.idadeAplicacaoDias}d){p.obrigatoria ? ' ★' : ''}
+                </option>
+              ))}
+            </select>
+            {vForm.protocoloId && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleQuickAddProtocol(vForm.protocoloId);
+                  setVForm(prev => ({ ...prev, protocoloId: '', vacina: '', intervaloDias: '' }));
+                }}
+                className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-xl transition-all shrink-0 flex items-center gap-1 cursor-pointer active:scale-95 shadow"
+                title="Adicionar Vacina ao Lote Agora"
+              >
+                <Plus size={14} /> Adicionar
+              </button>
+            )}
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-2">
