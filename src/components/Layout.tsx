@@ -280,7 +280,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     isProfileSetupOpen, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal,
-    eggLots, meatLots, birds
+    eggLots, meatLots, birds, notificationSettings
   } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -302,10 +302,25 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
   const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
 
+  // Relógio reativo para acionar alertas de horário de ração pontualmente
+  const [clockMinute, setClockMinute] = useState(() => {
+    const now = new Date();
+    return `${now.getHours()}:${now.getMinutes()}`;
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const current = `${now.getHours()}:${now.getMinutes()}`;
+      setClockMinute(prev => (prev !== current ? current : prev));
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Active push alerts count
   const activeAlerts = useMemo(() => {
-    return scanActiveAlerts(eggLots, meatLots, birds);
-  }, [eggLots, meatLots, birds]);
+    return scanActiveAlerts(eggLots, meatLots, birds, notificationSettings);
+  }, [eggLots, meatLots, birds, notificationSettings, clockMinute]);
 
   // Run daily notification checks automatically (push notifications)
   useEffect(() => {

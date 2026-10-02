@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, Apple, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Smartphone, Zap, Bell
+  Database, Smartphone, Zap, Bell, RefreshCw
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, type TrialInfo } from '../lib/AuthContext';
@@ -12,13 +12,12 @@ import { PWAInstallGuideModal } from '../components/modals/PWAInstallGuideModal'
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
 import { LandingCheckoutModal } from '../components/LandingCheckoutModal';
 import { RenewalModal } from '../components/modals/RenewalModal';
+import { UnblockNotificationModal } from '../components/modals/UnblockNotificationModal';
 import {
   getNotificationPermission,
   requestNotificationPermission,
   triggerDeviceNotification,
-  getNotificationSettings,
-  saveNotificationSettings,
-  DEFAULT_NOTIF_SETTINGS,
+  triggerTestFeedNotification,
   type NotificationSettings
 } from '../lib/notificationEngine';
 
@@ -150,7 +149,8 @@ export function Settings() {
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
     coupleEggs, incubationLots,
-    importBackup, showToast, recoverAllBirds
+    importBackup, showToast, recoverAllBirds,
+    notificationSettings, updateNotificationSettings
   } = useAppContext();
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
@@ -243,29 +243,26 @@ export function Settings() {
   const [backupToImport, setBackupToImport] = useState<File | null>(null);
 
   // Push Notifications state
-  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIF_SETTINGS);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
+  const [testFeedSent, setTestFeedSent] = useState(false);
+  const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
 
   useEffect(() => {
     setNotifPermission(getNotificationPermission());
-    getNotificationSettings().then(cfg => {
-      setNotifSettings(cfg);
-    });
   }, []);
 
   const handleUpdateNotifSetting = async (key: keyof NotificationSettings, val: any) => {
-    const updated = { ...notifSettings, [key]: val };
-    setNotifSettings(updated);
-    await saveNotificationSettings(updated);
+    await updateNotificationSettings({ [key]: val });
     showToast('Preferência de notificação salva!', 'success');
   };
 
   const handleEnablePush = async () => {
     setIsRequestingPermission(true);
     const granted = await requestNotificationPermission();
-    setNotifPermission(getNotificationPermission());
+    const current = getNotificationPermission();
+    setNotifPermission(current);
     setIsRequestingPermission(false);
     if (granted) {
       showToast('Notificações no celular ativadas com sucesso!', 'success');
@@ -273,7 +270,11 @@ export function Settings() {
         body: 'Você receberá avisos automáticos sobre vacinas, ração e lotes.',
       });
     } else {
-      showToast('Permissão de notificação negada ou não suportada.', 'error');
+      if (current === 'denied' || current === 'unsupported') {
+        setIsUnblockModalOpen(true);
+      } else {
+        showToast('Permissão de notificação não concedida.', 'error');
+      }
     }
   };
 
@@ -288,6 +289,17 @@ export function Settings() {
     } else {
       showToast('Ative as notificações acima antes de disparar o teste.', 'info');
     }
+  };
+
+  const handleTestFeedReminder = async () => {
+    setTestFeedSent(true);
+    const success = await triggerTestFeedNotification('manha');
+    if (success) {
+      showToast('Lembrete de ração testado! Som, vibração e aviso push enviados.', 'success');
+    } else {
+      showToast('Aviso sonoro disparado! Para aviso no topo da tela, ative as notificações push.', 'info');
+    }
+    setTimeout(() => setTestFeedSent(false), 3000);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -759,15 +771,63 @@ export function Settings() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             {notifPermission === 'granted' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-black">
-                <CheckCircle2 size={14} /> Notificações Ativadas
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-black">
+                  <CheckCircle2 size={14} /> Notificações Ativadas
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = getNotificationPermission();
+                    setNotifPermission(current);
+                    showToast('Status de notificações verificado: 100% Ativo!', 'success');
+                  }}
+                  title="Atualizar status"
+                  className="p-1.5 bg-theme-base hover:bg-theme-surface border border-theme-border rounded-xl text-theme-text-muted hover:text-white transition-all cursor-pointer"
+                >
+                  <RefreshCw size={13} />
+                </button>
+              </div>
             ) : notifPermission === 'denied' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-400 text-xs font-black">
-                <AlertCircle size={14} /> Bloqueado no Navegador
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-400 text-xs font-black">
+                  <AlertCircle size={14} /> Bloqueado no Navegador
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsUnblockModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-xl shadow transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🔓 Como Desbloquear</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = getNotificationPermission();
+                    setNotifPermission(current);
+                    if (current === 'granted') {
+                      showToast('Notificações desbloqueadas com sucesso!', 'success');
+                    } else {
+                      showToast('Ainda bloqueado no navegador. Toque em "Como Desbloquear" para ver o passo a passo.', 'warning');
+                    }
+                  }}
+                  title="Verificar se já desbloqueou"
+                  className="p-1.5 bg-theme-base hover:bg-theme-surface border border-theme-border rounded-xl text-theme-text-muted hover:text-white transition-all cursor-pointer"
+                >
+                  <RefreshCw size={13} />
+                </button>
+              </div>
+            ) : notifPermission === 'unsupported' ? (
+              <button
+                type="button"
+                onClick={() => setIsUnblockModalOpen(true)}
+                className="px-3.5 py-2 bg-blue-500/20 border border-blue-500/40 hover:bg-blue-500/30 text-blue-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Smartphone size={14} />
+                <span>Como Ativar no iPhone / Celular</span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -782,23 +842,40 @@ export function Settings() {
           </div>
         </div>
 
-        {/* Test push button */}
-        {notifPermission === 'granted' && (
+        {/* Test buttons area */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Test push button */}
           <div className="flex items-center justify-between p-3.5 bg-theme-base/60 border border-theme-border/60 rounded-xl">
             <div className="text-xs">
-              <span className="font-bold text-white block">Testar Envio Push</span>
-              <span className="text-[11px] text-theme-text-muted">Dispara um aviso teste imediato para a tela do seu celular</span>
+              <span className="font-bold text-white block">Testar Envio Push Geral</span>
+              <span className="text-[11px] text-theme-text-muted">Aviso teste para a tela</span>
             </div>
             <button
               type="button"
               onClick={handleTestNotification}
-              className="px-3.5 py-1.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-xs font-bold text-white rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border text-xs font-bold text-white rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0"
             >
               <Zap size={14} className="text-amber-400" />
-              <span>{testNotificationSent ? '✓ Enviada!' : 'Disparar Teste'}</span>
+              <span>{testNotificationSent ? '✓ Enviada!' : 'Testar Push'}</span>
             </button>
           </div>
-        )}
+
+          {/* Test feeding alert button */}
+          <div className="flex items-center justify-between p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+            <div className="text-xs">
+              <span className="font-bold text-amber-300 block">🌾 Testar Lembrete de Ração</span>
+              <span className="text-[11px] text-zinc-400">Toca sino harmônico + aviso push</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleTestFeedReminder}
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0"
+            >
+              <Bell size={14} />
+              <span>{testFeedSent ? '✓ Tocando!' : 'Testar Ração'}</span>
+            </button>
+          </div>
+        </div>
 
         {/* Toggles */}
         <div className="divide-y divide-theme-border/40 pt-1">
@@ -814,13 +891,13 @@ export function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => handleUpdateNotifSetting('alertVacinas', !notifSettings.alertVacinas)}
+              onClick={() => handleUpdateNotifSetting('alertVacinas', !notificationSettings.alertVacinas)}
               className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notifSettings.alertVacinas ? 'bg-theme-primary' : 'bg-zinc-700'
+                notificationSettings.alertVacinas ? 'bg-theme-primary' : 'bg-zinc-700'
               }`}
             >
               <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notifSettings.alertVacinas ? 'left-5' : 'left-0.5'
+                notificationSettings.alertVacinas ? 'left-5' : 'left-0.5'
               }`} />
             </button>
           </div>
@@ -837,13 +914,13 @@ export function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => handleUpdateNotifSetting('alertPosturaSemRegistro', !notifSettings.alertPosturaSemRegistro)}
+              onClick={() => handleUpdateNotifSetting('alertPosturaSemRegistro', !notificationSettings.alertPosturaSemRegistro)}
               className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notifSettings.alertPosturaSemRegistro ? 'bg-theme-primary' : 'bg-zinc-700'
+                notificationSettings.alertPosturaSemRegistro ? 'bg-theme-primary' : 'bg-zinc-700'
               }`}
             >
               <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notifSettings.alertPosturaSemRegistro ? 'left-5' : 'left-0.5'
+                notificationSettings.alertPosturaSemRegistro ? 'left-5' : 'left-0.5'
               }`} />
             </button>
           </div>
@@ -860,13 +937,13 @@ export function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => handleUpdateNotifSetting('alertRacao', !notifSettings.alertRacao)}
+              onClick={() => handleUpdateNotifSetting('alertRacao', !notificationSettings.alertRacao)}
               className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notifSettings.alertRacao ? 'bg-theme-primary' : 'bg-zinc-700'
+                notificationSettings.alertRacao ? 'bg-theme-primary' : 'bg-zinc-700'
               }`}
             >
               <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notifSettings.alertRacao ? 'left-5' : 'left-0.5'
+                notificationSettings.alertRacao ? 'left-5' : 'left-0.5'
               }`} />
             </button>
           </div>
@@ -883,13 +960,13 @@ export function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => handleUpdateNotifSetting('alertPesagens', !notifSettings.alertPesagens)}
+              onClick={() => handleUpdateNotifSetting('alertPesagens', !notificationSettings.alertPesagens)}
               className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notifSettings.alertPesagens ? 'bg-theme-primary' : 'bg-zinc-700'
+                notificationSettings.alertPesagens ? 'bg-theme-primary' : 'bg-zinc-700'
               }`}
             >
               <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notifSettings.alertPesagens ? 'left-5' : 'left-0.5'
+                notificationSettings.alertPesagens ? 'left-5' : 'left-0.5'
               }`} />
             </button>
           </div>
@@ -906,40 +983,48 @@ export function Settings() {
             </div>
             <button
               type="button"
-              onClick={() => handleUpdateNotifSetting('alertQuarentena', !notifSettings.alertQuarentena)}
+              onClick={() => handleUpdateNotifSetting('alertQuarentena', !notificationSettings.alertQuarentena)}
               className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notifSettings.alertQuarentena ? 'bg-theme-primary' : 'bg-zinc-700'
+                notificationSettings.alertQuarentena ? 'bg-theme-primary' : 'bg-zinc-700'
               }`}
             >
               <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notifSettings.alertQuarentena ? 'left-5' : 'left-0.5'
+                notificationSettings.alertQuarentena ? 'left-5' : 'left-0.5'
               }`} />
             </button>
           </div>
 
           {/* Horários Programados de Trato */}
-          {notifSettings.alertRacao && (
+          {notificationSettings.alertRacao && (
             <div className="pt-3 pb-1 space-y-2">
-              <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider">
-                ⏰ Horários de Trato das Aves (Lembretes Automáticos)
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider">
+                  ⏰ Horários de Trato das Aves (Lembretes Automáticos)
+                </p>
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                  Ativo: 1º Trato às {notificationSettings.feedReminderTime1 || '07:30'} · 2º Trato às {notificationSettings.feedReminderTime2 || '16:30'}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                O aplicativo emitirá aviso sonoro e notificação no celular quando esses horários chegarem caso a ração ainda não tenha sido registrada no dia.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
                   <span className="text-xs font-medium text-zinc-300">1º Trato (Manhã):</span>
                   <input
                     type="time"
-                    value={notifSettings.feedReminderTime1 || '07:30'}
+                    value={notificationSettings.feedReminderTime1 || '07:30'}
                     onChange={e => handleUpdateNotifSetting('feedReminderTime1', e.target.value)}
-                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
                   />
                 </div>
                 <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
                   <span className="text-xs font-medium text-zinc-300">2º Trato (Tarde):</span>
                   <input
                     type="time"
-                    value={notifSettings.feedReminderTime2 || '16:30'}
+                    value={notificationSettings.feedReminderTime2 || '16:30'}
                     onChange={e => handleUpdateNotifSetting('feedReminderTime2', e.target.value)}
-                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
                   />
                 </div>
               </div>
@@ -1037,6 +1122,13 @@ export function Settings() {
         confirmVariant="warning"
         onConfirm={executeBackupImport}
         onCancel={() => setBackupToImport(null)}
+      />
+
+      {/* Modal de Desbloqueio de Notificações */}
+      <UnblockNotificationModal
+        isOpen={isUnblockModalOpen}
+        onClose={() => setIsUnblockModalOpen(false)}
+        onStatusUpdated={setNotifPermission}
       />
 
     </div>

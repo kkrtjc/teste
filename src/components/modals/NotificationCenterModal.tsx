@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Bell, AlertTriangle, Egg, Syringe, Wheat, Scale, 
-  ShieldAlert, CheckCircle2, ChevronRight, Volume2
+  ShieldAlert, CheckCircle2, ChevronRight, Volume2, RefreshCw,
+  Lock, Smartphone
 } from 'lucide-react';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import { 
@@ -11,9 +12,11 @@ import {
   requestNotificationPermission, 
   getNotificationPermission, 
   triggerDeviceNotification,
+  triggerTestFeedNotification,
   type MuraAlert 
 } from '../../lib/notificationEngine';
 import { useAppContext } from '../../lib/AppContext';
+import { UnblockNotificationModal } from './UnblockNotificationModal';
 
 interface NotificationCenterModalProps {
   isOpen: boolean;
@@ -23,10 +26,12 @@ interface NotificationCenterModalProps {
 export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterModalProps) {
   useModalScrollLock(isOpen);
   const navigate = useNavigate();
-  const { eggLots, meatLots, birds, showToast } = useAppContext();
+  const { eggLots, meatLots, birds, showToast, notificationSettings } = useAppContext();
 
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [testing, setTesting] = useState(false);
+  const [testingFeed, setTestingFeed] = useState(false);
+  const [isUnblockOpen, setIsUnblockOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,19 +41,23 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
 
   if (!isOpen) return null;
 
-  const alerts: MuraAlert[] = scanActiveAlerts(eggLots, meatLots, birds);
+  const alerts: MuraAlert[] = scanActiveAlerts(eggLots, meatLots, birds, notificationSettings);
 
   const handleRequestPermission = async () => {
     const granted = await requestNotificationPermission();
-    setPermission(getNotificationPermission());
+    const current = getNotificationPermission();
+    setPermission(current);
     if (granted) {
       showToast('Notificações no celular ativadas com sucesso!', 'success');
-      // Envia notificação de boas-vindas
       await triggerDeviceNotification('🔔 Mura Manager Conectado!', {
         body: 'Você agora receberá alertas diários de ovos, vacinas e ração direto no seu celular.',
       });
     } else {
-      showToast('Permissão não concedida. Verifique as configurações do navegador.', 'warning');
+      if (current === 'denied' || current === 'unsupported') {
+        setIsUnblockOpen(true);
+      } else {
+        showToast('Permissão não concedida. Verifique as configurações do navegador.', 'warning');
+      }
     }
   };
 
@@ -65,6 +74,20 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
       }
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleTestFeedReminder = async () => {
+    setTestingFeed(true);
+    try {
+      const ok = await triggerTestFeedNotification('manha');
+      if (ok) {
+        showToast('Alerta de ração testado com sucesso (som + push)!', 'success');
+      } else {
+        showToast('Aviso sonoro disparado!', 'info');
+      }
+    } finally {
+      setTimeout(() => setTestingFeed(false), 2000);
     }
   };
 
@@ -132,8 +155,71 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
-          {/* Banner de Permissão Push */}
-          {permission !== 'granted' && (
+          {/* Banner de Permissão Push - Cenário: Bloqueado no Navegador */}
+          {permission === 'denied' && (
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-2.5">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-rose-500 text-white font-black shrink-0">
+                  <Lock size={18} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-black text-rose-300">Notificações Bloqueadas no Navegador</p>
+                  <p className="text-[11px] text-zinc-300 leading-relaxed">
+                    O navegador está bloqueando alertas deste site. Siga o passo a passo para desbloquear e receber os avisos de alimentação e vacinas.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUnblockOpen(true)}
+                  className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-xl transition-all shadow-md active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>🔓 Como Desbloquear no Celular</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = getNotificationPermission();
+                    setPermission(current);
+                    if (current === 'granted') showToast('Notificações ativadas!', 'success');
+                    else showToast('Ainda bloqueado no navegador.', 'warning');
+                  }}
+                  className="p-2.5 bg-theme-base hover:bg-white/10 border border-theme-border rounded-xl text-theme-text-muted hover:text-white transition-all cursor-pointer"
+                  title="Verificar novamente"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Banner de Permissão Push - Cenário: Não Suportado diretamente (iOS Safari fora da tela de início) */}
+          {permission === 'unsupported' && (
+            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 space-y-2.5">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-blue-500 text-black font-black shrink-0">
+                  <Smartphone size={18} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-black text-blue-300">Ativação no iPhone / Celular</p>
+                  <p className="text-[11px] text-zinc-300 leading-relaxed">
+                    No iPhone (iOS), é necessário adicionar o aplicativo à Tela de Início para habilitar avisos automáticos.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUnblockOpen(true)}
+                className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 text-black font-black text-xs rounded-xl transition-all shadow-md active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>📱 Ver Como Adicionar à Tela de Início</span>
+              </button>
+            </div>
+          )}
+
+          {/* Banner de Permissão Push - Cenário: Padrão / Ainda não solicitado */}
+          {permission === 'default' && (
             <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-theme-base/60 to-orange-500/15 border border-amber-500/40 space-y-2.5">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-xl bg-amber-500 text-black font-black shrink-0">
@@ -157,21 +243,33 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
             </div>
           )}
 
+          {/* Banner quando Concedido */}
           {permission === 'granted' && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs">
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-emerald-400 font-bold">
                 <CheckCircle2 size={15} />
                 <span>Notificações ativadas no seu aparelho</span>
               </div>
-              <button
-                type="button"
-                onClick={handleTestNotification}
-                disabled={testing}
-                className="text-[11px] font-bold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Volume2 size={12} />
-                Testar
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleTestFeedReminder}
+                  disabled={testingFeed}
+                  className="text-[11px] font-bold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Wheat size={12} />
+                  <span>{testingFeed ? 'Tocando...' : 'Testar Ração'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestNotification}
+                  disabled={testing}
+                  className="text-[11px] font-bold text-zinc-300 hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Volume2 size={12} />
+                  <span>{testing ? 'Enviando...' : 'Testar Push'}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -236,7 +334,7 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
               onClose();
               navigate('/settings');
             }}
-            className="text-xs font-bold text-theme-text-muted hover:text-white transition-colors"
+            className="text-xs font-bold text-theme-text-muted hover:text-white transition-colors cursor-pointer"
           >
             ⚙️ Ajustar Horários & Alertas
           </button>
@@ -249,6 +347,13 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
           </button>
         </div>
       </div>
+
+      {/* Modal para Desbloqueio se necessário */}
+      <UnblockNotificationModal
+        isOpen={isUnblockOpen}
+        onClose={() => setIsUnblockOpen(false)}
+        onStatusUpdated={setPermission}
+      />
     </div>,
     document.body
   );

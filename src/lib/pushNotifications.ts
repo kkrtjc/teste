@@ -5,7 +5,6 @@
 // Fallback silencioso em dispositivos sem suporte — sem quebra de funcionalidade.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PUSH_PERMISSION_KEY = '@mura-manager:push-permission-asked';
 const PUSH_SCHEDULED_KEY  = '@mura-manager:push-scheduled-at';
 const EGG_REMINDER_KEY    = '@mura-manager:egg-reminder-scheduled';
 
@@ -34,13 +33,19 @@ export async function requestPushPermission(): Promise<boolean> {
   if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied') return false;
 
-  // Evita pedir permissão mais de 1x por sessão
-  if (sessionStorage.getItem(PUSH_PERMISSION_KEY)) return false;
-  sessionStorage.setItem(PUSH_PERMISSION_KEY, '1');
-
   try {
-    const result = await Notification.requestPermission();
-    return result === 'granted';
+    let perm: NotificationPermission;
+    const req = Notification.requestPermission((result) => {
+      perm = result;
+    });
+    if (req && typeof (req as any).then === 'function') {
+      perm = await req;
+    } else {
+      perm = await new Promise<NotificationPermission>((resolve) => {
+        Notification.requestPermission(resolve);
+      });
+    }
+    return perm === 'granted';
   } catch {
     return false;
   }

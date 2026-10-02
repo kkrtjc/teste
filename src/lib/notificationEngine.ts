@@ -97,6 +97,48 @@ export function getNotificationPermission(): NotificationPermission | 'unsupport
 }
 
 /**
+ * Emite um som harmônico suave de alerta usando a Web Audio API nativa
+ */
+export function playAlertChime(): void {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const now = ctx.currentTime;
+    
+    // Duplo tom harmônico estilo notificação moderna (Mi5 -> Lá5)
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(659.25, now); // E5
+    osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.15); // A5
+    
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(880.00, now + 0.15);
+    osc2.frequency.exponentialRampToValueAtTime(1318.51, now + 0.35); // E6
+    
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc1.start(now);
+    osc1.stop(now + 0.18);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.45);
+  } catch (err) {
+    console.debug('[NotificationEngine] AudioContext chime skipped:', err);
+  }
+}
+
+/**
  * Solicita permissão para Notificações Push nativas do navegador
  */
 export async function requestNotificationPermission(): Promise<boolean> {
@@ -104,8 +146,18 @@ export async function requestNotificationPermission(): Promise<boolean> {
     return false;
   }
   try {
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    let perm: NotificationPermission;
+    const req = Notification.requestPermission((result) => {
+      perm = result;
+    });
+    if (req && typeof (req as any).then === 'function') {
+      perm = await req;
+    } else {
+      perm = await new Promise<NotificationPermission>((resolve) => {
+        Notification.requestPermission(resolve);
+      });
+    }
+    return perm === 'granted';
   } catch (err) {
     console.error('[NotificationEngine] Erro ao pedir permissão:', err);
     return false;
@@ -122,8 +174,20 @@ export async function triggerDeviceNotification(
     tag?: string;
     icon?: string;
     data?: any;
+    playChime?: boolean;
   }
 ): Promise<boolean> {
+  if (options.playChime !== false) {
+    playAlertChime();
+  }
+
+  // Tenta vibração direta no dispositivo se disponível
+  try {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([200, 100, 200]);
+    }
+  } catch {}
+
   if (typeof window === 'undefined' || !('Notification' in window)) return false;
   if (Notification.permission !== 'granted') return false;
 
@@ -140,21 +204,54 @@ export async function triggerDeviceNotification(
   };
 
   try {
-    // Tenta usar Service Worker se disponível (melhor suporte no Android PWA)
+    // 1. Tenta obter o Service Worker pronto (melhor suporte no Android PWA e iOS Standalone)
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg && 'showNotification' in reg) {
-        await reg.showNotification(title, notifOptions);
-        return true;
+      try {
+        const swReadyPromise = navigator.serviceWorker.ready;
+        const timeoutPromise = new Promise<null>(res => setTimeout(() => res(null), 1500));
+        let reg = await Promise.race([swReadyPromise, timeoutPromise]);
+        if (!reg) {
+          reg = (await navigator.serviceWorker.getRegistration()) || null;
+        }
+        if (reg && 'showNotification' in reg) {
+          await reg.showNotification(title, notifOptions);
+          return true;
+        }
+      } catch (swErr) {
+        console.warn('[NotificationEngine] Falha ao exibir via ServiceWorker:', swErr);
       }
     }
-    // Fallback nativo
-    new Notification(title, notifOptions);
-    return true;
+
+    // 2. Fallback nativo do navegador
+    try {
+      new Notification(title, notifOptions);
+      return true;
+    } catch (notifErr) {
+      console.warn('[NotificationEngine] Falha ao exibir via new Notification:', notifErr);
+    }
   } catch (err) {
-    console.warn('[NotificationEngine] Falha ao exibir notificação:', err);
-    return false;
+    console.warn('[NotificationEngine] Erro geral ao disparar notificação:', err);
   }
+
+  return false;
+}
+
+/**
+ * Dispara um teste rápido do lembrete de ração
+ */
+export async function triggerTestFeedNotification(slot: 'manha' | 'tarde' = 'manha'): Promise<boolean> {
+  const isManha = slot === 'manha';
+  const title = isManha ? '🌾 1º Trato (Manhã) — Lembrete de Ração' : '🌾 2º Trato (Tarde) — Lembrete de Ração';
+  const body = isManha 
+    ? 'Horário habitual de trato da manhã! As aves dos lotes aguardam alimentação.'
+    : 'Horário do 2º trato da tarde! Não se esqueça de registrar o fornecimento de ração.';
+  
+  return triggerDeviceNotification(title, {
+    body,
+    tag: `test-feed-${Date.now()}`,
+    data: { url: '/lots' },
+    playChime: true,
+  });
 }
 
 /**
@@ -213,24 +310,68 @@ export function scanActiveAlerts(
       });
     }
 
-    // C. Ração hoje
+    // C. Horários de Ração e Trato
     if (settings.alertRacao) {
-      const temRacaoHoje = (lote.feedEntries || []).some(f => f.data === today);
-      if (!temRacaoHoje) {
-        alerts.push({
-          id: `racao-postura-${lote.id}-${today}`,
-          type: 'horario_racao',
-          title: `Ração: Baia ${baiaStr} aguarda registro`,
-          message: `Ainda não foi registrado o consumo de ração de hoje para o lote da Baia ${baiaStr}.`,
-          urgency: 'medium',
-          date: today,
-          actionRoute: '/lots',
-          actionState: { tab: 'postura', scrollToLotId: lote.id, openFeedLotId: lote.id },
-          actionLabel: 'Registrar Ração',
-          lotId: lote.id,
-          baia: baiaStr,
-          lotType: 'postura',
-        });
+      const now = new Date();
+      const currentHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const time1 = settings.feedReminderTime1 || '07:30';
+      const time2 = settings.feedReminderTime2 || '16:30';
+
+      const feedEntriesHoje = (lote.feedEntries || []).filter(f => f.data === today);
+      const tratosHoje = feedEntriesHoje.length;
+
+      // 1º Trato (Manhã)
+      if (currentHM >= time1 && currentHM < time2) {
+        if (tratosHoje === 0) {
+          alerts.push({
+            id: `racao-t1-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 1º Trato (${time1}): Baia ${baiaStr}`,
+            message: `Horário de alimentar as aves! Lote na Baia ${baiaStr} aguarda o trato da manhã.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: 'postura', scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar Ração',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType: 'postura',
+          });
+        }
+      } 
+      // 2º Trato (Tarde/Noite)
+      else if (currentHM >= time2) {
+        if (tratosHoje === 0) {
+          alerts.push({
+            id: `racao-urgente-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 Alimentação Pendente: Baia ${baiaStr}`,
+            message: `Atenção: Já passou das ${time2} e nenhum trato de ração foi registrado hoje para o lote da Baia ${baiaStr}.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: 'postura', scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar Ração Agora',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType: 'postura',
+          });
+        } else if (tratosHoje === 1) {
+          alerts.push({
+            id: `racao-t2-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 2º Trato (${time2}): Baia ${baiaStr}`,
+            message: `Horário do 2º trato! Registre a alimentação da tarde para o lote da Baia ${baiaStr}.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: 'postura', scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar 2º Trato',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType: 'postura',
+          });
+        }
       }
     }
 
@@ -311,22 +452,66 @@ export function scanActiveAlerts(
 
     // B. Ração hoje
     if (settings.alertRacao) {
-      const temRacaoHoje = (lote.feedEntries || []).some(f => f.data === today);
-      if (!temRacaoHoje) {
-        alerts.push({
-          id: `racao-meat-${lote.id}-${today}`,
-          type: 'horario_racao',
-          title: `Ração: Baia ${baiaStr} (${isPintinho ? 'Pintinhos' : 'Engorda'})`,
-          message: `Ainda não foi registrado o consumo de ração de hoje para o lote da Baia ${baiaStr}.`,
-          urgency: 'medium',
-          date: today,
-          actionRoute: '/lots',
-          actionState: { tab: lotType, scrollToLotId: lote.id, openFeedLotId: lote.id },
-          actionLabel: 'Registrar Ração',
-          lotId: lote.id,
-          baia: baiaStr,
-          lotType,
-        });
+      const now = new Date();
+      const currentHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const time1 = settings.feedReminderTime1 || '07:30';
+      const time2 = settings.feedReminderTime2 || '16:30';
+
+      const feedEntriesHoje = (lote.feedEntries || []).filter(f => f.data === today);
+      const tratosHoje = feedEntriesHoje.length;
+
+      // 1º Trato (Manhã)
+      if (currentHM >= time1 && currentHM < time2) {
+        if (tratosHoje === 0) {
+          alerts.push({
+            id: `racao-meat-t1-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 1º Trato (${time1}): Baia ${baiaStr} (${isPintinho ? 'Pintinhos' : 'Engorda'})`,
+            message: `Horário de alimentar as aves! Lote de ${isPintinho ? 'pintinhos' : 'engorda'} na Baia ${baiaStr} aguarda o trato da manhã.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: lotType, scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar Ração',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType,
+          });
+        }
+      } 
+      // 2º Trato (Tarde/Noite)
+      else if (currentHM >= time2) {
+        if (tratosHoje === 0) {
+          alerts.push({
+            id: `racao-meat-urgente-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 Alimentação Pendente: Baia ${baiaStr} (${isPintinho ? 'Pintinhos' : 'Engorda'})`,
+            message: `Atenção: Já passou das ${time2} e nenhum trato de ração foi registrado hoje para o lote da Baia ${baiaStr}.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: lotType, scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar Ração Agora',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType,
+          });
+        } else if (tratosHoje === 1) {
+          alerts.push({
+            id: `racao-meat-t2-${lote.id}-${today}`,
+            type: 'horario_racao',
+            title: `🌾 2º Trato (${time2}): Baia ${baiaStr} (${isPintinho ? 'Pintinhos' : 'Engorda'})`,
+            message: `Horário do 2º trato! Registre a alimentação da tarde para o lote de ${isPintinho ? 'pintinhos' : 'engorda'} da Baia ${baiaStr}.`,
+            urgency: 'high',
+            date: today,
+            actionRoute: '/lots',
+            actionState: { tab: lotType, scrollToLotId: lote.id, openFeedLotId: lote.id },
+            actionLabel: 'Registrar 2º Trato',
+            lotId: lote.id,
+            baia: baiaStr,
+            lotType,
+          });
+        }
       }
     }
 

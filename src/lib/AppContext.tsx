@@ -8,6 +8,12 @@ import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
+import { 
+  type NotificationSettings, 
+  DEFAULT_NOTIF_SETTINGS, 
+  getNotificationSettings, 
+  saveNotificationSettings 
+} from './notificationEngine';
 
 export type Breed = {
   id: string;
@@ -439,6 +445,8 @@ export type AppContextType = {
   farmSettings: FarmSettings;
   setFarmSettings: (settings: FarmSettings) => void;
   updateFarmSettings: (settings: Partial<FarmSettings>) => void;
+  notificationSettings: NotificationSettings;
+  updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
   importBackup: (backupData: any) => Promise<void>;
 
   // Modals state
@@ -709,6 +717,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
     return { ...DEFAULT_FARM_SETTINGS };
   });
+
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(DEFAULT_NOTIF_SETTINGS);
+
+  useEffect(() => {
+    getNotificationSettings().then(cfg => {
+      if (cfg) setNotificationSettings(cfg);
+    });
+  }, []);
 
   // ── Gestão de Tombstones para Exclusão Permanente (evita ressurreição de aves deletadas) ──
   // Lê sincronamente do localStorage (apenas como fallback rápido no render inicial)
@@ -3308,6 +3324,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateNotificationSettings = useCallback(async (settings: Partial<NotificationSettings>) => {
+    setNotificationSettings(prev => {
+      const next = { ...prev, ...settings };
+      saveNotificationSettings(next).catch(err => console.error(err));
+      return next;
+    });
+  }, []);
+
   const importBackup = async (backupData: any) => {
     if (!backupData) return;
     const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user?.id;
@@ -3623,7 +3647,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     openProfileSetup, closeProfileSetup, finishProfileSetup,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
-    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
+    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
+    notificationSettings, updateNotificationSettings
   }), [
     isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
@@ -3631,7 +3656,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
-    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal
+    isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
+    notificationSettings, updateNotificationSettings
   ]);
 
   // Sincroniza o Store Atômico concorrente com a nova referência do estado
