@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Bell, AlertTriangle, Egg, Syringe, Wheat, Scale, 
@@ -92,7 +93,7 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9995] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
@@ -248,6 +249,7 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

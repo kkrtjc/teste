@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, Syringe, Shield, ShieldAlert, AlertTriangle, Plus,
   CheckCircle2, Clock, Trash2, Calendar
@@ -218,7 +219,7 @@ export function LotHealthModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
@@ -602,6 +603,7 @@ export function LotHealthModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

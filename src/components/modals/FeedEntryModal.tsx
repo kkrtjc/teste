@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Wheat, Plus, Trash2, Calendar, Scale, DollarSign } from 'lucide-react';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import type { FeedEntry } from '../../lib/AppContext';
@@ -117,7 +118,7 @@ export function FeedEntryModal({
 
   const recentEntries = [...localEntries].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
@@ -316,6 +317,7 @@ export function FeedEntryModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

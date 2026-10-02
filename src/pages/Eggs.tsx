@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, memo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
@@ -9,7 +9,7 @@ import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, ChevronRight, X, Check, BarChart2,
   CalendarDays, Layers, AlertCircle, Info, Edit2, Trash2,
-  AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText, Clock
+  AlertTriangle, ShoppingCart, Sparkles, Activity, Search, FileText, Clock, Wheat
 } from 'lucide-react';
 import { syncDailyEggReminder } from '../lib/pushNotifications';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -1747,6 +1747,7 @@ const LotCard = memo(function LotCard({
   onRequestDeleteRecord?: (lot: EggLot, recordId: string, date: string) => void;
   isExpandedInitial?: boolean;
 }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(isExpandedInitial);
   const [showRecordsModal, setShowRecordsModal] = useState(false);
   const records = lot.registros ?? [];
@@ -2007,6 +2008,16 @@ const LotCard = memo(function LotCard({
             )}
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => navigate('/lots', { state: { tab: 'postura', scrollToLotId: lot.id, openFeedLotId: lot.id } })}
+          className="px-2.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 transition-all text-xs font-bold flex items-center gap-1 active:scale-95 cursor-pointer"
+          title="Lançar ração consumida por este lote de postura"
+        >
+          <Wheat size={13} />
+          <span>Ração</span>
+        </button>
 
         <button onClick={() => setExpanded(v => !v)} className="px-2.5 py-2 rounded-xl border border-theme-border text-theme-text-muted hover:text-white hover:border-theme-primary transition-all text-xs font-bold flex items-center gap-1 active:scale-95">
           <BarChart2 size={13} />

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bird, Baby, Sparkles, Heart, Award, Layers,
-  Egg, AlertTriangle, TrendingUp, ShoppingBag, Scale
+  Egg, AlertTriangle, TrendingUp, ShoppingBag, Scale, ShieldAlert
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, isUserAdmin } from '../lib/AuthContext';
@@ -213,6 +213,7 @@ export function Dashboard() {
   // cachedStats só é usado como fallback imediato nos milissegundos antes de isReady estar pronto.
   const displayStats = isReady ? stats : (cachedStats || stats);
   const hasEggLots = eggLots.some(l => l.status === 'Ativo');
+  const quarantineLots = useMemo(() => [...eggLots, ...meatLots].filter(l => l.quarentena?.ativa), [eggLots, meatLots]);
 
   return (
     <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden pb-6">
@@ -339,6 +340,29 @@ export function Dashboard() {
               {eggSummary.lotsWithGap.join(', ')} · Toque para registrar a coleta de hoje
             </p>
           </div>
+        </div>
+      )}
+
+      {/* ── Alerta de Biossegurança / Quarentena Ativa ── */}
+      {quarantineLots.length > 0 && (
+        <div
+          onClick={() => { triggerLight(); navigate('/lots'); }}
+          className="w-full max-w-7xl p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 flex items-center gap-3 cursor-pointer hover:bg-rose-500/15 transition-colors animate-pulse"
+        >
+          <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+            <ShieldAlert size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-rose-400">
+              🔴 {quarantineLots.length} {quarantineLots.length === 1 ? 'Lote em Quarentena Sanitária' : 'Lotes em Quarentena Sanitária'}
+            </p>
+            <p className="text-[11px] text-theme-text-muted truncate">
+              {quarantineLots.map(l => `Baia ${l.baia || '?'}`).join(', ')} · Toque para gerenciar isolamento e saúde
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2.5 py-1 rounded-lg shrink-0 hidden sm:inline">
+            Ver Lotes
+          </span>
         </div>
       )}
 
