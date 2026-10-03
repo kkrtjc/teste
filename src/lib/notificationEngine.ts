@@ -86,6 +86,36 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
   }
 }
 
+export interface DailyFeedStatus {
+  manha?: boolean;
+  manhaTime?: string;
+  tarde?: boolean;
+  tardeTime?: string;
+}
+
+export const DAILY_FEED_KEY = '@mura-manager:daily-feed-log';
+
+export async function getDailyFeedStatus(): Promise<DailyFeedStatus> {
+  const today = todayISO();
+  try {
+    const data = await localforage.getItem<Record<string, DailyFeedStatus>>(DAILY_FEED_KEY);
+    return data?.[today] || {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveDailyFeedStatus(status: DailyFeedStatus): Promise<void> {
+  const today = todayISO();
+  try {
+    const data = (await localforage.getItem<Record<string, DailyFeedStatus>>(DAILY_FEED_KEY)) || {};
+    data[today] = status;
+    await localforage.setItem(DAILY_FEED_KEY, data);
+  } catch (err) {
+    console.error('[NotificationEngine] Erro ao salvar status de alimentação:', err);
+  }
+}
+
 /**
  * Obtém o status atual de permissão do navegador
  */
@@ -146,20 +176,17 @@ export async function requestNotificationPermission(): Promise<boolean> {
     return false;
   }
   try {
-    let perm: NotificationPermission;
-    const req = Notification.requestPermission((result) => {
-      perm = result;
-    });
-    if (req && typeof (req as any).then === 'function') {
-      perm = await req;
-    } else {
-      perm = await new Promise<NotificationPermission>((resolve) => {
-        Notification.requestPermission(resolve);
-      });
+    // Chamada direta para preservar ativação por toque no iOS Safari 16.4+ standalone
+    const req = Notification.requestPermission();
+    if (req && typeof req.then === 'function') {
+      const res = await req;
+      return res === 'granted';
     }
-    return perm === 'granted';
+    return new Promise<boolean>((resolve) => {
+      Notification.requestPermission((res) => resolve(res === 'granted'));
+    });
   } catch (err) {
-    console.error('[NotificationEngine] Erro ao pedir permissão:', err);
+    console.warn('[NotificationEngine] Erro ao pedir permissão:', err);
     return false;
   }
 }
@@ -260,11 +287,59 @@ export async function triggerTestFeedNotification(slot: 'manha' | 'tarde' = 'man
 export function scanActiveAlerts(
   eggLots: EggLot[],
   meatLots: MeatLot[],
-  _birds: Bird[],
-  settings: NotificationSettings = DEFAULT_NOTIF_SETTINGS
+  birds: Bird[] = [],
+  settings: NotificationSettings = DEFAULT_NOTIF_SETTINGS,
+  dailyFeedStatus: DailyFeedStatus = {}
 ): MuraAlert[] {
+  // Se o criador desativou os alertas, retorna lista vazia imediatamente
+  if (settings.enabled === false) {
+    return [];
+  }
+
   const alerts: MuraAlert[] = [];
   const today = todayISO();
+  const now = new Date();
+  const currentHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const time1 = settings.feedReminderTime1 || '07:30';
+  const time2 = settings.feedReminderTime2 || '16:30';
+
+  // 0. LEMBRETE GERAL DE RAÇÃO DO CRIATÓRIO
+  // Garante que todo criador receba o lembrete de alimentar as aves, mesmo sem lotes cadastrados
+  if (settings.alertRacao) {
+    // 1º Trato (Manhã): a partir de time1 até time2 se ainda não confirmado
+    if (currentHM >= time1 && currentHM < time2) {
+      if (!dailyFeedStatus.manha) {
+        alerts.push({
+          id: `racao-geral-t1-${today}`,
+          type: 'horario_racao',
+          title: `🌾 1º Trato da Manhã (${time1})`,
+          message: `Horário de alimentar as aves! Coloque ração e água fresca nos bebedouros do criatório.`,
+          urgency: 'high',
+          date: today,
+          actionLabel: '✓ Confirmar Trato Feito',
+          actionRoute: '__CONFIRM_FEED_MANHA__',
+        });
+      }
+    } 
+    // 2º Trato (Tarde/Noite): a partir de time2 se ainda não confirmado
+    else if (currentHM >= time2) {
+      if (!dailyFeedStatus.tarde) {
+        const isManhaDone = Boolean(dailyFeedStatus.manha);
+        alerts.push({
+          id: `racao-geral-t2-${today}`,
+          type: 'horario_racao',
+          title: isManhaDone ? `🌾 2º Trato da Tarde (${time2})` : `🌾 Trato Pendente das Aves (${time2})`,
+          message: isManhaDone
+            ? `Horário do 2º trato! Verifique os comedouros e sirva a alimentação da tarde.`
+            : `Atenção: Já passou das ${time2} e o trato das aves ainda não foi confirmado hoje.`,
+          urgency: 'high',
+          date: today,
+          actionLabel: '✓ Confirmar Trato Feito',
+          actionRoute: '__CONFIRM_FEED_TARDE__',
+        });
+      }
+    }
+  }
 
   // 1. LOTES DE POSTURA
   eggLots.forEach(lote => {
@@ -564,6 +639,26 @@ export function scanActiveAlerts(
       });
     }
   });
+
+  // 3. AVES INDIVIDUAIS (Quarentena se houver)
+  if (settings.alertQuarentena && Array.isArray(birds) && birds.length > 0) {
+    birds.forEach(bird => {
+      const st = (bird.status || '').toLowerCase();
+      if (st === 'quarentena' || st === 'isolamento' || st === 'tratamento') {
+        alerts.push({
+          id: `quarentena-bird-${bird.id}`,
+          type: 'quarentena',
+          title: `🔴 Ave em Quarentena: ${bird.nome || bird.anilha || 'Sem anilha'}`,
+          message: `A ave da Baia ${bird.baia || 'Geral'} está sob isolamento/tratamento médico (${bird.status}).`,
+          urgency: 'high',
+          date: today,
+          actionRoute: '/birds',
+          actionState: { selectedBirdId: bird.id },
+          actionLabel: 'Ver Ave',
+        });
+      }
+    });
+  }
 
   return alerts;
 }

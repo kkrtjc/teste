@@ -280,7 +280,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     isProfileSetupOpen, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal,
-    eggLots, meatLots, birds, notificationSettings
+    eggLots, meatLots, birds, notificationSettings, dailyFeedStatus
   } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -319,15 +319,15 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   // Active push alerts count
   const activeAlerts = useMemo(() => {
-    return scanActiveAlerts(eggLots, meatLots, birds, notificationSettings);
-  }, [eggLots, meatLots, birds, notificationSettings, clockMinute]);
+    return scanActiveAlerts(eggLots, meatLots, birds, notificationSettings, dailyFeedStatus);
+  }, [eggLots, meatLots, birds, notificationSettings, dailyFeedStatus, clockMinute]);
 
   // Run daily notification checks automatically (push notifications)
   useEffect(() => {
-    if (activeAlerts.length > 0) {
+    if (activeAlerts.length > 0 && notificationSettings.enabled) {
       checkAndDispatchDailyNotifications(activeAlerts);
     }
-  }, [activeAlerts]);
+  }, [activeAlerts, notificationSettings.enabled]);
 
   const isPaidCustomer = Boolean((trialInfo?.isPaid || (!trialInfo?.isTrial && trialInfo?.expiresAt)) && !isAdmin);
   const needsRenewal = isPaidCustomer && ((trialInfo?.remainingDays ?? 999) <= 10 || isExpired);

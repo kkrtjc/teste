@@ -12,7 +12,11 @@ import {
   type NotificationSettings, 
   DEFAULT_NOTIF_SETTINGS, 
   getNotificationSettings, 
-  saveNotificationSettings 
+  saveNotificationSettings,
+  type DailyFeedStatus,
+  getDailyFeedStatus,
+  saveDailyFeedStatus,
+  playAlertChime
 } from './notificationEngine';
 
 export type Breed = {
@@ -447,6 +451,10 @@ export type AppContextType = {
   updateFarmSettings: (settings: Partial<FarmSettings>) => void;
   notificationSettings: NotificationSettings;
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
+  toggleMasterNotifications: (enabled?: boolean) => Promise<void>;
+  dailyFeedStatus: DailyFeedStatus;
+  confirmDailyFeed: (slot: 'manha' | 'tarde') => Promise<void>;
+  unconfirmDailyFeed: (slot: 'manha' | 'tarde') => Promise<void>;
   importBackup: (backupData: any) => Promise<void>;
 
   // Modals state
@@ -719,11 +727,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(DEFAULT_NOTIF_SETTINGS);
+  const [dailyFeedStatus, setDailyFeedStatus] = useState<DailyFeedStatus>({});
 
   useEffect(() => {
     getNotificationSettings().then(cfg => {
       if (cfg) setNotificationSettings(cfg);
     });
+    getDailyFeedStatus().then(st => {
+      if (st) setDailyFeedStatus(st);
+    });
+
+    const onFeedUpdate = () => {
+      getDailyFeedStatus().then(st => {
+        if (st) setDailyFeedStatus(st);
+      });
+    };
+    window.addEventListener('mura-feed-updated', onFeedUpdate);
+    return () => window.removeEventListener('mura-feed-updated', onFeedUpdate);
   }, []);
 
   // ── Gestão de Tombstones para Exclusão Permanente (evita ressurreição de aves deletadas) ──
@@ -3553,6 +3573,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 3500);
   }, [triggerSuccess, triggerWarning, triggerError, triggerLight, dismissToast]);
 
+  const toggleMasterNotifications = useCallback(async (forcedVal?: boolean) => {
+    const nextVal = typeof forcedVal === 'boolean' ? forcedVal : !notificationSettings.enabled;
+    await updateNotificationSettings({ enabled: nextVal });
+    if (nextVal) {
+      playAlertChime();
+      showToast('🔔 Alertas e lembretes ativados com sucesso!', 'success');
+    } else {
+      showToast('🔕 Alertas e lembretes pausados.', 'info');
+    }
+  }, [notificationSettings.enabled, updateNotificationSettings, showToast]);
+
+  const confirmDailyFeed = useCallback(async (slot: 'manha' | 'tarde') => {
+    const nowHM = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const next: DailyFeedStatus = {
+      ...dailyFeedStatus,
+      [slot]: true,
+      [`${slot}Time`]: nowHM,
+    };
+    setDailyFeedStatus(next);
+    await saveDailyFeedStatus(next);
+    playAlertChime();
+    showToast(`✓ ${slot === 'manha' ? '1º Trato (Manhã)' : '2º Trato (Tarde)'} confirmado às ${nowHM}!`, 'success');
+  }, [dailyFeedStatus, showToast]);
+
+  const unconfirmDailyFeed = useCallback(async (slot: 'manha' | 'tarde') => {
+    const next: DailyFeedStatus = {
+      ...dailyFeedStatus,
+      [slot]: false,
+      [`${slot}Time`]: undefined,
+    };
+    setDailyFeedStatus(next);
+    await saveDailyFeedStatus(next);
+    showToast(`Status do trato de ${slot} desfeito.`, 'info');
+  }, [dailyFeedStatus, showToast]);
+
   const openProfileSetup = useCallback(() => setIsProfileSetupOpen(true), []);
   const closeProfileSetup = useCallback(() => setIsProfileSetupOpen(false), []);
   const finishProfileSetup = useCallback(() => {
@@ -3648,7 +3703,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
-    notificationSettings, updateNotificationSettings
+    notificationSettings, updateNotificationSettings,
+    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
   }), [
     isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
@@ -3657,7 +3713,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
-    notificationSettings, updateNotificationSettings
+    notificationSettings, updateNotificationSettings,
+    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
   ]);
 
   // Sincroniza o Store Atômico concorrente com a nova referência do estado

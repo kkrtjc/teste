@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, Apple, 
   Download, Upload, CheckCircle2, AlertCircle, 
-  Database, Smartphone, Zap, Bell, RefreshCw
+  Database, Smartphone, Zap, Bell, BellOff, RefreshCw
 } from 'lucide-react';
 import { useAppContext } from '../lib/AppContext';
 import { useAuth, type TrialInfo } from '../lib/AuthContext';
@@ -150,7 +150,8 @@ export function Settings() {
     breeds, birds, couples, eggLots, meatLots,
     coupleEggs, incubationLots,
     importBackup, showToast, recoverAllBirds,
-    notificationSettings, updateNotificationSettings
+    notificationSettings, updateNotificationSettings,
+    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
   } = useAppContext();
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
@@ -842,6 +843,41 @@ export function Settings() {
           </div>
         </div>
 
+        {/* Interruptor Mestre Liga/Desliga */}
+        <div className="p-3.5 rounded-2xl bg-theme-base/60 border border-theme-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2.5 rounded-xl ${
+              notificationSettings.enabled !== false ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-800 text-zinc-500'
+            }`}>
+              {notificationSettings.enabled !== false ? <Bell size={18} /> : <BellOff size={18} />}
+            </div>
+            <div>
+              <p className="text-xs font-black text-white">
+                {notificationSettings.enabled !== false ? 'Sistema de Alertas: ATIVADO' : 'Sistema de Alertas: DESATIVADO'}
+              </p>
+              <p className="text-[11px] text-theme-text-muted">
+                {notificationSettings.enabled !== false 
+                  ? 'Emitindo avisos sonoros, vibrações e notificações na tela' 
+                  : 'Todos os lembretes do aplicativo estão pausados'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleMasterNotifications()}
+            className={`w-14 h-7 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+              notificationSettings.enabled !== false ? 'bg-emerald-500' : 'bg-zinc-700'
+            }`}
+            title={notificationSettings.enabled !== false ? 'Pausar alertas' : 'Ativar alertas'}
+          >
+            <span className={`block w-6 h-6 rounded-full bg-white transition-transform absolute top-0.5 shadow-md flex items-center justify-center text-[9px] font-black ${
+              notificationSettings.enabled !== false ? 'left-7 text-emerald-600' : 'left-0.5 text-zinc-600'
+            }`}>
+              {notificationSettings.enabled !== false ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        </div>
+
         {/* Test buttons area */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {/* Test push button */}
@@ -996,7 +1032,7 @@ export function Settings() {
 
           {/* Horários Programados de Trato */}
           {notificationSettings.alertRacao && (
-            <div className="pt-3 pb-1 space-y-2">
+            <div className="pt-3 pb-1 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-[11px] font-bold text-theme-text-muted uppercase tracking-wider">
                   ⏰ Horários de Trato das Aves (Lembretes Automáticos)
@@ -1008,24 +1044,116 @@ export function Settings() {
               <p className="text-[11px] text-zinc-400">
                 O aplicativo emitirá aviso sonoro e notificação no celular quando esses horários chegarem caso a ração ainda não tenha sido registrada no dia.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-300">1º Trato (Manhã):</span>
-                  <input
-                    type="time"
-                    value={notificationSettings.feedReminderTime1 || '07:30'}
-                    onChange={e => handleUpdateNotifSetting('feedReminderTime1', e.target.value)}
-                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
-                  />
+
+              {/* Status do Trato de Hoje */}
+              <div className="p-3 rounded-xl bg-theme-surface border border-theme-border flex items-center justify-between flex-wrap gap-2 text-xs">
+                <span className="font-bold text-zinc-300 flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className={dailyFeedStatus.manha || dailyFeedStatus.tarde ? "text-emerald-400" : "text-zinc-500"} />
+                  {dailyFeedStatus.manha && dailyFeedStatus.tarde
+                    ? 'Ambos os tratos de hoje já foram realizados!'
+                    : dailyFeedStatus.manha
+                      ? `1º Trato realizado às ${dailyFeedStatus.manhaTime || '07:30'}`
+                      : dailyFeedStatus.tarde
+                        ? `2º Trato realizado às ${dailyFeedStatus.tardeTime || '16:30'}`
+                        : 'Nenhum trato marcado como concluído hoje.'}
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!dailyFeedStatus.manha && (
+                    <button
+                      type="button"
+                      onClick={() => confirmDailyFeed('manha')}
+                      className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                    >
+                      ✓ Marcar Manhã Feito
+                    </button>
+                  )}
+                  {dailyFeedStatus.manha && (
+                    <button
+                      type="button"
+                      onClick={() => unconfirmDailyFeed('manha')}
+                      className="text-[10px] text-zinc-400 hover:text-rose-400 underline cursor-pointer"
+                    >
+                      desfazer manhã
+                    </button>
+                  )}
+                  {!dailyFeedStatus.tarde && (
+                    <button
+                      type="button"
+                      onClick={() => confirmDailyFeed('tarde')}
+                      className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                    >
+                      ✓ Marcar Tarde Feito
+                    </button>
+                  )}
+                  {dailyFeedStatus.tarde && (
+                    <button
+                      type="button"
+                      onClick={() => unconfirmDailyFeed('tarde')}
+                      className="text-[10px] text-zinc-400 hover:text-rose-400 underline cursor-pointer"
+                    >
+                      desfazer tarde
+                    </button>
+                  )}
                 </div>
-                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-300">2º Trato (Tarde):</span>
-                  <input
-                    type="time"
-                    value={notificationSettings.feedReminderTime2 || '16:30'}
-                    onChange={e => handleUpdateNotifSetting('feedReminderTime2', e.target.value)}
-                    className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
-                  />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1º Trato Manhã */}
+                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-300">1º Trato (Manhã):</span>
+                    <input
+                      type="time"
+                      value={notificationSettings.feedReminderTime1 || '07:30'}
+                      onChange={e => handleUpdateNotifSetting('feedReminderTime1', e.target.value)}
+                      className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {['06:30', '07:00', '07:30', '08:00'].map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => handleUpdateNotifSetting('feedReminderTime1', t)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all cursor-pointer ${
+                          notificationSettings.feedReminderTime1 === t
+                            ? 'bg-amber-500 text-black border-amber-500'
+                            : 'bg-theme-surface text-zinc-400 border-theme-border hover:text-white'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2º Trato Tarde */}
+                <div className="p-3 bg-theme-base/60 border border-theme-border/60 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-300">2º Trato (Tarde):</span>
+                    <input
+                      type="time"
+                      value={notificationSettings.feedReminderTime2 || '16:30'}
+                      onChange={e => handleUpdateNotifSetting('feedReminderTime2', e.target.value)}
+                      className="bg-theme-surface border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary font-mono font-bold"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {['16:00', '16:30', '17:00', '17:30'].map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => handleUpdateNotifSetting('feedReminderTime2', t)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all cursor-pointer ${
+                          notificationSettings.feedReminderTime2 === t
+                            ? 'bg-amber-500 text-black border-amber-500'
+                            : 'bg-theme-surface text-zinc-400 border-theme-border hover:text-white'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
