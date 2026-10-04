@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
   AlertCircle, UserPlus, X, Share2, DollarSign, RotateCcw
 } from 'lucide-react';
-import { useAppContext } from '../../lib/AppContext';
+import { useAppSlice } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
 import { ShareBirdModal } from './ShareBirdModal';
@@ -118,7 +118,7 @@ function PedigreeTreeNode({
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppContext();
+  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppSlice('selectedBirdProfileId', 'closeModals', 'birds', 'openAddBirdModal', 'openBirdProfile', 'editBird', 'removeBird', 'showToast');
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);

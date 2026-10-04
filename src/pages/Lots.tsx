@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Egg, Scale, Beef, Timer, Plus, Activity, X, Search, Check,
   Info, ChevronDown, Users, Trash2, Baby, Home, AlertCircle,
-  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText, Wheat, ShieldPlus
+  CheckCircle, Sparkles, Send, Loader2, Syringe, FileText, Wheat, ShieldPlus, Calculator
 } from 'lucide-react';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -22,8 +22,37 @@ import type { FeedEntry, VaccinationRecord, QuarantineRecord } from '../lib/AppC
 import { getVaccineSuggestions } from '../lib/vaccinationProtocols';
 // PDF generator is dynamically imported on demand to keep the initial bundle small
 import { calculateLotProduction } from '../lib/lotProduction';
+import { computeMeatLotEconomics, computeEggLotEconomics, fmtBRL } from '../lib/lotEconomics';
+const LotEconomicsModal = lazy(() => import('../components/modals/LotEconomicsModal'));
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+/** Botão "Custos & Lucro" do card — mostra o resultado atual sem abrir o modal (cálculo memoizado). */
+function EconomicsButton({ lote, kind, onOpen }: { lote: any; kind: 'postura' | 'engorda' | 'pintinhos'; onOpen: () => void }) {
+  let label = 'Ver custos';
+  let tone = 'text-theme-text-muted';
+  if (kind === 'postura') {
+    const e = computeEggLotEconomics(lote, 'mes');
+    if (e.temDados) { label = `${e.lucro >= 0 ? 'Lucro' : 'Prejuízo'} no mês ${fmtBRL(e.lucro)}`; tone = e.lucro >= 0 ? 'text-emerald-400' : 'text-rose-400'; }
+  } else {
+    const m = computeMeatLotEconomics(lote);
+    if (m.lucroProjetado !== null) { label = `${m.lucroProjetado >= 0 ? 'Lucro' : 'Prejuízo'} previsto ${fmtBRL(m.lucroProjetado)}`; tone = m.lucroProjetado >= 0 ? 'text-emerald-400' : 'text-rose-400'; }
+    else if (m.custoTotal > 0) { label = `Custo ${fmtBRL(m.custoTotal)}`; tone = 'text-amber-400'; }
+  }
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full py-2.5 px-3.5 bg-theme-surface hover:bg-theme-surface-hover border border-theme-border/80 rounded-xl text-xs font-bold text-white flex items-center justify-between gap-2 transition-all cursor-pointer"
+    >
+      <span className="flex items-center gap-2 text-theme-primary font-bold shrink-0">
+        <Calculator size={15} className="shrink-0" />
+        <span>Custos & Lucro</span>
+      </span>
+      <span className={`text-[11px] font-black truncate ${tone}`}>{label}</span>
+    </button>
+  );
+}
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 function calcDays(start: string) {
   const s = new Date(start); const n = new Date();
@@ -627,7 +656,7 @@ export function Lots() {
   const { 
     birds, editBird, showToast, breeds, eggLots, addEggLot, editEggLot,
     meatLots, addMeatLot, editMeatLot, removeMeatLot, farmSettings 
-  } = useAppContext();
+  } = useAppSlice('birds', 'editBird', 'showToast', 'breeds', 'eggLots', 'addEggLot', 'editEggLot', 'meatLots', 'addMeatLot', 'editMeatLot', 'removeMeatLot', 'farmSettings');
 
   if (!hasModuleAccess('lots')) {
     return <ModuleLockedPaywall module="lots" />;
@@ -736,6 +765,8 @@ export function Lots() {
   const [deleteLotConfirm, setDeleteLotConfirm] = useState<{ id: string; title: string; message: string } | null>(null);
 
   // Feed Entry Modal
+  // Calculadora de Custo & Lucro — guarda só id+tipo para sempre ler o lote "vivo"
+  const [econModal, setEconModal] = useState<{ id: string; kind: 'postura' | 'engorda' | 'pintinhos' } | null>(null);
   const [feedModal, setFeedModal] = useState<{
     isOpen: boolean;
     lote: any | null;
@@ -1542,6 +1573,7 @@ export function Lots() {
                         <span>Notas</span>
                       </button>
                     </div>
+                    <EconomicsButton lote={lote} kind="postura" onOpen={() => setEconModal({ id: lote.id, kind: 'postura' })} />
                     <button
                       type="button"
                       onClick={() => navigate('/eggs', { state: { scrollToLotId: lote.id } })}
@@ -1996,6 +2028,9 @@ export function Lots() {
                         <span>Saúde</span>
                       </button>
                     </div>
+                    <div className="mb-2">
+                      <EconomicsButton lote={lote} kind="engorda" onOpen={() => setEconModal({ id: lote.id, kind: 'engorda' })} />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'engorda' })}
@@ -2239,6 +2274,7 @@ export function Lots() {
                         <span>Saúde</span>
                       </button>
                     </div>
+                    <EconomicsButton lote={lote} kind="pintinhos" onOpen={() => setEconModal({ id: lote.id, kind: 'pintinhos' })} />
                     <button
                       type="button"
                       onClick={() => setMovementModal({ isOpen: true, lote, loteType: 'pintinhos' })}
@@ -3293,6 +3329,26 @@ export function Lots() {
             editMeatLot={editMeatLot}
             showToast={showToast}
           />
+        );
+      })()}
+
+      {/* ── CALCULADORA DE CUSTO & LUCRO (carregada sob demanda) ── */}
+      {econModal && (() => {
+        const liveLot = econModal.kind === 'postura'
+          ? eggLots.find(l => l.id === econModal.id)
+          : meatLots.find(l => l.id === econModal.id);
+        if (!liveLot) return null;
+        return (
+          <Suspense fallback={null}>
+            <LotEconomicsModal
+              kind={econModal.kind}
+              lot={liveLot}
+              onClose={() => setEconModal(null)}
+              editEggLot={editEggLot}
+              editMeatLot={editMeatLot}
+              showToast={showToast}
+            />
+          </Suspense>
         );
       })()}
 

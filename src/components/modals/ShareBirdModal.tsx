@@ -5,7 +5,7 @@ import {
   Loader2, Sparkles, Send, ExternalLink, FileText,
   MessageCircle
 } from 'lucide-react';
-import { useAppContext, type Bird } from '../../lib/AppContext';
+import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
 import { publishShowcase, generateQrCodeUrl } from '../../lib/showcaseShare';
 // PDF generator is dynamically imported on demand to keep the initial bundle small
@@ -32,7 +32,7 @@ export function ShareBirdModal({
   const { 
     birds, farmSettings, updateFarmSettings, vitrineBirds, showToast,
     canShareBird, registerBirdShare, trialSharesCount, maxTrialShares, openUpgradeModal 
-  } = useAppContext();
+  } = useAppSlice('birds', 'farmSettings', 'updateFarmSettings', 'vitrineBirds', 'showToast', 'canShareBird', 'registerBirdShare', 'trialSharesCount', 'maxTrialShares', 'openUpgradeModal');
   const { trialInfo, isAdmin } = useAuth();
   const { triggerLight, triggerSuccess, triggerWarning } = useHaptics();
 

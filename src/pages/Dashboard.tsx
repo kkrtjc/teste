@@ -4,12 +4,12 @@ import {
   Bird, Baby, Sparkles, Heart, Award, Layers,
   Egg, AlertTriangle, TrendingUp, ShoppingBag, Scale, ShieldAlert
 } from 'lucide-react';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { useAuth, isUserAdmin } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, isReady } = useAppContext();
+  const { birds, farmSettings, breeds, eggLots, meatLots, isReady } = useAppSlice('birds', 'farmSettings', 'breeds', 'eggLots', 'meatLots', 'isReady');
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();

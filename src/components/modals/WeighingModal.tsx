@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Scale, History, Check, Trash2, X, Calculator } from 'lucide-react';
-import { useAppContext, type MeatLot, type WeightRecord } from '../../lib/AppContext';
+import { type MeatLot, type WeightRecord, useAppSlice } from '../../lib/AppContext';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface WeighingModalProps {
@@ -49,7 +49,7 @@ function fmtDate(iso: string) {
 
 export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
   useModalScrollLock(isOpen);
-  const { editMeatLot, showToast } = useAppContext();
+  const { editMeatLot, showToast } = useAppSlice('editMeatLot', 'showToast');
 
   const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
   const [wPesoMedio, setWPesoMedio] = useState('');

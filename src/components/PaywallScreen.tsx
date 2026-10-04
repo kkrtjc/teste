@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth, type SubscriptionPlan } from '../lib/AuthContext';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { 
   ShieldAlert, LogOut, 
   Sparkles, MessageSquare, Copy, CheckCircle2, Check,
@@ -9,7 +9,7 @@ import {
 
 export function PaywallScreen() {
   const { signOut, cpf, triggerWebhookPayment, linkCpfToUser } = useAuth();
-  const { farmSettings, showToast } = useAppContext();
+  const { farmSettings, showToast } = useAppSlice('farmSettings', 'showToast');
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('yearly');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('card');
   const [copied, setCopied] = useState(false);

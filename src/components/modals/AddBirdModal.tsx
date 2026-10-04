@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
-import { useAppContext } from '../../lib/AppContext';
+import { useAppSlice, type Bird } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
 import { compressImage } from '../../lib/imageCompression';
 import { uploadBirdPhoto } from '../../lib/storageService';
@@ -46,7 +46,7 @@ function BirdDetailOverlay({
   bird,
   onClose,
 }: {
-  bird: ReturnType<typeof useAppContext>['birds'][number];
+  bird: Bird;
   onClose: () => void;
 }) {
   return (
@@ -145,7 +145,7 @@ function BaiaDetailOverlay({
   onClose,
 }: {
   baia: string;
-  avesNaBaia: ReturnType<typeof useAppContext>['birds'];
+  avesNaBaia: Bird[];
   onClose: () => void;
 }) {
   return (
@@ -204,7 +204,7 @@ export function AddBirdModal() {
   const {
     isAddBirdModalOpen, closeModals, breeds, addBird, editBird, removeBird,
     preSelectedBreedForNewBird, birds, birdToEditId, couples, addCouple, openBirdProfile, showToast
-  } = useAppContext();
+  } = useAppSlice('isAddBirdModalOpen', 'closeModals', 'breeds', 'addBird', 'editBird', 'removeBird', 'preSelectedBreedForNewBird', 'birds', 'birdToEditId', 'couples', 'addCouple', 'openBirdProfile', 'showToast');
   const { user } = useAuth();
 
   // ── Form fields ──

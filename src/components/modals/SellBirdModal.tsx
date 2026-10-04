@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, DollarSign, Calendar, User, Phone, CheckCircle } from 'lucide-react';
-import { useAppContext, type Bird } from '../../lib/AppContext';
+import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
@@ -15,7 +15,7 @@ interface SellBirdModalProps {
 export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModalProps) {
   useModalScrollLock(isOpen);
 
-  const { editBird, showToast } = useAppContext();
+  const { editBird, showToast } = useAppSlice('editBird', 'showToast');
   const { triggerSuccess } = useHaptics();
 
   const initialPrice = bird.valorEstimado 

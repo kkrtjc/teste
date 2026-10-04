@@ -5,7 +5,7 @@ import {
   Plus, Edit2, Camera, Search, X, ChevronRight, Trash2,
   DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye
 } from 'lucide-react';
-import { useAppContext, type Bird, type Breed } from '../lib/AppContext';
+import { type Bird, type Breed, useAppSlice } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 import { uploadBreedPhoto } from '../lib/storageService';
@@ -214,7 +214,7 @@ const BreedFormModal = memo(function BreedFormModal({
 }: BreedFormModalProps) {
   useModalScrollLock(isOpen);
   const { user } = useAuth();
-  const { showToast } = useAppContext();
+  const { showToast } = useAppSlice('showToast');
   const [newBreedName, setNewBreedName] = useState('');
   const [newBreedFocus, setNewBreedFocus] = useState('Misto (Carne e Ovos)');
   const [newBreedDesc, setNewBreedDesc] = useState('');
@@ -507,7 +507,7 @@ export function Birds() {
     breeds, addBreed, editBreed, removeBreed,
     birds, editBird, openAddBirdModal, openBirdProfile, 
     activeBreed, setActiveBreed, showToast
-  } = useAppContext();
+  } = useAppSlice('breeds', 'addBreed', 'editBreed', 'removeBreed', 'birds', 'editBird', 'openAddBirdModal', 'openBirdProfile', 'activeBreed', 'setActiveBreed', 'showToast');
 
   const [activeTab, setActiveTab] = useState<'aves' | 'racas' | 'historico'>('aves');
   const [historyFilter, setHistoryFilter] = useState<'todos' | 'vendidas' | 'obitos' | 'entradas'>('todos');

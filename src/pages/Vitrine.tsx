@@ -3,7 +3,7 @@ import {
   Store, Lock, Plus, Copy, Check, Share2, 
   Search, CheckCircle2
 } from 'lucide-react';
-import { useAppContext, type Bird } from '../lib/AppContext';
+import { type Bird, useAppSlice } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ShareBirdModal } from '../components/modals/ShareBirdModal';
 import { publishShowcase } from '../lib/showcaseShare';
@@ -20,7 +20,7 @@ export function Vitrine() {
     openAddBirdModal, 
     farmSettings,
     showToast 
-  } = useAppContext();
+  } = useAppSlice('birds', 'vitrineBirds', 'vitrineConfig', 'isVitrineUnlocked', 'toggleBirdVitrine', 'openAddBirdModal', 'farmSettings', 'showToast');
   const { user } = useAuth();
   const { triggerLight, triggerSuccess } = useHaptics();
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, Mail, Camera, Check, Sparkles, Building2, Phone, X } from 'lucide-react';
-import { useAppContext } from '../../lib/AppContext';
+import { useAppSlice } from '../../lib/AppContext';
 import { useAuth, isUserAdmin, ADMIN_EMAIL } from '../../lib/AuthContext';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
@@ -14,7 +14,7 @@ export function UserProfileSetupModal({
   onClose?: () => void;
   onComplete: () => void;
 }) {
-  const { farmSettings, setFarmSettings } = useAppContext();
+  const { farmSettings, setFarmSettings } = useAppSlice('farmSettings', 'setFarmSettings');
   
   let authUser: any = null;
   let auth: any = null;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, useSyncExternalStore } from 'react';
+import { createContext, useContext, useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import localforage from 'localforage';
@@ -8,6 +8,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
+import { AtomicStore, shallowEqual } from './appStore';
 import { 
   type NotificationSettings, 
   DEFAULT_NOTIF_SETTINGS, 
@@ -214,6 +215,36 @@ export type LotNote = {
   texto: string;
 };
 
+/** Categorias de custo além da ração (usadas na calculadora de custo e lucro). */
+export const EXTRA_COST_CATEGORIES = [
+  'Aquisição de aves',
+  'Vacina / Medicamento',
+  'Mão de obra',
+  'Energia / Água',
+  'Cama / Maravalha',
+  'Transporte',
+  'Outro',
+] as const;
+export type ExtraCostCategory = typeof EXTRA_COST_CATEGORIES[number];
+
+export type ExtraCost = {
+  id: string;
+  data: string;           // YYYY-MM-DD
+  categoria: ExtraCostCategory;
+  valor: number;          // R$
+  descricao?: string;
+};
+
+/** Venda (receita) de um lote de corte. */
+export type LotSale = {
+  id: string;
+  data: string;           // YYYY-MM-DD
+  valorTotal: number;     // R$ recebido
+  quantidadeAves?: number;
+  kgTotal?: number;
+  observacao?: string;
+};
+
 export type EggLot = {
   id: string;
   baia: string;
@@ -232,6 +263,7 @@ export type EggLot = {
   feedEntries?: FeedEntry[];
   vaccinationRecords?: VaccinationRecord[];
   quarentena?: QuarantineRecord;
+  custosExtras?: ExtraCost[];  // Custos além da ração (calculadora de lucro)
 };
 
 export type WeightRecord = {
@@ -272,6 +304,9 @@ export type MeatLot = {
   feedEntries?: FeedEntry[];   // Gastos de ração registrados no lote
   vaccinationRecords?: VaccinationRecord[]; // Registro de vacinações do lote
   quarentena?: QuarantineRecord;            // Status de quarentena
+  custosExtras?: ExtraCost[];               // Custos além da ração (calculadora de lucro)
+  vendas?: LotSale[];                       // Receitas registradas do lote
+  precoVendaKg?: number;                    // Preço esperado de venda R$/kg vivo (projeção)
 };
 
 export type FarmSettings = {
@@ -312,7 +347,8 @@ export function packageEggLotRegistros(lot: Partial<EggLot>): any[] {
     custoProdPadrao: lot.custoProdPadrao,
     feedEntries: Array.isArray(lot.feedEntries) ? lot.feedEntries : [],
     vaccinationRecords: Array.isArray(lot.vaccinationRecords) ? lot.vaccinationRecords : [],
-    quarentena: lot.quarentena || null
+    quarentena: lot.quarentena || null,
+    custosExtras: Array.isArray(lot.custosExtras) ? lot.custosExtras : []
   };
   return [...cleanRecords, metaEntry];
 }
@@ -336,7 +372,8 @@ export function unpackEggLotRegistros(rawRegistros: any[]): {
       custoProdPadrao: metaEntry.custoProdPadrao,
       feedEntries: Array.isArray(metaEntry.feedEntries) ? metaEntry.feedEntries : [],
       vaccinationRecords: Array.isArray(metaEntry.vaccinationRecords) ? metaEntry.vaccinationRecords : [],
-      quarentena: metaEntry.quarentena || undefined
+      quarentena: metaEntry.quarentena || undefined,
+      custosExtras: Array.isArray(metaEntry.custosExtras) ? metaEntry.custosExtras : []
     } : undefined
   };
 }
@@ -346,7 +383,7 @@ export function unpackEggLotRegistros(rawRegistros: any[]): {
  * Isso garante que observações, observações adicionais, movimentações, vacinas e pesagens sejam 100% persistidos na nuvem sem erro de coluna.
  */
 export function packageMeatLotWeight(lot: Partial<MeatLot>): string {
-  const baseWeight = (lot.pesoMedioInicial || '').replace(/\n?\[\[LOT_META:.*?\]\]/gs, '').trim();
+  const baseWeight = (lot.pesoMedioInicial || '').replace(LOT_META_STRIP_RE, '').trim();
   const meta = {
     observacao: lot.observacao || '',
     observacoesAdicionais: Array.isArray(lot.observacoesAdicionais) ? lot.observacoesAdicionais : [],
@@ -370,21 +407,29 @@ export function packageMeatLotWeight(lot: Partial<MeatLot>): string {
     pesagens: Array.isArray(lot.pesagens) ? lot.pesagens : [],
     feedEntries: Array.isArray(lot.feedEntries) ? lot.feedEntries : [],
     vaccinationRecords: Array.isArray(lot.vaccinationRecords) ? lot.vaccinationRecords : [],
-    quarentena: lot.quarentena || null
+    quarentena: lot.quarentena || null,
+    custosExtras: Array.isArray(lot.custosExtras) ? lot.custosExtras : [],
+    vendas: Array.isArray(lot.vendas) ? lot.vendas : [],
+    precoVendaKg: lot.precoVendaKg
   };
   return `${baseWeight}\n[[LOT_META:${JSON.stringify(meta)}]]`.trim();
 }
+
+// O bloco LOT_META é sempre o último trecho do campo. A captura gulosa (.*) garante que
+// textos livres contendo "]]" (ex.: observações) não cortem o JSON no meio.
+const LOT_META_RE = /\[\[LOT_META:(.*)\]\]/s;
+const LOT_META_STRIP_RE = /\n?\[\[LOT_META:.*\]\]/gs;
 
 export function unpackMeatLotWeight(rawWeight?: string | null): {
   cleanWeight: string;
   meta?: Partial<MeatLot>;
 } {
   if (!rawWeight) return { cleanWeight: '' };
-  const match = rawWeight.match(/\[\[LOT_META:(.*?)\]\]/s);
+  const match = rawWeight.match(LOT_META_RE);
   if (!match) return { cleanWeight: rawWeight };
   try {
     const meta = JSON.parse(match[1]);
-    const cleanWeight = rawWeight.replace(/\n?\[\[LOT_META:.*?\]\]/gs, '').trim();
+    const cleanWeight = rawWeight.replace(LOT_META_STRIP_RE, '').trim();
     return {
       cleanWeight,
       meta: {
@@ -410,12 +455,28 @@ export function unpackMeatLotWeight(rawWeight?: string | null): {
         pesagens: Array.isArray(meta.pesagens) ? meta.pesagens : [],
         feedEntries: Array.isArray(meta.feedEntries) ? meta.feedEntries : [],
         vaccinationRecords: Array.isArray(meta.vaccinationRecords) ? meta.vaccinationRecords : [],
-        quarentena: meta.quarentena || undefined
+        quarentena: meta.quarentena || undefined,
+        custosExtras: Array.isArray(meta.custosExtras) ? meta.custosExtras : [],
+        vendas: Array.isArray(meta.vendas) ? meta.vendas : [],
+        precoVendaKg: typeof meta.precoVendaKg === 'number' ? meta.precoVendaKg : undefined
       }
     };
   } catch {
     return { cleanWeight: rawWeight };
   }
+}
+
+/**
+ * Mescla uma lista local com a da nuvem durante a sincronização.
+ * - Edição local recente: a versão local vence (inclusive exclusões).
+ * - Caso contrário: vence a lista com mais itens (evita perder registros feitos offline).
+ */
+export function mergeLotArray<T>(localArr: T[] | undefined, cloudArr: T[] | undefined, preferLocal: boolean): T[] {
+  const local = Array.isArray(localArr) ? localArr : undefined;
+  const cloud = Array.isArray(cloudArr) ? cloudArr : [];
+  if (preferLocal && local) return local;
+  if (!local) return cloud;
+  return local.length > cloud.length ? local : cloud;
 }
 
 export type AppContextType = {
@@ -1727,6 +1788,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? local.qtdFemeas
           : (cloudMeta?.qtdFemeas !== undefined ? cloudMeta.qtdFemeas : (l.femeas_ids?.length || 0));
 
+        const finalEggFeed = mergeLotArray<FeedEntry>(local?.feedEntries, cloudMeta?.feedEntries, isRecentLotEdit);
+        const finalEggVacs = mergeLotArray<VaccinationRecord>(local?.vaccinationRecords, cloudMeta?.vaccinationRecords, isRecentLotEdit);
+        const finalEggExtras = mergeLotArray<ExtraCost>(local?.custosExtras, cloudMeta?.custosExtras, isRecentLotEdit);
+
         const lotObj: EggLot = {
           id: l.id,
           baia: l.baia || local?.baia || '',
@@ -1741,11 +1806,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           observacao: finalObservacao,
           observacoesAdicionais: finalObsAdd,
           registros: finalDailyRegs,
-          movimentacoes: finalMovs
+          movimentacoes: finalMovs,
+          feedEntries: finalEggFeed,
+          vaccinationRecords: finalEggVacs,
+          quarentena: isRecentLotEdit ? local?.quarentena : (cloudMeta ? cloudMeta.quarentena : local?.quarentena),
+          custosExtras: finalEggExtras
         };
 
         // Se o local tinha dados mais novos ou a nuvem ainda não continha os metadados empacotados, atualiza o Supabase
-        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalDailyRegs.length > cloudDailyRegs.length);
+        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalDailyRegs.length > cloudDailyRegs.length)
+          || (finalEggFeed.length > (cloudMeta.feedEntries?.length || 0))
+          || (finalEggVacs.length > (cloudMeta.vaccinationRecords?.length || 0))
+          || (finalEggExtras.length > (cloudMeta.custosExtras?.length || 0));
         if (isCloudMissingMeta && isSupabaseConfigured && user) {
           const packaged = packageEggLotRegistros(lotObj);
           supabase!
@@ -1830,6 +1902,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? local.qtdAves
           : (cloudMeta?.qtdAves !== undefined ? cloudMeta.qtdAves : (l.aves_ids?.length || 0));
 
+        const finalMeatFeed = mergeLotArray<FeedEntry>(local?.feedEntries, cloudMeta?.feedEntries, isRecentMeatLotEdit);
+        const finalMeatVacs = mergeLotArray<VaccinationRecord>(local?.vaccinationRecords, cloudMeta?.vaccinationRecords, isRecentMeatLotEdit);
+        const finalMeatExtras = mergeLotArray<ExtraCost>(local?.custosExtras, cloudMeta?.custosExtras, isRecentMeatLotEdit);
+        const finalMeatSales = mergeLotArray<LotSale>(local?.vendas, cloudMeta?.vendas, isRecentMeatLotEdit);
+
         const lotObj: MeatLot = {
           id: l.id,
           baia: l.baia || local?.baia || '',
@@ -1856,10 +1933,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ganhoGramasDia: local?.ganhoGramasDia ?? cloudMeta?.ganhoGramasDia,
           consumoRacaoAve: local?.consumoRacaoAve ?? cloudMeta?.consumoRacaoAve,
           pesagens: finalPesagens,
-          movimentacoes: finalMovs
+          movimentacoes: finalMovs,
+          feedEntries: finalMeatFeed,
+          vaccinationRecords: finalMeatVacs,
+          quarentena: isRecentMeatLotEdit ? local?.quarentena : (cloudMeta ? cloudMeta.quarentena : local?.quarentena),
+          custosExtras: finalMeatExtras,
+          vendas: finalMeatSales,
+          precoVendaKg: local?.precoVendaKg ?? cloudMeta?.precoVendaKg
         };
 
-        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalPesagens.length > cloudPesagens.length);
+        const isCloudMissingMeta = !cloudMeta || (finalObsAdd.length > cloudObsAdd.length) || (finalMovs.length > cloudMovs.length) || (finalPesagens.length > cloudPesagens.length)
+          || (finalMeatFeed.length > (cloudMeta.feedEntries?.length || 0))
+          || (finalMeatVacs.length > (cloudMeta.vaccinationRecords?.length || 0))
+          || (finalMeatExtras.length > (cloudMeta.custosExtras?.length || 0))
+          || (finalMeatSales.length > (cloudMeta.vendas?.length || 0));
         if (isCloudMissingMeta && isSupabaseConfigured && user) {
           const packagedWeight = packageMeatLotWeight(lotObj);
           supabase!
@@ -3126,7 +3213,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             updatedLot.custoProdPadrao !== undefined ||
             updatedLot.feedEntries !== undefined ||
             updatedLot.vaccinationRecords !== undefined ||
-            updatedLot.quarentena !== undefined
+            updatedLot.quarentena !== undefined ||
+            updatedLot.custosExtras !== undefined
           )
         ) {
           dbUpdate.registros = packageEggLotRegistros(fullLot);
@@ -3226,7 +3314,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             updatedLot.paisTexto !== undefined ||
             updatedLot.feedEntries !== undefined ||
             updatedLot.vaccinationRecords !== undefined ||
-            updatedLot.quarentena !== undefined
+            updatedLot.quarentena !== undefined ||
+            updatedLot.custosExtras !== undefined ||
+            updatedLot.vendas !== undefined ||
+            updatedLot.precoVendaKg !== undefined
           )
         ) {
           dbUpdate.peso_medio_inicial = packageMeatLotWeight(fullLot);
@@ -3717,8 +3808,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
   ]);
 
-  // Sincroniza o Store Atômico concorrente com a nova referência do estado
-  useEffect(() => {
+  // Sincroniza o Store Atômico com a nova referência do estado.
+  // 1º render: semeia sem notificar (filhos que usam seletores já leem os dados).
+  // Demais: publica no layout effect — antes da pintura, sem "piscar" dados antigos.
+  appAtomicStore.init(contextValue);
+  useLayoutEffect(() => {
     appAtomicStore.setState(contextValue);
   }, [contextValue]);
 
@@ -3782,99 +3876,60 @@ export function useAppContext() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ── FRONTEIRA 2: ESTADO ATÔMICO & FINE-GRAINED SELECTORS (TOP 0.01% MUNDIAL) ──
+// ── ESTADO ATÔMICO & SELETORES FINOS ──
+// Implementação em ./appStore.ts (testada isoladamente em appStore.test.ts).
 // ══════════════════════════════════════════════════════════════════════════════
 
-type Listener = () => void;
-
-class AtomicAppStore {
-  private currentState: AppContextType | null = null;
-  private listeners = new Set<Listener>();
-
-  setState(nextState: AppContextType) {
-    if (this.currentState === nextState) return;
-    this.currentState = nextState;
-    this.listeners.forEach(listener => {
-      try {
-        listener();
-      } catch (e) {
-        console.error('[AtomicAppStore] Erro ao notificar listener:', e);
-      }
-    });
-  }
-
-  getState(): AppContextType | null {
-    return this.currentState;
-  }
-
-  subscribe = (listener: Listener) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
-}
-
-export const appAtomicStore = new AtomicAppStore();
+export { shallowEqual };
+export const appAtomicStore = new AtomicStore<AppContextType>();
 
 /**
- * Comparador raso (shallow equality) de alta velocidade para coleções e objetos
- */
-export function shallowEqual<T>(a: T, b: T): boolean {
-  if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) return false;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (!Object.is(a[i], b[i])) return false;
-    }
-    return true;
-  }
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  for (let i = 0; i < keysA.length; i++) {
-    const key = keysA[i];
-    if (!Object.prototype.hasOwnProperty.call(b, key) || !Object.is((a as any)[key], (b as any)[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Seletor atômico de alta performance (Padrão Zustand / React 18 Concurrent).
- * Permite que um componente se inscreva APENAS na fatia de dados que utiliza.
- * Se outra parte do AppContext for alterada (ex: registros de ovos ou lotes),
- * componentes inscritos em `birds` NÃO sofrem re-renderização, preservando 100% de CPU.
+ * Seletor atômico (padrão useSyncExternalStore).
+ * O componente só re-renderiza quando o valor selecionado muda (segundo `isEqual`).
+ * Não usa useContext — por isso mudanças em outras partes do estado não o afetam.
  */
 export function useAppSelector<T>(
   selector: (state: AppContextType) => T,
   isEqual: (prev: T, next: T) => boolean = Object.is
 ): T {
-  const context = useContext(AppContext);
-  const lastSelectedRef = useRef<T | undefined>(undefined);
+  const lastRef = useRef<{ value: T } | null>(null);
   const selectorRef = useRef(selector);
   selectorRef.current = selector;
   const isEqualRef = useRef(isEqual);
   isEqualRef.current = isEqual;
 
   const getSnapshot = useCallback(() => {
-    const current = appAtomicStore.getState() || context;
+    const current = appAtomicStore.getState();
     if (!current) {
       throw new Error('useAppSelector must be used within an AppProvider');
     }
-    const nextSelected = selectorRef.current(current);
-    if (lastSelectedRef.current !== undefined && isEqualRef.current(lastSelectedRef.current, nextSelected)) {
-      return lastSelectedRef.current;
+    const next = selectorRef.current(current);
+    if (lastRef.current && isEqualRef.current(lastRef.current.value, next)) {
+      return lastRef.current.value;
     }
-    lastSelectedRef.current = nextSelected;
-    return nextSelected;
-  }, [context]);
+    lastRef.current = { value: next };
+    return next;
+  }, []);
 
-  return useSyncExternalStore(
-    appAtomicStore.subscribe,
-    getSnapshot,
-    getSnapshot
-  );
+  return useSyncExternalStore(appAtomicStore.subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * Assina apenas as chaves informadas do estado global.
+ *
+ *   const { birds, showToast } = useAppSlice('birds', 'showToast');
+ *
+ * Re-renderiza somente quando alguma dessas chaves muda de referência.
+ * Ações (funções) são estáveis — nunca disparam re-render.
+ * As chaves devem ser fixas por chamada (como as regras dos hooks).
+ */
+export function useAppSlice<K extends keyof AppContextType>(...keys: K[]): Pick<AppContextType, K> {
+  const keysRef = useRef(keys);
+  const selector = useCallback((s: AppContextType) => {
+    const out = {} as Pick<AppContextType, K>;
+    const ks = keysRef.current;
+    for (let i = 0; i < ks.length; i++) out[ks[i]] = s[ks[i]];
+    return out;
+  }, []);
+  return useAppSelector(selector, shallowEqual);
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, X } from 'lucide-react';
-import { useAppContext, type Breed } from '../../lib/AppContext';
+import { type Breed, useAppSlice } from '../../lib/AppContext';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface QuickBreedModalProps {
@@ -18,7 +18,7 @@ export function QuickBreedModal({
   onBreedSaved
 }: QuickBreedModalProps) {
   useModalScrollLock(isOpen);
-  const { addBreed, showToast } = useAppContext();
+  const { addBreed, showToast } = useAppSlice('addBreed', 'showToast');
 
   const [nome, setNome] = useState(initialBreedName);
   const [foco, setFoco] = useState('Corte / Engorda');

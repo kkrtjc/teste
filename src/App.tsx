@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AppProvider, useAppContext } from './lib/AppContext';
+import { AppProvider, useAppSlice } from './lib/AppContext';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Layout } from './components/Layout';
 import { PaywallScreen } from './components/PaywallScreen';
@@ -18,7 +18,7 @@ const Login = lazy(() => loginPromise.then(m => ({ default: m.Login })));
 
 function AppContent() {
   const location = useLocation();
-  const { isReady, isInitialSyncDone } = useAppContext();
+  const { isReady, isInitialSyncDone } = useAppSlice('isReady', 'isInitialSyncDone');
   const { user, loading: authLoading, isExpired, trialInfo, isAdmin } = useAuth();
 
   // ── Rota Pública de Compartilhamento (Visualização da Ave / Vitrine externa sem exigir login) ──

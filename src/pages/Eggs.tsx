@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
 import { ModuleLockedPaywall } from '../components/ModuleLockedPaywall';
-import type { EggDailyRecord, EggLot } from '../lib/AppContext';
+import type { EggDailyRecord, EggLot, Bird } from '../lib/AppContext';
 import {
   Egg, Plus, TrendingUp, TrendingDown, DollarSign,
   ChevronDown, ChevronUp, ChevronRight, X, Check, BarChart2,
@@ -830,7 +830,7 @@ const KpiCard = memo(function KpiCard({ label, value, sub, color = 'amber', icon
 // Modal: Criar Novo Lote de Postura
 // ─────────────────────────────────────────────────────────────────────────────
 function CreateEggLotModal({ onClose, onSave }: { onClose: () => void; onSave: (lot: EggLot) => void }) {
-  const { birds, breeds } = useAppContext();
+  const { birds, breeds } = useAppSlice('birds', 'breeds');
   const [baia, setBaia] = useState('');
   const [qtdFemeas, setQtdFemeas] = useState('');
   const [raca, setRaca] = useState('');
@@ -1736,7 +1736,7 @@ const LotCard = memo(function LotCard({
   isExpandedInitial = false,
 }: {
   lot: EggLot;
-  birds: ReturnType<typeof useAppContext>['birds'];
+  birds: Bird[];
   onRegister: (lot: EggLot) => void;
   onRegisterWithDate?: (lot: EggLot, initialDate: string) => void;
   onEditRecord: (lot: EggLot, record: EggDailyRecord) => void;
@@ -2116,7 +2116,7 @@ const LotCard = memo(function LotCard({
 // ─────────────────────────────────────────────────────────────────────────────
 export function Eggs() {
   const { hasModuleAccess } = useAuth();
-  const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, showToast } = useAppContext();
+  const { eggLots, addEggLot, editEggLot, removeEggLot, birds, editBird, editMeatLot, showToast } = useAppSlice('eggLots', 'addEggLot', 'editEggLot', 'removeEggLot', 'birds', 'editBird', 'editMeatLot', 'showToast');
   const location = useLocation();
 
   if (!hasModuleAccess('eggs')) {

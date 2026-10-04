@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Layers, Egg, Sparkles, ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 
 interface ModuleLockedPaywallProps {
   module: 'lots' | 'eggs';
@@ -8,7 +8,7 @@ interface ModuleLockedPaywallProps {
 
 export function ModuleLockedPaywall({ module }: ModuleLockedPaywallProps) {
   const navigate = useNavigate();
-  const { openUpgradeModal } = useAppContext();
+  const { openUpgradeModal } = useAppSlice('openUpgradeModal');
 
   const isLots = module === 'lots';
   const title = isLots ? 'Gestão Profissional de Lotes' : 'Controle & Gestão de Ovos';

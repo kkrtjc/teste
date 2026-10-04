@@ -16,7 +16,7 @@ import {
   type MuraAlert,
   type NotificationSettings
 } from '../../lib/notificationEngine';
-import { useAppContext } from '../../lib/AppContext';
+import { useAppSlice } from '../../lib/AppContext';
 import { UnblockNotificationModal } from './UnblockNotificationModal';
 
 interface NotificationCenterModalProps {
@@ -31,7 +31,7 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
     eggLots, meatLots, birds, showToast, 
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppContext();
+  } = useAppSlice('eggLots', 'meatLots', 'birds', 'showToast', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
 
   const [activeTab, setActiveTab] = useState<'avisos' | 'config'>('avisos');
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');

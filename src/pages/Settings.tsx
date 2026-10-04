@@ -4,7 +4,7 @@ import {
   Download, Upload, CheckCircle2, AlertCircle, 
   Database, Smartphone, Zap, Bell, BellOff, RefreshCw
 } from 'lucide-react';
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { useAuth, type TrialInfo } from '../lib/AuthContext';
 import { compressImage } from '../lib/imageCompression';
 import { uploadFarmLogo } from '../lib/storageService';
@@ -152,7 +152,7 @@ export function Settings() {
     importBackup, showToast, recoverAllBirds,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppContext();
+  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'eggLots', 'meatLots', 'coupleEggs', 'incubationLots', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);

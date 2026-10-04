@@ -55,7 +55,7 @@ function TabLoadingFallback() {
     </div>
   );
 }
-import { useAppContext } from '../lib/AppContext';
+import { useAppSlice } from '../lib/AppContext';
 import { useAuth, ADMIN_CPF, type SubscriptionPlan } from '../lib/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import localforage from 'localforage';
@@ -281,7 +281,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal,
     eggLots, meatLots, birds, notificationSettings, dailyFeedStatus
-  } = useAppContext();
+  } = useAppSlice('farmSettings', 'isAddBirdModalOpen', 'selectedBirdProfileId', 'closeModals', 'isProfileSetupOpen', 'finishProfileSetup', 'showToast', 'isUpgradeModalOpen', 'selectedUpgradePlan', 'closeUpgradeModal', 'eggLots', 'meatLots', 'birds', 'notificationSettings', 'dailyFeedStatus');
   const navigate = useNavigate();
   const location = useLocation();
   const { triggerLight } = useHaptics();
