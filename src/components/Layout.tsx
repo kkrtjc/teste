@@ -1,3 +1,4 @@
+import { toLocalISO } from '../lib/dates';
 import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
@@ -63,6 +64,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { LandingCheckoutModal } from './LandingCheckoutModal';
 import { RenewalModal } from './modals/RenewalModal';
 import { scanActiveAlerts, checkAndDispatchDailyNotifications } from '../lib/notificationEngine';
+import { SYNC_QUEUE_CHANGED_EVENT, SYNC_DROPPED_EVENT, getSyncQueueLength } from '../lib/syncQueue';
 
 export type AllowedCpf = {
   cpf: string;
@@ -98,7 +100,7 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
   const [newExpiresAt, setNewExpiresAt] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
+    return toLocalISO(d);
   });
   const [newPassword, setNewPassword] = useState('');
 
@@ -106,7 +108,7 @@ const AdminAddClientForm = memo(function AdminAddClientForm({
     setPlanType(selected);
     const d = new Date();
     d.setDate(d.getDate() + (selected === 'yearly' ? 365 : 30));
-    setNewExpiresAt(d.toISOString().split('T')[0]);
+    setNewExpiresAt(toLocalISO(d));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -383,6 +385,7 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   const [isPwaGuideOpen, setIsPwaGuideOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -394,6 +397,23 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    getSyncQueueLength().then(setPendingSyncCount);
+    const handleQueueChange = (e: any) => {
+      setPendingSyncCount(e.detail?.length ?? 0);
+    };
+    const handleDropped = (e: any) => {
+      const ent = e.detail?.mutation?.entity || 'registro';
+      showToast?.(`Alteração em "${ent}" não pôde ser salva na nuvem após várias tentativas.`, 'warning');
+    };
+    window.addEventListener(SYNC_QUEUE_CHANGED_EVENT, handleQueueChange);
+    window.addEventListener(SYNC_DROPPED_EVENT, handleDropped);
+    return () => {
+      window.removeEventListener(SYNC_QUEUE_CHANGED_EVENT, handleQueueChange);
+      window.removeEventListener(SYNC_DROPPED_EVENT, handleDropped);
+    };
+  }, [showToast]);
 
   useEffect(() => {
     const handleOpenAdmin = () => setIsAdminModalOpen(true);
@@ -702,11 +722,21 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
             {/* Connection Status Badge */}
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
               isOnline 
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                ? (pendingSyncCount > 0 
+                    ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' 
+                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400')
                 : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span>{isOnline ? 'Sincronizado' : 'Modo Offline'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                isOnline 
+                  ? (pendingSyncCount > 0 ? 'bg-blue-400 animate-spin' : 'bg-emerald-400 animate-pulse') 
+                  : 'bg-amber-400'
+              }`} />
+              <span>
+                {isOnline 
+                  ? (pendingSyncCount > 0 ? `${pendingSyncCount} salvando...` : 'Sincronizado') 
+                  : 'Modo Offline'}
+              </span>
             </div>
           </div>
 

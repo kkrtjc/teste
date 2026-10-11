@@ -1,3 +1,4 @@
+import { toLocalISO, todayLocalISO } from '../lib/dates';
 import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
@@ -17,6 +18,7 @@ import { LotMovementModal } from '../components/modals/LotMovementModal';
 import { LotNotesModal } from '../components/modals/LotNotesModal';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
 import { calculateLotProduction } from '../lib/lotProduction';
+import { computeEggLotEconomics } from '../lib/lotEconomics';
 
 // helpers
 function normalizeSearch(str?: string | null): string {
@@ -28,7 +30,7 @@ function normalizeSearch(str?: string | null): string {
     .trim();
 }
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return todayLocalISO(); }
 function formatDate(iso: string) {
   if (!iso || !iso.includes('-')) return iso;
   const [y, m, d] = iso.split('-');
@@ -1759,9 +1761,10 @@ const LotCard = memo(function LotCard({
   const totalPerdidos = records.reduce((s, r) => s + r.perdidos, 0);
   const totalEstoque = Math.max(0, total - totalVendidos - totalPerdidos);
 
-  const receita = records.reduce((s, r) => s + (r.vendidos / 12) * r.precoVenda, 0);
-  const custo = records.reduce((s, r) => s + r.vendidos * r.custoProd, 0);
-  const lucro = receita - custo;
+  const eco = useMemo(() => computeEggLotEconomics(lot), [lot]);
+  const receita = eco.receita;
+  const custo = eco.custoTotal;
+  const lucro = eco.lucro;
   const dias = daysBetween(lot.dataInicio, todayISO());
   const totalFemeas = Math.max(lot.qtdFemeas || 0, lot.femeasIds?.length || 0);
   const prodStats = calculateLotProduction(records, totalFemeas);
@@ -2175,7 +2178,7 @@ export function Eggs() {
   }, [location.state]);
 
   const { kpiColetados, kpiVendidos, kpiPerdidos, kpiReceita, kpiCusto, kpiLucro } = useMemo(() => {
-    const cutoff = period === 999 ? '2000-01-01' : new Date(Date.now() - period * 86400000).toISOString().split('T')[0];
+    const cutoff = period === 999 ? '2000-01-01' : toLocalISO(new Date(Date.now() - period * 86400000));
     let col = 0, vend = 0, perd = 0, rec = 0, cst = 0;
     for (const lot of eggLots) {
       for (const r of (lot.registros ?? [])) {
@@ -2184,7 +2187,27 @@ export function Eggs() {
         vend += r.vendidos;
         perd += r.perdidos;
         rec += (r.vendidos / 12) * r.precoVenda;
-        cst += r.vendidos * r.custoProd;
+      }
+      let lotFeedCost = 0;
+      for (const f of (lot.feedEntries ?? [])) {
+        if (f.data >= cutoff) {
+          lotFeedCost += (f.totalCusto || (f.kgRacao * (f.custoKg || 0)));
+        }
+      }
+      let lotExtraCost = 0;
+      for (const e of (lot.custosExtras ?? [])) {
+        if (e.data >= cutoff) {
+          lotExtraCost += Number(e.valor || 0);
+        }
+      }
+      if (lotFeedCost > 0 || lotExtraCost > 0) {
+        cst += (lotFeedCost + lotExtraCost);
+      } else {
+        for (const r of (lot.registros ?? [])) {
+          if (r.data >= cutoff) {
+            cst += r.vendidos * (r.custoProd !== undefined ? r.custoProd : (lot.custoProdPadrao ?? 0.30));
+          }
+        }
       }
     }
     return { kpiColetados: col, kpiVendidos: vend, kpiPerdidos: perd, kpiReceita: rec, kpiCusto: cst, kpiLucro: rec - cst };

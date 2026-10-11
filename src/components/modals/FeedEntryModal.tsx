@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../../lib/dates';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Wheat, Plus, Trash2, Calendar, Scale, DollarSign } from 'lucide-react';
@@ -13,7 +14,7 @@ interface FeedEntryModalProps {
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return todayLocalISO(); }
 function fmtDate(iso: string) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');

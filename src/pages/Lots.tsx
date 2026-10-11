@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../lib/dates';
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -53,7 +54,7 @@ function EconomicsButton({ lote, kind, onOpen }: { lote: any; kind: 'postura' | 
     </button>
   );
 }
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return todayLocalISO(); }
 function calcDays(start: string) {
   const s = new Date(start); const n = new Date();
   s.setHours(0,0,0,0); n.setHours(0,0,0,0);

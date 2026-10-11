@@ -1,3 +1,13 @@
+import { todayLocalISO } from './dates';
+import {
+  recordTombstone,
+  clearTombstone,
+  getTombstonesAsync,
+  markPendingDelete,
+  clearPendingDelete,
+  getPendingDeletes,
+  type EntityType
+} from './tombstones';
 import { createContext, useContext, useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
@@ -1238,25 +1248,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('[Sync] Erro Supabase ao buscar aves:', resBirds.error);
       }
 
-      // 1. Processa deleções pendentes no Supabase
-      const pendingDeleteIds = await getPendingDeleteBirdIds();
-      if (pendingDeleteIds.size > 0 && isSupabaseConfigured) {
-        const toDeleteArr = Array.from(pendingDeleteIds);
-        console.log(`[Sync] Executando exclusão pendente de ${toDeleteArr.length} aves no Supabase...`);
-        const { error: delErr } = await supabase!.from('birds').delete().in('id', toDeleteArr);
-        if (!delErr) {
-          for (const dId of toDeleteArr) {
-            await clearPendingDeleteBird(dId);
+      // 1. Processa deleções pendentes no Supabase para todas as entidades
+      const scope = getUserScope();
+      const entitiesToSyncDeletes: Array<{ entity: EntityType; table: string }> = [
+        { entity: 'birds', table: 'birds' },
+        { entity: 'egg_lots', table: 'egg_lots' },
+        { entity: 'meat_lots', table: 'meat_lots' },
+        { entity: 'couples', table: 'couples' },
+        { entity: 'couple_eggs', table: 'couple_eggs' },
+        { entity: 'incubation_lots', table: 'incubation_lots' },
+        { entity: 'breeds', table: 'breeds' },
+      ];
+
+      for (const item of entitiesToSyncDeletes) {
+        const pending = await getPendingDeletes(item.entity, scope);
+        if (pending.size > 0 && isSupabaseConfigured) {
+          const arr = Array.from(pending);
+          console.log(`[Sync] Executando exclusão pendente de ${arr.length} em ${item.table}...`);
+          const { error: delErr } = await supabase!.from(item.table).delete().in('id', arr);
+          if (!delErr) {
+            for (const dId of arr) {
+              await clearPendingDelete(item.entity, dId, scope);
+            }
           }
         }
       }
 
-      let sbBreeds = resBreeds.data || [];
+      // Processa também compatibilidade de aves legadas se houver
+      const pendingDeleteBirdIdsLegacy = await getPendingDeleteBirdIds();
+      if (pendingDeleteBirdIdsLegacy.size > 0 && isSupabaseConfigured) {
+        const toDeleteArr = Array.from(pendingDeleteBirdIdsLegacy);
+        const { error: delErr } = await supabase!.from('birds').delete().in('id', toDeleteArr);
+        if (!delErr) {
+          for (const dId of toDeleteArr) {
+            await clearPendingDeleteBird(dId);
+            await clearPendingDelete('birds', dId, scope);
+          }
+        }
+      }
+
+      // Carrega tombstones universais de todas as entidades
+      const [
+        eggLotTombstones,
+        meatLotTombstones,
+        coupleTombstones,
+        coupleEggTombstones,
+        incubationLotTombstones,
+        breedTombstones,
+        birdTombstonesAsync
+      ] = await Promise.all([
+        getTombstonesAsync('egg_lots', scope),
+        getTombstonesAsync('meat_lots', scope),
+        getTombstonesAsync('couples', scope),
+        getTombstonesAsync('couple_eggs', scope),
+        getTombstonesAsync('incubation_lots', scope),
+        getTombstonesAsync('breeds', scope),
+        getTombstonesAsync('birds', scope)
+      ]);
+
+      let sbBreeds = (resBreeds.data || []).filter((b: any) => !breedTombstones.has(b.id));
       // Carrega tombstones do IndexedDB (fonte primária) + pendingDelete para filtragem dupla
       const currentDeletedIds = await getPendingDeleteBirdIds();
       const allTombstones = await getDeletedBirdIdsAsync();
       // Une os dois conjuntos: pendentes de delete + tombstones históricos
-      const allDeletedIds = new Set([...currentDeletedIds, ...allTombstones]);
+      const allDeletedIds = new Set([...currentDeletedIds, ...allTombstones, ...birdTombstonesAsync]);
       const sbBirdsFromCloud = (!resBirds.error && resBirds.data)
         ? resBirds.data.filter((b: any) =>
             !allDeletedIds.has(b.id) &&
@@ -1271,14 +1326,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           supabase!.from('birds').update({ user_id: ADMIN_CANONICAL_ID }).in('id', toAdopt).then(() => {});
         }
       }
-      let sbCouples = resCouples.data || [];
-      let sbEggLots = resEggLots.data || [];
-      let sbMeatLots = resMeatLots.data || [];
+      let sbCouples = (resCouples.data || []).filter((c: any) => !coupleTombstones.has(c.id));
+      let sbEggLots = (resEggLots.data || []).filter((l: any) => !eggLotTombstones.has(l.id));
+      let sbMeatLots = (resMeatLots.data || []).filter((l: any) => !meatLotTombstones.has(l.id));
       let sbSettings = (resSettings.data && Array.isArray(resSettings.data))
         ? (resSettings.data[0] || null)
         : (resSettings.data || null);
-      let sbCoupleEggs = resCoupleEggs.data || [];
-      let sbIncubationLots = resIncubationLots.data || [];
+      let sbCoupleEggs = (resCoupleEggs.data || []).filter((e: any) => !coupleEggTombstones.has(e.id));
+      let sbIncubationLots = (resIncubationLots.data || []).filter((l: any) => !incubationLotTombstones.has(l.id));
 
       // Carrega dados locais defensivamente combinando memória e storage
       const [
@@ -1431,7 +1486,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 2. Processa raças locais que não existem no Supabase
       const unsyncedBreedsToPush: Breed[] = [];
       for (const lb of (localBreeds || [])) {
-        if (!lb || !lb.nome) continue;
+        if (!lb || !lb.nome || breedTombstones.has(lb.id)) continue;
         const nameLower = lb.nome.trim().toLowerCase();
         if (!seenBreedNames.has(nameLower)) {
           seenBreedNames.add(nameLower);
@@ -1443,6 +1498,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 3. Adiciona raças padrão do sistema caso alguma falte
       const missingDefaultToPush: Breed[] = [];
       for (const db of DEFAULT_BREEDS) {
+        if (breedTombstones.has(db.id)) continue;
         const nameLower = db.nome.trim().toLowerCase();
         if (!seenBreedNames.has(nameLower)) {
           seenBreedNames.add(nameLower);
@@ -1693,7 +1749,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── Cloud é autoridade para casais ──
       const sbCoupleIds = new Set<string>(sbCouples.map((c: any) => c.id));
-      const pendingCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id));
+      const pendingCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id) && !coupleTombstones.has(lc.id));
       if (pendingCouples.length > 0 && isSupabaseConfigured && user) {
         const couplesToPush = pendingCouples.map((c: any) => ({
           id: c.id,
@@ -1832,7 +1888,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Lotes que existem localmente mas ainda não foram para a nuvem
       const sbEggLotIds = new Set<string>(sbEggLots.map((l: any) => l.id));
-      const pendingEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id));
+      const pendingEggLots = (localEggLots || []).filter((ll: any) => ll && ll.id && !sbEggLotIds.has(ll.id) && !eggLotTombstones.has(ll.id));
       if (pendingEggLots.length > 0 && isSupabaseConfigured && user) {
         // Envia apenas colunas suportadas pelo Supabase com metadados empacotados em registros
         const eggLotsToPush = pendingEggLots.map((l: any) => ({
@@ -1961,7 +2017,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Lotes que existem localmente mas ainda não estão na nuvem (ex: lotes de pintinhos chick-*)
       const sbMeatLotIds = new Set<string>(sbMeatLots.map((l: any) => l.id));
-      const pendingMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id));
+      const pendingMeatLots = (localMeatLots || []).filter((ml: any) => ml && ml.id && !sbMeatLotIds.has(ml.id) && !meatLotTombstones.has(ml.id));
       if (pendingMeatLots.length > 0 && isSupabaseConfigured && user) {
         // Envia apenas colunas suportadas pelo Supabase com metadados em peso_medio_inicial
         const meatLotsToPush = pendingMeatLots.map((l: any) => ({
@@ -1995,7 +2051,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Cloud é autoridade para ovos de casal
       const sbCoupleEggIds = new Set<string>(sbCoupleEggs.map((e: any) => e.id));
-      const pendingCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id));
+      const pendingCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id) && !coupleEggTombstones.has(le.id));
       if (pendingCoupleEggs.length > 0 && isSupabaseConfigured && user) {
         const coupleEggsToPush = pendingCoupleEggs.map((e: any) => ({
           id: e.id,
@@ -2031,7 +2087,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Cloud é autoridade para lotes de incubação
       const sbIncubationLotIds = new Set<string>(sbIncubationLots.map((l: any) => l.id));
-      const pendingIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id));
+      const pendingIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id) && !incubationLotTombstones.has(li.id));
       if (pendingIncubationLots.length > 0 && isSupabaseConfigured && user) {
         const incubationLotsToPush = pendingIncubationLots.map((l: any) => ({
           id: l.id,
@@ -2492,30 +2548,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [isReady]);
 
   const addBreed = (breed: Breed) => {
+    const scope = getUserScope();
+    clearTombstone('breeds', breed.id, scope);
     setBreeds(prev => {
       const next = [...prev, breed];
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: breed.id,
+          user_id: targetUserId,
+          nome: breed.nome,
+          foco: breed.foco,
+          descricao: breed.descricao,
+          imagem: breed.imagem,
+          tempo_crescimento: breed.tempoCrescimento || 0,
+          peso_medio: breed.pesoMedio || '',
+          ganho_gramas_dia: breed.ganhoGramasDia || null,
+          conversao_alimentar: breed.conversaoAlimentar || null
+        };
         supabase!
           .from('breeds')
-          .insert({
-            id: breed.id,
-            user_id: targetUserId,
-            nome: breed.nome,
-            foco: breed.foco,
-            descricao: breed.descricao,
-            imagem: breed.imagem,
-            tempo_crescimento: breed.tempoCrescimento || 0,
-            peso_medio: breed.pesoMedio || '',
-            ganho_gramas_dia: breed.ganhoGramasDia || null,
-            conversao_alimentar: breed.conversaoAlimentar || null
-          })
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase addBreed:', error);
-            else triggerRemoteSync('breeds');
-          });
+          .insert(payload)
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase addBreed:', error);
+                enqueueMutation('breeds', 'insert', payload);
+              } else {
+                triggerRemoteSync('breeds');
+              }
+            },
+            () => { enqueueMutation('breeds', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -2541,16 +2607,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('breeds')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase editBreed:', error);
-            else triggerRemoteSync('breeds');
-          });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase editBreed:', error);
+                enqueueMutation('breeds', 'update', dbUpdate, { column: 'id', value: id });
+              } else {
+                triggerRemoteSync('breeds');
+              }
+            },
+            () => { enqueueMutation('breeds', 'update', dbUpdate, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
   };
 
   const removeBreed = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('breeds', id, scope);
+    markPendingDelete('breeds', id, scope);
     const breedToDelete = breeds.find(b => b.id === id);
     setBreeds(prev => {
       const next = prev.filter(b => b.id !== id);
@@ -2561,10 +2637,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('breeds')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase removeBreed:', error);
-            else triggerRemoteSync('breeds');
-          });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase removeBreed:', error);
+                enqueueMutation('breeds', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('breeds', id, scope);
+                triggerRemoteSync('breeds');
+              }
+            },
+            () => { enqueueMutation('breeds', 'delete', null, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
@@ -2587,6 +2671,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addBird = (bird: Bird) => {
+    const scope = getUserScope();
+    clearTombstone('birds', bird.id, scope);
     clearDeletedBirdId(bird.id);
     markPendingOfflineBird(bird.id);
     const cleanObs = parseBirdVitrine(bird.observacoes).cleanObservacoes;
@@ -2599,7 +2685,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const birdWithDate: Bird = {
       ...bird,
       observacoes: cleanObs,
-      dataCadastro: bird.dataCadastro || new Date().toISOString().split('T')[0]
+      dataCadastro: bird.dataCadastro || todayLocalISO()
     };
     setBirds(prev => {
       const next = [...prev, birdWithDate];
@@ -2706,7 +2792,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (b.id === id) {
           const nextFields = { ...updatedBird };
           if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu' || updatedBird.status === 'Abatido') && !b.dataBaixa) {
-            nextFields.dataBaixa = updatedBird.dataVenda || new Date().toISOString().split('T')[0];
+            nextFields.dataBaixa = updatedBird.dataVenda || todayLocalISO();
           }
           if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu' && updatedBird.status !== 'Abatido') {
             nextFields.dataBaixa = undefined;
@@ -2802,6 +2888,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
 
   const removeBird = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('birds', id, scope);
+    markPendingDelete('birds', id, scope);
     // 1. Grava no túmulo persistente de IDs deletados e fila pendente
     recordDeletedBirdId(id);
     markPendingDeleteBird(id);
@@ -2851,6 +2940,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
               } else {
                 clearPendingDeleteBird(id);
+                clearPendingDelete('birds', id, scope);
                 triggerRemoteSync('birds');
               }
             },
@@ -2900,27 +2990,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addCouple = (couple: Couple) => {
+    const scope = getUserScope();
+    clearTombstone('couples', couple.id, scope);
     setCouples(prev => {
       const next = [...prev, couple];
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
 
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: couple.id,
+          user_id: targetUserId,
+          macho_id: couple.machoId,
+          femea_id: couple.femeaIds?.[0] || couple.femeaId || '',
+          objetivo: couple.objetivo,
+          data_inicio: couple.dataInicio,
+          status: couple.status
+        };
         supabase!
           .from('couples')
-          .insert({
-            id: couple.id,
-            user_id: targetUserId,
-            macho_id: couple.machoId,
-            femea_id: couple.femeaIds?.[0] || couple.femeaId || '',
-            objetivo: couple.objetivo,
-            data_inicio: couple.dataInicio,
-            status: couple.status
-          })
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase addCouple:', error);
-            else triggerRemoteSync('couples');
-          });
+          .insert(payload)
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase addCouple:', error);
+                enqueueMutation('couples', 'insert', payload);
+              } else {
+                triggerRemoteSync('couples');
+              }
+            },
+            () => { enqueueMutation('couples', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -2944,16 +3044,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couples')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase editCouple:', error);
-            else triggerRemoteSync('couples');
-          });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase editCouple:', error);
+                enqueueMutation('couples', 'update', dbUpdate, { column: 'id', value: id });
+              } else {
+                triggerRemoteSync('couples');
+              }
+            },
+            () => { enqueueMutation('couples', 'update', dbUpdate, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
   };
 
   const removeCouple = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('couples', id, scope);
+    markPendingDelete('couples', id, scope);
     setCouples(prev => {
       const next = prev.filter(c => c.id !== id);
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
@@ -2963,15 +3073,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couples')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { 
-            if (error) console.error('Erro Supabase removeCouple:', error);
-            else triggerRemoteSync('couples');
-          });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase removeCouple:', error);
+                enqueueMutation('couples', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('couples', id, scope);
+                triggerRemoteSync('couples');
+              }
+            },
+            () => { enqueueMutation('couples', 'delete', null, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
 
     // Remove todos os ovos introduzidos desse casal
+    const eggsToRemove = coupleEggs.filter(e => e.coupleId === id);
+    eggsToRemove.forEach(e => {
+      recordTombstone('couple_eggs', e.id, scope);
+      markPendingDelete('couple_eggs', e.id, scope);
+    });
     setCoupleEggs(prev => {
       const next = prev.filter(e => e.coupleId !== id);
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
@@ -2980,12 +3103,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couple_eggs')
           .delete()
           .eq('couple_id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase cascade couple_eggs:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase cascade couple_eggs:', error);
+              } else {
+                eggsToRemove.forEach(e => clearPendingDelete('couple_eggs', e.id, scope));
+              }
+            },
+            () => {}
+          );
       }
       return next;
     });
 
     // Remove todos os lotes de incubação desse casal
+    const incsToRemove = incubationLots.filter(l => l.coupleId === id);
+    incsToRemove.forEach(l => {
+      recordTombstone('incubation_lots', l.id, scope);
+      markPendingDelete('incubation_lots', l.id, scope);
+    });
     setIncubationLots(prev => {
       const next = prev.filter(l => l.coupleId !== id);
       localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
@@ -2994,7 +3131,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('incubation_lots')
           .delete()
           .eq('couple_id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase cascade incubation_lots:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase cascade incubation_lots:', error);
+              } else {
+                incsToRemove.forEach(l => clearPendingDelete('incubation_lots', l.id, scope));
+              }
+            },
+            () => {}
+          );
       }
       return next;
     });
@@ -3016,23 +3162,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /* ── CoupleEgg CRUD ── */
   const addCoupleEgg = (egg: CoupleEgg) => {
+    const scope = getUserScope();
+    clearTombstone('couple_eggs', egg.id, scope);
     setCoupleEggs(prev => {
       const next = [...prev, egg];
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: egg.id,
+          user_id: targetUserId,
+          couple_id: egg.coupleId,
+          femea_id: egg.femeaId,
+          status: egg.status,
+          data_introducao: egg.dataIntroducao
+        };
         supabase!
           .from('couple_eggs')
-          .insert({
-            id: egg.id,
-            user_id: targetUserId,
-            couple_id: egg.coupleId,
-            femea_id: egg.femeaId,
-            status: egg.status,
-            data_introducao: egg.dataIntroducao
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addCoupleEgg:', error); });
+          .insert(payload)
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase addCoupleEgg:', error);
+                enqueueMutation('couple_eggs', 'insert', payload);
+              }
+            },
+            () => { enqueueMutation('couple_eggs', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -3054,13 +3211,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couple_eggs')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editCoupleEgg:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase editCoupleEgg:', error);
+                enqueueMutation('couple_eggs', 'update', dbUpdate, { column: 'id', value: id });
+              }
+            },
+            () => { enqueueMutation('couple_eggs', 'update', dbUpdate, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
   };
 
   const removeCoupleEgg = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('couple_eggs', id, scope);
+    markPendingDelete('couple_eggs', id, scope);
     setCoupleEggs(prev => {
       const next = prev.filter(e => e.id !== id);
       localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
@@ -3070,7 +3238,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('couple_eggs')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase removeCoupleEgg:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase removeCoupleEgg:', error);
+                enqueueMutation('couple_eggs', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('couple_eggs', id, scope);
+              }
+            },
+            () => { enqueueMutation('couple_eggs', 'delete', null, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
@@ -3078,29 +3256,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /* ── IncubationLot CRUD ── */
   const addIncubationLot = (lot: IncubationLot) => {
+    const scope = getUserScope();
+    clearTombstone('incubation_lots', lot.id, scope);
     setIncubationLots(prev => {
       const next = [...prev, lot];
       localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const payload = {
+          id: lot.id,
+          user_id: targetUserId,
+          couple_id: lot.coupleId,
+          numero_lote: lot.numeroLote,
+          quantidade_ovos: lot.quantidadeOvos,
+          data_inicio: lot.dataInicio,
+          baia: lot.baia,
+          ovoscopia1_realizada: lot.ovoscopia1Realizada || false,
+          ovoscopia2_realizada: lot.ovoscopia2Realizada || false,
+          ovos_descartados1: lot.ovosDescartados1 || 0,
+          ovos_descartados2: lot.ovosDescartados2 || 0,
+          eclodido: lot.eclodido || false
+        };
         supabase!
           .from('incubation_lots')
-          .insert({
-            id: lot.id,
-            user_id: targetUserId,
-            couple_id: lot.coupleId,
-            numero_lote: lot.numeroLote,
-            quantidade_ovos: lot.quantidadeOvos,
-            data_inicio: lot.dataInicio,
-            baia: lot.baia,
-            ovoscopia1_realizada: lot.ovoscopia1Realizada || false,
-            ovoscopia2_realizada: lot.ovoscopia2Realizada || false,
-            ovos_descartados1: lot.ovosDescartados1 || 0,
-            ovos_descartados2: lot.ovosDescartados2 || 0,
-            eclodido: lot.eclodido || false
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase addIncubationLot:', error); });
+          .insert(payload)
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase addIncubationLot:', error);
+                enqueueMutation('incubation_lots', 'insert', payload);
+              }
+            },
+            () => { enqueueMutation('incubation_lots', 'insert', payload); }
+          );
       }
       return next;
     });
@@ -3128,13 +3317,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('incubation_lots')
           .update(dbUpdate)
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase editIncubationLot:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase editIncubationLot:', error);
+                enqueueMutation('incubation_lots', 'update', dbUpdate, { column: 'id', value: id });
+              }
+            },
+            () => { enqueueMutation('incubation_lots', 'update', dbUpdate, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
   };
 
   const removeIncubationLot = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('incubation_lots', id, scope);
+    markPendingDelete('incubation_lots', id, scope);
     setIncubationLots(prev => {
       const next = prev.filter(l => l.id !== id);
       localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
@@ -3144,13 +3344,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from('incubation_lots')
           .delete()
           .eq('id', id)
-          .then(({ error }) => { if (error) console.error('Erro Supabase removeIncubationLot:', error); });
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase removeIncubationLot:', error);
+                enqueueMutation('incubation_lots', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('incubation_lots', id, scope);
+              }
+            },
+            () => { enqueueMutation('incubation_lots', 'delete', null, { column: 'id', value: id }); }
+          );
       }
       return next;
     });
   };
 
   const addEggLot = (lot: EggLot) => {
+    const scope = getUserScope();
+    clearTombstone('egg_lots', lot.id, scope);
     setEggLots(prev => {
       const next = [...prev, lot];
       eggLotsRef.current = next;
@@ -3241,6 +3453,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addMeatLot = (lot: MeatLot) => {
+    const scope = getUserScope();
+    clearTombstone('meat_lots', lot.id, scope);
     setMeatLots(prev => {
       const next = [...prev, lot];
       meatLotsRef.current = next;
@@ -3344,6 +3558,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const removeEggLot = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('egg_lots', id, scope);
+    markPendingDelete('egg_lots', id, scope);
     setEggLots(prev => {
       const next = prev.filter(l => l.id !== id);
       eggLotsRef.current = next;
@@ -3362,6 +3579,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (error) {
                 console.warn('Erro Supabase removeEggLot, enfileirando offline:', error);
                 enqueueMutation('egg_lots', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('egg_lots', id, scope);
               }
             },
             () => {
@@ -3374,6 +3593,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const removeMeatLot = (id: string) => {
+    const scope = getUserScope();
+    recordTombstone('meat_lots', id, scope);
+    markPendingDelete('meat_lots', id, scope);
     setMeatLots(prev => {
       const next = prev.filter(l => l.id !== id);
       meatLotsRef.current = next;
@@ -3392,6 +3614,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (error) {
                 console.warn('Erro Supabase removeMeatLot, enfileirando offline:', error);
                 enqueueMutation('meat_lots', 'delete', null, { column: 'id', value: id });
+              } else {
+                clearPendingDelete('meat_lots', id, scope);
               }
             },
             () => {

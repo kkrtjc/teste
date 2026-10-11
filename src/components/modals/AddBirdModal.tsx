@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../../lib/dates';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
@@ -423,7 +424,7 @@ export function AddBirdModal() {
               machoId: paiId,
               femeaId: maeId,
               objetivo: 'Genealogia (gerado automaticamente)',
-              dataInicio: new Date().toISOString().split('T')[0],
+              dataInicio: todayLocalISO(),
               status: 'Ativo',
             });
           }

@@ -1,3 +1,4 @@
+import { todayLocalISO } from './dates';
 import localforage from 'localforage';
 import type { EggLot, MeatLot, Bird } from './AppContext';
 import { getVaccineSuggestions } from './vaccinationProtocols';
@@ -51,7 +52,7 @@ const SETTINGS_STORAGE_KEY = '@mura-manager:notification-settings';
 const NOTIF_LOG_KEY = '@mura-manager:notifications-fired';
 
 function todayISO() {
-  return new Date().toISOString().split('T')[0];
+  return todayLocalISO();
 }
 
 function calcDays(start: string) {

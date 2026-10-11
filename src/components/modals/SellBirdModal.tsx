@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../../lib/dates';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, DollarSign, Calendar, User, Phone, CheckCircle } from 'lucide-react';
@@ -23,7 +24,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
     : (bird.vitrinePrice ? bird.vitrinePrice.replace(/[^0-9.]/g, '') : '');
 
   const [valorVenda, setValorVenda] = useState(initialPrice);
-  const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0]);
+  const [dataVenda, setDataVenda] = useState(todayLocalISO());
   const [compradorNome, setCompradorNome] = useState('');
   const [compradorContato, setCompradorContato] = useState('');
   const [obsVenda, setObsVenda] = useState('');
@@ -48,10 +49,10 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
       editBird(bird.id, {
         status: 'Vendido',
         valorVenda: numValor,
-        dataVenda: dataVenda || new Date().toISOString().split('T')[0],
+        dataVenda: dataVenda || todayLocalISO(),
         compradorNome: compradorNome.trim() || undefined,
         compradorContato: compradorContato.trim() || undefined,
-        dataBaixa: dataVenda || new Date().toISOString().split('T')[0],
+        dataBaixa: dataVenda || todayLocalISO(),
         observacoes: (bird.observacoes || '') + observacaoAdicional,
       });
 

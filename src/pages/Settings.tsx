@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../lib/dates';
 import { useState, useRef, useEffect } from 'react';
 import { 
   Camera, Save, Phone, Mail, Home, LogOut, Apple, 
@@ -373,7 +374,7 @@ export function Settings() {
     const a = document.createElement('a');
     a.href = url;
     const nomeCriatorio = name ? name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'mura-manager';
-    a.download = `${nomeCriatorio}-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `${nomeCriatorio}-backup-${todayLocalISO()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -5,6 +5,8 @@
 // Fallback silencioso em dispositivos sem suporte — sem quebra de funcionalidade.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { todayLocalISO } from './dates';
+
 const PUSH_SCHEDULED_KEY  = '@mura-manager:push-scheduled-at';
 const EGG_REMINDER_KEY    = '@mura-manager:egg-reminder-scheduled';
 
@@ -112,7 +114,7 @@ export async function syncDailyEggReminder(hasRegisteredToday: boolean): Promise
   const reg = await navigator.serviceWorker.ready.catch(() => null);
   if (!reg) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocalISO();
   const lastEggScheduled = localStorage.getItem(EGG_REMINDER_KEY);
 
   if (hasRegisteredToday) {

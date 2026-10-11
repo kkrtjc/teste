@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../../lib/dates';
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, X, Plus, History, TrendingDown, TrendingUp, CheckCircle, Trash2, Search, Check } from 'lucide-react';
@@ -28,7 +29,7 @@ function uid(): string {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  return todayLocalISO();
 }
 
 function fmtDate(iso: string): string {

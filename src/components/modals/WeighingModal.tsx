@@ -1,3 +1,4 @@
+import { todayLocalISO } from '../../lib/dates';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Scale, History, Check, Trash2, X, Calculator } from 'lucide-react';
@@ -51,7 +52,7 @@ export function WeighingModal({ isOpen, lote, onClose }: WeighingModalProps) {
   useModalScrollLock(isOpen);
   const { editMeatLot, showToast } = useAppSlice('editMeatLot', 'showToast');
 
-  const [wData, setWData] = useState(() => new Date().toISOString().split('T')[0]);
+  const [wData, setWData] = useState(() => todayLocalISO());
   const [wPesoMedio, setWPesoMedio] = useState('');
   const [wPesoTotal5, setWPesoTotal5] = useState('');
   const [wObs, setWObs] = useState('');

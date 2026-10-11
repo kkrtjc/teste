@@ -1,3 +1,4 @@
+import { toLocalISO, todayLocalISO } from '../../lib/dates';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -20,7 +21,7 @@ interface LotHealthModalProps {
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return todayLocalISO(); }
 function fmtDate(iso?: string) {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
@@ -29,7 +30,7 @@ function fmtDate(iso?: string) {
 function addDays(iso: string, days: number): string {
   const d = new Date(iso + 'T12:00:00');
   d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  return toLocalISO(d);
 }
 
 const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors placeholder-theme-text-muted";

@@ -1,3 +1,4 @@
+import { toLocalISO } from '../lib/dates';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -74,7 +75,7 @@ export function Dashboard() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      last7Days.push(d.toISOString().split('T')[0]);
+      last7Days.push(toLocalISO(d));
     }
 
     let totalMes = 0;
