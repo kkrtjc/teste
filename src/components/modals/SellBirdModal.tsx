@@ -8,7 +8,13 @@ import {
 import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
-import { parseMoneyToCents } from '../../lib/sales/money';
+import { 
+  parseMoneyToCents, 
+  sanitizeMoneyInput, 
+  formatMoneyOnBlur, 
+  getBirdPredefinedPrice, 
+  formatPhoneDigits 
+} from '../../lib/sales/money';
 import type { PaymentMethod, PaymentStatus } from '../../lib/sales/types';
 
 interface SellBirdModalProps {
@@ -24,11 +30,9 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
   const { registerBirdMovement, showToast } = useAppSlice('registerBirdMovement', 'showToast');
   const { triggerSuccess, triggerWarning } = useHaptics();
 
-  const initialPrice = bird.valorEstimado 
-    ? String(bird.valorEstimado) 
-    : (bird.vitrinePrice ? bird.vitrinePrice.replace(/[^0-9.]/g, '') : '');
+  const predefinedPrice = getBirdPredefinedPrice(bird);
 
-  const [valorVenda, setValorVenda] = useState(initialPrice);
+  const [valorVenda, setValorVenda] = useState(predefinedPrice);
   const [dataVenda, setDataVenda] = useState(todayLocalISO());
   const [formaPagamento, setFormaPagamento] = useState<PaymentMethod>('pix');
   const [statusPagamento, setStatusPagamento] = useState<PaymentStatus>('pago');
@@ -135,20 +139,27 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 <span className="text-[10px] px-2 py-0.2 rounded-full bg-white/10 text-white font-bold">{bird.sexo}</span>
               </div>
               <p className="text-xs text-white font-bold truncate mt-0.5">{bird.nome || 'Sem nome'}</p>
-              <p className="text-[11px] text-theme-text-muted truncate">{bird.raca} {bird.baia ? `• Baia ${bird.baia}` : ''}</p>
+              <div className="flex items-center gap-2 text-[11px] text-theme-text-muted truncate">
+                <span>{bird.raca} {bird.baia ? `• Baia ${bird.baia}` : ''}</span>
+                {predefinedPrice && (
+                  <span className="text-emerald-400 font-bold font-mono">
+                    • R$ {predefinedPrice}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Valor da Venda */}
+          {/* Valor da Venda com Máscara e Vírgula Inteligente */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center justify-between">
+            <div className="flex justify-between items-center text-xs font-bold text-theme-text-muted uppercase tracking-wider">
               <span>Valor Negociado (R$) *</span>
-              {bird.valorEstimado && (
-                <span className="text-[10px] text-emerald-400 font-semibold lowercase">
-                  (Estimado: R$ {Number(bird.valorEstimado).toFixed(2)})
+              {predefinedPrice && (
+                <span className="text-[10px] text-emerald-400 lowercase font-medium">
+                  (cadastrado: R$ {predefinedPrice})
                 </span>
               )}
-            </label>
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-400">R$</span>
               <input
@@ -156,7 +167,8 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 inputMode="decimal"
                 required
                 value={valorVenda}
-                onChange={e => setValorVenda(e.target.value.replace(/[^0-9.,]/g, ''))}
+                onChange={e => setValorVenda(sanitizeMoneyInput(e.target.value))}
+                onBlur={() => setValorVenda(formatMoneyOnBlur(valorVenda))}
                 placeholder="0,00"
                 className="w-full bg-theme-base border border-theme-border focus:border-emerald-500 rounded-xl py-3 pl-10 pr-3 text-base font-bold text-white outline-none"
                 autoComplete="off"
@@ -243,7 +255,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
             />
           </div>
 
-          {/* Comprador (Nome e Contato) */}
+          {/* Comprador (Nome e Contato - somente números no contato) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1">
@@ -263,12 +275,13 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
             <div className="space-y-1">
               <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1">
                 <Phone size={13} />
-                <span>WhatsApp / Fone</span>
+                <span>WhatsApp / Contato (somente números)</span>
               </label>
               <input
                 type="tel"
+                inputMode="numeric"
                 value={compradorContato}
-                onChange={e => setCompradorContato(e.target.value)}
+                onChange={e => setCompradorContato(formatPhoneDigits(e.target.value))}
                 placeholder="(00) 00000-0000"
                 className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
                 autoComplete="off"

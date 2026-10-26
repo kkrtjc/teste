@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { parseMoneyToCents, formatBRL, centsToInput, sumCents, MAX_CENTS } from './money';
+import { 
+  parseMoneyToCents, formatBRL, centsToInput, sumCents, MAX_CENTS,
+  sanitizeMoneyInput, formatMoneyOnBlur, getBirdPredefinedPrice, formatPhoneDigits
+} from './money';
 import {
   registerMovement, reverseMovement, markReceived, reconcileLedger, mergeLedgers,
   isBirdActive, findActiveTerminal, isValidISODate, addDaysISO, sanitizeText, normalizePhone,
@@ -284,6 +287,9 @@ describe('aggregate', () => {
     expect(series[3].receita).toBe(25000);
     expect(rangeForPeriod('30d', '2026-10-26')).toEqual({ from: '2026-09-27', to: '2026-10-26' });
     expect(rangeForPeriod('ano', '2026-10-26').from).toBe('2026-01-01');
+    expect(rangeForPeriod('hoje', '2026-10-26')).toEqual({ from: '2026-10-26', to: '2026-10-26' });
+    expect(rangeForPeriod('7d', '2026-10-26')).toEqual({ from: '2026-10-20', to: '2026-10-26' });
+    expect(rangeForPeriod('custom', '2026-10-26', { from: '2026-10-01', to: '2026-10-05' })).toEqual({ from: '2026-10-01', to: '2026-10-05' });
   });
 
   it('a receber e filtros', () => {
@@ -292,6 +298,37 @@ describe('aggregate', () => {
     expect(filterHistory(ledger, { tipos: ['perda'] }).map(m => m.id)).toEqual(['p1']);
     expect(filterHistory(ledger, { query: 'a-002' }).map(m => m.id)).toEqual(['s2']);
     expect(filterHistory(ledger)[0].id).toBe('s2'); // mais recente primeiro
+  });
+});
+
+describe('ajudantes inteligentes de venda e entrada', () => {
+  it('sanitizeMoneyInput normaliza vírgulas e bloqueia lixo', () => {
+    expect(sanitizeMoneyInput('150.50')).toBe('150,50');
+    expect(sanitizeMoneyInput('150,50,90')).toBe('150,50');
+    expect(sanitizeMoneyInput('abc150,99xyz')).toBe('150,99');
+    expect(sanitizeMoneyInput('150,999')).toBe('150,99');
+  });
+
+  it('formatMoneyOnBlur completa centavos', () => {
+    expect(formatMoneyOnBlur('150')).toBe('150,00');
+    expect(formatMoneyOnBlur('150,5')).toBe('150,50');
+    expect(formatMoneyOnBlur('0,5')).toBe('0,50');
+    expect(formatMoneyOnBlur('')).toBe('');
+  });
+
+  it('getBirdPredefinedPrice extrai preço cadastrado', () => {
+    expect(getBirdPredefinedPrice({ valorEstimado: 250 })).toBe('250,00');
+    expect(getBirdPredefinedPrice({ valorEstimado: '180.5' })).toBe('180,50');
+    expect(getBirdPredefinedPrice({ vitrinePrice: 'R$ 300,00' })).toBe('300,00');
+    expect(getBirdPredefinedPrice({})).toBe('');
+  });
+
+  it('formatPhoneDigits aceita somente números e formata telefone', () => {
+    expect(formatPhoneDigits('11987654321')).toBe('(11) 98765-4321');
+    expect(formatPhoneDigits('abc11xyz987654321')).toBe('(11) 98765-4321');
+    expect(formatPhoneDigits('1133334444')).toBe('(11) 3333-4444');
+    expect(formatPhoneDigits('11')).toBe('(11');
+    expect(formatPhoneDigits('')).toBe('');
   });
 });
 

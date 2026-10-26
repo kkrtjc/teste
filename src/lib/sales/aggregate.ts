@@ -116,12 +116,26 @@ export function filterHistory(ledger: readonly BirdMovement[], f: HistoryFilter 
 }
 
 /** Intervalos prontos (datas locais YYYY-MM-DD). */
-export type PeriodKey = 'mes' | '30d' | 'ano' | 'tudo';
-export function rangeForPeriod(period: PeriodKey, today: string): Range {
+export type PeriodKey = 'hoje' | '7d' | '30d' | 'tudo' | 'custom' | 'mes' | 'ano';
+
+export function rangeForPeriod(period: PeriodKey, today: string, customRange?: Range): Range {
   if (period === 'tudo') return {};
+  if (period === 'hoje') return { from: today, to: today };
+  if (period === 'custom') {
+    if (!customRange) return {};
+    const from = customRange.from || undefined;
+    const to = customRange.to || customRange.from || undefined;
+    return { from, to };
+  }
   if (period === 'mes') return { from: `${today.slice(0, 7)}-01`, to: today };
   if (period === 'ano') return { from: `${today.slice(0, 4)}-01-01`, to: today };
   const [y, m, d] = today.split('-').map(Number);
+  if (period === '7d') {
+    const from = new Date(Date.UTC(y, m - 1, d - 6));
+    const iso = `${from.getUTCFullYear()}-${String(from.getUTCMonth() + 1).padStart(2, '0')}-${String(from.getUTCDate()).padStart(2, '0')}`;
+    return { from: iso, to: today };
+  }
+  // 30d
   const from = new Date(Date.UTC(y, m - 1, d - 29));
   const iso = `${from.getUTCFullYear()}-${String(from.getUTCMonth() + 1).padStart(2, '0')}-${String(from.getUTCDate()).padStart(2, '0')}`;
   return { from: iso, to: today };

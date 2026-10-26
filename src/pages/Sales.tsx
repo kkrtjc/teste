@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { 
   DollarSign, TrendingUp, AlertTriangle, CheckCircle2, 
-  RotateCcw, Download, Plus, Search,
+  RotateCcw, Download, Plus, Search, Calendar,
   HeartCrack, ArrowRightLeft, Clock, ShieldCheck, MessageSquare
 } from 'lucide-react';
 import { useAppSlice } from '../lib/AppContext';
@@ -21,7 +21,8 @@ import {
   REASON_LABELS, 
   PAYMENT_LABELS,
   type BirdMovement, 
-  type MovementType 
+  type MovementType,
+  type Range
 } from '../lib/sales/types';
 import { RegisterSaleModal } from '../components/modals/RegisterSaleModal';
 import { ReverseMovementModal } from '../components/modals/ReverseMovementModal';
@@ -36,8 +37,14 @@ export function Sales() {
   );
   const { triggerSuccess, triggerLight, triggerWarning } = useHaptics();
 
-  // Estados de Filtro
-  const [periodo, setPeriodo] = useState<PeriodKey>('mes');
+  const today = todayLocalISO();
+
+  // Estados de Filtro de Período Inteligente
+  const [periodo, setPeriodo] = useState<PeriodKey>('30d');
+  const [customFrom, setCustomFrom] = useState(today);
+  const [customTo, setCustomTo] = useState(today);
+
+  // Filtros de Listagem
   const [activeChip, setActiveChip] = useState<'todas' | 'vendas' | 'pendentes' | 'perdas' | 'estornos'>('todas');
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(30);
@@ -46,23 +53,39 @@ export function Sales() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [movementToReverse, setMovementToReverse] = useState<BirdMovement | null>(null);
 
-  const today = todayLocalISO();
+  // Range personalizado quando 'custom' estiver ativo
+  const customRange: Range = useMemo(() => {
+    if (!customFrom) return {};
+    if (!customTo) return { from: customFrom, to: customFrom };
+    const from = customFrom <= customTo ? customFrom : customTo;
+    const to = customFrom <= customTo ? customTo : customFrom;
+    return { from, to };
+  }, [customFrom, customTo]);
 
-  // Computação de Resumo Financeiro (O(n) memoizado)
+  // Intervalo ativo calculado com base na opção selecionada
+  const activeRange = useMemo(() => {
+    return rangeForPeriod(periodo, today, customRange);
+  }, [periodo, today, customRange]);
+
+  // Computação de Resumo Financeiro (O(n) memoizado, filtrado pelo período ativo)
   const summary = useMemo(() => {
-    const range = rangeForPeriod(periodo, today);
-    return summarize(movements, range);
-  }, [movements, periodo, today]);
+    return summarize(movements, activeRange);
+  }, [movements, activeRange]);
 
   // Série mensal para gráfico SVG nativo (zero libs pesadas, 0kb bundle)
   const chartSeries = useMemo(() => {
     return monthlySeries(movements, today, 6);
   }, [movements, today]);
 
-  // Vendas pendentes prioritárias (A Receber)
+  // Vendas pendentes prioritárias (A Receber), filtradas pelo período ativo
   const pendingSales = useMemo(() => {
-    return pendingReceivables(movements);
-  }, [movements]);
+    const allPending = pendingReceivables(movements);
+    if (!activeRange.from && !activeRange.to) return allPending;
+    return allPending.filter(m => 
+      (!activeRange.from || m.data >= activeRange.from) && 
+      (!activeRange.to || m.data <= activeRange.to)
+    );
+  }, [movements, activeRange]);
 
   // Movimentações filtradas para exibição no Ledger Timeline
   const filteredList = useMemo(() => {
@@ -82,17 +105,13 @@ export function Sales() {
       tipos = ['perda', 'saida'];
     }
 
-    const range = activeChip === 'todas' || activeChip === 'vendas' 
-      ? rangeForPeriod(periodo, today) 
-      : undefined;
-
     return filterHistory(movements, {
       tipos,
       query: search.trim() || undefined,
-      range,
+      range: activeRange,
       includeReversed: includeReversed || activeChip === 'todas'
     });
-  }, [movements, activeChip, periodo, today, search, pendingSales]);
+  }, [movements, activeChip, activeRange, search, pendingSales]);
 
   // Ação de confirmar recebimento de venda pendente
   const handleConfirmPayment = useCallback(async (movementId: string) => {
@@ -113,14 +132,14 @@ export function Sales() {
     }
   }, [reverseBirdMovement, triggerSuccess, triggerWarning]);
 
-  // Exportar dados para CSV seguro
+  // Exportar dados para CSV seguro filtrados pelo período ativo
   const handleExportCSV = useCallback(() => {
     triggerLight();
-    if (movements.length === 0) {
-      showToast('Não há movimentações para exportar.', 'info');
+    if (filteredList.length === 0) {
+      showToast('Não há movimentações no período para exportar.', 'info');
       return;
     }
-    const csvContent = movementsToCSV(movements);
+    const csvContent = movementsToCSV(filteredList);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -131,7 +150,7 @@ export function Sales() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     showToast('Relatório CSV baixado com sucesso!', 'success');
-  }, [movements, showToast, triggerLight]);
+  }, [filteredList, showToast, triggerLight]);
 
   // Valor máximo para normalização do gráfico SVG
   const maxSeriesValue = useMemo(() => {
@@ -188,44 +207,110 @@ export function Sales() {
         </div>
       </div>
 
-      {/* ── SELETOR DE PERÍODO ── */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-        <div className="flex items-center gap-1.5 p-1 bg-theme-surface border border-theme-border rounded-xl">
-          {[
-            { key: 'mes', label: 'Este Mês' },
-            { key: '30d', label: 'Últimos 30d' },
-            { key: 'ano', label: 'Este Ano' },
-            { key: 'tudo', label: 'Todo Histórico' }
-          ].map(p => {
-            const active = periodo === p.key;
-            return (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => {
-                  triggerLight();
-                  setPeriodo(p.key as PeriodKey);
-                  setVisibleCount(30);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all touch-manipulation ${
-                  active
-                    ? 'bg-theme-primary text-black shadow-sm'
-                    : 'text-theme-text-muted hover:text-white'
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
+      {/* ── SELETOR DE PERÍODO INTELIGENTE ── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 p-1 bg-theme-surface border border-theme-border rounded-xl">
+            {[
+              { key: 'hoje', label: 'Hoje' },
+              { key: '7d', label: 'Últimos 7 dias' },
+              { key: '30d', label: 'Últimos 30 dias' },
+              { key: 'tudo', label: 'Todo o período' },
+              { key: 'custom', label: 'Personalizado' }
+            ].map(p => {
+              const active = periodo === p.key;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => {
+                    triggerLight();
+                    setPeriodo(p.key as PeriodKey);
+                    setVisibleCount(30);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all touch-manipulation whitespace-nowrap ${
+                    active
+                      ? 'bg-theme-primary text-black shadow-sm font-black'
+                      : 'text-theme-text-muted hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <span className="text-[11px] text-theme-text-muted hidden sm:inline-flex items-center gap-1">
+            <ShieldCheck size={13} className="text-emerald-400" />
+            <span>Ledger Imutável • Auditoria Contábil</span>
+          </span>
         </div>
 
-        <span className="text-[11px] text-theme-text-muted hidden sm:inline-flex items-center gap-1">
-          <ShieldCheck size={13} className="text-emerald-400" />
-          <span>Ledger Imutável • Centavos Inteiros</span>
-        </span>
+        {/* Barra de Filtro de Data Personalizada (Dia Único ou Intervalo) */}
+        {periodo === 'custom' && (
+          <div className="p-3 bg-theme-surface border border-theme-border rounded-xl flex flex-wrap items-center gap-3 animate-fade-in text-xs">
+            <div className="flex items-center gap-2">
+              <Calendar size={15} className="text-theme-primary shrink-0" />
+              <span className="font-bold text-white">De:</span>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={e => {
+                  setCustomFrom(e.target.value);
+                  if (!customTo || customTo < e.target.value) {
+                    setCustomTo(e.target.value);
+                  }
+                  setVisibleCount(30);
+                }}
+                className="bg-theme-base border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white">Até:</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={e => {
+                  setCustomTo(e.target.value);
+                  setVisibleCount(30);
+                }}
+                className="bg-theme-base border border-theme-border rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-theme-primary"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomFrom(today);
+                  setCustomTo(today);
+                  setVisibleCount(30);
+                }}
+                className="px-2.5 py-1 text-[11px] font-bold bg-theme-base hover:bg-theme-border border border-theme-border text-theme-text-muted hover:text-white rounded-lg transition-colors cursor-pointer touch-manipulation"
+              >
+                Apenas Hoje
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const [y, m, d] = today.split('-').map(Number);
+                  const dt = new Date(Date.UTC(y, m - 1, d - 1));
+                  const yesterday = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+                  setCustomFrom(yesterday);
+                  setCustomTo(yesterday);
+                  setVisibleCount(30);
+                }}
+                className="px-2.5 py-1 text-[11px] font-bold bg-theme-base hover:bg-theme-border border border-theme-border text-theme-text-muted hover:text-white rounded-lg transition-colors cursor-pointer touch-manipulation"
+              >
+                Apenas Ontem
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── KPI CARDS (FINANCEIRO & OPERACIONAL) ── */}
+      {/* ── KPI CARDS (FINANCEIRO & OPERACIONAL FILTRADOS) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Receita Total */}
         <div className="p-4 bg-theme-surface border border-theme-border rounded-2xl shadow-sm space-y-1 relative overflow-hidden">
@@ -239,7 +324,7 @@ export function Sales() {
             {formatBRL(summary.receita)}
           </p>
           <p className="text-[11px] text-theme-text-muted">
-            {summary.vendasCount} ave(s) vendida(s)
+            {summary.vendasCount} ave(s) vendida(s) no período
           </p>
         </div>
 
@@ -304,11 +389,11 @@ export function Sales() {
       <div className="p-4 sm:p-5 bg-theme-surface border border-theme-border rounded-2xl shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-white">Faturamento dos Últimos 6 Meses</h3>
-            <p className="text-[11px] text-theme-text-muted">Desempenho histórico de vendas de aves</p>
+            <h3 className="text-sm font-bold text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
+            <p className="text-[11px] text-theme-text-muted">Desempenho histórico consolidado</p>
           </div>
           <span className="text-xs font-mono font-bold text-theme-primary">
-            {formatBRL(chartSeries.reduce((acc, s) => acc + s.receita, 0))} total
+            {formatBRL(chartSeries.reduce((acc, s) => acc + s.receita, 0))} acumulado
           </span>
         </div>
 
@@ -336,7 +421,7 @@ export function Sales() {
         </div>
       </div>
 
-      {/* ── ALERTA DE RECEBÍVEIS PENDENTES (SE HOUVER) ── */}
+      {/* ── ALERTA DE RECEBÍVEIS PENDENTES DO PERÍODO (SE HOUVER) ── */}
       {pendingSales.length > 0 && (
         <div className="p-4 sm:p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
@@ -459,7 +544,7 @@ export function Sales() {
               Histórico de Movimentações ({filteredList.length})
             </span>
             <span className="text-[11px] text-theme-text-muted">
-              Ordenado por data decrescente
+              Filtrado por período • Ordenado por data
             </span>
           </div>
 
@@ -470,7 +555,7 @@ export function Sales() {
               </div>
               <p className="text-sm font-bold text-white">Nenhuma movimentação encontrada</p>
               <p className="text-xs text-theme-text-muted max-w-sm mx-auto">
-                Registre uma venda ou saída para iniciar o controle contábil e de perdas do criatório.
+                Não há registros com os filtros e período selecionados.
               </p>
               <button
                 type="button"
@@ -478,7 +563,7 @@ export function Sales() {
                 className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm touch-manipulation cursor-pointer"
               >
                 <Plus size={14} />
-                <span>Registrar Primeira Venda</span>
+                <span>Registrar Venda / Saída</span>
               </button>
             </div>
           ) : (

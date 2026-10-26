@@ -79,3 +79,73 @@ export function sumCents(values: readonly number[]): number {
   for (let i = 0; i < values.length; i++) total += values[i];
   return total;
 }
+
+/**
+ * Normaliza o valor digitado no input de moeda:
+ * - Troca ponto por vírgula
+ * - Aceita somente dígitos e vírgula
+ * - Garante apenas 1 vírgula
+ * - Limita a 2 casas decimais após a vírgula
+ */
+export function sanitizeMoneyInput(raw: string): string {
+  if (!raw) return '';
+  let s = raw.replace(/\./g, ',').replace(/[^0-9,]/g, '');
+  const parts = s.split(',');
+  if (parts.length > 2) {
+    s = `${parts[0]},${parts.slice(1).join('')}`;
+  }
+  const commaIdx = s.indexOf(',');
+  if (commaIdx >= 0) {
+    const intPart = s.slice(0, commaIdx);
+    const decPart = s.slice(commaIdx + 1).slice(0, 2);
+    s = `${intPart},${decPart}`;
+  }
+  return s;
+}
+
+/**
+ * Ao perder o foco (onBlur), formata com duas casas decimais limpas (ex: "150" -> "150,00").
+ */
+export function formatMoneyOnBlur(raw: string): string {
+  if (!raw || !raw.trim()) return '';
+  const cents = parseMoneyToCents(raw);
+  if (cents === null || cents === 0) return '0,00';
+  const reais = Math.floor(cents / 100);
+  const centavos = String(cents % 100).padStart(2, '0');
+  return `${reais},${centavos}`;
+}
+
+/**
+ * Extrai e formata o preço cadastrado previamente na ave (valorEstimado ou vitrinePrice).
+ */
+export function getBirdPredefinedPrice(bird: any): string {
+  if (!bird) return '';
+  if (bird.valorEstimado !== undefined && bird.valorEstimado !== null && bird.valorEstimado !== '') {
+    const num = Number(bird.valorEstimado);
+    if (!isNaN(num) && num > 0) {
+      return num.toFixed(2).replace('.', ',');
+    }
+  }
+  if (bird.vitrinePrice) {
+    const cents = parseMoneyToCents(bird.vitrinePrice);
+    if (cents !== null && cents > 0) {
+      const reais = Math.floor(cents / 100);
+      const centavos = String(cents % 100).padStart(2, '0');
+      return `${reais},${centavos}`;
+    }
+  }
+  return '';
+}
+
+/**
+ * Higieniza o campo de contato telefônico/WhatsApp aceitando SOMENTE números
+ * e aplicando máscara brasileira dinâmica (XX) XXXXX-XXXX.
+ */
+export function formatPhoneDigits(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11);
+  if (!digits) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+}

@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, DollarSign, Calendar, User, Phone, CheckCircle2, 
@@ -9,7 +9,13 @@ import { useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import { todayLocalISO } from '../../lib/dates';
-import { parseMoneyToCents } from '../../lib/sales/money';
+import { 
+  parseMoneyToCents, 
+  sanitizeMoneyInput, 
+  formatMoneyOnBlur, 
+  getBirdPredefinedPrice, 
+  formatPhoneDigits 
+} from '../../lib/sales/money';
 import type { MovementType, PaymentMethod, PaymentStatus } from '../../lib/sales/types';
 
 interface RegisterSaleModalProps {
@@ -48,6 +54,8 @@ const BirdSelector = memo(function BirdSelector({ birds, selectedBirdId, onSelec
 
   // Se já há ave selecionada e o usuário não clicou para trocar, mostra o card compacto
   if (selectedBird && !isChanging) {
+    const definedPrice = getBirdPredefinedPrice(selectedBird);
+
     return (
       <div className="space-y-1.5">
         <div className="flex justify-between items-center text-[11px] font-bold text-theme-text-muted uppercase tracking-wider">
@@ -67,9 +75,14 @@ const BirdSelector = memo(function BirdSelector({ birds, selectedBirdId, onSelec
               <p className="font-mono text-xs font-black text-white truncate">
                 {selectedBird.anilha} <span className="font-normal text-[11px] text-theme-text-muted">({selectedBird.nome || 'Sem nome'})</span>
               </p>
-              <p className="text-[10px] text-theme-text-muted truncate">
-                {selectedBird.raca} {selectedBird.baia ? `• Baia ${selectedBird.baia}` : ''}
-              </p>
+              <div className="flex items-center gap-2 text-[10px] text-theme-text-muted truncate">
+                <span>{selectedBird.raca} {selectedBird.baia ? `• Baia ${selectedBird.baia}` : ''}</span>
+                {definedPrice && (
+                  <span className="text-emerald-400 font-bold font-mono">
+                    • R$ {definedPrice}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <button
@@ -116,6 +129,7 @@ const BirdSelector = memo(function BirdSelector({ birds, selectedBirdId, onSelec
         ) : (
           filteredBirds.map(bird => {
             const isSelected = selectedBirdId === bird.id;
+            const price = getBirdPredefinedPrice(bird);
             return (
               <div
                 key={bird.id}
@@ -135,7 +149,10 @@ const BirdSelector = memo(function BirdSelector({ birds, selectedBirdId, onSelec
                     <p className="font-mono text-xs font-bold text-white truncate">
                       {bird.anilha} <span className="font-normal text-[11px] text-theme-text-muted">({bird.nome || 'Sem nome'})</span>
                     </p>
-                    <p className="text-[10px] text-theme-text-muted truncate">{bird.raca} {bird.baia ? `• Baia ${bird.baia}` : ''}</p>
+                    <p className="text-[10px] text-theme-text-muted truncate">
+                      {bird.raca} {bird.baia ? `• Baia ${bird.baia}` : ''}
+                      {price ? ` • Preço: R$ ${price}` : ''}
+                    </p>
                   </div>
                 </div>
                 {isSelected && <CheckCircle2 size={16} className="text-theme-primary shrink-0" />}
@@ -169,9 +186,18 @@ export function RegisterSaleModal({
 
   const [selectedBirdId, setSelectedBirdId] = useState<string>(preSelectedBirdId || (activeBirds[0]?.id || ''));
   const [tipo, setTipo] = useState<MovementType>(defaultType);
+
+  // A ave atualmente selecionada
+  const selectedBird = useMemo(() => {
+    return birds.find(b => b.id === selectedBirdId) || null;
+  }, [birds, selectedBirdId]);
   
-  // Dados da Venda
-  const [valorInput, setValorInput] = useState('');
+  // Dados da Venda com preenchimento inteligente de preço cadastrado
+  const [valorInput, setValorInput] = useState(() => {
+    const initial = birds.find(b => b.id === (preSelectedBirdId || activeBirds[0]?.id));
+    return initial ? getBirdPredefinedPrice(initial) : '';
+  });
+
   const [dataMovimento, setDataMovimento] = useState(todayLocalISO());
   const [compradorNome, setCompradorNome] = useState('');
   const [compradorContato, setCompradorContato] = useState('');
@@ -184,14 +210,31 @@ export function RegisterSaleModal({
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // A ave atualmente selecionada
-  const selectedBird = useMemo(() => {
-    return birds.find(b => b.id === selectedBirdId) || null;
-  }, [birds, selectedBirdId]);
-
+  // Quando o usuário seleciona ou altera a ave, preenche automaticamente o preço definido no cadastro
   const handleSelectBird = useCallback((id: string) => {
     setSelectedBirdId(id);
-  }, []);
+    const b = birds.find(item => item.id === id);
+    if (b) {
+      const definedPrice = getBirdPredefinedPrice(b);
+      if (definedPrice) {
+        setValorInput(definedPrice);
+      }
+    }
+  }, [birds]);
+
+  // Se o modal foi aberto com preSelectedBirdId, atualiza a ave e o preço automaticamente
+  useEffect(() => {
+    if (preSelectedBirdId) {
+      setSelectedBirdId(preSelectedBirdId);
+      const b = birds.find(item => item.id === preSelectedBirdId);
+      if (b) {
+        const definedPrice = getBirdPredefinedPrice(b);
+        if (definedPrice) {
+          setValorInput(definedPrice);
+        }
+      }
+    }
+  }, [preSelectedBirdId, birds]);
 
   if (!isOpen) return null;
 
@@ -348,11 +391,16 @@ export function RegisterSaleModal({
           {/* Campos específicos de Venda */}
           {tipo === 'venda' && (
             <>
-              {/* Valor da Venda */}
+              {/* Valor da Venda com Máscara e Vírgula Inteligente */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
-                  Valor Negociado (R$) *
-                </label>
+                <div className="flex justify-between items-center text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+                  <span>Valor Negociado (R$) *</span>
+                  {selectedBird && getBirdPredefinedPrice(selectedBird) && (
+                    <span className="text-[10px] text-emerald-400 lowercase font-medium">
+                      (cadastrado: R$ {getBirdPredefinedPrice(selectedBird)})
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">R$</span>
                   <input
@@ -361,7 +409,8 @@ export function RegisterSaleModal({
                     required
                     placeholder="0,00"
                     value={valorInput}
-                    onChange={e => setValorInput(e.target.value.replace(/[^0-9.,]/g, ''))}
+                    onChange={e => setValorInput(sanitizeMoneyInput(e.target.value))}
+                    onBlur={() => setValorInput(formatMoneyOnBlur(valorInput))}
                     className="w-full bg-theme-base border border-theme-border focus:border-emerald-500 rounded-xl py-2.5 pl-9 pr-3 text-sm font-bold text-white outline-none"
                     autoComplete="off"
                     autoCorrect="off"
@@ -432,7 +481,7 @@ export function RegisterSaleModal({
                 </div>
               </div>
 
-              {/* Comprador: Nome e Contato */}
+              {/* Comprador: Nome e Contato (Somente números no contato) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1">
@@ -452,13 +501,14 @@ export function RegisterSaleModal({
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1">
                     <Phone size={13} className="text-theme-primary" />
-                    <span>WhatsApp / Contato</span>
+                    <span>WhatsApp / Contato (somente números)</span>
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     placeholder="(00) 00000-0000"
                     value={compradorContato}
-                    onChange={e => setCompradorContato(e.target.value)}
+                    onChange={e => setCompradorContato(formatPhoneDigits(e.target.value))}
                     className="w-full bg-theme-base border border-theme-border focus:border-theme-primary rounded-xl py-2.5 px-3 text-sm text-white outline-none"
                     autoComplete="off"
                   />
