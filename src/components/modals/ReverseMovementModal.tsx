@@ -39,11 +39,12 @@ export function ReverseMovementModal({
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10002] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),0px)] bg-black/85 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[10002] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),0px)] bg-black/85 animate-fade-in"
       onClick={onClose}
     >
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-scale-up"
+        style={{ contain: 'paint' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-rose-950/20">
@@ -59,7 +60,7 @@ export function ReverseMovementModal({
           <button 
             type="button"
             onClick={onClose}
-            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer touch-manipulation"
           >
             <X size={18} />
           </button>
@@ -106,14 +107,14 @@ export function ReverseMovementModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 text-xs font-bold text-theme-text-muted hover:text-white rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2.5 text-xs font-bold text-theme-text-muted hover:text-white rounded-xl transition-colors cursor-pointer touch-manipulation"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !motivo.trim()}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-lg shadow-rose-950/40 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-lg shadow-rose-950/40 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               {isSubmitting ? 'Estornando...' : 'Confirmar Estorno'}
             </button>

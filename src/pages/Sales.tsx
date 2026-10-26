@@ -40,6 +40,7 @@ export function Sales() {
   const [periodo, setPeriodo] = useState<PeriodKey>('mes');
   const [activeChip, setActiveChip] = useState<'todas' | 'vendas' | 'pendentes' | 'perdas' | 'estornos'>('todas');
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(30);
 
   // Estados dos Modais
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -138,6 +139,10 @@ export function Sales() {
     return max;
   }, [chartSeries]);
 
+  const displayedList = useMemo(() => {
+    return filteredList.slice(0, visibleCount);
+  }, [filteredList, visibleCount]);
+
   return (
     <div className="space-y-6 animate-fade-in p-2 sm:p-4 max-w-7xl mx-auto pb-24 sm:pb-12">
       {/* ── HEADER PRINCIPAL ── */}
@@ -162,7 +167,7 @@ export function Sales() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 bg-theme-base hover:bg-theme-surface border border-theme-border hover:border-theme-primary/50 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 bg-theme-base hover:bg-theme-surface border border-theme-border hover:border-theme-primary/50 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer touch-manipulation"
             title="Exportar dados para Excel/CSV"
           >
             <Download size={15} className="text-theme-primary" />
@@ -175,7 +180,7 @@ export function Sales() {
               triggerLight();
               setIsRegisterModalOpen(true);
             }}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer touch-manipulation"
           >
             <Plus size={16} />
             <span>Registrar Venda / Saída</span>
@@ -200,8 +205,9 @@ export function Sales() {
                 onClick={() => {
                   triggerLight();
                   setPeriodo(p.key as PeriodKey);
+                  setVisibleCount(30);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all touch-manipulation ${
                   active
                     ? 'bg-theme-primary text-black shadow-sm'
                     : 'text-theme-text-muted hover:text-white'
@@ -375,7 +381,7 @@ export function Sales() {
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors"
+                        className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors touch-manipulation"
                         title="Cobrar via WhatsApp"
                       >
                         <MessageSquare size={14} />
@@ -384,7 +390,7 @@ export function Sales() {
                     <button
                       type="button"
                       onClick={() => handleConfirmPayment(m.id)}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer touch-manipulation"
                     >
                       Confirmar Pago
                     </button>
@@ -416,8 +422,9 @@ export function Sales() {
                   onClick={() => {
                     triggerLight();
                     setActiveChip(c.key as any);
+                    setVisibleCount(30);
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0 ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0 touch-manipulation ${
                     active
                       ? 'bg-theme-primary/15 border-theme-primary text-theme-primary shadow-sm'
                       : 'bg-theme-surface border-theme-border text-theme-text-muted hover:text-white'
@@ -436,7 +443,10 @@ export function Sales() {
               type="text"
               placeholder="Buscar anilha, comprador..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => {
+                setSearch(e.target.value);
+                setVisibleCount(30);
+              }}
               className="w-full bg-theme-surface border border-theme-border rounded-xl py-1.5 pl-8 pr-3 text-xs text-white outline-none focus:border-theme-primary"
             />
           </div>
@@ -465,7 +475,7 @@ export function Sales() {
               <button
                 type="button"
                 onClick={() => setIsRegisterModalOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm touch-manipulation cursor-pointer"
               >
                 <Plus size={14} />
                 <span>Registrar Primeira Venda</span>
@@ -473,7 +483,7 @@ export function Sales() {
             </div>
           ) : (
             <div className="divide-y divide-theme-border">
-              {filteredList.map(item => {
+              {displayedList.map(item => {
                 const isVenda = item.tipo === 'venda';
                 const isPerda = item.tipo === 'perda';
                 const isPendente = isVenda && item.statusPagamento === 'pendente';
@@ -481,6 +491,7 @@ export function Sales() {
                 return (
                   <div
                     key={item.id}
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: '0 72px' }}
                     className={`p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
                       item.estornado ? 'opacity-60 bg-black/20' : 'hover:bg-white/[0.02]'
                     }`}
@@ -564,7 +575,7 @@ export function Sales() {
                           <button
                             type="button"
                             onClick={() => handleConfirmPayment(item.id)}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition-colors cursor-pointer touch-manipulation"
                           >
                             Receber
                           </button>
@@ -574,7 +585,7 @@ export function Sales() {
                           <button
                             type="button"
                             onClick={() => setMovementToReverse(item)}
-                            className="p-1.5 rounded-lg hover:bg-rose-500/15 text-theme-text-muted hover:text-rose-400 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg hover:bg-rose-500/15 text-theme-text-muted hover:text-rose-400 transition-colors cursor-pointer touch-manipulation"
                             title="Estornar movimentação"
                           >
                             <RotateCcw size={15} />
@@ -585,6 +596,18 @@ export function Sales() {
                   </div>
                 );
               })}
+
+              {filteredList.length > visibleCount && (
+                <div className="p-3 text-center border-t border-theme-border bg-theme-base/30">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(c => c + 30)}
+                    className="px-4 py-2 text-xs font-bold text-theme-primary bg-theme-primary/10 hover:bg-theme-primary/20 rounded-xl transition-colors cursor-pointer touch-manipulation"
+                  >
+                    Mostrar mais ({filteredList.length - visibleCount} restantes)
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

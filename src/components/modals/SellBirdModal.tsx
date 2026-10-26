@@ -1,11 +1,15 @@
 import { todayLocalISO } from '../../lib/dates';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, DollarSign, Calendar, User, Phone, CheckCircle } from 'lucide-react';
+import { 
+  X, DollarSign, Calendar, User, Phone, CheckCircle, 
+  CreditCard, CheckCircle2, AlertTriangle 
+} from 'lucide-react';
 import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import { parseMoneyToCents } from '../../lib/sales/money';
+import type { PaymentMethod, PaymentStatus } from '../../lib/sales/types';
 
 interface SellBirdModalProps {
   bird: Bird;
@@ -26,6 +30,8 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
 
   const [valorVenda, setValorVenda] = useState(initialPrice);
   const [dataVenda, setDataVenda] = useState(todayLocalISO());
+  const [formaPagamento, setFormaPagamento] = useState<PaymentMethod>('pix');
+  const [statusPagamento, setStatusPagamento] = useState<PaymentStatus>('pago');
   const [compradorNome, setCompradorNome] = useState('');
   const [compradorContato, setCompradorContato] = useState('');
   const [obsVenda, setObsVenda] = useState('');
@@ -56,9 +62,9 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
         comprador: (compradorNome.trim() || compradorContato.trim())
           ? { nome: compradorNome.trim() || undefined, contato: compradorContato.trim() || undefined }
           : undefined,
-        pagamento: 'pix',
-        statusPagamento: 'pago',
-        dataRecebimento: dataVenda || todayLocalISO(),
+        pagamento: formaPagamento,
+        statusPagamento: statusPagamento,
+        dataRecebimento: statusPagamento === 'pago' ? (dataVenda || todayLocalISO()) : undefined,
         observacao: obsVenda.trim() || undefined
       });
 
@@ -80,16 +86,13 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),0px)] bg-black/80 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),0px)] bg-black/80 animate-fade-in"
       onClick={onClose}
-      onTouchMove={e => {
-        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
-      }}
     >
       <div 
         className="bg-theme-surface border border-theme-border rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[calc(100dvh-max(env(safe-area-inset-top),16px)-max(env(safe-area-inset-bottom),16px)-16px)] animate-scale-up relative"
+        style={{ contain: 'paint' }}
         onClick={e => e.stopPropagation()}
-        onTouchMove={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/70">
@@ -103,8 +106,9 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
             </div>
           </div>
           <button 
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+            className="p-1.5 text-theme-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer touch-manipulation"
           >
             <X size={18} />
           </button>
@@ -154,8 +158,73 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 value={valorVenda}
                 onChange={e => setValorVenda(e.target.value.replace(/[^0-9.,]/g, ''))}
                 placeholder="0,00"
-                className="w-full bg-theme-base border border-theme-border focus:border-emerald-500 rounded-xl py-3 pl-10 pr-3 text-base font-bold text-white outline-none transition-colors"
+                className="w-full bg-theme-base border border-theme-border focus:border-emerald-500 rounded-xl py-3 pl-10 pr-3 text-base font-bold text-white outline-none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
               />
+            </div>
+          </div>
+
+          {/* Status do Pagamento (Pago vs Pendente) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider">
+              Situação do Pagamento
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setStatusPagamento('pago')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation ${
+                  statusPagamento === 'pago'
+                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-sm'
+                    : 'bg-theme-base/60 border-theme-border text-theme-text-muted'
+                }`}
+              >
+                <CheckCircle2 size={14} />
+                <span>Recebido (Pago)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusPagamento('pendente')}
+                className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation ${
+                  statusPagamento === 'pendente'
+                    ? 'bg-amber-500/15 border-amber-500 text-amber-400 shadow-sm'
+                    : 'bg-theme-base/60 border-theme-border text-theme-text-muted'
+                }`}
+              >
+                <AlertTriangle size={14} />
+                <span>A Receber (Pendente)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Forma de Pagamento */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider flex items-center gap-1.5">
+              <CreditCard size={13} className="text-theme-primary" />
+              <span>Forma de Pagamento</span>
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { key: 'pix', label: 'Pix' },
+                { key: 'dinheiro', label: 'Dinheiro' },
+                { key: 'cartao', label: 'Cartão' },
+                { key: 'transferencia', label: 'Transf.' }
+              ].map(f => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFormaPagamento(f.key as PaymentMethod)}
+                  className={`py-2 text-xs font-bold rounded-xl border transition-all text-center touch-manipulation ${
+                    formaPagamento === f.key
+                      ? 'bg-theme-primary/15 border-theme-primary text-theme-primary'
+                      : 'bg-theme-base/60 border-theme-border text-theme-text-muted'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -187,6 +256,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 onChange={e => setCompradorNome(e.target.value)}
                 placeholder="Ex: Carlos Andrade"
                 className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                autoComplete="off"
               />
             </div>
 
@@ -196,11 +266,12 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 <span>WhatsApp / Fone</span>
               </label>
               <input
-                type="text"
+                type="tel"
                 value={compradorContato}
                 onChange={e => setCompradorContato(e.target.value)}
                 placeholder="(00) 00000-0000"
                 className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -231,14 +302,14 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-theme-border text-theme-text-muted hover:text-white font-bold text-sm transition-colors cursor-pointer"
+              className="flex-1 py-3 rounded-xl border border-theme-border text-theme-text-muted hover:text-white font-bold text-sm transition-colors cursor-pointer touch-manipulation"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+              className="flex-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 touch-manipulation"
             >
               <CheckCircle size={16} />
               <span>{isSubmitting ? 'Salvando...' : 'Confirmar Venda'}</span>
