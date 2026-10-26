@@ -9,7 +9,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { formatBRL } from '../lib/sales/money';
 import { 
   summarize, 
-  monthlySeries, 
+  buildDynamicChartSeries, 
   pendingReceivables,
   filterHistory,
   rangeForPeriod,
@@ -31,6 +31,7 @@ import { todayLocalISO } from '../lib/dates';
 export function Sales() {
   const { movements, reverseBirdMovement, markPaymentReceived, showToast } = useAppSlice(
     'movements',
+    'birds',
     'reverseBirdMovement',
     'markPaymentReceived',
     'showToast'
@@ -40,7 +41,7 @@ export function Sales() {
   const today = todayLocalISO();
 
   // Estados de Filtro de Período Inteligente
-  const [periodo, setPeriodo] = useState<PeriodKey>('30d');
+  const [periodo, setPeriodo] = useState<PeriodKey>('tudo');
   const [customFrom, setCustomFrom] = useState(today);
   const [customTo, setCustomTo] = useState(today);
 
@@ -72,10 +73,10 @@ export function Sales() {
     return summarize(movements, activeRange);
   }, [movements, activeRange]);
 
-  // Série mensal para gráfico SVG nativo (zero libs pesadas, 0kb bundle)
-  const chartSeries = useMemo(() => {
-    return monthlySeries(movements, today, 6);
-  }, [movements, today]);
+  // Gráfico dinâmico nativo e inteligente (responde imediatamente à mudança do filtro)
+  const chartReport = useMemo(() => {
+    return buildDynamicChartSeries(movements, periodo, today, customRange);
+  }, [movements, periodo, today, customRange]);
 
   // Vendas pendentes prioritárias (A Receber), filtradas pelo período ativo
   const pendingSales = useMemo(() => {
@@ -152,11 +153,11 @@ export function Sales() {
     showToast('Relatório CSV baixado com sucesso!', 'success');
   }, [filteredList, showToast, triggerLight]);
 
-  // Valor máximo para normalização do gráfico SVG
+  // Valor máximo para normalização proporcional das barras do gráfico SVG
   const maxSeriesValue = useMemo(() => {
-    const max = Math.max(...chartSeries.map(s => s.receita), 100);
+    const max = Math.max(...chartReport.bars.map(b => b.receita), 100);
     return max;
-  }, [chartSeries]);
+  }, [chartReport.bars]);
 
   const displayedList = useMemo(() => {
     return filteredList.slice(0, visibleCount);
@@ -385,39 +386,67 @@ export function Sales() {
         </div>
       </div>
 
-      {/* ── GRÁFICO SVG NATIVO LEVE (EVOLUÇÃO MENSAL) ── */}
+      {/* ── GRÁFICO SVG NATIVO LEVE (DINÂMICO CONFORME O FILTRO SELECIONADO) ── */}
       <div className="p-4 sm:p-5 bg-theme-surface border border-theme-border rounded-2xl shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
           <div>
-            <h3 className="text-sm font-bold text-white">Evolução de Vendas (Últimos 6 Meses)</h3>
-            <p className="text-[11px] text-theme-text-muted">Desempenho histórico consolidado</p>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>{chartReport.title}</span>
+              {periodo !== 'tudo' && (
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  Filtro Ativo
+                </span>
+              )}
+            </h3>
+            <p className="text-[11px] text-theme-text-muted">{chartReport.subtitle}</p>
           </div>
           <span className="text-xs font-mono font-bold text-theme-primary">
-            {formatBRL(chartSeries.reduce((acc, s) => acc + s.receita, 0))} acumulado
+            {formatBRL(chartReport.totalReceita)} no período
           </span>
         </div>
 
-        <div className="h-36 w-full flex items-end gap-2 sm:gap-4 pt-4 px-2">
-          {chartSeries.map(item => {
-            const heightPercent = maxSeriesValue > 0 
-              ? Math.max(8, Math.round((item.receita / maxSeriesValue) * 100))
-              : 8;
-            const label = item.key.slice(5) + '/' + item.key.slice(2, 4);
-            return (
-              <div key={item.key} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
-                <span className="text-[10px] font-mono text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                  {formatBRL(item.receita)}
-                </span>
-                <div 
-                  className="w-full max-w-[42px] bg-emerald-500/30 hover:bg-emerald-500 border border-emerald-500/50 rounded-t-lg transition-all"
-                  style={{ height: `${heightPercent}%` }}
-                />
-                <span className="text-[11px] text-theme-text-muted font-bold tracking-tight">
-                  {label}
-                </span>
-              </div>
-            );
-          })}
+        <div className="h-40 w-full flex items-end gap-1.5 sm:gap-3 pt-4 px-1 overflow-x-auto">
+          {chartReport.bars.length === 0 ? (
+            <div className="w-full h-full flex items-center justify-center text-xs text-theme-text-muted">
+              Sem movimentações no período
+            </div>
+          ) : (
+            chartReport.bars.map(item => {
+              const heightPercent = maxSeriesValue > 0 
+                ? Math.max(8, Math.round((item.receita / maxSeriesValue) * 100))
+                : 8;
+              return (
+                <div key={item.key} className="flex-1 min-w-[38px] max-w-[64px] flex flex-col items-center gap-1.5 h-full justify-end group">
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-full">
+                    {formatBRL(item.receita)}
+                  </span>
+                  <div 
+                    className={`w-full rounded-t-lg transition-all ${
+                      item.isHighlight
+                        ? 'bg-theme-primary hover:brightness-110 shadow-sm shadow-theme-primary/30 border border-theme-primary'
+                        : item.receita > 0
+                          ? 'bg-emerald-500/40 hover:bg-emerald-500 border border-emerald-500/60'
+                          : 'bg-white/5 border border-white/10'
+                    }`}
+                    style={{ height: `${heightPercent}%` }}
+                    title={`${item.label}${item.sublabel ? ` (${item.sublabel})` : ''}: ${formatBRL(item.receita)} (${item.vendas} venda(s))`}
+                  />
+                  <div className="flex flex-col items-center">
+                    <span className={`text-[11px] font-bold tracking-tight truncate max-w-full ${
+                      item.isHighlight ? 'text-theme-primary font-black' : 'text-theme-text-muted'
+                    }`}>
+                      {item.label}
+                    </span>
+                    {item.sublabel && (
+                      <span className="text-[9px] text-theme-text-muted/70 truncate max-w-full">
+                        {item.sublabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

@@ -791,6 +791,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [movements, setMovements] = useState<BirdMovement[]>([]);
   const movementsRef = useRef<BirdMovement[]>([]);
   useEffect(() => { movementsRef.current = movements; }, [movements]);
+
+  // Auto-reconciliacao continua: se houver aves marcadas como Vendido/Baixado que ainda nao constam no livro-razao (movements),
+  // reconcilia imediatamente sem depender de sync de rede e persiste localmente.
+  useEffect(() => {
+    if (birds.length === 0) return;
+    const hasUnreconciled = birds.some(b => {
+      const s = String(b.status || '').toLowerCase().trim();
+      return (s === 'vendido' || s === 'faleceu' || s === 'morto' || s === 'abatido' || s === 'baixado') &&
+             !movementsRef.current.some(m => m.birdId === b.id && !m.estornado);
+    });
+    if (hasUnreconciled) {
+      const reconciled = reconcileLedger(movementsRef.current, birds, {
+        today: todayLocalISO(),
+        now: Date.now(),
+        deviceId: 'local'
+      });
+      if (reconciled.changed || reconciled.report.legacyCreated > 0) {
+        setMovements(reconciled.ledger);
+        movementsRef.current = reconciled.ledger;
+        safeStorageSet(getStorageKey('bird-movements'), reconciled.ledger).catch(() => {});
+      }
+    }
+  }, [birds, getStorageKey, safeStorageSet]);
   
   const [farmSettings, setFarmSettings] = useState<FarmSettings>(() => {
     try {

@@ -13,8 +13,13 @@ import {
   type SalesSummary,
 } from './types';
 
-const inRange = (data: string, range: Range) =>
-  (!range.from || data >= range.from) && (!range.to || data <= range.to);
+const inRange = (data: string, range: Range) => {
+  if (!data) return false;
+  const clean = data.slice(0, 10);
+  if (range.from && clean < range.from) return false;
+  if (range.to && clean > range.to) return false;
+  return true;
+};
 
 /** Custo de aquisição por ave (soma das entradas contadas). */
 export function costByBird(ledger: readonly BirdMovement[]): Map<string, number> {
@@ -81,6 +86,199 @@ export function monthlySeries(ledger: readonly BirdMovement[], today: string, mo
   return points;
 }
 
+export interface ChartBarData {
+  key: string;
+  label: string;
+  sublabel?: string;
+  receita: number;
+  vendas: number;
+  isHighlight?: boolean;
+}
+
+export interface DynamicChartReport {
+  title: string;
+  subtitle: string;
+  bars: ChartBarData[];
+  totalReceita: number;
+}
+
+/**
+ * Constrói dinamicamente o gráfico conforme o período ativo:
+ * - 'hoje': 7 dias com o dia de Hoje destacado
+ * - '7d': os 7 dias individuais dos últimos 7 dias
+ * - '30d': as 4 semanas dos últimos 30 dias
+ * - 'tudo': meses históricos
+ * - 'custom': dias ou semanas do intervalo personalizado
+ */
+export function buildDynamicChartSeries(
+  movements: readonly BirdMovement[],
+  period: PeriodKey,
+  today: string,
+  customRange?: Range
+): DynamicChartReport {
+  const countedSales = movements.filter(m => m.tipo === 'venda' && isCounted(m));
+
+  if (period === 'hoje') {
+    const bars: ChartBarData[] = [];
+    const [ty, tm, td] = today.split('-').map(Number);
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(Date.UTC(ty, tm - 1, td - i));
+      const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+      const daySales = countedSales.filter(m => m.data === iso);
+      const isToday = iso === today;
+      const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
+      const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+      bars.push({
+        key: iso,
+        label: isToday ? 'Hoje' : dayName,
+        sublabel: dayMonth,
+        receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        vendas: daySales.length,
+        isHighlight: isToday
+      });
+    }
+    const todaySales = countedSales.filter(m => m.data === today);
+    const todayTotal = todaySales.reduce((acc, m) => acc + m.valorCentavos, 0);
+    return {
+      title: `Vendas de Hoje (${today.split('-').reverse().join('/')})`,
+      subtitle: `${todaySales.length} venda(s) registrada(s) hoje • Comparativo semanal`,
+      bars,
+      totalReceita: todayTotal
+    };
+  }
+
+  if (period === '7d') {
+    const bars: ChartBarData[] = [];
+    const [ty, tm, td] = today.split('-').map(Number);
+    for (let i = 6; i >= 0; i--) {
+      const dt = new Date(Date.UTC(ty, tm - 1, td - i));
+      const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+      const daySales = countedSales.filter(m => m.data === iso);
+      const isToday = iso === today;
+      const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
+      const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+      bars.push({
+        key: iso,
+        label: isToday ? 'Hoje' : dayName,
+        sublabel: dayMonth,
+        receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        vendas: daySales.length,
+        isHighlight: isToday
+      });
+    }
+    const total = bars.reduce((acc, b) => acc + b.receita, 0);
+    return {
+      title: 'Vendas dos Últimos 7 Dias (Por Dia)',
+      subtitle: 'Evolução diária de faturamento do plantel',
+      bars,
+      totalReceita: total
+    };
+  }
+
+  if (period === '30d') {
+    const [ty, tm, td] = today.split('-').map(Number);
+    const bars: ChartBarData[] = [];
+    for (let w = 3; w >= 0; w--) {
+      const endDaysAgo = w * 7;
+      const startDaysAgo = endDaysAgo + 6;
+      const dtEnd = new Date(Date.UTC(ty, tm - 1, td - endDaysAgo));
+      const dtStart = new Date(Date.UTC(ty, tm - 1, td - startDaysAgo));
+      const startIso = `${dtStart.getUTCFullYear()}-${String(dtStart.getUTCMonth() + 1).padStart(2, '0')}-${String(dtStart.getUTCDate()).padStart(2, '0')}`;
+      const endIso = `${dtEnd.getUTCFullYear()}-${String(dtEnd.getUTCMonth() + 1).padStart(2, '0')}-${String(dtEnd.getUTCDate()).padStart(2, '0')}`;
+      const weekSales = countedSales.filter(m => m.data >= startIso && m.data <= endIso);
+      const isCurrentWeek = w === 0;
+      bars.push({
+        key: `w-${w}`,
+        label: isCurrentWeek ? 'Esta sem.' : `Sem. -${w}`,
+        sublabel: `${dtStart.getUTCDate()}/${dtStart.getUTCMonth() + 1} a ${dtEnd.getUTCDate()}/${dtEnd.getUTCMonth() + 1}`,
+        receita: weekSales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        vendas: weekSales.length,
+        isHighlight: isCurrentWeek
+      });
+    }
+    const total = bars.reduce((acc, b) => acc + b.receita, 0);
+    return {
+      title: 'Vendas dos Últimos 30 Dias (Últimas 4 Semanas)',
+      subtitle: 'Desempenho semanal consolidado',
+      bars,
+      totalReceita: total
+    };
+  }
+
+  if (period === 'custom') {
+    const from = customRange?.from || today;
+    const to = customRange?.to || from;
+    const [fy, fm, fd] = from.split('-').map(Number);
+    const [toy, tom, tod] = to.split('-').map(Number);
+    const startDt = new Date(Date.UTC(fy, fm - 1, fd));
+    const endDt = new Date(Date.UTC(toy, tom - 1, tod));
+    const diffDays = Math.max(1, Math.round((endDt.getTime() - startDt.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+    if (diffDays <= 14) {
+      const bars: ChartBarData[] = [];
+      for (let i = 0; i < diffDays; i++) {
+        const cur = new Date(Date.UTC(fy, fm - 1, fd + i));
+        const iso = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-${String(cur.getUTCDate()).padStart(2, '0')}`;
+        const daySales = countedSales.filter(m => m.data === iso);
+        const dayMonth = `${String(cur.getUTCDate()).padStart(2, '0')}/${String(cur.getUTCMonth() + 1).padStart(2, '0')}`;
+        bars.push({
+          key: iso,
+          label: dayMonth,
+          receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+          vendas: daySales.length,
+          isHighlight: iso === today
+        });
+      }
+      const total = bars.reduce((acc, b) => acc + b.receita, 0);
+      return {
+        title: diffDays === 1 
+          ? `Vendas do Dia ${from.split('-').reverse().join('/')}`
+          : `Vendas de ${from.split('-').reverse().join('/')} a ${to.split('-').reverse().join('/')}`,
+        subtitle: `${total > 0 ? `${bars.reduce((acc, b) => acc + b.vendas, 0)} venda(s) no período` : 'Sem movimentação no intervalo'}`,
+        bars,
+        totalReceita: total
+      };
+    }
+
+    const monthly = monthlySeries(movements, to, Math.min(12, Math.max(2, Math.ceil(diffDays / 30))));
+    const bars: ChartBarData[] = monthly.map(m => {
+      const label = m.key.slice(5) + '/' + m.key.slice(2, 4);
+      return {
+        key: m.key,
+        label,
+        receita: m.receita,
+        vendas: m.vendas,
+        isHighlight: m.key === today.slice(0, 7)
+      };
+    });
+    return {
+      title: `Vendas de ${from.split('-').reverse().join('/')} a ${to.split('-').reverse().join('/')}`,
+      subtitle: 'Visão mensal do intervalo selecionado',
+      bars,
+      totalReceita: bars.reduce((acc, b) => acc + b.receita, 0)
+    };
+  }
+
+  // 'tudo' (Todo o histórico)
+  const monthly = monthlySeries(movements, today, 6);
+  const bars: ChartBarData[] = monthly.map(m => {
+    const label = m.key.slice(5) + '/' + m.key.slice(2, 4);
+    return {
+      key: m.key,
+      label,
+      receita: m.receita,
+      vendas: m.vendas,
+      isHighlight: m.key === today.slice(0, 7)
+    };
+  });
+  return {
+    title: 'Histórico Geral de Vendas (Últimos Meses)',
+    subtitle: 'Evolução consolidada de todo o criatório',
+    bars,
+    totalReceita: bars.reduce((acc, b) => acc + b.receita, 0)
+  };
+}
+
 export function pendingReceivables(ledger: readonly BirdMovement[]): BirdMovement[] {
   return ledger
     .filter(m => m.tipo === 'venda' && isCounted(m) && m.statusPagamento === 'pendente')
@@ -107,7 +305,13 @@ export function filterHistory(ledger: readonly BirdMovement[], f: HistoryFilter 
     if (f.tipos && f.tipos.length && !f.tipos.includes(m.tipo)) continue;
     if (f.range && !inRange(m.data, f.range)) continue;
     if (q) {
-      const hay = norm(`${m.snapshot.anilha} ${m.snapshot.nome} ${m.snapshot.raca} ${m.comprador?.nome ?? ''} ${m.comprador?.contato ?? ''} ${m.observacao ?? ''}`);
+      const anilha = m.snapshot?.anilha ?? '';
+      const nome = m.snapshot?.nome ?? '';
+      const raca = m.snapshot?.raca ?? '';
+      const compNome = m.comprador?.nome ?? '';
+      const compContato = m.comprador?.contato ?? '';
+      const obs = m.observacao ?? '';
+      const hay = norm(`${anilha} ${nome} ${raca} ${compNome} ${compContato} ${obs}`);
       if (!hay.includes(q)) continue;
     }
     out.push(m);
@@ -122,7 +326,7 @@ export function rangeForPeriod(period: PeriodKey, today: string, customRange?: R
   if (period === 'tudo') return {};
   if (period === 'hoje') return { from: today, to: today };
   if (period === 'custom') {
-    if (!customRange) return {};
+    if (!customRange || (!customRange.from && !customRange.to)) return {};
     const from = customRange.from || undefined;
     const to = customRange.to || customRange.from || undefined;
     return { from, to };
@@ -159,10 +363,10 @@ export function movementsToCSV(movements: readonly BirdMovement[]): string {
     m.data.split('-').reverse().join('/'),
     TYPE_LABELS[m.tipo],
     REASON_LABELS[m.motivo] ?? m.motivo,
-    m.snapshot.anilha,
-    m.snapshot.nome,
-    m.snapshot.raca,
-    m.snapshot.sexo,
+    m.snapshot?.anilha ?? '',
+    m.snapshot?.nome ?? '',
+    m.snapshot?.raca ?? '',
+    m.snapshot?.sexo ?? '',
     centsToCsv(m.valorCentavos),
     m.pagamento ? PAYMENT_LABELS[m.pagamento] : '',
     m.statusPagamento === 'pendente' ? 'Pendente' : m.statusPagamento === 'pago' ? 'Pago' : '',
