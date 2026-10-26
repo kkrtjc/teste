@@ -15,7 +15,8 @@ export type EntityType =
   | 'couples' 
   | 'couple_eggs' 
   | 'incubation_lots' 
-  | 'breeds';
+  | 'breeds'
+  | 'bird_movements';
 
 function getKey(entity: EntityType, scope: string, type: 'tombstones' | 'pending-deletes'): string {
   return `@mura-manager:${scope}:${type}:${entity}`;

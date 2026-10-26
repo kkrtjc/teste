@@ -1,16 +1,19 @@
-import { toLocalISO } from '../lib/dates';
+import { toLocalISO, todayLocalISO } from '../lib/dates';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Bird, Baby, Sparkles, Heart, Award, Layers,
-  Egg, AlertTriangle, TrendingUp, ShoppingBag, Scale, ShieldAlert
+  Bird, Baby, Sparkles, Heart, Award, Scale,
+  Egg, AlertTriangle, TrendingUp, ShoppingBag, ShieldAlert,
+  DollarSign
 } from 'lucide-react';
+import { formatBRL } from '../lib/sales/money';
+import { summarize, rangeForPeriod } from '../lib/sales/aggregate';
 import { useAppSlice } from '../lib/AppContext';
 import { useAuth, isUserAdmin } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, isReady } = useAppSlice('birds', 'farmSettings', 'breeds', 'eggLots', 'meatLots', 'isReady');
+  const { birds, farmSettings, breeds, eggLots, meatLots, movements, isReady } = useAppSlice('birds', 'farmSettings', 'breeds', 'eggLots', 'meatLots', 'movements', 'isReady');
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
@@ -134,21 +137,20 @@ export function Dashboard() {
     return { totalMes, totalSemana, daily7, maxDay, lotsWithGap };
   }, [eggLots]);
 
-  // ── Resumo de vendas do mês ──
+  // ── Resumo de vendas do mês (via ledger unificado) ──
   const salesSummary = useMemo(() => {
-    const today = new Date();
-    const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    let count = 0;
-    let total = 0;
-    birds.forEach(b => {
-      if (b.status === 'Vendido' && b.dataVenda?.startsWith(thisMonth)) {
-        count++;
-        const val = Number(b.valorVenda) || 0;
-        total += val;
-      }
-    });
-    return { count, total };
-  }, [birds]);
+    const today = todayLocalISO();
+    const range = rangeForPeriod('mes', today);
+    const s = summarize(movements, range);
+    return {
+      count: s.vendasCount,
+      total: s.receita / 100,
+      totalCentavos: s.receita,
+      pendenteCentavos: s.aReceber,
+      recebidoCentavos: s.recebido,
+      lucroCentavos: s.lucro
+    };
+  }, [movements]);
 
   // ── Lote de corte com pesagem mais recente ──
   const latestMeatLotWeight = useMemo(() => {
@@ -311,18 +313,18 @@ export function Dashboard() {
             <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Pintinhos</p>
           </div>
 
-          {/* Lotes Cadastrados Card */}
+          {/* Vendas de Aves Card */}
           <div 
-            onClick={() => { triggerLight(); navigate('/lots'); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+            onClick={() => { triggerLight(); navigate('/vendas'); }}
+            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalLotes}</span>
-              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
-                <Layers size={16} />
+              <span className="text-xl sm:text-2xl font-black text-emerald-400">{salesSummary.count}</span>
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                <DollarSign size={16} />
               </div>
             </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Lotes Cadastrados</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Vendas no Mês</p>
           </div>
         </div>
 
@@ -422,7 +424,7 @@ export function Dashboard() {
           {/* Card de Vendas do Mês */}
           {salesSummary.count > 0 && (
             <div
-              onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Vendido' } }); }}
+              onClick={() => { triggerLight(); navigate('/vendas'); }}
               className="bg-theme-surface border border-theme-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-emerald-500/40 transition-colors shadow-lg"
             >
               <div className="flex items-center justify-between">
@@ -440,17 +442,17 @@ export function Dashboard() {
                   <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves vendidas</p>
                   <p className="text-3xl font-black text-emerald-400">{salesSummary.count}</p>
                 </div>
-                {salesSummary.total > 0 && (
+                {salesSummary.totalCentavos > 0 && (
                   <div className="pb-1">
                     <p className="text-[10px] text-theme-text-muted font-bold uppercase">Valor total</p>
                     <p className="text-sm font-black text-white">
-                      {salesSummary.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {formatBRL(salesSummary.totalCentavos)}
                     </p>
                   </div>
                 )}
               </div>
 
-              <p className="text-[10px] text-theme-text-muted">Toque para ver as aves vendidas</p>
+              <p className="text-[10px] text-theme-text-muted">Toque para abrir a gestão de Vendas & Movimentações</p>
             </div>
           )}
 

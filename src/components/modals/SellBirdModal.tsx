@@ -5,6 +5,7 @@ import { X, DollarSign, Calendar, User, Phone, CheckCircle } from 'lucide-react'
 import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
+import { parseMoneyToCents } from '../../lib/sales/money';
 
 interface SellBirdModalProps {
   bird: Bird;
@@ -16,8 +17,8 @@ interface SellBirdModalProps {
 export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModalProps) {
   useModalScrollLock(isOpen);
 
-  const { editBird, showToast } = useAppSlice('editBird', 'showToast');
-  const { triggerSuccess } = useHaptics();
+  const { registerBirdMovement, showToast } = useAppSlice('registerBirdMovement', 'showToast');
+  const { triggerSuccess, triggerWarning } = useHaptics();
 
   const initialPrice = bird.valorEstimado 
     ? String(bird.valorEstimado) 
@@ -32,34 +33,43 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!valorVenda || isNaN(Number(valorVenda.replace(',', '.')))) {
+    if (isSubmitting) return;
+
+    const valorCentavos = parseMoneyToCents(valorVenda);
+    if (valorCentavos === null || valorCentavos <= 0) {
       showToast('Por favor, informe um valor válido de venda.', 'warning');
+      triggerWarning();
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const numValor = parseFloat(valorVenda.replace(',', '.'));
-      const observacaoAdicional = obsVenda.trim() 
-        ? `\n[Venda em ${dataVenda}]: ${obsVenda.trim()}` 
-        : '';
-
-      editBird(bird.id, {
-        status: 'Vendido',
-        valorVenda: numValor,
-        dataVenda: dataVenda || todayLocalISO(),
-        compradorNome: compradorNome.trim() || undefined,
-        compradorContato: compradorContato.trim() || undefined,
-        dataBaixa: dataVenda || todayLocalISO(),
-        observacoes: (bird.observacoes || '') + observacaoAdicional,
+      const res = await registerBirdMovement({
+        id: crypto.randomUUID(),
+        birdId: bird.id,
+        tipo: 'venda',
+        motivo: 'venda',
+        data: dataVenda || todayLocalISO(),
+        valorCentavos,
+        comprador: (compradorNome.trim() || compradorContato.trim())
+          ? { nome: compradorNome.trim() || undefined, contato: compradorContato.trim() || undefined }
+          : undefined,
+        pagamento: 'pix',
+        statusPagamento: 'pago',
+        dataRecebimento: dataVenda || todayLocalISO(),
+        observacao: obsVenda.trim() || undefined
       });
 
-      triggerSuccess();
-      showToast(`Ave ${bird.anilha} registrada como VENDIDA por R$ ${numValor.toFixed(2)}!`, 'success');
-      if (onSuccess) onSuccess();
-      onClose();
+      if (res.success) {
+        triggerSuccess();
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        triggerWarning();
+        showToast(res.error || 'Erro ao registrar venda.', 'error');
+      }
     } catch (err) {
       console.error('Erro ao registrar venda da ave:', err);
       showToast('Erro ao registrar venda. Tente novamente.', 'error');

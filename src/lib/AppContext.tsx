@@ -19,6 +19,14 @@ import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
 import { AtomicStore, shallowEqual } from './appStore';
+import type { BirdMovement, NewMovementInput, BirdLike } from './sales/types';
+import {
+  registerMovement,
+  reverseMovement,
+  markReceived,
+  reconcileLedger,
+  mergeLedgers
+} from './sales/ledger';
 import { 
   type NotificationSettings, 
   DEFAULT_NOTIF_SETTINGS, 
@@ -575,6 +583,12 @@ export type AppContextType = {
   selectedUpgradePlan: SubscriptionPlan;
   openUpgradeModal: (initialPlan?: SubscriptionPlan) => void;
   closeUpgradeModal: () => void;
+
+  // Vendas e Histórico Forense de Movimentações
+  movements: BirdMovement[];
+  registerBirdMovement: (input: NewMovementInput) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
+  reverseBirdMovement: (movementId: string, motivo: string) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
+  markPaymentReceived: (movementId: string, dataPagamento?: string) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -774,6 +788,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { eggLotsRef.current = eggLots; }, [eggLots]);
   useEffect(() => { meatLotsRef.current = meatLots; }, [meatLots]);
   const [incubationLots, setIncubationLots] = useState<IncubationLot[]>([]);
+  const [movements, setMovements] = useState<BirdMovement[]>([]);
+  const movementsRef = useRef<BirdMovement[]>([]);
+  useEffect(() => { movementsRef.current = movements; }, [movements]);
   
   const [farmSettings, setFarmSettings] = useState<FarmSettings>(() => {
     try {
@@ -1122,7 +1139,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
       {
-        suffix: 'vitrine-config',
+        suffix: 'bird-movements', setter: (d: any) => { const list = Array.isArray(d) ? (d as BirdMovement[]) : []; setMovements(list); movementsRef.current = list; } }, { suffix: 'vitrine-config',
         setter: (d: any) => {
           if (d && typeof d === 'object') {
             setVitrineConfig(d);
@@ -1216,7 +1233,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resMeatLots,
         resSettings,
         resCoupleEggs,
-        resIncubationLots
+        resIncubationLots,
+        resBirdMovements
       ] = await Promise.all([
         isAdmin
           ? supabase!.from('breeds').select('*').in('user_id', adminUserIds).order('nome', { ascending: true })
@@ -1241,7 +1259,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : supabase!.from('couple_eggs').select('*').eq('user_id', targetUserId),
         isAdmin
           ? supabase!.from('incubation_lots').select('*').in('user_id', adminUserIds)
-          : supabase!.from('incubation_lots').select('*').eq('user_id', targetUserId)
+          : supabase!.from('incubation_lots').select('*').eq('user_id', targetUserId),
+        isAdmin
+          ? (supabase!.from('bird_movements').select('*').in('user_id', adminUserIds).order('data', { ascending: false }) as any).then((r: any) => r, () => ({ data: [], error: null }))
+          : (supabase!.from('bird_movements').select('*').eq('user_id', targetUserId).order('data', { ascending: false }) as any).then((r: any) => r, () => ({ data: [], error: null }))
       ]);
 
       if (resBirds.error) {
@@ -1258,6 +1279,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { entity: 'couple_eggs', table: 'couple_eggs' },
         { entity: 'incubation_lots', table: 'incubation_lots' },
         { entity: 'breeds', table: 'breeds' },
+        { entity: 'bird_movements', table: 'bird_movements' },
       ];
 
       for (const item of entitiesToSyncDeletes) {
@@ -1344,7 +1366,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rawLocalMeatLots,
         rawLocalSettings,
         rawLocalCoupleEggs,
-        rawLocalIncubationLots
+        rawLocalIncubationLots,
+        rawLocalMovements
       ]: any = await Promise.all([
         localforage.getItem(getStorageKey('breeds')),
         localforage.getItem(getStorageKey('birds')),
@@ -1353,7 +1376,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         localforage.getItem(getStorageKey('meatlots')),
         localforage.getItem(getStorageKey('settings')),
         localforage.getItem(getStorageKey('couple-eggs')),
-        localforage.getItem(getStorageKey('incubation-lots'))
+        localforage.getItem(getStorageKey('incubation-lots')),
+        localforage.getItem(getStorageKey('bird-movements'))
       ]);
 
       const localBirds = ((birds && birds.length > 0) ? birds : (rawLocalBirds || [])).filter((b: any) => b && b.id);
@@ -2112,6 +2136,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIncubationLots(finalIncubationLots);
       safeStorageSet(getStorageKey('incubation-lots'), finalIncubationLots);
 
+      // ── MOVIMENTAÇÕES & VENDAS DE AVES (LEDGER IMUTÁVEL) ──
+      const rawCloudMovements = (resBirdMovements && Array.isArray(resBirdMovements.data)) ? resBirdMovements.data : [];
+      const mappedCloudMovements: BirdMovement[] = rawCloudMovements.map((m: any) => ({
+        id: m.id,
+        birdId: m.ave_id,
+        tipo: m.tipo,
+        motivo: m.motivo_perda || (m.tipo === 'venda' ? 'venda' : m.tipo === 'perda' ? 'morte' : 'outro'),
+        data: m.data,
+        valorCentavos: Number(m.valor_centavos || 0),
+        comprador: (m.comprador_nome || m.comprador_contato) ? { nome: m.comprador_nome, contato: m.comprador_contato } : undefined,
+        pagamento: m.forma_pagamento || undefined,
+        statusPagamento: m.status_pagamento || undefined,
+        dataRecebimento: m.data_pagamento || undefined,
+        observacao: m.observacoes || undefined,
+        snapshot: m.ave_snapshot || { anilha: '', nome: '', raca: '', sexo: '' },
+        estornado: Boolean(m.estornado),
+        estornoMotivo: m.motivo_estorno || undefined,
+        createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+        updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : Date.now(),
+        deviceId: 'cloud'
+      }));
+
+      const localMovements = (Array.isArray(rawLocalMovements) ? rawLocalMovements : (movementsRef.current || [])) as BirdMovement[];
+      const mergedMovements = mergeLedgers(localMovements, mappedCloudMovements);
+      const reconciled = reconcileLedger(mergedMovements, finalBirds, { today: todayLocalISO(), now: Date.now(), deviceId: 'sync' });
+      setMovements(reconciled.ledger);
+      movementsRef.current = reconciled.ledger;
+      safeStorageSet(getStorageKey('bird-movements'), reconciled.ledger);
+
       // ── CONFIGURAÇÕES DA FAZENDA ──
       const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
       const hasLocalProfile = localSettings && (Boolean(localSettings.name) || Boolean(localSettings.photo) || Boolean(localSettings.phone));
@@ -2191,13 +2244,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIncubationLots([]);
     setFarmSettings(DEFAULT_FARM_SETTINGS);
     setVitrineConfig({});
+    setMovements([]);
+    movementsRef.current = [];
   }, []);
 
   useEffect(() => {
     const handleSignOutEvent = () => {
       resetAllStateToEmpty();
       lastLoadedUserIdRef.current = null;
-      const suffixes = ['birds', 'breeds', 'couples', 'couple-eggs', 'egglots', 'meatlots', 'incubation-lots', 'settings', 'vitrine-config'];
+      const suffixes = ['birds', 'breeds', 'couples', 'couple-eggs', 'egglots', 'meatlots', 'incubation-lots', 'settings', 'vitrine-config', 'bird-movements'];
       for (const s of suffixes) {
         localforage.removeItem(`@mura-manager:guest:${s}`).catch(() => {});
       }
@@ -2988,6 +3043,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeCouple(c.id);
     });
   };
+
 
   const addCouple = (couple: Couple) => {
     const scope = getUserScope();
@@ -3811,6 +3867,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await supabase!.from('incubation_lots').insert(toInsert);
       }
     }
+    if (backupData.movements) {
+      setMovements(backupData.movements);
+      await localforage.setItem(getStorageKey('bird-movements'), backupData.movements);
+      if (isSupabaseConfigured && user) {
+        await supabase!.from('bird_movements').delete().eq('user_id', targetUserId);
+        const toInsert = backupData.movements.map((m: any) => ({
+          id: m.id,
+          user_id: targetUserId,
+          tipo: m.tipo,
+          data: m.data,
+          ave_id: m.aveId,
+          ave_snapshot: m.aveSnapshot || {},
+          valor_centavos: m.valorCentavos || 0,
+          custo_aquisicao_centavos: m.custoAquisicaoCentavos,
+          comprador_nome: m.compradorNome,
+          comprador_contato: m.compradorContato,
+          forma_pagamento: m.formaPagamento,
+          status_pagamento: m.statusPagamento,
+          data_pagamento: m.dataPagamento,
+          motivo_perda: m.motivoPerda,
+          observacoes: m.observacoes,
+          origem: m.origem,
+          idempotency_key: m.idempotencyKey,
+          estornado: m.estornado || false,
+          estorno_movimento_id: m.estornoMovimentoId,
+          motivo_estorno: m.motivoEstorno
+        }));
+        await supabase!.from('bird_movements').insert(toInsert);
+      }
+    }
     if (backupData.settings) {
       setFarmSettings(backupData.settings);
       await localforage.setItem(getStorageKey('settings'), backupData.settings);
@@ -3994,6 +4080,167 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast(inVitrine ? 'Ave adicionada à vitrine pública!' : 'Ave removida da vitrine.', 'info');
   }, [birds, editBird, showToast, isBirdAvailableForVitrine, vitrineBirds.length, vitrineConfig]);
 
+  // ── MÓDULO DE VENDAS & LEDGER FORENSE DE AVES ──
+  const registerBirdMovement = useCallback(async (input: NewMovementInput) => {
+    try {
+      const birdsMap = new Map<string, BirdLike>(birdsRef.current.map(b => [b.id, b]));
+      const today = todayLocalISO();
+      const ctx = { today, now: Date.now(), deviceId: 'web' };
+      const res = registerMovement(movementsRef.current, birdsMap, input, ctx);
+      if (!res.ok) {
+        return { success: false, error: res.error };
+      }
+
+      const outcome = res.value;
+      const nextMovements = outcome.ledger;
+      setMovements(nextMovements);
+      movementsRef.current = nextMovements;
+      safeStorageSet(getStorageKey('bird-movements'), nextMovements);
+
+      if (outcome.birdPatch) {
+        const patch = outcome.birdPatch;
+        const isSale = outcome.movement.tipo === 'venda';
+        const targetBird = birdsRef.current.find(b => b.id === patch.birdId);
+        editBird(patch.birdId, {
+          status: patch.status,
+          valorVenda: isSale ? outcome.movement.valorCentavos / 100 : targetBird?.valorVenda,
+          dataVenda: isSale ? outcome.movement.data : targetBird?.dataVenda,
+          compradorNome: isSale ? outcome.movement.comprador?.nome : targetBird?.compradorNome,
+          compradorContato: isSale ? outcome.movement.comprador?.contato : targetBird?.compradorContato,
+          dataBaixa: outcome.movement.data,
+          motivoBaixa: outcome.movement.motivo,
+        });
+      }
+
+      const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : (user?.id || 'guest');
+      const cloudPayload = {
+        id: outcome.movement.id,
+        user_id: targetUserId,
+        tipo: outcome.movement.tipo,
+        data: outcome.movement.data,
+        ave_id: outcome.movement.birdId,
+        ave_snapshot: outcome.movement.snapshot,
+        valor_centavos: outcome.movement.valorCentavos,
+        comprador_nome: outcome.movement.comprador?.nome,
+        comprador_contato: outcome.movement.comprador?.contato,
+        forma_pagamento: outcome.movement.pagamento,
+        status_pagamento: outcome.movement.statusPagamento,
+        data_pagamento: outcome.movement.dataRecebimento,
+        motivo_perda: outcome.movement.motivo,
+        observacoes: outcome.movement.observacao,
+        estornado: outcome.movement.estornado || false,
+        motivo_estorno: outcome.movement.estornoMotivo,
+        created_at: new Date(outcome.movement.createdAt).toISOString(),
+        updated_at: new Date(outcome.movement.updatedAt).toISOString()
+      };
+
+      if (isSupabaseConfigured && user) {
+        supabase!
+          .from('bird_movements')
+          .upsert(cloudPayload, { onConflict: 'id' })
+          .then(
+            ({ error }) => {
+              if (error) enqueueMutation('bird_movements', 'upsert', cloudPayload, { column: 'id', value: outcome.movement.id });
+            },
+            () => {
+              enqueueMutation('bird_movements', 'upsert', cloudPayload, { column: 'id', value: outcome.movement.id });
+            }
+          );
+      }
+
+      showToast(
+        outcome.movement.tipo === 'venda'
+          ? `Venda da ave ${outcome.movement.snapshot.anilha || outcome.movement.snapshot.nome} confirmada!`
+          : `Movimentação registrada com sucesso!`,
+        'success'
+      );
+
+      return { success: true, movement: outcome.movement };
+    } catch (err: any) {
+      console.error('Erro ao registrar movimentação:', err);
+      showToast('Erro ao processar movimentação.', 'error');
+      return { success: false, error: err?.message || 'Erro inesperado' };
+    }
+  }, [birdsRef, isCurrentUserAdmin, user, safeStorageSet, getStorageKey, editBird, showToast]);
+
+  const reverseBirdMovement = useCallback(async (movementId: string, motivo?: string) => {
+    try {
+      const today = todayLocalISO();
+      const ctx = { today, now: Date.now(), deviceId: 'web' };
+      const res = reverseMovement(movementsRef.current, { movementId, motivo }, ctx);
+      if (!res.ok) {
+        showToast(res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+
+      const outcome = res.value;
+      const nextMovements = outcome.ledger;
+      setMovements(nextMovements);
+      movementsRef.current = nextMovements;
+      safeStorageSet(getStorageKey('bird-movements'), nextMovements);
+
+      if (outcome.birdPatch) {
+        editBird(outcome.birdPatch.birdId, {
+          status: outcome.birdPatch.status,
+          dataBaixa: undefined,
+          valorVenda: undefined,
+          dataVenda: undefined,
+          motivoBaixa: undefined,
+          compradorNome: undefined,
+          compradorContato: undefined,
+        });
+      }
+
+      if (isSupabaseConfigured && user) {
+        supabase!.from('bird_movements').update({
+          estornado: true,
+          motivo_estorno: motivo,
+          updated_at: new Date(outcome.movement.updatedAt).toISOString()
+        }).eq('id', movementId).then(() => {});
+      }
+
+      showToast('Estorno realizado e ave retornada ao plantel ativo!', 'info');
+      return { success: true, movement: outcome.movement };
+    } catch (err: any) {
+      console.error('Erro ao estornar movimentação:', err);
+      showToast('Erro ao estornar movimentação.', 'error');
+      return { success: false, error: err?.message || 'Erro inesperado' };
+    }
+  }, [movementsRef, safeStorageSet, getStorageKey, editBird, user, showToast]);
+
+  const markPaymentReceived = useCallback(async (movementId: string, dataPagamento?: string) => {
+    try {
+      const today = todayLocalISO();
+      const ctx = { today, now: Date.now(), deviceId: 'web' };
+      const res = markReceived(movementsRef.current, { movementId, data: dataPagamento || today }, ctx);
+      if (!res.ok) {
+        showToast(res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+
+      const outcome = res.value;
+      const nextMovements = outcome.ledger;
+      setMovements(nextMovements);
+      movementsRef.current = nextMovements;
+      safeStorageSet(getStorageKey('bird-movements'), nextMovements);
+
+      if (isSupabaseConfigured && user) {
+        supabase!.from('bird_movements').update({
+          status_pagamento: 'pago',
+          data_pagamento: outcome.movement.dataRecebimento,
+          updated_at: new Date(outcome.movement.updatedAt).toISOString()
+        }).eq('id', movementId).then(() => {});
+      }
+
+      showToast('Pagamento confirmado com sucesso!', 'success');
+      return { success: true, movement: outcome.movement };
+    } catch (err: any) {
+      console.error('Erro ao confirmar recebimento:', err);
+      showToast('Erro ao confirmar recebimento.', 'error');
+      return { success: false, error: err?.message || 'Erro inesperado' };
+    }
+  }, [movementsRef, safeStorageSet, getStorageKey, user, showToast]);
+
   const contextValue = useMemo(() => ({
     isReady,
     isInitialSyncDone,
@@ -4019,7 +4266,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
     notificationSettings, updateNotificationSettings,
-    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
+    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed,
+    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived
   }), [
     isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
@@ -4029,7 +4277,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     canShareBird, registerBirdShare,
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
     notificationSettings, updateNotificationSettings,
-    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
+    toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed,
+    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived
   ]);
 
   // Sincroniza o Store Atômico com a nova referência do estado.

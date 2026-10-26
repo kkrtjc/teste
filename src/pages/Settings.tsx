@@ -149,11 +149,11 @@ export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples, eggLots, meatLots,
-    coupleEggs, incubationLots,
+    coupleEggs, incubationLots, movements,
     importBackup, showToast, recoverAllBirds,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'eggLots', 'meatLots', 'coupleEggs', 'incubationLots', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
+  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'eggLots', 'meatLots', 'coupleEggs', 'incubationLots', 'movements', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
@@ -351,6 +351,7 @@ export function Settings() {
         totalCouples: couples.length,
         totalEggLots: eggLots.length,
         totalMeatLots: meatLots.length,
+        totalMovements: movements.length,
       },
       breeds,
       birds,
@@ -359,6 +360,7 @@ export function Settings() {
       incubationLots,
       egglots: eggLots,
       meatlots: meatLots,
+      movements,
       settings: {
         ...farmSettings,
         name,

@@ -68,7 +68,7 @@ type AuthContextType = {
   isExpired: boolean;
   isAdmin: boolean;
   trialInfo: TrialInfo;
-  hasModuleAccess: (module: 'birds' | 'lots' | 'eggs' | 'vitrine') => boolean;
+  hasModuleAccess: (module: 'birds' | 'lots' | 'eggs' | 'vitrine' | 'sales') => boolean;
   lastWebhookConfirmation: number | null;
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
@@ -1258,7 +1258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  const hasModuleAccess = useCallback((module: 'birds' | 'lots' | 'eggs' | 'vitrine'): boolean => {
+  const hasModuleAccess = useCallback((module: 'birds' | 'lots' | 'eggs' | 'vitrine' | 'sales'): boolean => {
     // 1. Admin sempre tem acesso completo e irrestrito
     if (isUserAdmin(user?.email) || isUserAdmin(getCpf()) || isUserAdmin(user?.id)) {
       return true;
@@ -1271,8 +1271,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isExpired) {
       return false;
     }
-    // 4. Módulo de Aves e Vitrine liberados em todos os planos pagos
-    if (module === 'birds' || module === 'vitrine') {
+    // 4. Módulo de Aves, Vitrine e Vendas liberados em todos os planos pagos
+    if (module === 'birds' || module === 'vitrine' || module === 'sales') {
       return true;
     }
     // 5. Módulo de Lotes e Ovos: liberados no Anual Completo e Mensal Completo

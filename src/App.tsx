@@ -113,6 +113,8 @@ function AppContent() {
               <Route index element={null} />
               <Route path="birds" element={null} />
               <Route path="vitrine" element={null} />
+              <Route path="sales" element={null} />
+              <Route path="vendas" element={null} />
               <Route path="lots" element={null} />
               <Route path="eggs" element={null} />
               <Route path="settings" element={null} />

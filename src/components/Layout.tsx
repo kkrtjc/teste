@@ -3,10 +3,10 @@ import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense, useMemo
 import { createPortal } from 'react-dom';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Layers, Settings as SettingsIcon, 
+  LayoutDashboard, Settings as SettingsIcon, 
   Bird, ShieldCheck, Users, X, Trash2, Loader2,
-  Bell, MessageSquare, Egg, Sparkles, RefreshCw,
-  Zap, Store, ArrowLeft, Lock
+  Bell, MessageSquare, Sparkles, RefreshCw,
+  Zap, Store, ArrowLeft, Lock, DollarSign
 } from 'lucide-react';
 import { ConfirmDialog } from './modals/ConfirmDialog';
 import { OnboardingTour } from './OnboardingTour';
@@ -23,8 +23,9 @@ const NotificationCenterModal = lazy(() => import('./modals/NotificationCenterMo
 const Dashboard = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Birds = lazy(() => import('../pages/Birds').then(m => ({ default: m.Birds })));
 const Vitrine = lazy(() => import('../pages/Vitrine').then(m => ({ default: m.Vitrine })));
-const Lots = lazy(() => import('../pages/Lots').then(m => ({ default: m.Lots })));
-const Eggs = lazy(() => import('../pages/Eggs').then(m => ({ default: m.Eggs })));
+const Sales = lazy(() => import('../pages/Sales').then(m => ({ default: m.Sales })));
+
+
 const Settings = lazy(() => import('../pages/Settings').then(m => ({ default: m.Settings })));
 
 // Prefetch em background durante idle para garantir transição imediata (0ms)
@@ -32,8 +33,8 @@ if (typeof window !== 'undefined') {
   const prefetchPages = () => {
     import('../pages/Dashboard');
     import('../pages/Birds');
-    import('../pages/Lots');
-    import('../pages/Eggs');
+    import('../pages/Sales');
+
     import('../pages/Vitrine');
     import('../pages/Settings');
   };
@@ -590,13 +591,14 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
   useModalScrollLock(isAnyModalActive);
 
   // ── 🌟 ARQUITETURA KEEP-ALIVE (Padrão Linear.app: 0ms de latência e preservação de estado/scroll) ──
-  const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'lots' | 'eggs' | 'settings' | 'other' => {
+  const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'sales' | 'lots' | 'eggs' | 'settings' | 'other' => {
     const clean = pathname.replace(/^\//, '').split('/')[0].toLowerCase();
     if (!clean || clean === 'dashboard') return 'dashboard';
     if (clean === 'birds') return 'birds';
     if (clean === 'vitrine') return 'vitrine';
-    if (clean === 'lots') return 'lots';
-    if (clean === 'eggs') return 'eggs';
+    if (clean === 'sales' || clean === 'vendas') return 'sales';
+    if (clean === 'lots' || clean === 'eggs') return 'sales';
+
     if (clean === 'settings') return 'settings';
     return 'other';
   };
@@ -627,25 +629,27 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   const expiringCount = expiringClients.length;
 
-  const canAccessLots = hasModuleAccess('lots');
+  const canAccessSales = hasModuleAccess('sales');
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/', locked: false },
     { icon: Bird, label: 'Aves & Raças', path: '/birds', locked: false },
     { icon: Store, label: 'Vitrine', path: '/vitrine', locked: false },
-    { icon: Layers, label: 'Lotes', path: '/lots', locked: !canAccessLots },
-    { icon: Egg, label: 'Ovos', path: '/eggs', locked: !canAccessLots },
+    { icon: DollarSign, label: 'Vendas', path: '/vendas', locked: !canAccessSales },
+
     { icon: SettingsIcon, label: 'Configurações', path: '/settings', locked: false },
   ];
 
+
   // Mobile bottom nav: first 5 items (no settings — access via profile photo)
-  const mobileNavItems = [
-    navItems[0], // Dashboard
-    navItems[1], // Aves & Raças
-    navItems[2], // Vitrine
-    navItems[3], // Lotes
-    navItems[4], // Ovos
-  ];
+  const mobileNavItems = navItems;
+
+
+
+
+
+
+
 
   return (
     <div className="flex items-center justify-center h-[100dvh] w-full overflow-hidden bg-[#121218] p-2.5 sm:p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] pl-[max(env(safe-area-inset-left),12px)] pr-[max(env(safe-area-inset-right),12px)] box-border">
@@ -920,6 +924,11 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
                 <Birds />
               </div>
             )}
+            {visitedTabs.has('sales') && (
+              <div key="tab-view-sales" style={{ display: activeTabKey === 'sales' ? 'block' : 'none' }}>
+                <Sales />
+              </div>
+            )}
             {visitedTabs.has('vitrine') && (
               <div key="tab-view-vitrine" style={{ display: activeTabKey === 'vitrine' ? 'block' : 'none' }}>
                 <Vitrine />
@@ -927,12 +936,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
             )}
             {visitedTabs.has('lots') && (
               <div key="tab-view-lots" style={{ display: activeTabKey === 'lots' ? 'block' : 'none' }}>
-                <Lots />
+                {/* Lots deprecated */}
               </div>
             )}
             {visitedTabs.has('eggs') && (
               <div key="tab-view-eggs" style={{ display: activeTabKey === 'eggs' ? 'block' : 'none' }}>
-                <Eggs />
+                {/* Eggs deprecated */}
               </div>
             )}
             {visitedTabs.has('settings') && (
