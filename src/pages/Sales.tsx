@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppSlice } from '../lib/AppContext';
 import { useHaptics } from '../hooks/useHaptics';
-import { formatBRL } from '../lib/sales/money';
+import { formatBRL, getMovementCents } from '../lib/sales/money';
 import { 
   summarize, 
   buildDynamicChartSeries, 
@@ -461,7 +461,7 @@ export function Sales() {
               </h3>
             </div>
             <span className="text-xs font-bold text-amber-300">
-              Total: {formatBRL(pendingSales.reduce((acc, m) => acc + m.valorCentavos, 0))}
+              Total: {formatBRL(pendingSales.reduce((acc, m) => acc + getMovementCents(m), 0))}
             </span>
           </div>
 
@@ -673,12 +673,12 @@ export function Sales() {
 
                     {/* Lado Direito: Valores & Ações */}
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-theme-border/40">
-                      {item.valorCentavos > 0 && (
+                      {getMovementCents(item) > 0 && (
                         <div className="text-left sm:text-right">
                           <p className={`font-mono text-sm sm:text-base font-bold ${
                             item.estornado ? 'text-gray-400 line-through' : 'text-emerald-400'
                           }`}>
-                            {formatBRL(item.valorCentavos)}
+                            {formatBRL(getMovementCents(item))}
                           </p>
                         </div>
                       )}

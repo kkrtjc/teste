@@ -460,7 +460,14 @@ export function BirdProfileModal() {
                 </p>
                 <select
                   value={bird.status || ''}
-                  onChange={(e) => editBird(bird.id, { status: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Vendido') {
+                      setIsSellModalOpen(true);
+                    } else {
+                      editBird(bird.id, { status: val });
+                    }
+                  }}
                   className={`bg-transparent text-sm font-bold outline-none border-none cursor-pointer w-full p-0 ${getStatusColorClass(bird.status)}`}
                 >
                   <option value="Adulto" className="bg-theme-surface text-white">Adulto</option>

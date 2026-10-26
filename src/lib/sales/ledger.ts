@@ -268,7 +268,8 @@ function legacyTerminalFor(bird: BirdLike, ctx: LedgerContext): Omit<BirdMovemen
     deviceId: ctx.deviceId,
   };
   if (s === 'vendido') {
-    const cents = parseMoneyToCents(bird.valorVenda as string | number | undefined) ?? 0;
+    const rawVal = bird.valorVenda ?? (bird as any).valorEstimado ?? (bird as any).vitrinePrice;
+    const cents = parseMoneyToCents(rawVal as string | number | undefined) ?? 0;
     const nome = sanitizeText(bird.compradorNome, 80);
     const contato = normalizePhone(bird.compradorContato);
     return {

@@ -27,6 +27,7 @@ import {
   reconcileLedger,
   mergeLedgers
 } from './sales/ledger';
+import { getMovementCents, parseMoneyToCents } from './sales/money';
 import { 
   type NotificationSettings, 
   DEFAULT_NOTIF_SETTINGS, 
@@ -792,8 +793,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const movementsRef = useRef<BirdMovement[]>([]);
   useEffect(() => { movementsRef.current = movements; }, [movements]);
 
-  // Auto-reconciliacao continua: se houver aves marcadas como Vendido/Baixado que ainda nao constam no livro-razao (movements),
-  // reconcilia imediatamente sem depender de sync de rede e persiste localmente.
+  // Auto-reconciliacao continua:
+  // 1) Reconcilia aves marcadas como Vendido/Baixado que ainda nao constam no livro-razao (movements)
+  // 2) Auto-cura de vendas registradas sem centavos (valor zero) vinculando o preco cadastrado da ave
   useEffect(() => {
     if (birds.length === 0) return;
     const hasUnreconciled = birds.some(b => {
@@ -801,17 +803,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return (s === 'vendido' || s === 'faleceu' || s === 'morto' || s === 'abatido' || s === 'baixado') &&
              !movementsRef.current.some(m => m.birdId === b.id && !m.estornado);
     });
-    if (hasUnreconciled) {
-      const reconciled = reconcileLedger(movementsRef.current, birds, {
+
+    const hasZeroPriceSaleToHeal = movementsRef.current.some(m => {
+      if (m.tipo !== 'venda' || m.estornado) return false;
+      const cents = getMovementCents(m);
+      if (cents > 0) return false;
+      const b = birds.find(x => x.id === m.birdId);
+      if (!b) return false;
+      const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
+      return defined !== null && defined > 0;
+    });
+
+    if (hasUnreconciled || hasZeroPriceSaleToHeal) {
+      let currentLedger = movementsRef.current;
+      if (hasZeroPriceSaleToHeal) {
+        currentLedger = currentLedger.map(m => {
+          if (m.tipo !== 'venda' || m.estornado) return m;
+          const cents = getMovementCents(m);
+          if (cents > 0) return m;
+          const b = birds.find(x => x.id === m.birdId);
+          if (!b) return m;
+          const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
+          if (defined && defined > 0) {
+            return { ...m, valorCentavos: defined, updatedAt: Date.now() };
+          }
+          return m;
+        });
+      }
+
+      const reconciled = reconcileLedger(currentLedger, birds, {
         today: todayLocalISO(),
         now: Date.now(),
         deviceId: 'local'
       });
-      if (reconciled.changed || reconciled.report.legacyCreated > 0) {
-        setMovements(reconciled.ledger);
-        movementsRef.current = reconciled.ledger;
-        safeStorageSet(getStorageKey('bird-movements'), reconciled.ledger).catch(() => {});
-      }
+      setMovements(reconciled.ledger);
+      movementsRef.current = reconciled.ledger;
+      safeStorageSet(getStorageKey('bird-movements'), reconciled.ledger).catch(() => {});
     }
   }, [birds, getStorageKey, safeStorageSet]);
   

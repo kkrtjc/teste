@@ -2,6 +2,7 @@
  * Agregações do livro-razão. Tudo em UMA passada, sem arrays intermediários — barato em celular fraco.
  */
 import { isCounted } from './ledger';
+import { getMovementCents } from './money';
 import {
   REASON_LABELS,
   TYPE_LABELS,
@@ -27,7 +28,7 @@ export function costByBird(ledger: readonly BirdMovement[]): Map<string, number>
   for (let i = 0; i < ledger.length; i++) {
     const m = ledger[i];
     if (m.tipo !== 'entrada' || !isCounted(m)) continue;
-    map.set(m.birdId, (map.get(m.birdId) || 0) + m.valorCentavos);
+    map.set(m.birdId, (map.get(m.birdId) || 0) + getMovementCents(m));
   }
   return map;
 }
@@ -42,20 +43,21 @@ export function summarize(ledger: readonly BirdMovement[], range: Range = {}): S
   for (let i = 0; i < ledger.length; i++) {
     const m = ledger[i];
     if (!isCounted(m) || !inRange(m.data, range)) continue;
+    const cents = getMovementCents(m);
     switch (m.tipo) {
       case 'venda': {
         s.vendasCount++;
-        s.receita += m.valorCentavos;
-        if (m.statusPagamento === 'pendente') s.aReceber += m.valorCentavos;
-        else s.recebido += m.valorCentavos;
+        s.receita += cents;
+        if (m.statusPagamento === 'pendente') s.aReceber += cents;
+        else s.recebido += cents;
         const c = cost.get(m.birdId);
         if (c === undefined || c === 0) s.vendasSemCusto++;
         s.custoVendidas += c || 0;
         break;
       }
-      case 'perda': s.perdasCount++; s.perdasValor += m.valorCentavos; break;
+      case 'perda': s.perdasCount++; s.perdasValor += cents; break;
       case 'saida': s.saidasCount++; break;
-      case 'entrada': s.entradasCount++; s.entradasCusto += m.valorCentavos; break;
+      case 'entrada': s.entradasCount++; s.entradasCusto += cents; break;
     }
   }
   s.lucro = s.receita - s.custoVendidas;
@@ -78,9 +80,11 @@ export function monthlySeries(ledger: readonly BirdMovement[], today: string, mo
   for (let i = 0; i < ledger.length; i++) {
     const m = ledger[i];
     if (!isCounted(m)) continue;
-    const p = index.get(m.data.slice(0, 7));
+    const monthKey = m.data ? String(m.data).slice(0, 7) : '';
+    const p = index.get(monthKey);
     if (!p) continue;
-    if (m.tipo === 'venda') { p.receita += m.valorCentavos; p.vendas++; }
+    const cents = getMovementCents(m);
+    if (m.tipo === 'venda') { p.receita += cents; p.vendas++; }
     else if (m.tipo === 'perda') p.perdas++;
   }
   return points;
@@ -117,6 +121,7 @@ export function buildDynamicChartSeries(
   customRange?: Range
 ): DynamicChartReport {
   const countedSales = movements.filter(m => m.tipo === 'venda' && isCounted(m));
+  const getCleanDay = (d: string | undefined) => (d ? String(d).slice(0, 10) : '');
 
   if (period === 'hoje') {
     const bars: ChartBarData[] = [];
@@ -124,7 +129,7 @@ export function buildDynamicChartSeries(
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(Date.UTC(ty, tm - 1, td - i));
       const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-      const daySales = countedSales.filter(m => m.data === iso);
+      const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
       const isToday = iso === today;
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
       const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -132,13 +137,13 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
     }
-    const todaySales = countedSales.filter(m => m.data === today);
-    const todayTotal = todaySales.reduce((acc, m) => acc + m.valorCentavos, 0);
+    const todaySales = countedSales.filter(m => getCleanDay(m.data) === today);
+    const todayTotal = todaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
     return {
       title: `Vendas de Hoje (${today.split('-').reverse().join('/')})`,
       subtitle: `${todaySales.length} venda(s) registrada(s) hoje • Comparativo semanal`,
@@ -153,7 +158,7 @@ export function buildDynamicChartSeries(
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(Date.UTC(ty, tm - 1, td - i));
       const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-      const daySales = countedSales.filter(m => m.data === iso);
+      const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
       const isToday = iso === today;
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
       const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -161,7 +166,7 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
@@ -185,13 +190,13 @@ export function buildDynamicChartSeries(
       const dtStart = new Date(Date.UTC(ty, tm - 1, td - startDaysAgo));
       const startIso = `${dtStart.getUTCFullYear()}-${String(dtStart.getUTCMonth() + 1).padStart(2, '0')}-${String(dtStart.getUTCDate()).padStart(2, '0')}`;
       const endIso = `${dtEnd.getUTCFullYear()}-${String(dtEnd.getUTCMonth() + 1).padStart(2, '0')}-${String(dtEnd.getUTCDate()).padStart(2, '0')}`;
-      const weekSales = countedSales.filter(m => m.data >= startIso && m.data <= endIso);
+      const weekSales = countedSales.filter(m => { const d = getCleanDay(m.data); return d >= startIso && d <= endIso; });
       const isCurrentWeek = w === 0;
       bars.push({
         key: `w-${w}`,
         label: isCurrentWeek ? 'Esta sem.' : `Sem. -${w}`,
         sublabel: `${dtStart.getUTCDate()}/${dtStart.getUTCMonth() + 1} a ${dtEnd.getUTCDate()}/${dtEnd.getUTCMonth() + 1}`,
-        receita: weekSales.reduce((acc, m) => acc + m.valorCentavos, 0),
+        receita: weekSales.reduce((acc, m) => acc + getMovementCents(m), 0),
         vendas: weekSales.length,
         isHighlight: isCurrentWeek
       });
@@ -219,12 +224,12 @@ export function buildDynamicChartSeries(
       for (let i = 0; i < diffDays; i++) {
         const cur = new Date(Date.UTC(fy, fm - 1, fd + i));
         const iso = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-${String(cur.getUTCDate()).padStart(2, '0')}`;
-        const daySales = countedSales.filter(m => m.data === iso);
+        const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
         const dayMonth = `${String(cur.getUTCDate()).padStart(2, '0')}/${String(cur.getUTCMonth() + 1).padStart(2, '0')}`;
         bars.push({
           key: iso,
           label: dayMonth,
-          receita: daySales.reduce((acc, m) => acc + m.valorCentavos, 0),
+          receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
           vendas: daySales.length,
           isHighlight: iso === today
         });

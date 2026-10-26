@@ -149,3 +149,32 @@ export function formatPhoneDigits(raw: string): string {
   if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
 }
+
+/**
+ * Garante extração segura de centavos de uma movimentação (mesmo legado, string ou objeto antigo).
+ * Retorna sempre um número inteiro >= 0, NUNCA NaN ou undefined.
+ */
+export function getMovementCents(m: any): number {
+  if (!m) return 0;
+  if (typeof m.valorCentavos === 'number' && Number.isFinite(m.valorCentavos)) {
+    return Math.max(0, Math.round(m.valorCentavos));
+  }
+  if (m.valorCentavos !== undefined && m.valorCentavos !== null) {
+    const n = Number(m.valorCentavos);
+    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+  }
+  if (m.valor_centavos !== undefined && m.valor_centavos !== null) {
+    const n = Number(m.valor_centavos);
+    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+  }
+  // Fallbacks de migração para registros legados que tinham valor em reais
+  if (m.valor !== undefined && m.valor !== null) {
+    const c = parseMoneyToCents(m.valor);
+    if (c !== null) return c;
+  }
+  if (m.valorVenda !== undefined && m.valorVenda !== null) {
+    const c = parseMoneyToCents(m.valorVenda);
+    if (c !== null) return c;
+  }
+  return 0;
+}
