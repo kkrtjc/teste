@@ -9,7 +9,8 @@
 import {
   MAX_CENTS,
 } from './money';
-import { parseMoneyToCents } from './money';
+import { parseMoneyToCents, getMovementCents } from './money';
+import { normalizeDateToISO } from '../dates';
 import {
   MOVEMENT_REASONS,
   PAYMENT_METHODS,
@@ -257,7 +258,9 @@ const legacyKey = (birdId: string, tipo: MovementType) => `legacy-${birdId}-${ti
 
 function legacyTerminalFor(bird: BirdLike, ctx: LedgerContext): Omit<BirdMovement, 'id'> | null {
   const s = String(bird.status).trim().toLowerCase();
-  const data = [bird.dataVenda, bird.dataBaixa].find(d => d && isValidISODate(d)) || ctx.today;
+  const rawDate = [bird.dataVenda, bird.dataBaixa].find(d => Boolean(d));
+  const normDate = rawDate ? normalizeDateToISO(rawDate) : '';
+  const data = (normDate && isValidISODate(normDate)) ? normDate : ctx.today;
   const base = {
     birdId: bird.id,
     data,
@@ -268,8 +271,8 @@ function legacyTerminalFor(bird: BirdLike, ctx: LedgerContext): Omit<BirdMovemen
     deviceId: ctx.deviceId,
   };
   if (s === 'vendido') {
-    const rawVal = bird.valorVenda ?? (bird as any).valorEstimado ?? (bird as any).vitrinePrice;
-    const cents = parseMoneyToCents(rawVal as string | number | undefined) ?? 0;
+    const rawVal = bird.valorVenda ?? bird.valorEstimado ?? bird.vitrinePrice;
+    const cents = parseMoneyToCents(rawVal) ?? 0;
     const nome = sanitizeText(bird.compradorNome, 80);
     const contato = normalizePhone(bird.compradorContato);
     return {
@@ -317,10 +320,18 @@ export function reconcileLedger(
   for (const arr of byBird.values()) {
     if (arr.length < 2) continue;
     arr.sort((a, b) => {
+      // 1. Quem tem valor financeiro > 0 sempre tem prioridade (não descartar faturamento real)
+      const valA = getMovementCents(a) > 0 ? 1 : 0;
+      const valB = getMovementCents(b) > 0 ? 1 : 0;
+      if (valA !== valB) return valB - valA;
+
+      // 2. Dado real tem prioridade sobre legado
       const la = a.flags?.legado ? 1 : 0;
       const lb = b.flags?.legado ? 1 : 0;
       if (la !== lb) return la - lb;
-      return a.createdAt - b.createdAt || a.id.localeCompare(b.id);
+
+      // 3. Mais recente por criação tem prioridade
+      return b.createdAt - a.createdAt || a.id.localeCompare(b.id);
     });
     for (let i = 1; i < arr.length; i++) flagged.add(arr[i].id);
   }

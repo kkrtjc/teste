@@ -15,7 +15,7 @@ export function parseMoneyToCents(input: string | number | null | undefined): nu
     if (!Number.isFinite(input) || input < 0) return null;
     return Math.round(input * 100);
   }
-  let s = String(input).replace(/R\$/gi, '').replace(/\s+/g, '');
+  const s = String(input).replace(/R\$/gi, '').replace(/\s+/g, '');
   if (!s || /[^0-9.,]/.test(s)) return null;
 
   const lastComma = s.lastIndexOf(',');
@@ -118,7 +118,7 @@ export function formatMoneyOnBlur(raw: string): string {
 /**
  * Extrai e formata o preço cadastrado previamente na ave (valorEstimado ou vitrinePrice).
  */
-export function getBirdPredefinedPrice(bird: any): string {
+export function getBirdPredefinedPrice(bird: { valorEstimado?: number | string | null; vitrinePrice?: string | null } | null | undefined): string {
   if (!bird) return '';
   if (bird.valorEstimado !== undefined && bird.valorEstimado !== null && bird.valorEstimado !== '') {
     const num = Number(bird.valorEstimado);
@@ -154,7 +154,7 @@ export function formatPhoneDigits(raw: string): string {
  * Garante extração segura de centavos de uma movimentação (mesmo legado, string ou objeto antigo).
  * Retorna sempre um número inteiro >= 0, NUNCA NaN ou undefined.
  */
-export function getMovementCents(m: any): number {
+export function getMovementCents(m: { valorCentavos?: number | string | null; valor_centavos?: number | string | null; valor?: number | string | null; valorVenda?: number | string | null } | null | undefined): number {
   if (!m) return 0;
   if (typeof m.valorCentavos === 'number' && Number.isFinite(m.valorCentavos)) {
     return Math.max(0, Math.round(m.valorCentavos));

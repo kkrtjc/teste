@@ -91,7 +91,7 @@ export function Sales() {
   // Movimentações filtradas para exibição no Ledger Timeline
   const filteredList = useMemo(() => {
     let tipos: MovementType[] | undefined = undefined;
-    let includeReversed = activeChip === 'estornos';
+    const includeReversed = activeChip === 'estornos';
 
     if (activeChip === 'vendas') {
       tipos = ['venda'];
@@ -417,7 +417,9 @@ export function Sales() {
                 : 8;
               return (
                 <div key={item.key} className="flex-1 min-w-[38px] max-w-[64px] flex flex-col items-center gap-1.5 h-full justify-end group">
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity truncate max-w-full">
+                  <span className={`text-[10px] font-mono text-emerald-400 font-bold truncate max-w-full transition-opacity ${
+                    item.receita > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
                     {formatBRL(item.receita)}
                   </span>
                   <div 
@@ -535,7 +537,7 @@ export function Sales() {
                   type="button"
                   onClick={() => {
                     triggerLight();
-                    setActiveChip(c.key as any);
+                    setActiveChip(c.key as typeof activeChip);
                     setVisibleCount(30);
                   }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0 touch-manipulation ${

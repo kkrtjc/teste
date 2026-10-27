@@ -96,9 +96,12 @@ export interface BirdLike {
   nome?: string;
   raca?: string;
   sexo?: string;
+  baia?: string | null;
   status: string;
   dataCadastro?: string;
   valorVenda?: number | string;
+  valorEstimado?: number | string;
+  vitrinePrice?: string;
   dataVenda?: string;
   dataBaixa?: string;
   compradorNome?: string;

@@ -7,7 +7,8 @@ import {
   registerMovement, reverseMovement, markReceived, reconcileLedger, mergeLedgers,
   isBirdActive, findActiveTerminal, isValidISODate, addDaysISO, sanitizeText, normalizePhone,
 } from './ledger';
-import { summarize, monthlySeries, pendingReceivables, filterHistory, rangeForPeriod, csvCell, movementsToCSV } from './aggregate';
+import { summarize, monthlySeries, pendingReceivables, filterHistory, rangeForPeriod, csvCell, movementsToCSV, buildDynamicChartSeries } from './aggregate';
+import { normalizeDateToISO } from '../dates';
 import type { BirdLike, BirdMovement, LedgerContext, NewMovementInput } from './types';
 
 const ctx: LedgerContext = { now: 1_700_000_000_000, deviceId: 'dev-A', today: '2026-10-26' };
@@ -349,5 +350,110 @@ describe('CSV seguro', () => {
     expect(line).toContain('1234,56');
     expect(line).toContain("'=cmd");
     expect(line.startsWith('20/10/2026;Venda;Venda;A-001')).toBe(true);
+  });
+});
+
+describe('sincronização, ontem e visibilidade do gráfico', () => {
+  it('destaca Ontem e Hoje no gráfico dinâmico em 7d e hoje', () => {
+    const today = '2026-10-27';
+    const yesterday = '2026-10-26';
+    const testLedger: BirdMovement[] = [
+      {
+        id: 'sale-yesterday',
+        birdId: 'b1',
+        tipo: 'venda',
+        motivo: 'venda',
+        data: yesterday,
+        valorCentavos: 15000,
+        snapshot: { anilha: 'BR-01', nome: 'Galo 1', raca: 'Mura', sexo: 'Macho' },
+        createdAt: 1000,
+        updatedAt: 1000,
+        deviceId: 'test'
+      },
+      {
+        id: 'sale-today',
+        birdId: 'b2',
+        tipo: 'venda',
+        motivo: 'venda',
+        data: today,
+        valorCentavos: 25000,
+        snapshot: { anilha: 'BR-02', nome: 'Galo 2', raca: 'Mura', sexo: 'Macho' },
+        createdAt: 2000,
+        updatedAt: 2000,
+        deviceId: 'test'
+      }
+    ];
+
+    const chart7d = buildDynamicChartSeries(testLedger, '7d', today);
+    const barOntem = chart7d.bars.find(b => b.key === yesterday);
+    const barHoje = chart7d.bars.find(b => b.key === today);
+
+    expect(barOntem).toBeDefined();
+    expect(barOntem?.label).toBe('Ontem');
+    expect(barOntem?.receita).toBe(15000);
+
+    expect(barHoje).toBeDefined();
+    expect(barHoje?.label).toBe('Hoje');
+    expect(barHoje?.receita).toBe(25000);
+    expect(barHoje?.isHighlight).toBe(true);
+
+    // Em 'tudo', se histórico for recente, deve exibir barras diárias para ver ontem e hoje
+    const chartTudo = buildDynamicChartSeries(testLedger, 'tudo', today);
+    expect(chartTudo.bars.some(b => b.key === yesterday && b.receita === 15000)).toBe(true);
+    expect(chartTudo.totalReceita).toBe(40000);
+  });
+
+  it('reconcileLedger preserva venda com valor real sobre entrada zerada', () => {
+    const today = '2026-10-27';
+    const testBirds: BirdLike[] = [
+      { id: 'b1', anilha: 'BR-01', status: 'Vendido', valorVenda: 150 }
+    ];
+    // Simula duplicidade: um registro legado gerado sem preço (0) e uma venda real registrada com R$ 150
+    const conflictingLedger: BirdMovement[] = [
+      {
+        id: 'legacy-b1-venda',
+        birdId: 'b1',
+        tipo: 'venda',
+        motivo: 'venda',
+        data: '2026-10-26',
+        valorCentavos: 0,
+        snapshot: { anilha: 'BR-01', nome: '', raca: '', sexo: '' },
+        flags: { legado: true },
+        createdAt: 100,
+        updatedAt: 100,
+        deviceId: 'test'
+      },
+      {
+        id: 'real-sale-b1',
+        birdId: 'b1',
+        tipo: 'venda',
+        motivo: 'venda',
+        data: '2026-10-26',
+        valorCentavos: 15000,
+        snapshot: { anilha: 'BR-01', nome: '', raca: '', sexo: '' },
+        createdAt: 200,
+        updatedAt: 200,
+        deviceId: 'test'
+      }
+    ];
+
+    const res = reconcileLedger(conflictingLedger, testBirds, { today, now: Date.now(), deviceId: 'test' });
+    const realSale = res.ledger.find(m => m.id === 'real-sale-b1');
+    const legacySale = res.ledger.find(m => m.id === 'legacy-b1-venda');
+
+    // A venda real COM VALOR deve permanecer ativa (NÃO duplicada)
+    expect(realSale?.flags?.duplicado).toBeFalsy();
+    // A venda zerada é a que deve ser descartada como duplicado
+    expect(legacySale?.flags?.duplicado).toBe(true);
+
+    const s = summarize(res.ledger, rangeForPeriod('tudo', today));
+    expect(s.receita).toBe(15000);
+  });
+
+  it('normalizeDateToISO aceita padrão brasileiro DD/MM/YYYY e ISO timestamp', () => {
+    expect(normalizeDateToISO('26/10/2026')).toBe('2026-10-26');
+    expect(normalizeDateToISO('05-08-2026')).toBe('2026-08-05');
+    expect(normalizeDateToISO('2026-10-27T14:30:00.000Z')).toBe('2026-10-27');
+    expect(normalizeDateToISO('2026-10-27')).toBe('2026-10-27');
   });
 });

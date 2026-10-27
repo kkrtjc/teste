@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback, useEffect } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, DollarSign, Calendar, User, Phone, CheckCircle2, 
@@ -16,7 +16,7 @@ import {
   getBirdPredefinedPrice, 
   formatPhoneDigits 
 } from '../../lib/sales/money';
-import type { MovementType, PaymentMethod, PaymentStatus } from '../../lib/sales/types';
+import type { MovementType, PaymentMethod, PaymentStatus, BirdLike } from '../../lib/sales/types';
 
 interface RegisterSaleModalProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ interface RegisterSaleModalProps {
 // ── Sub-componente isolado para Seleção de Ave ─────────────────────────────
 // Mantém seu próprio estado de busca e slice para NÃO provocar re-renders do formulário ao digitar
 interface BirdSelectorProps {
-  birds: readonly any[];
+  birds: readonly BirdLike[];
   selectedBirdId: string;
   onSelect: (id: string) => void;
 }
@@ -222,8 +222,10 @@ export function RegisterSaleModal({
     }
   }, [birds]);
 
-  // Se o modal foi aberto com preSelectedBirdId, atualiza a ave e o preço automaticamente
-  useEffect(() => {
+  // Se o modal foi aberto com preSelectedBirdId, sincroniza a ave e o preço automaticamente
+  const [prevPreSelectedId, setPrevPreSelectedId] = useState(preSelectedBirdId);
+  if (preSelectedBirdId !== prevPreSelectedId) {
+    setPrevPreSelectedId(preSelectedBirdId);
     if (preSelectedBirdId) {
       setSelectedBirdId(preSelectedBirdId);
       const b = birds.find(item => item.id === preSelectedBirdId);
@@ -234,7 +236,7 @@ export function RegisterSaleModal({
         }
       }
     }
-  }, [preSelectedBirdId, birds]);
+  }
 
   if (!isOpen) return null;
 
@@ -284,7 +286,7 @@ export function RegisterSaleModal({
         triggerWarning();
         showToast(res.error || 'Não foi possível registrar o movimento.', 'error');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao submeter movimento:', err);
       showToast('Erro interno ao registrar.', 'error');
     } finally {

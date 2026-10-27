@@ -1,4 +1,4 @@
-import { todayLocalISO } from './dates';
+import { todayLocalISO, normalizeDateToISO } from './dates';
 import {
   recordTombstone,
   clearTombstone,
@@ -19,7 +19,7 @@ import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
 import { AtomicStore, shallowEqual } from './appStore';
-import type { BirdMovement, NewMovementInput, BirdLike } from './sales/types';
+import type { BirdMovement, NewMovementInput, BirdLike, MovementType } from './sales/types';
 import {
   registerMovement,
   reverseMovement,
@@ -793,9 +793,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const movementsRef = useRef<BirdMovement[]>([]);
   useEffect(() => { movementsRef.current = movements; }, [movements]);
 
-  // Auto-reconciliacao continua:
-  // 1) Reconcilia aves marcadas como Vendido/Baixado que ainda nao constam no livro-razao (movements)
-  // 2) Auto-cura de vendas registradas sem centavos (valor zero) vinculando o preco cadastrado da ave
+  // Auto-reconciliação contínua:
+  // 1) Reconcilia aves marcadas como Vendido/Baixado que ainda não constam no livro-razão (movements)
+  // 2) Auto-cura de vendas registradas sem centavos (valor zero) vinculando o preço cadastrado da ave
+  // 3) Auto-cura de vendas legítimas com valor que tenham sido indevidamente marcadas como duplicado
   useEffect(() => {
     if (birds.length === 0) return;
     const hasUnreconciled = birds.some(b => {
@@ -814,20 +815,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return defined !== null && defined > 0;
     });
 
-    if (hasUnreconciled || hasZeroPriceSaleToHeal) {
+    const hasWronglyFlaggedSale = movementsRef.current.some(m => {
+      if (!m.flags?.duplicado || m.estornado) return false;
+      const otherRealSales = movementsRef.current.some(other => other.birdId === m.birdId && other.id !== m.id && !other.estornado && getMovementCents(other) > 0);
+      return !otherRealSales && getMovementCents(m) > 0;
+    });
+
+    if (hasUnreconciled || hasZeroPriceSaleToHeal || hasWronglyFlaggedSale) {
       let currentLedger = movementsRef.current;
-      if (hasZeroPriceSaleToHeal) {
+      if (hasZeroPriceSaleToHeal || hasWronglyFlaggedSale) {
         currentLedger = currentLedger.map(m => {
-          if (m.tipo !== 'venda' || m.estornado) return m;
-          const cents = getMovementCents(m);
-          if (cents > 0) return m;
-          const b = birds.find(x => x.id === m.birdId);
-          if (!b) return m;
-          const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
-          if (defined && defined > 0) {
-            return { ...m, valorCentavos: defined, updatedAt: Date.now() };
+          let updated = m;
+          if (m.flags?.duplicado) {
+            const otherRealSales = currentLedger.some(other => other.birdId === m.birdId && other.id !== m.id && !other.estornado && getMovementCents(other) > 0);
+            if (!otherRealSales && getMovementCents(m) > 0) {
+              const { duplicado: _d, ...restFlags } = updated.flags || {};
+              updated = { ...updated, flags: restFlags, updatedAt: Date.now() };
+            }
           }
-          return m;
+          if (updated.tipo === 'venda' && !updated.estornado && getMovementCents(updated) === 0) {
+            const b = birds.find(x => x.id === updated.birdId);
+            if (b) {
+              const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
+              if (defined && defined > 0) {
+                updated = { ...updated, valorCentavos: defined, updatedAt: Date.now() };
+              }
+            }
+          }
+          return updated;
         });
       }
 
@@ -2188,25 +2203,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // ── MOVIMENTAÇÕES & VENDAS DE AVES (LEDGER IMUTÁVEL) ──
       const rawCloudMovements = (resBirdMovements && Array.isArray(resBirdMovements.data)) ? resBirdMovements.data : [];
-      const mappedCloudMovements: BirdMovement[] = rawCloudMovements.map((m: any) => ({
-        id: m.id,
-        birdId: m.ave_id,
-        tipo: m.tipo,
-        motivo: m.motivo_perda || (m.tipo === 'venda' ? 'venda' : m.tipo === 'perda' ? 'morte' : 'outro'),
-        data: m.data,
-        valorCentavos: Number(m.valor_centavos || 0),
-        comprador: (m.comprador_nome || m.comprador_contato) ? { nome: m.comprador_nome, contato: m.comprador_contato } : undefined,
-        pagamento: m.forma_pagamento || undefined,
-        statusPagamento: m.status_pagamento || undefined,
-        dataRecebimento: m.data_pagamento || undefined,
-        observacao: m.observacoes || undefined,
-        snapshot: m.ave_snapshot || { anilha: '', nome: '', raca: '', sexo: '' },
-        estornado: Boolean(m.estornado),
-        estornoMotivo: m.motivo_estorno || undefined,
-        createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
-        updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : Date.now(),
-        deviceId: 'cloud'
-      }));
+      const mappedCloudMovements: BirdMovement[] = rawCloudMovements.map((m: any) => {
+        const rawTipo = m.tipo;
+        const tipo: MovementType = (rawTipo === 'morte' || rawTipo === 'perda') ? 'perda'
+          : (rawTipo === 'abate' || rawTipo === 'descarte' || rawTipo === 'doacao' || rawTipo === 'saida') ? 'saida'
+          : rawTipo === 'entrada' ? 'entrada'
+          : 'venda';
+        const rawPag = m.forma_pagamento;
+        const pagamento = rawPag === 'outros' ? 'outro' : rawPag;
+        return {
+          id: m.id,
+          birdId: m.ave_id,
+          tipo,
+          motivo: m.motivo_perda || (tipo === 'venda' ? 'venda' : tipo === 'perda' ? 'morte' : 'outro'),
+          data: normalizeDateToISO(m.data) || m.data,
+          valorCentavos: Number(m.valor_centavos || 0),
+          comprador: (m.comprador_nome || m.comprador_contato) ? { nome: m.comprador_nome, contato: m.comprador_contato } : undefined,
+          pagamento: pagamento || undefined,
+          statusPagamento: m.status_pagamento || undefined,
+          dataRecebimento: m.data_pagamento ? normalizeDateToISO(m.data_pagamento) : undefined,
+          observacao: m.observacoes || undefined,
+          snapshot: m.ave_snapshot || { anilha: '', nome: '', raca: '', sexo: '' },
+          estornado: Boolean(m.estornado),
+          estornoMotivo: m.motivo_estorno || undefined,
+          createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+          updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : Date.now(),
+          deviceId: 'cloud'
+        };
+      });
 
       const localMovements = (Array.isArray(rawLocalMovements) ? rawLocalMovements : (movementsRef.current || [])) as BirdMovement[];
       const mergedMovements = mergeLedgers(localMovements, mappedCloudMovements);
@@ -4162,20 +4186,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      // Mapeamento estrito para satisfazer os check constraints do banco Supabase
+      const mapTipoToSupabase = (tipo: string, motivo?: string) => {
+        if (tipo === 'venda') return 'venda';
+        if (tipo === 'entrada') return 'entrada';
+        if (tipo === 'perda') return 'morte';
+        if (tipo === 'saida') {
+          if (motivo === 'abate') return 'abate';
+          if (motivo === 'doacao') return 'doacao';
+          return 'descarte';
+        }
+        return 'venda';
+      };
+
+      const mapPaymentToSupabase = (p?: string) => {
+        if (!p) return undefined;
+        if (['pix', 'dinheiro', 'cartao', 'a_prazo'].includes(p)) return p;
+        return 'outros';
+      };
+
       const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : (user?.id || 'guest');
       const cloudPayload = {
         id: outcome.movement.id,
         user_id: targetUserId,
-        tipo: outcome.movement.tipo,
-        data: outcome.movement.data,
+        tipo: mapTipoToSupabase(outcome.movement.tipo, outcome.movement.motivo),
+        data: normalizeDateToISO(outcome.movement.data) || outcome.movement.data,
         ave_id: outcome.movement.birdId,
         ave_snapshot: outcome.movement.snapshot,
         valor_centavos: outcome.movement.valorCentavos,
         comprador_nome: outcome.movement.comprador?.nome,
         comprador_contato: outcome.movement.comprador?.contato,
-        forma_pagamento: outcome.movement.pagamento,
+        forma_pagamento: mapPaymentToSupabase(outcome.movement.pagamento),
         status_pagamento: outcome.movement.statusPagamento,
-        data_pagamento: outcome.movement.dataRecebimento,
+        data_pagamento: outcome.movement.dataRecebimento ? normalizeDateToISO(outcome.movement.dataRecebimento) : undefined,
         motivo_perda: outcome.movement.motivo,
         observacoes: outcome.movement.observacao,
         estornado: outcome.movement.estornado || false,

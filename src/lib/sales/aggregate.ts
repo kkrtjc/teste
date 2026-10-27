@@ -2,7 +2,8 @@
  * Agregações do livro-razão. Tudo em UMA passada, sem arrays intermediários — barato em celular fraco.
  */
 import { isCounted } from './ledger';
-import { getMovementCents } from './money';
+import { getMovementCents, formatBRL } from './money';
+import { normalizeDateToISO } from '../dates';
 import {
   REASON_LABELS,
   TYPE_LABELS,
@@ -16,7 +17,8 @@ import {
 
 const inRange = (data: string, range: Range) => {
   if (!data) return false;
-  const clean = data.slice(0, 10);
+  const clean = normalizeDateToISO(data);
+  if (!clean) return false;
   if (range.from && clean < range.from) return false;
   if (range.to && clean > range.to) return false;
   return true;
@@ -80,7 +82,8 @@ export function monthlySeries(ledger: readonly BirdMovement[], today: string, mo
   for (let i = 0; i < ledger.length; i++) {
     const m = ledger[i];
     if (!isCounted(m)) continue;
-    const monthKey = m.data ? String(m.data).slice(0, 7) : '';
+    const cleanData = normalizeDateToISO(m.data);
+    const monthKey = cleanData ? cleanData.slice(0, 7) : '';
     const p = index.get(monthKey);
     if (!p) continue;
     const cents = getMovementCents(m);
@@ -121,32 +124,39 @@ export function buildDynamicChartSeries(
   customRange?: Range
 ): DynamicChartReport {
   const countedSales = movements.filter(m => m.tipo === 'venda' && isCounted(m));
-  const getCleanDay = (d: string | undefined) => (d ? String(d).slice(0, 10) : '');
+  const getCleanDay = (d: string | undefined | null) => (d ? normalizeDateToISO(d) : '');
+
+  const [ty, tm, td] = today.split('-').map(Number);
+  const yesterdayDt = new Date(Date.UTC(ty, tm - 1, td - 1));
+  const yesterdayIso = `${yesterdayDt.getUTCFullYear()}-${String(yesterdayDt.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterdayDt.getUTCDate()).padStart(2, '0')}`;
+
+  const todaySales = countedSales.filter(m => getCleanDay(m.data) === today);
+  const todayTotal = todaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
+  const yesterdaySales = countedSales.filter(m => getCleanDay(m.data) === yesterdayIso);
+  const yesterdayTotal = yesterdaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
 
   if (period === 'hoje') {
     const bars: ChartBarData[] = [];
-    const [ty, tm, td] = today.split('-').map(Number);
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(Date.UTC(ty, tm - 1, td - i));
       const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
       const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
       const isToday = iso === today;
+      const isYesterday = iso === yesterdayIso;
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
       const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
       bars.push({
         key: iso,
-        label: isToday ? 'Hoje' : dayName,
+        label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
         receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
     }
-    const todaySales = countedSales.filter(m => getCleanDay(m.data) === today);
-    const todayTotal = todaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
     return {
       title: `Vendas de Hoje (${today.split('-').reverse().join('/')})`,
-      subtitle: `${todaySales.length} venda(s) registrada(s) hoje • Comparativo semanal`,
+      subtitle: `${todaySales.length} venda(s) hoje (${formatBRL(todayTotal)}) • Ontem: ${formatBRL(yesterdayTotal)} (${yesterdaySales.length} venda(s))`,
       bars,
       totalReceita: todayTotal
     };
@@ -154,17 +164,17 @@ export function buildDynamicChartSeries(
 
   if (period === '7d') {
     const bars: ChartBarData[] = [];
-    const [ty, tm, td] = today.split('-').map(Number);
     for (let i = 6; i >= 0; i--) {
       const dt = new Date(Date.UTC(ty, tm - 1, td - i));
       const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
       const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
       const isToday = iso === today;
+      const isYesterday = iso === yesterdayIso;
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
       const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
       bars.push({
         key: iso,
-        label: isToday ? 'Hoje' : dayName,
+        label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
         receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
         vendas: daySales.length,
@@ -172,39 +182,47 @@ export function buildDynamicChartSeries(
       });
     }
     const total = bars.reduce((acc, b) => acc + b.receita, 0);
+    const totalVendas = bars.reduce((acc, b) => acc + b.vendas, 0);
     return {
       title: 'Vendas dos Últimos 7 Dias (Por Dia)',
-      subtitle: 'Evolução diária de faturamento do plantel',
+      subtitle: `${totalVendas} venda(s) no período • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,
       bars,
       totalReceita: total
     };
   }
 
   if (period === '30d') {
-    const [ty, tm, td] = today.split('-').map(Number);
+    // Para 30 dias, geramos os últimos 14 dias individuais para alta resolução diária dos dias mais recentes
     const bars: ChartBarData[] = [];
-    for (let w = 3; w >= 0; w--) {
-      const endDaysAgo = w * 7;
-      const startDaysAgo = endDaysAgo + 6;
-      const dtEnd = new Date(Date.UTC(ty, tm - 1, td - endDaysAgo));
-      const dtStart = new Date(Date.UTC(ty, tm - 1, td - startDaysAgo));
-      const startIso = `${dtStart.getUTCFullYear()}-${String(dtStart.getUTCMonth() + 1).padStart(2, '0')}-${String(dtStart.getUTCDate()).padStart(2, '0')}`;
-      const endIso = `${dtEnd.getUTCFullYear()}-${String(dtEnd.getUTCMonth() + 1).padStart(2, '0')}-${String(dtEnd.getUTCDate()).padStart(2, '0')}`;
-      const weekSales = countedSales.filter(m => { const d = getCleanDay(m.data); return d >= startIso && d <= endIso; });
-      const isCurrentWeek = w === 0;
+    for (let i = 13; i >= 0; i--) {
+      const dt = new Date(Date.UTC(ty, tm - 1, td - i));
+      const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+      const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
+      const isToday = iso === today;
+      const isYesterday = iso === yesterdayIso;
+      const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
+      const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
       bars.push({
-        key: `w-${w}`,
-        label: isCurrentWeek ? 'Esta sem.' : `Sem. -${w}`,
-        sublabel: `${dtStart.getUTCDate()}/${dtStart.getUTCMonth() + 1} a ${dtEnd.getUTCDate()}/${dtEnd.getUTCMonth() + 1}`,
-        receita: weekSales.reduce((acc, m) => acc + getMovementCents(m), 0),
-        vendas: weekSales.length,
-        isHighlight: isCurrentWeek
+        key: iso,
+        label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
+        sublabel: dayMonth,
+        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        vendas: daySales.length,
+        isHighlight: isToday
       });
     }
-    const total = bars.reduce((acc, b) => acc + b.receita, 0);
+    const total = countedSales
+      .filter(m => {
+        const d = getCleanDay(m.data);
+        const dt30 = new Date(Date.UTC(ty, tm - 1, td - 29));
+        const iso30 = `${dt30.getUTCFullYear()}-${String(dt30.getUTCMonth() + 1).padStart(2, '0')}-${String(dt30.getUTCDate()).padStart(2, '0')}`;
+        return d >= iso30 && d <= today;
+      })
+      .reduce((acc, m) => acc + getMovementCents(m), 0);
+
     return {
-      title: 'Vendas dos Últimos 30 Dias (Últimas 4 Semanas)',
-      subtitle: 'Desempenho semanal consolidado',
+      title: 'Vendas dos Últimos 30 Dias (Diário Recente)',
+      subtitle: `Visão diária detalhada • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,
       bars,
       totalReceita: total
     };
@@ -219,19 +237,22 @@ export function buildDynamicChartSeries(
     const endDt = new Date(Date.UTC(toy, tom - 1, tod));
     const diffDays = Math.max(1, Math.round((endDt.getTime() - startDt.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
-    if (diffDays <= 14) {
+    if (diffDays <= 21) {
       const bars: ChartBarData[] = [];
       for (let i = 0; i < diffDays; i++) {
         const cur = new Date(Date.UTC(fy, fm - 1, fd + i));
         const iso = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}-${String(cur.getUTCDate()).padStart(2, '0')}`;
         const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
+        const isToday = iso === today;
+        const isYesterday = iso === yesterdayIso;
         const dayMonth = `${String(cur.getUTCDate()).padStart(2, '0')}/${String(cur.getUTCMonth() + 1).padStart(2, '0')}`;
         bars.push({
           key: iso,
-          label: dayMonth,
+          label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayMonth,
+          sublabel: isToday || isYesterday ? dayMonth : undefined,
           receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
           vendas: daySales.length,
-          isHighlight: iso === today
+          isHighlight: isToday
         });
       }
       const total = bars.reduce((acc, b) => acc + b.receita, 0);
@@ -265,6 +286,45 @@ export function buildDynamicChartSeries(
   }
 
   // 'tudo' (Todo o histórico)
+  // Inteligência de Plantel: se o histórico é recente (<= 30 dias), exibe barras diárias
+  // para que as vendas de ontem e hoje apareçam com total clareza e destaque!
+  const allDates = countedSales.map(m => getCleanDay(m.data)).filter(Boolean).sort();
+  const earliestDate = allDates[0] || today;
+  const [ey, em, ed] = earliestDate.split('-').map(Number);
+  const earliestDt = new Date(Date.UTC(ey, em - 1, ed));
+  const todayDt = new Date(Date.UTC(ty, tm - 1, td));
+  const spanDays = Math.max(1, Math.round((todayDt.getTime() - earliestDt.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+  if (spanDays <= 30) {
+    // Histórico recente: renderiza os últimos 10 dias diários onde o usuário vê Ontem e Hoje com clareza
+    const daysToShow = Math.max(7, Math.min(14, spanDays + 2));
+    const bars: ChartBarData[] = [];
+    for (let i = daysToShow - 1; i >= 0; i--) {
+      const dt = new Date(Date.UTC(ty, tm - 1, td - i));
+      const iso = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+      const daySales = countedSales.filter(m => getCleanDay(m.data) === iso);
+      const isToday = iso === today;
+      const isYesterday = iso === yesterdayIso;
+      const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dt.getUTCDay()];
+      const dayMonth = `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+      bars.push({
+        key: iso,
+        label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
+        sublabel: dayMonth,
+        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        vendas: daySales.length,
+        isHighlight: isToday
+      });
+    }
+    const totalAll = countedSales.reduce((acc, m) => acc + getMovementCents(m), 0);
+    return {
+      title: 'Histórico Geral de Vendas (Diário Recente)',
+      subtitle: `${countedSales.length} venda(s) registrada(s) • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,
+      bars,
+      totalReceita: totalAll
+    };
+  }
+
   const monthly = monthlySeries(movements, today, 6);
   const bars: ChartBarData[] = monthly.map(m => {
     const label = m.key.slice(5) + '/' + m.key.slice(2, 4);
@@ -276,11 +336,12 @@ export function buildDynamicChartSeries(
       isHighlight: m.key === today.slice(0, 7)
     };
   });
+  const totalAll = countedSales.reduce((acc, m) => acc + getMovementCents(m), 0);
   return {
     title: 'Histórico Geral de Vendas (Últimos Meses)',
-    subtitle: 'Evolução consolidada de todo o criatório',
+    subtitle: `${countedSales.length} venda(s) no total • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,
     bars,
-    totalReceita: bars.reduce((acc, b) => acc + b.receita, 0)
+    totalReceita: totalAll
   };
 }
 
