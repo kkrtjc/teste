@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { 
-  Activity, LogIn, Check, Sparkles, ShieldCheck, Layers, Dna,
+  Activity, LogIn, Check, Sparkles, ShieldCheck, Dna,
   TrendingUp, History, Smartphone, Lock, User, Mail, X, Star, Fingerprint,
   KeyRound, ArrowLeft, CheckCircle2, AlertCircle, ArrowRight
 } from 'lucide-react';
@@ -18,16 +18,12 @@ import {
 } from '../lib/biometricAuth';
 import previewDashboard from '../assets/preview_dashboard.png';
 import previewGenetics from '../assets/preview_genetics.png';
-import previewLots from '../assets/preview_lots.png';
 import previewBirdProfile from '../assets/preview_bird_profile.png';
-import previewChicksLot from '../assets/preview_chicks_lot.png';
 
 const carouselImages = [
   { src: previewGenetics, title: 'Cadastro de Raças e Linhagens', desc: 'Controle completo do seu plantel categorizado por raça, com idade, peso médio e contagem de aves.' },
   { src: previewBirdProfile, title: 'Ficha e Perfil Detalhado da Ave', desc: 'Galeria de fotos da ave, anilha, gênero, raça, localização na baia, status e registro de vacinas aplicadas.' },
-  { src: previewDashboard, title: 'Gestão Completa de Ovos', desc: 'Acompanhe a coleta diária, taxa de aproveitamento, receitas geradas e balanço financeiro de lucro e custo.' },
-  { src: previewLots, title: 'Gestão de Lotes de Postura e Engorda', desc: 'Monitore lotes ativos, expectativa diária de produção, fêmeas em postura e acompanhamento de baia.' },
-  { src: previewChicksLot, title: 'Controle de Lotes de Pintinhos e Crescimento', desc: 'Contagem automática da idade em dias, lote por baia, quantidade total de pintinhos e alteração de status.' }
+  { src: previewDashboard, title: 'Painel Central & Métricas', desc: 'Acompanhe aves ativas, machos, fêmeas, aves em crescimento, vendas no mês e balanço geral do criatório.' },
 ];
 
 const stats = [
@@ -39,10 +35,10 @@ const stats = [
 
 const features = [
   { icon: Dna, title: 'Controle Genético', desc: 'Forme casais, monitore cruzamentos e visualize a árvore genealógica, evitando consanguinidade indesejada.', accent: '#f59e0b' },
-  { icon: Layers, title: 'Gestão de Lotes', desc: 'Lotes de postura com coleta diária automatizada e lotes de engorda com transição ágil de status.', accent: '#10b981' },
-  { icon: History, title: 'Histórico de Baixas', desc: 'Saídas por venda ou falecimento com relatórios limpos e taxa de mortalidade automatizada.', accent: '#f43f5e' },
+  { icon: History, title: 'Gestão de Vendas', desc: 'Controle financeiro de vendas, faturamento bruto, recibos e ficha completa de cada ave negociada.', accent: '#10b981' },
+  { icon: History, title: 'Histórico de Plantel', desc: 'Saídas por venda ou baixas com relatórios limpos e rastreabilidade total do criatório.', accent: '#f43f5e' },
   { icon: Smartphone, title: 'Multi-Dispositivo', desc: 'Ultra-rápido no Android, iOS e PC. Sincronização em tempo real entre todos os seus aparelhos.', accent: '#3b82f6' },
-  { icon: TrendingUp, title: 'Alertas de Postura', desc: 'Produção real vs meta teórica de 85%. Gráficos e projeções de rendimento do criatório.', accent: '#8b5cf6' },
+  { icon: TrendingUp, title: 'Alertas Sanitários', desc: 'Alertas preventivos de vacinação por idade, quarentena e horários de trato do plantel.', accent: '#8b5cf6' },
   { icon: ShieldCheck, title: 'Assinatura Segura', desc: 'Cobrança automática no cartão ou notificações Pix 3 dias antes do vencimento. Zero surpresas.', accent: '#f59e0b' },
 ];
 
@@ -928,7 +924,7 @@ export function Login() {
         </h1>
 
         <p className="mt-2.5 sm:mt-3.5 text-xs sm:text-sm max-w-lg leading-relaxed font-semibold text-white/75 relative z-10">
-          Cadastre mais de 20 mil aves e tenha o controle completo sobre o seu plantel, nível de parentesco e gestão inteligente de lotes de postura e engorda.
+          Cadastre mais de 20 mil aves e tenha o controle completo sobre o seu plantel, nível de parentesco, vitrine digital e histórico financeiro de vendas.
         </p>
 
         <div className="mt-4 sm:mt-5 flex flex-col items-center gap-3 relative z-10 w-full sm:w-auto">
@@ -1071,18 +1067,18 @@ export function Login() {
                   <span className="text-xs font-bold text-white/40">/mês</span>
                 </div>
                 <p className="text-[10px] mt-1.5 font-bold text-zinc-300">
-                  Aves + Lotes inteiros e Gestão de Ovos
+                  Aves + Vitrine Digital e Gestão Financeira
                 </p>
               </div>
 
               <ul className="space-y-2.5 my-auto">
                 {[
                   'Tudo do Plano Mensal Comum incluso',
-                  'Módulo completo de lotes de cria e crescimento',
-                  'Controle de postura, engorda e peso coletivo',
-                  'Gestão de chocadeira, incubatório e eclosão',
-                  'Alertas de manejo, vacinação coletiva e ração',
-                  'Relatórios completos de produção de ovos',
+                  'Gestão financeira de vendas e faturamento',
+                  'Ficha detalhada da ave e recibos de venda',
+                  'Gestão de reprodução, casais e taxa de eclosão',
+                  'Alertas de manejo sanitário, vacinação e trato',
+                  'Exportação e relatórios profissionais em PDF',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-white/85">
                     <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/25 border border-amber-500/50">

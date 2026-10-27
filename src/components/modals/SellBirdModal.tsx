@@ -48,8 +48,8 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
     if (isSubmitting) return;
 
     const valorCentavos = parseMoneyToCents(valorVenda);
-    if (valorCentavos === null || valorCentavos <= 0) {
-      showToast('Por favor, informe um valor válido de venda.', 'warning');
+    if (!valorVenda.trim() || valorCentavos === null || valorCentavos <= 0) {
+      showToast('Não é permitido vender aves sem valor. Informe o valor negociado da venda.', 'warning');
       triggerWarning();
       return;
     }
@@ -176,6 +176,11 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
                 spellCheck={false}
               />
             </div>
+            {!predefinedPrice && (
+              <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
+                ⚠️ Ave sem preço cadastrado — é obrigatório informar o valor negociado da venda.
+              </p>
+            )}
           </div>
 
           {/* Status do Pagamento (Pago vs Pendente) */}

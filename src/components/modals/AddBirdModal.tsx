@@ -448,7 +448,6 @@ export function AddBirdModal() {
     { label: 'Adulto', value: 'Adulto' },
     { label: 'Crescimento', value: 'Crescimento' },
     { label: 'Matriz', value: 'Matriz' },
-    { label: 'Engorda', value: 'Engorda' },
   ];
 
   if (birdToEditId) {

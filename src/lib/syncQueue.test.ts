@@ -76,7 +76,7 @@ describe('syncQueue module', () => {
     const queueEventSpy = vi.fn();
     window.addEventListener(SYNC_QUEUE_CHANGED_EVENT, queueEventSpy);
 
-    await enqueueMutation('egg_lots', 'insert', { id: 'lot-1', baia: 'B1' });
+    await enqueueMutation('birds', 'insert', { id: 'bird-1', anilha: 'BR-01' });
     const len1 = await getSyncQueueLength();
     expect(len1).toBe(1);
     expect(queueEventSpy).toHaveBeenCalled();
@@ -85,8 +85,8 @@ describe('syncQueue module', () => {
   });
 
   it('coalesce updates consecutivos para o mesmo alvo', async () => {
-    await enqueueMutation('egg_lots', 'update', { baia: 'B1' }, { column: 'id', value: 'lot-1' });
-    await enqueueMutation('egg_lots', 'update', { baia: 'B2' }, { column: 'id', value: 'lot-1' });
+    await enqueueMutation('birds', 'update', { nome: 'Galo 1' }, { column: 'id', value: 'bird-1' });
+    await enqueueMutation('birds', 'update', { nome: 'Galo 2' }, { column: 'id', value: 'bird-1' });
 
     const len = await getSyncQueueLength();
     expect(len).toBe(1); // deve ter coalescido para 1 item
@@ -101,7 +101,7 @@ describe('syncQueue module', () => {
       delete: vi.fn().mockReturnValue({ eq: mockDbOp })
     });
 
-    await enqueueMutation('egg_lots', 'insert', { id: 'lot-10', baia: 'Baia 10' });
+    await enqueueMutation('birds', 'insert', { id: 'bird-10', anilha: 'BR-10' });
     expect(await getSyncQueueLength()).toBe(1);
 
     await processSyncQueue();
@@ -125,7 +125,7 @@ describe('syncQueue module', () => {
       delete: vi.fn().mockReturnValue({ eq: mockDbError })
     });
 
-    await enqueueMutation('egg_lots', 'insert', { id: 'lot-invalid', baia: 'B' });
+    await enqueueMutation('birds', 'insert', { id: 'bird-invalid', anilha: 'BR-X' });
     await processSyncQueue();
 
     // A mutação deve ter sido descartada da fila principal
@@ -134,7 +134,7 @@ describe('syncQueue module', () => {
     // E movida para o dead-letter
     const deadLetters = await getDeadLetterQueue();
     expect(deadLetters.length).toBe(1);
-    expect(deadLetters[0].mutation.table).toBe('egg_lots');
+    expect(deadLetters[0].mutation.table).toBe('birds');
     expect(droppedSpy).toHaveBeenCalled();
 
     window.removeEventListener(SYNC_DROPPED_EVENT, droppedSpy);

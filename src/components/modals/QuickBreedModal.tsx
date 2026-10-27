@@ -21,34 +21,26 @@ export function QuickBreedModal({
   const { addBreed, showToast } = useAppSlice('addBreed', 'showToast');
 
   const [nome, setNome] = useState(initialBreedName);
-  const [foco, setFoco] = useState('Corte / Engorda');
-  const [ganho, setGanho] = useState('40');
-  const [conversao, setConversao] = useState('2.2');
-  const [pesoMedio, setPesoMedio] = useState('3.2 kg');
+  const [foco, setFoco] = useState('Combate / Mura');
+  const [ganho, setGanho] = useState('25');
+  const [conversao, setConversao] = useState('2.5');
+  const [pesoMedio, setPesoMedio] = useState('2.8 kg');
   const [descricao, setDescricao] = useState('');
 
   const handleFocoChange = (newFoco: string) => {
     setFoco(newFoco);
-    if (newFoco.includes('Corte')) {
-      setGanho('40');
-      setConversao('2.2');
-      setPesoMedio('3.2 kg');
-    } else if (newFoco.includes('Postura')) {
-      setGanho('20');
-      setConversao('2.8');
-      setPesoMedio('2.0 kg');
-    } else if (newFoco.includes('Misto')) {
-      setGanho('30');
+    if (newFoco.includes('Combate')) {
+      setGanho('25');
       setConversao('2.5');
       setPesoMedio('2.8 kg');
-    } else if (newFoco.includes('Combate')) {
-      setGanho('18');
-      setConversao('3.0');
+    } else if (newFoco.includes('Genética') || newFoco.includes('Matriz')) {
+      setGanho('20');
+      setConversao('2.6');
+      setPesoMedio('2.2 kg');
+    } else {
+      setGanho('20');
+      setConversao('2.8');
       setPesoMedio('2.5 kg');
-    } else if (newFoco.includes('Ornamental')) {
-      setGanho('15');
-      setConversao('3.2');
-      setPesoMedio('1.5 kg');
     }
   };
 
@@ -73,7 +65,7 @@ export function QuickBreedModal({
       id: newId,
       nome: nome.trim(),
       foco,
-      descricao: descricao.trim() || 'Raça cadastrada para lote.',
+      descricao: descricao.trim() || 'Raça cadastrada no criatório.',
       totalAves: 0,
       tempoCrescimento: 180,
       pesoMedio: pesoMedio.trim() || '3.5 kg',
@@ -140,10 +132,9 @@ export function QuickBreedModal({
                 onChange={e => handleFocoChange(e.target.value)}
                 className={inputCls + " appearance-none"}
               >
-                <option value="Corte / Engorda">Corte (Carne)</option>
-                <option value="Postura">Postura (Ovos)</option>
-                <option value="Misto (Carne e Ovos)">Misto (Carne e Ovos)</option>
-                <option value="Combate / Esporte">Combate / Esporte</option>
+                <option value="Combate / Mura">Combate / Mura</option>
+                <option value="Genética / Matriz">Genética / Matriz</option>
+                <option value="Pura Raça">Pura Raça</option>
                 <option value="Ornamental">Ornamental</option>
               </select>
             </div>

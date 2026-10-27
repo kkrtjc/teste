@@ -17,7 +17,7 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
   {
     id: 'marek',
     nome: 'Marek',
-    descricao: 'Aplicar no 1º dia de vida (incubatório/pintinhos). Não aplicável em aves adultas.',
+    descricao: 'Aplicar no 1º dia de vida (incubatório/recém-nascidos). Não aplicável em aves adultas.',
     idadeAplicacaoDias: 1,
     janelaMaximaDias: 3,
     obrigatoria: true,
@@ -25,7 +25,7 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
   {
     id: 'newcastle',
     nome: 'Newcastle',
-    descricao: 'Aplicar com 7 dias. Reforço a cada 21 dias em lotes de postura.',
+    descricao: 'Aplicar com 7 dias. Reforço periódico conforme orientação veterinária.',
     idadeAplicacaoDias: 7,
     intervaloReforco: 21,
     obrigatoria: true,
@@ -63,7 +63,7 @@ export const POULTRY_VACCINE_PROTOCOLS: VaccineProtocol[] = [
   {
     id: 'salmonela',
     nome: 'Salmonela',
-    descricao: 'Recomendada para lotes de postura. Aplicar conforme protocolo do veterinário.',
+    descricao: 'Recomendada para reprodutoras e matrizes. Aplicar conforme protocolo do veterinário.',
     idadeAplicacaoDias: 42,
     obrigatoria: false,
   },

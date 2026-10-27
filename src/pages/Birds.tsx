@@ -228,31 +228,26 @@ const BreedFormModal = memo(function BreedFormModal({
 
   const applyFocusDefaults = (focus: string) => {
     setNewBreedFocus(focus);
-    if (focus.includes('Corte')) {
-      setNewBreedTempoCrescimento(90);
-      setNewBreedPesoMedio('3.2 kg');
-      setNewBreedGanhoGramasDia('40');
-      setNewBreedConversaoAlimentar('2.2');
-    } else if (focus.includes('Postura')) {
-      setNewBreedTempoCrescimento(150);
-      setNewBreedPesoMedio('2.0 kg');
-      setNewBreedGanhoGramasDia('20');
-      setNewBreedConversaoAlimentar('2.8');
-    } else if (focus.includes('Misto')) {
-      setNewBreedTempoCrescimento(120);
-      setNewBreedPesoMedio('2.8 kg');
-      setNewBreedGanhoGramasDia('30');
-      setNewBreedConversaoAlimentar('2.5');
-    } else if (focus.includes('Combate')) {
+    if (focus.includes('Combate')) {
       setNewBreedTempoCrescimento(240);
-      setNewBreedPesoMedio('2.5 kg');
-      setNewBreedGanhoGramasDia('18');
-      setNewBreedConversaoAlimentar('3.0');
+      setNewBreedPesoMedio('2.8 kg');
+      setNewBreedGanhoGramasDia('25');
+      setNewBreedConversaoAlimentar('2.5');
+    } else if (focus.includes('Genética') || focus.includes('Matriz')) {
+      setNewBreedTempoCrescimento(150);
+      setNewBreedPesoMedio('2.2 kg');
+      setNewBreedGanhoGramasDia('20');
+      setNewBreedConversaoAlimentar('2.6');
     } else if (focus.includes('Ornamental')) {
       setNewBreedTempoCrescimento(180);
       setNewBreedPesoMedio('1.5 kg');
       setNewBreedGanhoGramasDia('15');
       setNewBreedConversaoAlimentar('3.2');
+    } else {
+      setNewBreedTempoCrescimento(160);
+      setNewBreedPesoMedio('2.5 kg');
+      setNewBreedGanhoGramasDia('22');
+      setNewBreedConversaoAlimentar('2.5');
     }
   };
 
@@ -384,12 +379,11 @@ const BreedFormModal = memo(function BreedFormModal({
           {/* ── Foco como cards visuais ── */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-theme-text-muted uppercase tracking-wider block">Foco Principal</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {([
-                { label: 'Misto (Carne e Ovos)', icon: '🥩🥚', short: 'Misto' },
-                { label: 'Postura (Ovos)', icon: '🥚', short: 'Postura' },
-                { label: 'Corte (Carne)', icon: '🥩', short: 'Corte' },
-                { label: 'Combate / Esporte', icon: '⚔️', short: 'Combate' },
+                { label: 'Combate / Mura', icon: '⚔️', short: 'Combate' },
+                { label: 'Genética / Matriz', icon: '🧬', short: 'Genética' },
+                { label: 'Pura Raça', icon: '🏆', short: 'Pura Raça' },
                 { label: 'Ornamental', icon: '🌸', short: 'Ornamental' },
               ] as const).map(opt => (
                 <button
@@ -457,7 +451,7 @@ const BreedFormModal = memo(function BreedFormModal({
                       className="w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none"
                       placeholder="Ex: 30"
                     />
-                    <p className="text-[9px] text-theme-text-muted">Projeção diária em lotes</p>
+                    <p className="text-[9px] text-theme-text-muted">Projeção de desenvolvimento</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-theme-text-muted uppercase">Conversão Alimentar</label>
@@ -547,7 +541,7 @@ export function Birds() {
   }, [birdSearch]);
 
   const [sexFilter, setSexFilter] = useState<'Todos' | 'Macho' | 'Fêmea'>('Todos');
-  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Engorda' | 'Vendido' | 'Faleceu'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Reprodutor' | 'Matriz' | 'Adulto' | 'Crescimento' | 'Vendido' | 'Faleceu'>('Todos');
   const [deleteBreedConfirm, setDeleteBreedConfirm] = useState<{ id: string; nome: string; message: string } | null>(null);
   const [reactivateBirdConfirm, setReactivateBirdConfirm] = useState<Bird | null>(null);
 
@@ -680,7 +674,7 @@ export function Birds() {
         if (stateObj.filter === 'Macho' || stateObj.filter === 'Fêmea') {
           setSexFilter(stateObj.filter);
           setStatusFilter('Todos');
-        } else if (['Crescimento', 'Reprodutor', 'Matriz', 'Adulto', 'Engorda'].includes(stateObj.filter)) {
+        } else if (['Crescimento', 'Reprodutor', 'Matriz', 'Adulto'].includes(stateObj.filter)) {
           setStatusFilter(stateObj.filter);
           setSexFilter('Todos');
         } else if (stateObj.filter === 'Total') {
@@ -973,7 +967,7 @@ export function Birds() {
 
             <div className="h-4 w-px bg-theme-border/60 shrink-0 mx-1" />
 
-            {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Engorda', 'Vendido', 'Faleceu'] as const).map(st => (
+            {(['Todos', 'Reprodutor', 'Matriz', 'Crescimento', 'Adulto', 'Vendido', 'Faleceu'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
@@ -1131,11 +1125,10 @@ export function Birds() {
           <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1 pt-0.5 shrink-0">
             {[
               { id: 'Todos', label: 'Todos os Focos' },
-              { id: 'Misto', label: 'Misto' },
-              { id: 'Postura', label: 'Postura' },
-              { id: 'Corte', label: 'Corte' },
-              { id: 'Ornamental', label: 'Ornamental' },
               { id: 'Combate', label: 'Combate' },
+              { id: 'Genética', label: 'Genética' },
+              { id: 'Pura Raça', label: 'Pura Raça' },
+              { id: 'Ornamental', label: 'Ornamental' },
             ].map(f => (
               <button
                 key={f.id}

@@ -283,8 +283,8 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
     isProfileSetupOpen, finishProfileSetup, showToast,
     isUpgradeModalOpen: globalIsUpgradeModalOpen, selectedUpgradePlan: globalSelectedUpgradePlan,
     closeUpgradeModal: globalCloseUpgradeModal,
-    eggLots, meatLots, birds, notificationSettings, dailyFeedStatus
-  } = useAppSlice('farmSettings', 'isAddBirdModalOpen', 'selectedBirdProfileId', 'closeModals', 'isProfileSetupOpen', 'finishProfileSetup', 'showToast', 'isUpgradeModalOpen', 'selectedUpgradePlan', 'closeUpgradeModal', 'eggLots', 'meatLots', 'birds', 'notificationSettings', 'dailyFeedStatus');
+    birds, notificationSettings, dailyFeedStatus
+  } = useAppSlice('farmSettings', 'isAddBirdModalOpen', 'selectedBirdProfileId', 'closeModals', 'isProfileSetupOpen', 'finishProfileSetup', 'showToast', 'isUpgradeModalOpen', 'selectedUpgradePlan', 'closeUpgradeModal', 'birds', 'notificationSettings', 'dailyFeedStatus');
   const navigate = useNavigate();
   const location = useLocation();
   const { triggerLight } = useHaptics();
@@ -322,8 +322,8 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
 
   // Active push alerts count
   const activeAlerts = useMemo(() => {
-    return scanActiveAlerts(eggLots, meatLots, birds, notificationSettings, dailyFeedStatus);
-  }, [eggLots, meatLots, birds, notificationSettings, dailyFeedStatus, clockMinute]);
+    return scanActiveAlerts(birds, notificationSettings, dailyFeedStatus);
+  }, [birds, notificationSettings, dailyFeedStatus, clockMinute]);
 
   // Run daily notification checks automatically (push notifications)
   useEffect(() => {
@@ -591,13 +591,12 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
   useModalScrollLock(isAnyModalActive);
 
   // ── 🌟 ARQUITETURA KEEP-ALIVE (Padrão Linear.app: 0ms de latência e preservação de estado/scroll) ──
-  const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'sales' | 'lots' | 'eggs' | 'settings' | 'other' => {
+  const getTabKey = (pathname: string): 'dashboard' | 'birds' | 'vitrine' | 'sales' | 'settings' | 'other' => {
     const clean = pathname.replace(/^\//, '').split('/')[0].toLowerCase();
     if (!clean || clean === 'dashboard') return 'dashboard';
     if (clean === 'birds') return 'birds';
     if (clean === 'vitrine') return 'vitrine';
-    if (clean === 'sales' || clean === 'vendas') return 'sales';
-    if (clean === 'lots' || clean === 'eggs') return 'sales';
+    if (clean === 'sales' || clean === 'vendas' || clean === 'lots' || clean === 'eggs') return 'sales';
 
     if (clean === 'settings') return 'settings';
     return 'other';
@@ -932,16 +931,6 @@ export function Layout({ showUpgradeModal = false, onUpgradeModalClose, isTrialP
             {visitedTabs.has('vitrine') && (
               <div key="tab-view-vitrine" style={{ display: activeTabKey === 'vitrine' ? 'block' : 'none' }}>
                 <Vitrine />
-              </div>
-            )}
-            {visitedTabs.has('lots') && (
-              <div key="tab-view-lots" style={{ display: activeTabKey === 'lots' ? 'block' : 'none' }}>
-                {/* Lots deprecated */}
-              </div>
-            )}
-            {visitedTabs.has('eggs') && (
-              <div key="tab-view-eggs" style={{ display: activeTabKey === 'eggs' ? 'block' : 'none' }}>
-                {/* Eggs deprecated */}
               </div>
             )}
             {visitedTabs.has('settings') && (

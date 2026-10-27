@@ -3,7 +3,7 @@ import {
   DollarSign, TrendingUp, AlertTriangle, CheckCircle2, 
   RotateCcw, Download, Plus, Search, Calendar,
   HeartCrack, ArrowRightLeft, Clock, ShieldCheck, MessageSquare,
-  Pencil, X
+  Pencil, X, Eye
 } from 'lucide-react';
 import { useAppSlice } from '../lib/AppContext';
 import { useHaptics } from '../hooks/useHaptics';
@@ -45,6 +45,7 @@ export function Sales() {
     reverseBirdMovement, 
     markPaymentReceived, 
     updateBirdMovementValue, 
+    openBirdProfile,
     showToast 
   } = useAppSlice(
     'movements',
@@ -52,6 +53,7 @@ export function Sales() {
     'reverseBirdMovement',
     'markPaymentReceived',
     'updateBirdMovementValue',
+    'openBirdProfile',
     'showToast'
   );
   const { triggerSuccess, triggerLight, triggerWarning } = useHaptics();
@@ -691,9 +693,18 @@ export function Sales() {
                     }`}
                   >
                     {/* Lado Esquerdo: Identificação da Ave & Tipo */}
-                    <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <div 
+                      onClick={() => {
+                        if (item.birdId) {
+                          triggerLight();
+                          openBirdProfile(item.birdId);
+                        }
+                      }}
+                      className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer group"
+                      title="Clique para abrir a ficha da ave"
+                    >
                       {/* Avatar / Ícone do tipo */}
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-transform group-hover:scale-105 ${
                         item.estornado ? 'bg-gray-500/15 border-gray-500/30 text-gray-400' :
                         isVenda ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' :
                         isPerda ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' :
@@ -716,7 +727,7 @@ export function Sales() {
                             {TYPE_LABELS[item.tipo]} {item.estornado ? '(Estornado)' : ''}
                           </span>
 
-                          <span className="font-mono text-xs font-bold text-white">
+                          <span className="font-mono text-xs font-bold text-white group-hover:text-theme-primary transition-colors underline decoration-dotted decoration-white/30 underline-offset-2">
                             {item.snapshot?.anilha || 'Sem anilha'}
                           </span>
 
@@ -731,6 +742,10 @@ export function Sales() {
                               A Receber
                             </span>
                           )}
+
+                          <span className="text-[10px] text-theme-primary/80 group-hover:text-theme-primary hidden sm:inline-flex items-center gap-0.5 font-bold">
+                            <Eye size={11} /> Ficha
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-3 text-[11px] text-theme-text-muted mt-1 flex-wrap">
@@ -809,6 +824,21 @@ export function Sales() {
 
                       {/* Botões de Ação na Linha */}
                       <div className="flex items-center gap-1.5">
+                        {item.birdId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              triggerLight();
+                              openBirdProfile(item.birdId);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-theme-base hover:bg-theme-border text-theme-text-muted hover:text-white border border-theme-border/60 transition-colors cursor-pointer touch-manipulation flex items-center gap-1 text-[11px] font-bold"
+                            title="Ver ficha completa da ave"
+                          >
+                            <Eye size={13} className="text-theme-primary" />
+                            <span className="hidden sm:inline">Ficha da Ave</span>
+                          </button>
+                        )}
+
                         {isPendente && !item.estornado && (
                           <button
                             type="button"

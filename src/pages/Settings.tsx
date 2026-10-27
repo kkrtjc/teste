@@ -148,12 +148,12 @@ function TrialCountdownTimer({
 export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
-    breeds, birds, couples, eggLots, meatLots,
+    breeds, birds, couples,
     coupleEggs, incubationLots, movements,
     importBackup, showToast, recoverAllBirds,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'eggLots', 'meatLots', 'coupleEggs', 'incubationLots', 'movements', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
+  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'coupleEggs', 'incubationLots', 'movements', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
@@ -349,8 +349,6 @@ export function Settings() {
         totalBirds: birds.length,
         totalBreeds: breeds.length,
         totalCouples: couples.length,
-        totalEggLots: eggLots.length,
-        totalMeatLots: meatLots.length,
         totalMovements: movements.length,
       },
       breeds,
@@ -358,8 +356,6 @@ export function Settings() {
       couples,
       coupleEggs,
       incubationLots,
-      egglots: eggLots,
-      meatlots: meatLots,
       movements,
       settings: {
         ...farmSettings,
@@ -941,34 +937,11 @@ export function Settings() {
             </button>
           </div>
 
-          {/* Lotes de Postura Sem Registro */}
-          <div className="py-3 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>🥚</span> Lotes de Postura Sem Lançamento Hoje
-              </p>
-              <p className="text-[11px] text-theme-text-muted mt-0.5">
-                Lembrete ao entardecer se alguma baia ativa de postura estiver sem coleta de ovos informada.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleUpdateNotifSetting('alertPosturaSemRegistro', !notificationSettings.alertPosturaSemRegistro)}
-              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notificationSettings.alertPosturaSemRegistro ? 'bg-theme-primary' : 'bg-zinc-700'
-              }`}
-            >
-              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notificationSettings.alertPosturaSemRegistro ? 'left-5' : 'left-0.5'
-              }`} />
-            </button>
-          </div>
-
           {/* Horários de Ração */}
           <div className="py-3 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>🌾</span> Horários de Trato e Ração dos Lotes
+                <span>🌾</span> Horários de Trato e Alimentação do Plantel
               </p>
               <p className="text-[11px] text-theme-text-muted mt-0.5">
                 Lembrete diário nos horários habituais de alimentação do criatório (manhã e tarde).
@@ -987,37 +960,14 @@ export function Settings() {
             </button>
           </div>
 
-          {/* Pesagem Engorda */}
-          <div className="py-3 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>⚖️</span> Calibragem de Pesagem (A cada 15 dias)
-              </p>
-              <p className="text-[11px] text-theme-text-muted mt-0.5">
-                Avisa quando lotes de frangos de corte completarem 15 dias sem pesagem para recalcular ganho diário.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleUpdateNotifSetting('alertPesagens', !notificationSettings.alertPesagens)}
-              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                notificationSettings.alertPesagens ? 'bg-theme-primary' : 'bg-zinc-700'
-              }`}
-            >
-              <span className={`block w-5 h-5 rounded-full bg-black transition-transform absolute top-0.5 ${
-                notificationSettings.alertPesagens ? 'left-5' : 'left-0.5'
-              }`} />
-            </button>
-          </div>
-
           {/* Quarentena */}
           <div className="py-3 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>🛡️</span> Lotes em Quarentena e Isolamento
+                <span>🛡️</span> Aves em Quarentena e Isolamento
               </p>
               <p className="text-[11px] text-theme-text-muted mt-0.5">
-                Avisa e destaca lotes sob isolamento sanitário com suspeitas ou recém-adquiridos.
+                Avisa e destaca aves sob isolamento sanitário com suspeitas ou recém-adquiridas.
               </p>
             </div>
             <button

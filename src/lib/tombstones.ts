@@ -10,8 +10,6 @@ import localforage from 'localforage';
 
 export type EntityType = 
   | 'birds' 
-  | 'egg_lots' 
-  | 'meat_lots' 
   | 'couples' 
   | 'couple_eggs' 
   | 'incubation_lots' 

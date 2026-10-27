@@ -1,10 +1,9 @@
-import { toLocalISO, todayLocalISO } from '../lib/dates';
+import { todayLocalISO } from '../lib/dates';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Bird, Baby, Sparkles, Heart, Award, Scale,
-  Egg, AlertTriangle, TrendingUp, ShoppingBag, ShieldAlert,
-  DollarSign
+  Bird, Sparkles, Heart, Award,
+  TrendingUp, ShoppingBag, DollarSign, Activity
 } from 'lucide-react';
 import { formatBRL } from '../lib/sales/money';
 import { summarize, rangeForPeriod } from '../lib/sales/aggregate';
@@ -13,18 +12,23 @@ import { useAuth, isUserAdmin } from '../lib/AuthContext';
 import { useHaptics } from '../hooks/useHaptics';
 
 export function Dashboard() {
-  const { birds, farmSettings, breeds, eggLots, meatLots, movements, isReady } = useAppSlice('birds', 'farmSettings', 'breeds', 'eggLots', 'meatLots', 'movements', 'isReady');
+  const { birds, farmSettings, breeds, movements, isReady } = useAppSlice(
+    'birds', 
+    'farmSettings', 
+    'breeds', 
+    'movements', 
+    'isReady'
+  );
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { triggerLight } = useHaptics();
 
-  // Snapshot síncrono do localStorage para carregamento instantâneo a 0ms (estritamente isolado pelo usuário)
+  // Snapshot síncrono do localStorage para carregamento instantâneo a 0ms
   const [cachedStats, setCachedStats] = useState<{
     totalAves: number;
     totalMachos: number;
     totalFemeas: number;
-    totalPintinhos: number;
-    totalLotes: number;
+    totalCrescimento: number;
     totalRacas: number;
   } | null>(() => {
     try {
@@ -45,7 +49,7 @@ export function Dashboard() {
     let total = 0;
     let machos = 0;
     let femeas = 0;
-    let pintinhos = 0;
+    let crescimento = 0;
     
     birds.forEach(b => {
       const s = (b.status || '').toLowerCase().trim();
@@ -54,132 +58,33 @@ export function Dashboard() {
         if (b.sexo === 'Macho') machos++;
         if (b.sexo === 'Fêmea') femeas++;
       }
-      if (b.status === 'Crescimento' || (b as any).status === 'Pintinho') {
-        pintinhos++;
+      if (b.status === 'Crescimento') {
+        crescimento++;
       }
     });
-
-    const totalLotes = (eggLots?.length || 0) + (meatLots?.length || 0);
 
     return {
       totalAves: total,
       totalMachos: machos,
       totalFemeas: femeas,
-      totalPintinhos: pintinhos,
-      totalLotes: totalLotes,
+      totalCrescimento: crescimento,
       totalRacas: breeds.length
     };
-  }, [birds, eggLots, meatLots, breeds.length]);
+  }, [birds, breeds.length]);
 
-  // ── Resumo de ovos dos últimos 7 dias (lotes ativos) ──
-  const eggSummary = useMemo(() => {
-    const today = new Date();
-    const last7Days: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      last7Days.push(toLocalISO(d));
-    }
-
-    let totalMes = 0;
-    let totalSemana = 0;
-    const dailyMap: Record<string, number> = {};
-    const lotsWithGap: string[] = [];
-
-    const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-
-    eggLots.forEach(lot => {
-      if (lot.status !== 'Ativo') return;
-      const registros = lot.registros || [];
-
-      const regByDate = new Map<string, typeof registros[0]>();
-
-      // Soma do mês atual e indexação O(1) de registros
-      for (let i = 0; i < registros.length; i++) {
-        const r = registros[i];
-        if (!r?.data) continue;
-        regByDate.set(r.data, r);
-        if (r.data.startsWith(thisMonth) && r.observacao !== 'Nenhum registro') {
-          totalMes += r.coletados || 0;
-        }
-      }
-
-      // Soma dos últimos 7 dias + mapa diário O(1)
-      for (let i = 0; i < last7Days.length; i++) {
-        const dateStr = last7Days[i];
-        const reg = regByDate.get(dateStr);
-        const collected = (reg && reg.observacao !== 'Nenhum registro') ? (reg.coletados || 0) : 0;
-        dailyMap[dateStr] = (dailyMap[dateStr] || 0) + collected;
-        if (i < last7Days.length - 1) {
-          totalSemana += collected;
-        }
-      }
-
-      // Detecta lotes com 3+ dias seguidos de "Nenhum registro" O(1)
-      let gapCount = 0;
-      for (let i = last7Days.length - 1; i >= 0; i--) {
-        const d = last7Days[i];
-        const reg = regByDate.get(d);
-        if (!reg || reg.observacao === 'Nenhum registro') {
-          gapCount++;
-        } else {
-          break;
-        }
-      }
-      if (gapCount >= 3) {
-        lotsWithGap.push(`Baia ${lot.baia}`);
-      }
-    });
-
-    const daily7 = last7Days.map(d => ({ date: d, count: dailyMap[d] || 0 }));
-    const maxDay = Math.max(...daily7.map(d => d.count), 1);
-
-    return { totalMes, totalSemana, daily7, maxDay, lotsWithGap };
-  }, [eggLots]);
-
-  // ── Resumo de vendas do mês (via ledger unificado) ──
+  // Resumo de vendas do mês (via ledger unificado)
   const salesSummary = useMemo(() => {
     const today = todayLocalISO();
     const range = rangeForPeriod('mes', today);
-    const s = summarize(movements, range);
+    const s = summarize(movements, range, birds);
     return {
       count: s.vendasCount,
-      total: s.receita / 100,
       totalCentavos: s.receita,
       pendenteCentavos: s.aReceber,
       recebidoCentavos: s.recebido,
       lucroCentavos: s.lucro
     };
-  }, [movements]);
-
-  // ── Lote de corte com pesagem mais recente ──
-  const latestMeatLotWeight = useMemo(() => {
-    let bestDate = '';
-    let bestWeight = 0;
-    let bestBaia = '';
-    meatLots.forEach(lot => {
-      if (lot.status === 'Abatido') return;
-      const pesagens = lot.pesagens || [];
-      if (pesagens.length === 0) return;
-      const last = [...pesagens].sort((a, b) => b.data.localeCompare(a.data))[0];
-      if (!bestDate || last.data > bestDate) {
-        bestDate = last.data;
-        bestWeight = last.pesoMedioG;
-        bestBaia = lot.baia;
-      }
-    });
-    if (!bestDate) return null;
-    const kg = bestWeight >= 1000 ? `${(bestWeight / 1000).toFixed(2).replace('.', ',')} kg` : `${bestWeight}g`;
-    const date = new Date(bestDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    return { kg, date, baia: bestBaia };
-  }, [meatLots]);
-
-  // Limpeza preventiva de chave global legada (evita vazamento de estatísticas entre contas)
-  useEffect(() => {
-    try {
-      localStorage.removeItem('@mura-manager:dashboard-stats');
-    } catch {}
-  }, []);
+  }, [movements, birds]);
 
   // Sincroniza cachedStats quando o usuário autenticado mudar
   useEffect(() => {
@@ -201,7 +106,7 @@ export function Dashboard() {
     }
   }, [user?.id, user?.email, isAdmin]);
 
-  // Persiste snapshot no localStorage isolado exclusivamente pelo ID do usuário autenticado
+  // Persiste snapshot no localStorage isolado exclusivamente pelo ID do usuário
   useEffect(() => {
     if (!user || !user.id) return;
     try {
@@ -212,11 +117,7 @@ export function Dashboard() {
     } catch {}
   }, [stats, user?.id, user?.email, isAdmin]);
 
-  // Se os dados reais do contexto já foram carregados (isReady === true), exibe stats reais (mesmo que seja 0).
-  // cachedStats só é usado como fallback imediato nos milissegundos antes de isReady estar pronto.
   const displayStats = isReady ? stats : (cachedStats || stats);
-  const hasEggLots = eggLots.some(l => l.status === 'Ativo');
-  const quarantineLots = useMemo(() => [...eggLots, ...meatLots].filter(l => l.quarentena?.ativa), [eggLots, meatLots]);
 
   return (
     <div className="flex flex-col items-center max-w-7xl mx-auto w-full space-y-6 animate-fade-in overflow-x-hidden pb-6">
@@ -243,245 +144,141 @@ export function Dashboard() {
 
       {/* ── Stats grid ── */}
       <div id="dashboard-stats-grid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full max-w-7xl">
-          {/* Total Aves Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Total' } }); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalAves}</span>
-              <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
-                <Bird size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Aves Cadastradas</p>
-          </div>
-
-          {/* Raças Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'racas' } }); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalRacas ?? breeds.length}</span>
-              <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
-                <Award size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Raças Cadastradas</p>
-          </div>
-
-          {/* Machos Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Macho' } }); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalMachos}</span>
-              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
-                <Sparkles size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Machos</p>
-          </div>
-
-          {/* Fêmeas Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Fêmea' } }); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalFemeas}</span>
-              <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
-                <Heart size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Fêmeas</p>
-          </div>
-
-          {/* Total de Pintinhos Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Crescimento' } }); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-2xl font-black text-white">{displayStats.totalPintinhos}</span>
-              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
-                <Baby size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Total de Pintinhos</p>
-          </div>
-
-          {/* Vendas de Aves Card */}
-          <div 
-            onClick={() => { triggerLight(); navigate('/vendas'); }}
-            className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
-          >
-            <div className="flex items-start justify-between">
-              <span className="text-xl sm:text-2xl font-black text-emerald-400">{salesSummary.count}</span>
-              <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
-                <DollarSign size={16} />
-              </div>
-            </div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Vendas no Mês</p>
-          </div>
-        </div>
-
-      {/* ── Alertas de Lotes sem registro ── */}
-      {eggSummary.lotsWithGap.length > 0 && (
-        <div
-          onClick={() => { triggerLight(); navigate('/eggs'); }}
-          className="w-full max-w-7xl p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 cursor-pointer hover:bg-amber-500/15 transition-colors"
+        {/* Total Aves Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Total' } }); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-theme-primary/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <AlertTriangle size={20} className="text-amber-400 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-amber-300">
-              ⚠️ {eggSummary.lotsWithGap.length} {eggSummary.lotsWithGap.length === 1 ? 'lote' : 'lotes'} sem registro há 3+ dias
-            </p>
-            <p className="text-[11px] text-amber-300/70 truncate">
-              {eggSummary.lotsWithGap.join(', ')} · Toque para registrar a coleta de hoje
-            </p>
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{displayStats.totalAves}</span>
+            <div className="p-1.5 rounded-lg bg-theme-primary/10 text-theme-primary group-hover:scale-110 transition-transform">
+              <Bird size={16} />
+            </div>
           </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Aves Cadastradas</p>
         </div>
-      )}
 
-      {/* ── Alerta de Biossegurança / Quarentena Ativa ── */}
-      {quarantineLots.length > 0 && (
-        <div
-          onClick={() => { triggerLight(); navigate('/lots'); }}
-          className="w-full max-w-7xl p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 flex items-center gap-3 cursor-pointer hover:bg-rose-500/15 transition-colors animate-pulse"
+        {/* Machos Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Macho' } }); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-blue-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
         >
-          <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
-            <ShieldAlert size={18} />
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{displayStats.totalMachos}</span>
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-110 transition-transform">
+              <Sparkles size={16} />
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-rose-400">
-              🔴 {quarantineLots.length} {quarantineLots.length === 1 ? 'Lote em Quarentena Sanitária' : 'Lotes em Quarentena Sanitária'}
-            </p>
-            <p className="text-[11px] text-theme-text-muted truncate">
-              {quarantineLots.map(l => `Baia ${l.baia || '?'}`).join(', ')} · Toque para gerenciar isolamento e saúde
-            </p>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Machos</p>
+        </div>
+
+        {/* Fêmeas Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Fêmea' } }); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-pink-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+        >
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{displayStats.totalFemeas}</span>
+            <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400 group-hover:scale-110 transition-transform">
+              <Heart size={16} />
+            </div>
           </div>
-          <span className="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2.5 py-1 rounded-lg shrink-0 hidden sm:inline">
-            Ver Lotes
-          </span>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Fêmeas</p>
         </div>
-      )}
 
-      {/* ── Seção: Produção de Ovos + Vendas (linha) ── */}
-      {(hasEggLots || salesSummary.count > 0 || latestMeatLotWeight) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-7xl">
-
-          {/* Card de Produção de Ovos — Últimos 7 dias */}
-          {hasEggLots && (
-            <div
-              id="dashboard-egg-card"
-              onClick={() => { triggerLight(); navigate('/eggs'); }}
-              className="bg-theme-surface border border-theme-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-amber-500/40 transition-colors shadow-lg"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-                    <Egg size={15} />
-                  </div>
-                  <span className="text-xs font-black text-white">Produção de Ovos</span>
-                </div>
-                <span className="text-[10px] text-theme-text-muted font-bold">Últimos 7 dias</span>
-              </div>
-
-              {/* Mini gráfico de barras SVG */}
-              <div className="flex items-end gap-1 h-12">
-                {eggSummary.daily7.map((d, i) => {
-                  const h = eggSummary.maxDay > 0 ? Math.max(4, (d.count / eggSummary.maxDay) * 48) : 4;
-                  const isToday = i === eggSummary.daily7.length - 1;
-                  return (
-                    <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5">
-                      <div
-                        className={`w-full rounded-t transition-all ${isToday ? 'bg-amber-400' : 'bg-amber-500/40'}`}
-                        style={{ height: `${h}px` }}
-                        title={`${d.date.slice(8)}: ${d.count} ovos`}
-                      />
-                      <span className="text-[8px] text-theme-text-muted font-mono">{d.date.slice(8)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between border-t border-theme-border/40 pt-2">
-                <div>
-                  <p className="text-[10px] text-theme-text-muted font-bold uppercase">Esta semana</p>
-                  <p className="text-lg font-black text-amber-400">{eggSummary.totalSemana} <span className="text-xs font-bold text-theme-text-muted">ovos</span></p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-theme-text-muted font-bold uppercase">Este mês</p>
-                  <p className="text-lg font-black text-white">{eggSummary.totalMes} <span className="text-xs font-bold text-theme-text-muted">ovos</span></p>
-                </div>
-              </div>
+        {/* Crescimento Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'aves', filter: 'Crescimento' } }); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-amber-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+        >
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{displayStats.totalCrescimento}</span>
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+              <Activity size={16} />
             </div>
-          )}
-
-          {/* Card de Vendas do Mês */}
-          {salesSummary.count > 0 && (
-            <div
-              onClick={() => { triggerLight(); navigate('/vendas'); }}
-              className="bg-theme-surface border border-theme-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-emerald-500/40 transition-colors shadow-lg"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                    <ShoppingBag size={15} />
-                  </div>
-                  <span className="text-xs font-black text-white">Vendas do Mês</span>
-                </div>
-                <TrendingUp size={14} className="text-emerald-400" />
-              </div>
-
-              <div className="flex items-end gap-3 pt-2">
-                <div>
-                  <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves vendidas</p>
-                  <p className="text-3xl font-black text-emerald-400">{salesSummary.count}</p>
-                </div>
-                {salesSummary.totalCentavos > 0 && (
-                  <div className="pb-1">
-                    <p className="text-[10px] text-theme-text-muted font-bold uppercase">Valor total</p>
-                    <p className="text-sm font-black text-white">
-                      {formatBRL(salesSummary.totalCentavos)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[10px] text-theme-text-muted">Toque para abrir a gestão de Vendas & Movimentações</p>
-            </div>
-          )}
-
-          {/* Card de Peso dos Lotes de Corte */}
-          {latestMeatLotWeight && (
-            <div
-              onClick={() => { triggerLight(); navigate('/lots'); }}
-              className="bg-theme-surface border border-theme-border/50 rounded-2xl p-4 space-y-3 cursor-pointer hover:border-blue-500/40 transition-colors shadow-lg"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
-                    <Scale size={15} />
-                  </div>
-                  <span className="text-xs font-black text-white">Última Pesagem</span>
-                </div>
-                <span className="text-[10px] text-theme-text-muted font-bold">{latestMeatLotWeight.date}</span>
-              </div>
-
-              <div className="pt-2">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase">Peso médio · Baia {latestMeatLotWeight.baia}</p>
-                <p className="text-3xl font-black text-blue-400">{latestMeatLotWeight.kg}</p>
-              </div>
-
-              <p className="text-[10px] text-theme-text-muted">Toque para ver os lotes de corte</p>
-            </div>
-          )}
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Em Crescimento</p>
         </div>
-      )}
+
+        {/* Raças Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/birds', { state: { tab: 'racas' } }); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-purple-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+        >
+          <div className="flex items-start justify-between">
+            <span className="text-2xl font-black text-white">{displayStats.totalRacas ?? breeds.length}</span>
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+              <Award size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Raças Cadastradas</p>
+        </div>
+
+        {/* Vendas no Mês Card */}
+        <div 
+          onClick={() => { triggerLight(); navigate('/vendas'); }}
+          className="bg-theme-surface hover:bg-theme-surface-hover hover:border-emerald-500/40 border border-theme-border/50 rounded-2xl p-4 cursor-pointer transition-all active:scale-95 shadow-lg flex flex-col justify-between h-[100px] relative group overflow-hidden"
+        >
+          <div className="flex items-start justify-between">
+            <span className="text-xl sm:text-2xl font-black text-emerald-400">{salesSummary.count}</span>
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+              <DollarSign size={16} />
+            </div>
+          </div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-theme-text-muted mt-2">Vendas no Mês</p>
+        </div>
+      </div>
+
+      {/* ── Card de Faturamento e Vendas do Mês ── */}
+      <div className="w-full max-w-7xl">
+        <div
+          onClick={() => { triggerLight(); navigate('/vendas'); }}
+          className="bg-theme-surface border border-theme-border/50 rounded-2xl p-5 space-y-3 cursor-pointer hover:border-emerald-500/40 transition-colors shadow-lg"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <ShoppingBag size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Gestão Financeira & Vendas</h3>
+                <p className="text-[11px] text-theme-text-muted">Movimentações do mês atual</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
+              <TrendingUp size={15} />
+              <span>Ver Detalhes</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-theme-border/40">
+            <div>
+              <p className="text-[10px] text-theme-text-muted font-bold uppercase">Aves Vendidas</p>
+              <p className="text-xl sm:text-2xl font-black text-white">{salesSummary.count}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-theme-text-muted font-bold uppercase">Faturamento Bruto</p>
+              <p className="text-xl sm:text-2xl font-black text-emerald-400">
+                {formatBRL(salesSummary.totalCentavos)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-theme-text-muted font-bold uppercase">Recebido em Caixa</p>
+              <p className="text-xl sm:text-2xl font-black text-white">
+                {formatBRL(salesSummary.recebidoCentavos)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-theme-text-muted font-bold uppercase">A Receber (Pendentes)</p>
+              <p className={`text-xl sm:text-2xl font-black ${salesSummary.pendenteCentavos > 0 ? 'text-amber-400' : 'text-theme-text-muted'}`}>
+                {formatBRL(salesSummary.pendenteCentavos)}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-theme-text-muted">Toque para abrir a aba completa de Vendas e Livro-Razão</p>
+        </div>
+      </div>
 
     </div>
   );

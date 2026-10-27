@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { 
-  X, Bell, AlertTriangle, Egg, Syringe, Wheat, Scale, 
+  X, Bell, AlertTriangle, Syringe, Wheat, 
   ShieldAlert, CheckCircle2, ChevronRight,
   Lock, Smartphone, Zap, Sliders, BellOff
 } from 'lucide-react';
@@ -28,10 +28,10 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
   useModalScrollLock(isOpen);
   const navigate = useNavigate();
   const { 
-    eggLots, meatLots, birds, showToast, 
+    birds, showToast, 
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppSlice('eggLots', 'meatLots', 'birds', 'showToast', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
+  } = useAppSlice('birds', 'showToast', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
 
   const [activeTab, setActiveTab] = useState<'avisos' | 'config'>('avisos');
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
@@ -47,7 +47,7 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
 
   if (!isOpen) return null;
 
-  const alerts: MuraAlert[] = scanActiveAlerts(eggLots, meatLots, birds, notificationSettings, dailyFeedStatus);
+  const alerts: MuraAlert[] = scanActiveAlerts(birds, notificationSettings, dailyFeedStatus);
 
   const handleToggleMaster = async () => {
     await toggleMasterNotifications();
@@ -133,8 +133,6 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
 
   const getAlertIcon = (type: MuraAlert['type']) => {
     switch (type) {
-      case 'postura_sem_registro':
-        return <Egg size={18} className="text-amber-400" />;
       case 'vacina_atrasada':
       case 'vacina_hoje':
         return <Syringe size={18} className="text-rose-400" />;
@@ -142,8 +140,6 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
         return <Wheat size={18} className="text-amber-400" />;
       case 'quarentena':
         return <ShieldAlert size={18} className="text-red-400" />;
-      case 'pesagem_15_dias':
-        return <Scale size={18} className="text-blue-400" />;
       default:
         return <AlertTriangle size={18} className="text-amber-400" />;
     }
@@ -543,64 +539,10 @@ export function NotificationCenterModal({ isOpen, onClose }: NotificationCenterM
                         </button>
                       </div>
 
-                      {/* Vacinas */}
-                      <div className="py-2.5 flex items-center justify-between gap-3">
-                        <span className="font-bold text-zinc-300 flex items-center gap-1.5">
-                          <span>💉</span> Vacinas e Reforços de Lotes
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSetting('alertVacinas', !notificationSettings.alertVacinas)}
-                          className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                            notificationSettings.alertVacinas ? 'bg-amber-500' : 'bg-zinc-700'
-                          }`}
-                        >
-                          <span className={`block w-4 h-4 rounded-full bg-black transition-transform absolute top-0.5 ${
-                            notificationSettings.alertVacinas ? 'left-5' : 'left-0.5'
-                          }`} />
-                        </button>
-                      </div>
-
-                      {/* Postura sem ovos */}
-                      <div className="py-2.5 flex items-center justify-between gap-3">
-                        <span className="font-bold text-zinc-300 flex items-center gap-1.5">
-                          <span>🥚</span> Postura Sem Registro Hoje
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSetting('alertPosturaSemRegistro', !notificationSettings.alertPosturaSemRegistro)}
-                          className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                            notificationSettings.alertPosturaSemRegistro ? 'bg-amber-500' : 'bg-zinc-700'
-                          }`}
-                        >
-                          <span className={`block w-4 h-4 rounded-full bg-black transition-transform absolute top-0.5 ${
-                            notificationSettings.alertPosturaSemRegistro ? 'left-5' : 'left-0.5'
-                          }`} />
-                        </button>
-                      </div>
-
-                      {/* Pesagem */}
-                      <div className="py-2.5 flex items-center justify-between gap-3">
-                        <span className="font-bold text-zinc-300 flex items-center gap-1.5">
-                          <span>⚖️</span> Calibragem de Pesagem (15 dias)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSetting('alertPesagens', !notificationSettings.alertPesagens)}
-                          className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${
-                            notificationSettings.alertPesagens ? 'bg-amber-500' : 'bg-zinc-700'
-                          }`}
-                        >
-                          <span className={`block w-4 h-4 rounded-full bg-black transition-transform absolute top-0.5 ${
-                            notificationSettings.alertPesagens ? 'left-5' : 'left-0.5'
-                          }`} />
-                        </button>
-                      </div>
-
                       {/* Quarentena */}
                       <div className="py-2.5 flex items-center justify-between gap-3">
                         <span className="font-bold text-zinc-300 flex items-center gap-1.5">
-                          <span>🛡️</span> Lotes e Aves em Quarentena
+                          <span>🛡️</span> Aves em Quarentena / Tratamento
                         </span>
                         <button
                           type="button"

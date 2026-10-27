@@ -252,10 +252,12 @@ export function RegisterSaleModal({
     const cents = parseMoneyToCents(valorInput);
     const valorCentavos = cents ?? 0;
 
-    if (tipo === 'venda' && valorCentavos <= 0) {
-      showToast('Informe um valor de venda válido superior a zero.', 'warning');
-      triggerWarning();
-      return;
+    if (tipo === 'venda') {
+      if (!valorInput.trim() || valorCentavos <= 0) {
+        showToast('Não é permitido vender aves sem valor. Informe o valor negociado da venda.', 'warning');
+        triggerWarning();
+        return;
+      }
     }
 
     const motivoFinal = tipo === 'venda' ? 'venda' : tipo === 'perda' ? motivoPerda : motivoSaida;
@@ -419,6 +421,11 @@ export function RegisterSaleModal({
                     spellCheck={false}
                   />
                 </div>
+                {selectedBird && !getBirdPredefinedPrice(selectedBird) && (
+                  <p className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
+                    ⚠️ Ave sem preço cadastrado — é obrigatório informar o valor negociado da venda.
+                  </p>
+                )}
               </div>
 
               {/* Status do Pagamento (Pago vs Pendente) */}

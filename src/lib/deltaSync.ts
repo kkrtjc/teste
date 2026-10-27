@@ -7,8 +7,6 @@ export interface SyncTimestamps {
   breeds?: number;
   couples?: number;
   couple_eggs?: number;
-  egg_lots?: number;
-  meat_lots?: number;
   incubation_lots?: number;
   profiles?: number;
   [key: string]: number | undefined;

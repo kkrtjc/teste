@@ -30,28 +30,28 @@ describe('tombstones module', () => {
 
   it('registra e recupera tombstones síncrona e assincronamente', async () => {
     const scope = 'test-user-1';
-    await recordTombstone('egg_lots', 'egg-123', scope);
-    await recordTombstone('egg_lots', 'egg-456', scope);
+    await recordTombstone('birds', 'bird-123', scope);
+    await recordTombstone('birds', 'bird-456', scope);
 
-    const syncSet = getTombstonesSync('egg_lots', scope);
-    expect(syncSet.has('egg-123')).toBe(true);
-    expect(syncSet.has('egg-456')).toBe(true);
-    expect(syncSet.has('egg-999')).toBe(false);
+    const syncSet = getTombstonesSync('birds', scope);
+    expect(syncSet.has('bird-123')).toBe(true);
+    expect(syncSet.has('bird-456')).toBe(true);
+    expect(syncSet.has('bird-999')).toBe(false);
 
-    const asyncSet = await getTombstonesAsync('egg_lots', scope);
-    expect(asyncSet.has('egg-123')).toBe(true);
-    expect(asyncSet.has('egg-456')).toBe(true);
+    const asyncSet = await getTombstonesAsync('birds', scope);
+    expect(asyncSet.has('bird-123')).toBe(true);
+    expect(asyncSet.has('bird-456')).toBe(true);
   });
 
   it('limpa tombstone quando solicitado', async () => {
     const scope = 'test-user-2';
-    await recordTombstone('meat_lots', 'meat-001', scope);
-    let set = await getTombstonesAsync('meat_lots', scope);
-    expect(set.has('meat-001')).toBe(true);
+    await recordTombstone('couples', 'couple-001', scope);
+    let set = await getTombstonesAsync('couples', scope);
+    expect(set.has('couple-001')).toBe(true);
 
-    await clearTombstone('meat_lots', 'meat-001', scope);
-    set = await getTombstonesAsync('meat_lots', scope);
-    expect(set.has('meat-001')).toBe(false);
+    await clearTombstone('couples', 'couple-001', scope);
+    set = await getTombstonesAsync('couples', scope);
+    expect(set.has('couple-001')).toBe(false);
   });
 
   it('segrega entidades e escopos diferentes', async () => {

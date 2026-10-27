@@ -226,12 +226,12 @@ export function LandingCheckoutModal({
       tag: '[COMPLETO]',
       highlightBadge: 'MAIS ESCOLHIDO',
       isPopular: true,
-      description: 'Gestão 360° do plantel: Aves individuais + Lotes inteiros e Ovos.',
+      description: 'Gestão 360° do plantel: Aves individuais + Vitrine e Vendas.',
       benefits: [
         'Tudo do Plano Comum (Aves, Fotos e Vitrine)',
-        'Controle completo de Lotes de Postura e Engorda',
-        'Gestão de Chocadeira, Ovos e Taxa de Eclosão',
-        'Alertas automáticos de vacinação e pesagem de plantel'
+        'Controle financeiro de vendas e faturamento',
+        'Gestão de Chocadeira, Casais e Taxa de Eclosão',
+        'Alertas automáticos de vacinação e manejo de plantel'
       ]
     },
     yearly: {
@@ -1349,7 +1349,7 @@ export function LandingCheckoutModal({
                               UPGRADE RECOMENDADO
                             </span>
                             <span className="text-xs font-black text-white">
-                              Adicionar Módulo de Lotes e Ovos
+                              Adicionar Módulo Financeiro & Vendas
                             </span>
                           </div>
                           <span className="text-xs font-black text-amber-400 shrink-0">
@@ -1361,19 +1361,19 @@ export function LandingCheckoutModal({
                         <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 pt-2 border-t border-white/[0.08]">
                           <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
                             <span className="text-amber-400 font-bold">•</span>
-                            <span className="truncate">Lotes de cria, recria e engorda</span>
+                            <span className="truncate">Controle de vendas e faturamento</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
                             <span className="text-amber-400 font-bold">•</span>
-                            <span className="truncate">Controle diário de ovos e postura</span>
+                            <span className="truncate">Recibos e fichas de negociação</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
                             <span className="text-amber-400 font-bold">•</span>
-                            <span className="truncate">Gestão de chocadeira e eclosão</span>
+                            <span className="truncate">Gestão de chocadeira e casais</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-[10.5px] text-white/80">
                             <span className="text-amber-400 font-bold">•</span>
-                            <span className="truncate">Alertas de pesagem e vacinação</span>
+                            <span className="truncate">Alertas de manejo e vacinação</span>
                           </div>
                         </div>
 
@@ -1405,7 +1405,7 @@ export function LandingCheckoutModal({
                   {/* Itens que o cliente está levando */}
                   <div className="space-y-2">
                     {initialPlan === 'monthly' && selectedPlan === 'pro_monthly' ? (
-                      // CASO 1: Plano Mensal Comum + Upsell do Módulo de Lotes e Ovos
+                      // CASO 1: Plano Mensal Comum + Upsell do Módulo Financeiro & Vendas
                       <>
                         <div className="flex items-start justify-between gap-2 text-xs">
                           <div>
@@ -1424,10 +1424,10 @@ export function LandingCheckoutModal({
                           <div>
                             <div className="flex items-center gap-1.5 font-bold text-amber-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                              <span>+ Módulo de Lotes e Ovos (Upgrade)</span>
+                              <span>+ Módulo Financeiro & Vendas (Upgrade)</span>
                             </div>
                             <p className="text-[11px] text-white/75 pl-3 leading-tight mt-0.5">
-                              Lotes de postura/engorda, ovos diários, chocadeira e pesagens
+                              Gestão financeira de vendas, faturamento bruto e recibos
                             </p>
                           </div>
                           <span className="font-mono text-amber-400 shrink-0 font-black">+ R$ 19,90/mês</span>

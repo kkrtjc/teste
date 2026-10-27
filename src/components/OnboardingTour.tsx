@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronRight, ChevronLeft, LayoutDashboard, Bird, Store, Layers, Egg, Check } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, LayoutDashboard, Bird, Store, DollarSign, Check } from 'lucide-react';
 import { useModalScrollLock } from '../hooks/useModalScrollLock';
 
 // ── Definição dos passos do tour guiado ──────────────────────────────────────
@@ -19,7 +19,7 @@ const TOUR_STEPS: TourStep[] = [
     Icon: LayoutDashboard,
     title: 'Aba Início',
     description:
-      'Aqui você encontra um resumo visual completo do seu plantel — total de aves, lotes ativos, ovos coletados e métricas diárias. É o seu centro de comando principal.',
+      'Aqui você encontra um resumo visual completo do seu plantel — aves cadastradas, vendas do mês, alertas sanitários e métricas principais.',
   },
   {
     key: 'birds',
@@ -38,20 +38,12 @@ const TOUR_STEPS: TourStep[] = [
       'Esta é sua vitrine pública exclusiva. Selecione as aves disponíveis para venda e compartilhe seu catálogo profissional direto com clientes pelo WhatsApp.',
   },
   {
-    key: 'lots',
-    label: 'Gestão de Lotes',
-    Icon: Layers,
-    title: 'Gestão de Lotes',
+    key: 'vendas',
+    label: 'Gestão de Vendas',
+    Icon: DollarSign,
+    title: 'Vendas & Livro Caixa',
     description:
-      'Controle seus lotes de postura e corte por baia. Acompanhe a evolução de peso, consumo de ração e receba alertas automáticos de manejo periódicos.',
-  },
-  {
-    key: 'eggs',
-    label: 'Controle de Ovos',
-    Icon: Egg,
-    title: 'Controle de Ovos',
-    description:
-      'Monitore sua produção diária de ovos, taxa de postura calculada automaticamente por baia, estoque atual e histórico de perdas ou vendas.',
+      'Acompanhe o faturamento do criatório, consulte o histórico de aves vendidas e visualize a ficha completa e recibos de negociação.',
   },
 ];
 
@@ -76,7 +68,7 @@ interface OnboardingTourProps {
   isBlocked?: boolean;
 }
 
-const TAB_PATHS = ['/', '/birds', '/vitrine', '/lots', '/eggs'];
+const TAB_PATHS = ['/', '/birds', '/vitrine', '/vendas'];
 
 export function OnboardingTour({ onNavigateToTab, isBlocked = false }: OnboardingTourProps) {
   const [visible, setVisible] = useState(false);
