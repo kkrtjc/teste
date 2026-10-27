@@ -149,11 +149,11 @@ export function Settings() {
   const { 
     farmSettings, updateFarmSettings,
     breeds, birds, couples,
-    coupleEggs, incubationLots, movements,
+    movements,
     importBackup, showToast, recoverAllBirds,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed
-  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'coupleEggs', 'incubationLots', 'movements', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
+  } = useAppSlice('farmSettings', 'updateFarmSettings', 'breeds', 'birds', 'couples', 'movements', 'importBackup', 'showToast', 'recoverAllBirds', 'notificationSettings', 'updateNotificationSettings', 'toggleMasterNotifications', 'dailyFeedStatus', 'confirmDailyFeed', 'unconfirmDailyFeed');
   const { signOut, isLocalMode, cpf, user, trialInfo, isAdmin, activateSubscription } = useAuth();
 
   const [name, setName] = useState(farmSettings.name);
@@ -269,7 +269,7 @@ export function Settings() {
     if (granted) {
       showToast('Notificações no celular ativadas com sucesso!', 'success');
       await triggerDeviceNotification('🐓 Mura Manager Conectado!', {
-        body: 'Você receberá avisos automáticos sobre vacinas, ração e lotes.',
+        body: 'Você receberá avisos automáticos sobre vacinas, ração e manejo do plantel.',
       });
     } else {
       if (current === 'denied' || current === 'unsupported') {
@@ -354,8 +354,6 @@ export function Settings() {
       breeds,
       birds,
       couples,
-      coupleEggs,
-      incubationLots,
       movements,
       settings: {
         ...farmSettings,

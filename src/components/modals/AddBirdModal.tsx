@@ -7,6 +7,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { compressImage } from '../../lib/imageCompression';
 import { uploadBirdPhoto } from '../../lib/storageService';
 import { calculateExactAge } from '../../lib/utils';
+import { parseMoneyToCents, centsToInput, sanitizeMoneyInput, formatMoneyOnBlur } from '../../lib/sales/money';
 import { QuickBreedModal } from './QuickBreedModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
@@ -261,7 +262,8 @@ export function AddBirdModal() {
         setAnilha(b.anilha); setNome(b.nome); setSexo(b.sexo); setRaca(b.raca);
         setBaia(b.baia); setStatus(b.status);
         setDataNasc(b.dataNascimento || ''); setPeso(b.peso || '');
-        setValorEstimado(b.valorEstimado !== undefined ? String(b.valorEstimado) : '');
+        const existingEstCents = parseMoneyToCents(b.valorEstimado);
+        setValorEstimado(existingEstCents && existingEstCents > 0 ? centsToInput(existingEstCents) : '');
         setPreviewImages((b.imagens || (b.imagem ? [b.imagem] : [])).slice(0, 3));
         const orig = b.origem || 'Criatório';
         setNascidaAqui(orig !== 'Externo');
@@ -270,7 +272,7 @@ export function AddBirdModal() {
         setPaiExterno(b.isPaiExterno ? b.paiId || '' : '');
         setMaeId(b.isMaeExterno ? '' : b.maeId || '');
         setMaeExterno(b.isMaeExterno ? b.maeId || '' : '');
-        setDescricaoOrigem('');
+        setDescricaoOrigem(b.observacoes || '');
         
         const rawVacs = (b.vacinas || '').split(',').map(v => v.trim());
         const knownList = ['bouba', 'marek', 'newcastle', 'coriza'];
@@ -381,6 +383,9 @@ export function AddBirdModal() {
         imagesToSave.map((img, idx) => uploadBirdPhoto(img, user?.id || 'default', targetBirdId, idx))
       );
 
+      const parsedEstCents = valorEstimado ? parseMoneyToCents(valorEstimado) : null;
+      const parsedValorEstimado = parsedEstCents && parsedEstCents > 0 ? parsedEstCents / 100 : undefined;
+
       const data = {
         anilha: anilha.trim(),
         nome: nome.trim(),
@@ -397,7 +402,7 @@ export function AddBirdModal() {
         maeId: cleanMaeId || undefined,
         dataNascimento: dataNasc || undefined,
         peso: peso || undefined,
-        valorEstimado: valorEstimado ? parseFloat(valorEstimado.replace(',', '.')) : undefined,
+        valorEstimado: parsedValorEstimado,
         imagem: uploadedImages[0] || undefined,
         imagens: uploadedImages,
         observacoes: descricaoOrigem || undefined
@@ -756,8 +761,8 @@ export function AddBirdModal() {
               type="text"
               inputMode="decimal"
               value={valorEstimado}
-              onChange={e => setValorEstimado(e.target.value.replace(/[^0-9.,]/g, ''))}
-              onKeyDown={onlyNumericKeyDown}
+              onChange={e => setValorEstimado(sanitizeMoneyInput(e.target.value))}
+              onBlur={() => setValorEstimado(formatMoneyOnBlur(valorEstimado))}
               className="w-full bg-theme-base border border-theme-border rounded-xl py-3 pl-10 pr-3 text-sm text-white focus:border-theme-primary outline-none transition-colors"
               placeholder="0,00"
             />

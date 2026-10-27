@@ -5,9 +5,10 @@ import {
   ChevronLeft, ChevronRight, Trash2, Plus, Search, Check, 
   AlertCircle, UserPlus, X, Share2, DollarSign, RotateCcw
 } from 'lucide-react';
-import { useAppSlice } from '../../lib/AppContext';
+import { useAppSlice, type Bird } from '../../lib/AppContext';
 import { calculateExactAge } from '../../lib/utils';
 import { calculateInbreedingCoefficient, findRelatedBirds } from '../../lib/genealogy';
+import { formatBRL, parseMoneyToCents } from '../../lib/sales/money';
 import { ShareBirdModal } from './ShareBirdModal';
 import { SellBirdModal } from './SellBirdModal';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -118,7 +119,7 @@ function PedigreeTreeNode({
 }
 
 export function BirdProfileModal() {
-  const { selectedBirdProfileId, closeModals, birds, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppSlice('selectedBirdProfileId', 'closeModals', 'birds', 'openAddBirdModal', 'openBirdProfile', 'editBird', 'removeBird', 'showToast');
+  const { selectedBirdProfileId, closeModals, birds, movements, openAddBirdModal, openBirdProfile, editBird, removeBird, showToast } = useAppSlice('selectedBirdProfileId', 'closeModals', 'birds', 'movements', 'openAddBirdModal', 'openBirdProfile', 'editBird', 'removeBird', 'showToast');
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
@@ -140,8 +141,53 @@ export function BirdProfileModal() {
 
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  // ── Lock body scroll while modal is open ──
-  useModalScrollLock(Boolean(selectedBirdProfileId));
+  // Localiza a ave no plantel ativo ou reconstrói a ficha histórica a partir do snapshot da movimentação
+  const { bird, isHistoricalSnapshot, activeSaleMovement } = useMemo(() => {
+    if (!selectedBirdProfileId) {
+      return { bird: null as Bird | null, isHistoricalSnapshot: false, activeSaleMovement: undefined };
+    }
+    const foundBird = birds.find(b => b.id === selectedBirdProfileId) || null;
+    const saleMov = movements.find(m => m.birdId === selectedBirdProfileId && !m.estornado && m.tipo === 'venda');
+    if (foundBird) {
+      return { bird: foundBird, isHistoricalSnapshot: false, activeSaleMovement: saleMov };
+    }
+    const anyMov = saleMov || movements.find(m => m.birdId === selectedBirdProfileId || m.id === selectedBirdProfileId);
+    if (anyMov && anyMov.snapshot) {
+      const reconstructed: Bird = {
+        id: anyMov.birdId,
+        anilha: anyMov.snapshot.anilha || 'Sem anilha',
+        nome: anyMov.snapshot.nome || '',
+        sexo: (anyMov.snapshot.sexo === 'Fêmea' ? 'Fêmea' : 'Macho'),
+        raca: anyMov.snapshot.raca || 'Não informada',
+        baia: 'Histórico',
+        status: anyMov.tipo === 'venda' ? 'Vendido' : 'Faleceu',
+        imagem: anyMov.snapshot.imagem,
+        imagens: anyMov.snapshot.imagem ? [anyMov.snapshot.imagem] : [],
+        valorVenda: anyMov.valorCentavos > 0 ? anyMov.valorCentavos / 100 : undefined,
+        dataVenda: anyMov.tipo === 'venda' ? anyMov.data : undefined,
+        dataBaixa: anyMov.data,
+        compradorNome: anyMov.comprador?.nome,
+        compradorContato: anyMov.comprador?.contato,
+        observacoes: anyMov.observacao
+      };
+      return { bird: reconstructed, isHistoricalSnapshot: true, activeSaleMovement: saleMov };
+    }
+    return { bird: null as Bird | null, isHistoricalSnapshot: false, activeSaleMovement: undefined };
+  }, [selectedBirdProfileId, birds, movements]);
+
+  // ── Lock body scroll only while modal is open and target bird is resolved ──
+  useModalScrollLock(Boolean(selectedBirdProfileId && bird));
+
+  const pai = useMemo(() => (bird?.paiId ? birds.find(b => b.id === bird.paiId) || null : null), [bird?.paiId, birds]);
+  const mae = useMemo(() => (bird?.maeId ? birds.find(b => b.id === bird.maeId) || null : null), [bird?.maeId, birds]);
+
+  const inbreedingF = useMemo(() => {
+    return bird && !isHistoricalSnapshot ? calculateInbreedingCoefficient(bird.id, birds) : 0;
+  }, [bird, isHistoricalSnapshot, birds]);
+
+  const relatedList = useMemo(() => {
+    return bird && !isHistoricalSnapshot ? findRelatedBirds(bird, birds) : [];
+  }, [bird, isHistoricalSnapshot, birds]);
 
   useEffect(() => {
     setCurrentImgIndex(0);
@@ -153,26 +199,9 @@ export function BirdProfileModal() {
     }
   }, [selectedBirdProfileId]);
 
-  if (!selectedBirdProfileId) return null;
-
-  const bird = birds.find(b => b.id === selectedBirdProfileId);
-
-  if (!bird) {
+  if (!selectedBirdProfileId || !bird) {
     return null;
   }
-
-  const pai = useMemo(() => bird?.paiId ? birds.find(b => b.id === bird.paiId) || null : null, [bird?.paiId, birds]);
-  const mae = useMemo(() => bird?.maeId ? birds.find(b => b.id === bird.maeId) || null : null, [bird?.maeId, birds]);
-
-
-
-  const inbreedingF = useMemo(() => {
-    return calculateInbreedingCoefficient(bird.id, birds);
-  }, [bird.id, birds]);
-
-  const relatedList = useMemo(() => {
-    return findRelatedBirds(bird, birds);
-  }, [bird, birds]);
 
   const getStatusColorClass = (status: string) => {
     switch (status) {
@@ -275,26 +304,35 @@ export function BirdProfileModal() {
         
         {/* Header */}
         <div className="p-5 border-b border-theme-border flex justify-between items-center bg-theme-base/50 shrink-0 touch-none select-none">
-          <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-lg text-white">Perfil da Ave</h3>
+            {isHistoricalSnapshot && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                Registro Histórico
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {bird.status === 'Vendido' ? (
-              <button
-                onClick={() => setReactivateConfirmOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
-                title="Reativar ave e trazer de volta para o plantel ativo"
-              >
-                <RotateCcw size={15} />
-                <span className="hidden sm:inline">Reativar</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsSellModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
-                title="Registrar Venda desta Ave"
-              >
-                <DollarSign size={15} />
-                <span className="hidden sm:inline">Vender</span>
-              </button>
+            {!isHistoricalSnapshot && (
+              bird.status === 'Vendido' ? (
+                <button
+                  onClick={() => setReactivateConfirmOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                  title="Reativar ave e trazer de volta para o plantel ativo"
+                >
+                  <RotateCcw size={15} />
+                  <span className="hidden sm:inline">Reativar</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsSellModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                  title="Registrar Venda desta Ave"
+                >
+                  <DollarSign size={15} />
+                  <span className="hidden sm:inline">Vender</span>
+                </button>
+              )
             )}
 
             <button
@@ -305,15 +343,19 @@ export function BirdProfileModal() {
               <Share2 size={15} />
               <span className="hidden sm:inline">Compartilhar</span>
             </button>
-            <button
-              onClick={() => setDeleteConfirmOpen(true)}
-              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
-            >
-              <Trash2 size={16} /> <span className="hidden sm:inline">Excluir</span>
-            </button>
-            <button onClick={() => openAddBirdModal('', bird.id)} className="flex items-center gap-2 text-sm font-bold text-theme-primary hover:text-orange-400 transition-colors cursor-pointer">
-              <Edit2 size={16} /> <span className="hidden sm:inline">Editar</span>
-            </button>
+            {!isHistoricalSnapshot && (
+              <>
+                <button
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-400 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={16} /> <span className="hidden sm:inline">Excluir</span>
+                </button>
+                <button onClick={() => openAddBirdModal('', bird.id)} className="flex items-center gap-2 text-sm font-bold text-theme-primary hover:text-orange-400 transition-colors cursor-pointer">
+                  <Edit2 size={16} /> <span className="hidden sm:inline">Editar</span>
+                </button>
+              </>
+            )}
             <button onClick={closeModals} className="text-theme-text-muted hover:text-white p-2 cursor-pointer">✕</button>
           </div>
         </div>
@@ -503,24 +545,33 @@ export function BirdProfileModal() {
               </div>
 
               {/* Valor / Financeiro */}
-              <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
-                <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
-                  💰 {bird.status === 'Vendido' ? 'Valor da Venda' : 'Valor Estimado'}
-                </p>
-                <p className="text-sm font-bold text-emerald-400 truncate">
-                  {bird.status === 'Vendido' && bird.valorVenda !== undefined
-                    ? `R$ ${Number(bird.valorVenda).toFixed(2)}`
-                    : bird.valorEstimado !== undefined
-                    ? `R$ ${Number(bird.valorEstimado).toFixed(2)}`
-                    : 'Não avaliado'}
-                </p>
-                {bird.status === 'Vendido' && (
-                  <div className="mt-1 pt-1 border-t border-theme-border/50 text-[10px] text-theme-text-muted space-y-0.5">
-                    {bird.compradorNome && <p className="truncate">👤 {bird.compradorNome}</p>}
-                    {bird.dataVenda && <p className="truncate">📅 {bird.dataVenda.split('-').reverse().join('/')}</p>}
+              {(() => {
+                const saleCents =
+                  activeSaleMovement && activeSaleMovement.valorCentavos > 0
+                    ? activeSaleMovement.valorCentavos
+                    : parseMoneyToCents(bird.valorVenda);
+                const estCents = parseMoneyToCents(bird.valorEstimado) ?? parseMoneyToCents(bird.vitrinePrice);
+                const displayCents = bird.status === 'Vendido' ? (saleCents && saleCents > 0 ? saleCents : estCents) : estCents;
+                const buyerName = bird.compradorNome || activeSaleMovement?.comprador?.nome;
+                const saleDate = bird.dataVenda || activeSaleMovement?.data;
+
+                return (
+                  <div className="bg-theme-base/50 border border-theme-border p-3 rounded-xl">
+                    <p className="text-[10px] text-theme-text-muted font-bold uppercase mb-0.5 flex items-center gap-1">
+                      💰 {bird.status === 'Vendido' ? 'Valor da Venda' : 'Valor Estimado'}
+                    </p>
+                    <p className="text-sm font-bold text-emerald-400 truncate">
+                      {displayCents && displayCents > 0 ? formatBRL(displayCents) : 'Não avaliado'}
+                    </p>
+                    {bird.status === 'Vendido' && (buyerName || saleDate) && (
+                      <div className="mt-1 pt-1 border-t border-theme-border/50 text-[10px] text-theme-text-muted space-y-0.5">
+                        {buyerName && <p className="truncate">👤 {buyerName}</p>}
+                        {saleDate && <p className="truncate">📅 {saleDate.split('-').reverse().join('/')}</p>}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
             </div>
 
             {bird.vacinas && (
@@ -1075,7 +1126,7 @@ export function BirdProfileModal() {
         <ConfirmDialog
           isOpen={reactivateConfirmOpen}
           title={`Reativar Ave ${bird.anilha}?`}
-          message="A ave retornará para o seu plantel ativo (como Reprodutor ou Matriz) e voltará a constar nas suas contagens e gráficos."
+          message="A ave retornará para o seu plantel ativo (como Reprodutor ou Matriz) e qualquer venda/baixa ativa registrada para ela será automaticamente estornada."
           confirmLabel="Reativar no Plantel"
           confirmVariant="info"
           onConfirm={() => {
@@ -1083,8 +1134,9 @@ export function BirdProfileModal() {
               status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
               dataBaixa: undefined,
               dataVenda: undefined,
+              valorVenda: undefined,
             });
-            showToast(`Ave ${bird.anilha} reativada com sucesso!`, 'success');
+            showToast(`Ave ${bird.anilha} reativada e movimentação estornada com sucesso!`, 'success');
             setReactivateConfirmOpen(false);
           }}
           onCancel={() => setReactivateConfirmOpen(false)}

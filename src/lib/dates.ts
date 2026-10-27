@@ -78,3 +78,11 @@ export function todayLocalISO(): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+/** Formata YYYY-MM-DD (ou qualquer string de data) para DD/MM/AAAA no padrão brasileiro. */
+export function formatDateBR(value: unknown): string {
+  const iso = normalizeDateToISO(value);
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return String(value || '');
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}

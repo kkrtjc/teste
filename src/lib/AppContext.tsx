@@ -93,6 +93,13 @@ export type VitrineMeta = {
   inVitrine: boolean;
   vitrinePrice?: string;
   vitrineStatus?: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
+  valorEstimado?: number | string;
+  valorVenda?: number | string;
+  dataVenda?: string;
+  dataBaixa?: string;
+  compradorNome?: string;
+  compradorContato?: string;
+  motivoBaixa?: string;
 };
 
 export function parseBirdVitrine(rawObservacoes?: string): {
@@ -100,6 +107,13 @@ export function parseBirdVitrine(rawObservacoes?: string): {
   inVitrine: boolean;
   vitrinePrice: string;
   vitrineStatus: 'Disponível' | 'Reservado' | 'Vendido' | 'Destaque';
+  valorEstimado?: number | string;
+  valorVenda?: number | string;
+  dataVenda?: string;
+  dataBaixa?: string;
+  compradorNome?: string;
+  compradorContato?: string;
+  motivoBaixa?: string;
 } {
   if (!rawObservacoes) {
     return { cleanObservacoes: '', inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
@@ -115,7 +129,14 @@ export function parseBirdVitrine(rawObservacoes?: string): {
       cleanObservacoes,
       inVitrine: Boolean(meta.inVitrine),
       vitrinePrice: meta.vitrinePrice || meta.price || '',
-      vitrineStatus: meta.vitrineStatus || meta.status || 'Disponível'
+      vitrineStatus: meta.vitrineStatus || meta.status || 'Disponível',
+      valorEstimado: meta.valorEstimado,
+      valorVenda: meta.valorVenda,
+      dataVenda: meta.dataVenda,
+      dataBaixa: meta.dataBaixa,
+      compradorNome: meta.compradorNome,
+      compradorContato: meta.compradorContato,
+      motivoBaixa: meta.motivoBaixa
     };
   } catch {
     return { cleanObservacoes: rawObservacoes, inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
@@ -126,33 +147,48 @@ export function formatBirdObservacoesWithVitrine(
   cleanObservacoes: string | undefined,
   inVitrine: boolean,
   vitrinePrice?: string,
-  vitrineStatus?: string
+  vitrineStatus?: string,
+  extraMeta?: {
+    valorEstimado?: number | string;
+    valorVenda?: number | string;
+    dataVenda?: string;
+    dataBaixa?: string;
+    compradorNome?: string;
+    compradorContato?: string;
+    motivoBaixa?: string;
+  }
 ): string {
   const base = (cleanObservacoes || '').replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
-  if (!inVitrine) {
+  const hasExtraMeta = Boolean(
+    extraMeta && (
+      (extraMeta.valorEstimado !== undefined && extraMeta.valorEstimado !== '') ||
+      (extraMeta.valorVenda !== undefined && extraMeta.valorVenda !== '') ||
+      extraMeta.dataVenda ||
+      extraMeta.dataBaixa ||
+      extraMeta.compradorNome ||
+      extraMeta.compradorContato ||
+      extraMeta.motivoBaixa
+    )
+  );
+  if (!inVitrine && !hasExtraMeta) {
     return base;
   }
   const meta: VitrineMeta = {
-    inVitrine: true,
-    vitrinePrice: vitrinePrice || '',
-    vitrineStatus: (vitrineStatus as any) || 'Disponível'
+    inVitrine: Boolean(inVitrine),
+    ...(inVitrine ? {
+      vitrinePrice: vitrinePrice || '',
+      vitrineStatus: (vitrineStatus as any) || 'Disponível'
+    } : {}),
+    ...(extraMeta?.valorEstimado !== undefined && extraMeta.valorEstimado !== '' ? { valorEstimado: extraMeta.valorEstimado } : {}),
+    ...(extraMeta?.valorVenda !== undefined && extraMeta.valorVenda !== '' ? { valorVenda: extraMeta.valorVenda } : {}),
+    ...(extraMeta?.dataVenda ? { dataVenda: extraMeta.dataVenda } : {}),
+    ...(extraMeta?.dataBaixa ? { dataBaixa: extraMeta.dataBaixa } : {}),
+    ...(extraMeta?.compradorNome ? { compradorNome: extraMeta.compradorNome } : {}),
+    ...(extraMeta?.compradorContato ? { compradorContato: extraMeta.compradorContato } : {}),
+    ...(extraMeta?.motivoBaixa ? { motivoBaixa: extraMeta.motivoBaixa } : {})
   };
   return base ? `${base}\n[[VITRINE:${JSON.stringify(meta)}]]` : `[[VITRINE:${JSON.stringify(meta)}]]`;
 }
-
-export type IncubationLot = {
-  id: string;
-  coupleId: string;
-  numeroLote: string;
-  quantidadeOvos: number;
-  dataInicio: string;
-  baia: string;
-  ovoscopia1Realizada?: boolean;
-  ovoscopia2Realizada?: boolean;
-  ovosDescartados1?: number;
-  ovosDescartados2?: number;
-  eclodido?: boolean;
-};
 
 export type Couple = {
   id: string;
@@ -167,14 +203,6 @@ export type Couple = {
   ovosDisponiveis?: number;
   isHibrido?: boolean;
   racaFemea?: string;
-};
-
-export type CoupleEgg = {
-  id: string;
-  coupleId: string;
-  femeaId: string;           // qual fêmea botou o ovo
-  status: 'Em Espera' | 'Em Choco' | 'Eclodido' | 'Perdido';
-  dataIntroducao: string;    // data de introdução ao cruzador
 };
 
 export type FarmSettings = {
@@ -213,10 +241,6 @@ export type AppContextType = {
   addCouple: (couple: Couple) => void;
   editCouple: (id: string, updatedCouple: Partial<Couple>) => void;
   removeCouple: (id: string) => void;
-  coupleEggs: CoupleEgg[];
-  addCoupleEgg: (egg: CoupleEgg) => void;
-  editCoupleEgg: (id: string, updated: Partial<CoupleEgg>) => void;
-  removeCoupleEgg: (id: string) => void;
   
   farmSettings: FarmSettings;
   setFarmSettings: (settings: FarmSettings) => void;
@@ -242,11 +266,6 @@ export type AppContextType = {
   closeTutorial: () => void;
   activeBreed: string;
   setActiveBreed: (breed: string) => void;
-
-  incubationLots: IncubationLot[];
-  addIncubationLot: (lot: IncubationLot) => void;
-  editIncubationLot: (id: string, updatedLot: Partial<IncubationLot>) => void;
-  removeIncubationLot: (id: string) => void;
 
   // Toast Notifications
   showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
@@ -474,8 +493,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const recentVitrineChangesRef = useRef<Map<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any; timestamp: number }>>(new Map());
   const [couples, setCouples] = useState<Couple[]>([]);
-  const [coupleEggs, setCoupleEggs] = useState<CoupleEgg[]>([]);
-  const [incubationLots, setIncubationLots] = useState<IncubationLot[]>([]);
   const [movements, setMovements] = useState<BirdMovement[]>([]);
   const movementsRef = useRef<BirdMovement[]>([]);
   useEffect(() => { movementsRef.current = movements; }, [movements]);
@@ -752,10 +769,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'breeds',
       'birds',
       'couples',
-      'couple-eggs',
-      'incubation-lots',
       'settings',
-      'vitrine-config'
+      'vitrine-config',
+      'bird-movements'
     ];
 
     for (const s of suffixes) {
@@ -868,6 +884,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
               inVitrine: inVit,
               vitrinePrice: b.vitrinePrice || parsed.vitrinePrice || '',
               vitrineStatus: b.vitrineStatus || parsed.vitrineStatus || 'Disponível',
+              valorEstimado: b.valorEstimado ?? parsed.valorEstimado,
+              valorVenda: b.valorVenda ?? parsed.valorVenda,
+              dataVenda: b.dataVenda ?? parsed.dataVenda,
+              dataBaixa: b.dataBaixa ?? parsed.dataBaixa,
+              compradorNome: b.compradorNome ?? parsed.compradorNome,
+              compradorContato: b.compradorContato ?? parsed.compradorContato,
+              motivoBaixa: b.motivoBaixa ?? parsed.motivoBaixa,
               observacoes: parsed.cleanObservacoes
             };
           });
@@ -893,7 +916,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setCouples(migrated);
         }
       },
-      { suffix: 'couple-eggs',     setter: (d: any) => setCoupleEggs(Array.isArray(d) ? d : []) },
       {
         suffix: 'settings',
         setter: (d: any) => {
@@ -997,8 +1019,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resBirds,
         resCouples,
         resSettings,
-        resCoupleEggs,
-        resIncubationLots,
         resBirdMovements
       ] = await Promise.all([
         isAdmin
@@ -1014,12 +1034,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? supabase!.from('profiles').select('*').in('id', adminUserIds).order('updated_at', { ascending: false }).limit(1)
           : supabase!.from('profiles').select('*').eq('id', targetUserId).maybeSingle(),
         isAdmin
-          ? supabase!.from('couple_eggs').select('*').in('user_id', adminUserIds)
-          : supabase!.from('couple_eggs').select('*').eq('user_id', targetUserId),
-        isAdmin
-          ? supabase!.from('incubation_lots').select('*').in('user_id', adminUserIds)
-          : supabase!.from('incubation_lots').select('*').eq('user_id', targetUserId),
-        isAdmin
           ? (supabase!.from('bird_movements').select('*').in('user_id', adminUserIds).order('data', { ascending: false }) as any).then((r: any) => r, () => ({ data: [], error: null }))
           : (supabase!.from('bird_movements').select('*').eq('user_id', targetUserId).order('data', { ascending: false }) as any).then((r: any) => r, () => ({ data: [], error: null }))
       ]);
@@ -1033,8 +1047,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const entitiesToSyncDeletes: Array<{ entity: EntityType; table: string }> = [
         { entity: 'birds', table: 'birds' },
         { entity: 'couples', table: 'couples' },
-        { entity: 'couple_eggs', table: 'couple_eggs' },
-        { entity: 'incubation_lots', table: 'incubation_lots' },
         { entity: 'breeds', table: 'breeds' },
         { entity: 'bird_movements', table: 'bird_movements' },
       ];
@@ -1069,14 +1081,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Carrega tombstones universais de todas as entidades
       const [
         coupleTombstones,
-        coupleEggTombstones,
-        incubationLotTombstones,
         breedTombstones,
         birdTombstonesAsync
       ] = await Promise.all([
         getTombstonesAsync('couples', scope),
-        getTombstonesAsync('couple_eggs', scope),
-        getTombstonesAsync('incubation_lots', scope),
         getTombstonesAsync('breeds', scope),
         getTombstonesAsync('birds', scope)
       ]);
@@ -1105,8 +1113,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let sbSettings = (resSettings.data && Array.isArray(resSettings.data))
         ? (resSettings.data[0] || null)
         : (resSettings.data || null);
-      let sbCoupleEggs = (resCoupleEggs.data || []).filter((e: any) => !coupleEggTombstones.has(e.id));
-      let sbIncubationLots = (resIncubationLots.data || []).filter((l: any) => !incubationLotTombstones.has(l.id));
 
       // Carrega dados locais defensivamente combinando memória e storage
       const [
@@ -1114,16 +1120,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rawLocalBirds,
         rawLocalCouples,
         rawLocalSettings,
-        rawLocalCoupleEggs,
-        rawLocalIncubationLots,
         rawLocalMovements
       ]: any = await Promise.all([
         localforage.getItem(getStorageKey('breeds')),
         localforage.getItem(getStorageKey('birds')),
         localforage.getItem(getStorageKey('couples')),
         localforage.getItem(getStorageKey('settings')),
-        localforage.getItem(getStorageKey('couple-eggs')),
-        localforage.getItem(getStorageKey('incubation-lots')),
         localforage.getItem(getStorageKey('bird-movements'))
       ]);
 
@@ -1131,8 +1133,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localBreeds = (breeds && breeds.length > 0) ? breeds : (rawLocalBreeds || []);
       const localCouples = (couples && couples.length > 0) ? couples : (rawLocalCouples || []);
       const localSettings = rawLocalSettings;
-      const localCoupleEggs = (coupleEggs && coupleEggs.length > 0) ? coupleEggs : (rawLocalCoupleEggs || []);
-      const localIncubationLots = (incubationLots && incubationLots.length > 0) ? incubationLots : (rawLocalIncubationLots || []);
 
       if (sbCouples.length === 0 && localCouples.length > 0) {
         try {
@@ -1250,7 +1250,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
             data_nascimento: b.dataNascimento || null,
             peso: b.peso || null,
             imagens: b.imagens || [],
-            observacoes: b.observacoes || ''
+            observacoes: formatBirdObservacoesWithVitrine(
+              parseBirdVitrine(b.observacoes).cleanObservacoes,
+              Boolean(b.inVitrine),
+              b.vitrinePrice,
+              b.vitrineStatus,
+              {
+                valorEstimado: b.valorEstimado,
+                valorVenda: b.valorVenda,
+                dataVenda: b.dataVenda,
+                dataBaixa: b.dataBaixa,
+                compradorNome: b.compradorNome,
+                compradorContato: b.compradorContato,
+                motivoBaixa: b.motivoBaixa
+              }
+            )
           }));
           for (let i = 0; i < payloads.length; i += 5) {
             const chunk = payloads.slice(i, i + 5);
@@ -1345,17 +1359,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             isMaeExterno: b.is_mae_externo !== undefined ? b.is_mae_externo : b.isMaeExterno,
             dataNascimento: b.data_nascimento || b.dataNascimento,
             peso: b.peso,
-            dataBaixa: localBird?.dataBaixa,
+            dataBaixa: parsedCloudVitrine.dataBaixa ?? localBird?.dataBaixa ?? parsedLocalVitrine.dataBaixa,
             observacoes: cleanObs,
             inVitrine: isBirdInVitrine,
             vitrinePrice: birdVitrinePrice,
             vitrineStatus: birdVitrineStatus,
-            valorEstimado: localBird?.valorEstimado,
-            valorVenda: localBird?.valorVenda,
-            dataVenda: localBird?.dataVenda,
-            compradorNome: localBird?.compradorNome,
-            compradorContato: localBird?.compradorContato,
-            motivoBaixa: localBird?.motivoBaixa
+            valorEstimado: parsedCloudVitrine.valorEstimado ?? localBird?.valorEstimado ?? parsedLocalVitrine.valorEstimado,
+            valorVenda: parsedCloudVitrine.valorVenda ?? localBird?.valorVenda ?? parsedLocalVitrine.valorVenda,
+            dataVenda: parsedCloudVitrine.dataVenda ?? localBird?.dataVenda ?? parsedLocalVitrine.dataVenda,
+            compradorNome: parsedCloudVitrine.compradorNome ?? localBird?.compradorNome ?? parsedLocalVitrine.compradorNome,
+            compradorContato: parsedCloudVitrine.compradorContato ?? localBird?.compradorContato ?? parsedLocalVitrine.compradorContato,
+            motivoBaixa: parsedCloudVitrine.motivoBaixa ?? localBird?.motivoBaixa ?? parsedLocalVitrine.motivoBaixa
           };
         });
 
@@ -1463,78 +1477,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
       setCouples(mappedCouples);
       safeStorageSet(getStorageKey('couples'), mappedCouples);
-
-      // ── OVOS DE CASAL: Mapeamento e preservação ──
-      const mappedCoupleEggs = sbCoupleEggs.map((e: any) => ({
-        id: e.id,
-        coupleId: e.couple_id || e.coupleId || '',
-        femeaId: e.femea_id || e.femeaId || '',
-        status: e.status || 'Em Espera',
-        dataIntroducao: e.data_introducao || e.dataIntroducao || ''
-      }));
-
-      // Cloud é autoridade para ovos de casal
-      const sbCoupleEggIds = new Set<string>(sbCoupleEggs.map((e: any) => e.id));
-      const pendingCoupleEggs = (localCoupleEggs || []).filter((le: any) => le && le.id && !sbCoupleEggIds.has(le.id) && !coupleEggTombstones.has(le.id));
-      if (pendingCoupleEggs.length > 0 && isSupabaseConfigured && user) {
-        const coupleEggsToPush = pendingCoupleEggs.map((e: any) => ({
-          id: e.id,
-          user_id: targetUserId,
-          couple_id: e.coupleId,
-          femea_id: e.femeaId,
-          status: e.status,
-          data_introducao: e.dataIntroducao
-        }));
-        supabase!.from('couple_eggs').upsert(coupleEggsToPush, { onConflict: 'id' }).then(({ error }) => {
-          if (error) console.error('Erro ovos casal pendentes:', error);
-        });
-      }
-
-      const finalCoupleEggs = [...mappedCoupleEggs, ...pendingCoupleEggs];
-      setCoupleEggs(finalCoupleEggs);
-      safeStorageSet(getStorageKey('couple-eggs'), finalCoupleEggs);
-
-      // ── LOTES DE INCUBAÇÃO: Mapeamento e preservação ──
-      const mappedIncubationLots = sbIncubationLots.map((l: any) => ({
-        id: l.id,
-        coupleId: l.couple_id || l.coupleId || '',
-        numeroLote: l.numero_lote || l.numeroLote || '',
-        quantidadeOvos: l.quantidadeOvos !== undefined ? l.quantidade_ovos : (l.quantidadeOvos || 0),
-        dataInicio: l.data_inicio || l.dataInicio || '',
-        baia: l.baia || '',
-        ovoscopia1Realizada: l.ovoscopia1_realizada !== undefined ? l.ovoscopia1_realizada : false,
-        ovoscopia2Realizada: l.ovoscopia2_realizada !== undefined ? l.ovoscopia2_realizada : false,
-        ovosDescartados1: l.ovos_descartados1 !== undefined ? l.ovos_descartados1 : 0,
-        ovosDescartados2: l.ovos_descartados2 !== undefined ? l.ovos_descartados2 : 0,
-        eclodido: l.eclodido !== undefined ? l.eclodido : false
-      }));
-
-      // Cloud é autoridade para lotes de incubação
-      const sbIncubationLotIds = new Set<string>(sbIncubationLots.map((l: any) => l.id));
-      const pendingIncubationLots = (localIncubationLots || []).filter((li: any) => li && li.id && !sbIncubationLotIds.has(li.id) && !incubationLotTombstones.has(li.id));
-      if (pendingIncubationLots.length > 0 && isSupabaseConfigured && user) {
-        const incubationLotsToPush = pendingIncubationLots.map((l: any) => ({
-          id: l.id,
-          user_id: targetUserId,
-          couple_id: l.coupleId,
-          numero_lote: l.numeroLote,
-          quantidade_ovos: l.quantidadeOvos,
-          data_inicio: l.dataInicio,
-          baia: l.baia,
-          ovoscopia1_realizada: l.ovoscopia1Realizada || false,
-          ovoscopia2_realizada: l.ovoscopia2Realizada || false,
-          ovos_descartados1: l.ovosDescartados1 || 0,
-          ovos_descartados2: l.ovosDescartados2 || 0,
-          eclodido: l.eclodido || false
-        }));
-        supabase!.from('incubation_lots').upsert(incubationLotsToPush, { onConflict: 'id' }).then(({ error }) => {
-          if (error) console.error('Erro lotes incubação pendentes:', error);
-        });
-      }
-
-      const finalIncubationLots = [...mappedIncubationLots, ...pendingIncubationLots];
-      setIncubationLots(finalIncubationLots);
-      safeStorageSet(getStorageKey('incubation-lots'), finalIncubationLots);
 
       // ── MOVIMENTAÇÕES & VENDAS DE AVES (LEDGER IMUTÁVEL) ──
       const rawCloudMovements = (resBirdMovements && Array.isArray(resBirdMovements.data)) ? resBirdMovements.data : [];
@@ -1645,8 +1587,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     birdsRef.current = [];
     setBreeds(DEFAULT_BREEDS);
     setCouples([]);
-    setCoupleEggs([]);
-    setIncubationLots([]);
     setFarmSettings(DEFAULT_FARM_SETTINGS);
     setVitrineConfig({});
     setMovements([]);
@@ -1657,7 +1597,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const handleSignOutEvent = () => {
       resetAllStateToEmpty();
       lastLoadedUserIdRef.current = null;
-      const suffixes = ['birds', 'breeds', 'couples', 'couple-eggs', 'incubation-lots', 'settings', 'vitrine-config', 'bird-movements'];
+      const suffixes = ['birds', 'breeds', 'couples', 'settings', 'vitrine-config', 'bird-movements'];
       for (const s of suffixes) {
         localforage.removeItem(`@mura-manager:guest:${s}`).catch(() => {});
       }
@@ -1782,12 +1722,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }, 400);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'couples' }, () => {
-        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
-        realtimeDebounceTimerRef.current = setTimeout(() => {
-          syncWithSupabaseBackground(true);
-        }, 400);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'incubation_lots' }, () => {
         if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
         realtimeDebounceTimerRef.current = setTimeout(() => {
           syncWithSupabaseBackground(true);
@@ -2039,7 +1973,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cleanObs,
       Boolean(bird.inVitrine),
       bird.vitrinePrice,
-      bird.vitrineStatus
+      bird.vitrineStatus,
+      {
+        valorEstimado: bird.valorEstimado,
+        valorVenda: bird.valorVenda,
+        dataVenda: bird.dataVenda,
+        dataBaixa: bird.dataBaixa,
+        compradorNome: bird.compradorNome,
+        compradorContato: bird.compradorContato,
+        motivoBaixa: bird.motivoBaixa
+      }
     );
     const birdWithDate: Bird = {
       ...bird,
@@ -2145,7 +2088,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const rawObs = updatedBird.observacoes !== undefined ? updatedBird.observacoes : (currentBird?.observacoes || '');
       const cleanObs = parseBirdVitrine(rawObs).cleanObservacoes;
-      finalObsForDb = formatBirdObservacoesWithVitrine(cleanObs, isVit, vitPrice, vitStat);
+
+      const isReturningToActive = Boolean(
+        updatedBird.status &&
+        updatedBird.status !== 'Vendido' &&
+        updatedBird.status !== 'Faleceu' &&
+        updatedBird.status !== 'Abatido'
+      );
+
+      // Se a ave estava baixada/vendida e foi reativada diretamente no plantel, estorna qualquer saída ativa no ledger
+      if (isReturningToActive) {
+        const activeExitMovements = movementsRef.current.filter(
+          m => m.birdId === id && !m.estornado && m.tipo !== 'entrada'
+        );
+        if (activeExitMovements.length > 0) {
+          let nextLedger = movementsRef.current;
+          const nowTs = Date.now();
+          const todayStr = todayLocalISO();
+          for (const activeMov of activeExitMovements) {
+            const revRes = reverseMovement(
+              nextLedger,
+              { movementId: activeMov.id, motivo: 'Ave reativada no plantel' },
+              { today: todayStr, now: nowTs, deviceId: 'web' }
+            );
+            if (revRes.ok) {
+              nextLedger = revRes.value.ledger;
+              if (isSupabaseConfigured && user) {
+                const revPayload = {
+                  estornado: true,
+                  motivo_estorno: 'Ave reativada no plantel',
+                  updated_at: new Date(revRes.value.movement.updatedAt).toISOString()
+                };
+                supabase!.from('bird_movements').update(revPayload).eq('id', activeMov.id).then(
+                  ({ error }) => {
+                    if (error) enqueueMutation('bird_movements', 'update', revPayload, { column: 'id', value: activeMov.id });
+                  },
+                  () => {
+                    enqueueMutation('bird_movements', 'update', revPayload, { column: 'id', value: activeMov.id });
+                  }
+                );
+              }
+            }
+          }
+          setMovements(nextLedger);
+          movementsRef.current = nextLedger;
+          safeStorageSet(getStorageKey('bird-movements'), nextLedger);
+        }
+      }
 
       const next = prev.map(b => {
         if (b.id === id) {
@@ -2153,9 +2142,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if ((updatedBird.status === 'Vendido' || updatedBird.status === 'Faleceu' || updatedBird.status === 'Abatido') && !b.dataBaixa) {
             nextFields.dataBaixa = updatedBird.dataVenda || todayLocalISO();
           }
-          if (updatedBird.status && updatedBird.status !== 'Vendido' && updatedBird.status !== 'Faleceu' && updatedBird.status !== 'Abatido') {
+          if (isReturningToActive) {
             nextFields.dataBaixa = undefined;
             nextFields.dataVenda = undefined;
+            nextFields.valorVenda = undefined;
+            nextFields.motivoBaixa = undefined;
             nextFields.compradorNome = undefined;
             nextFields.compradorContato = undefined;
           }
@@ -2163,7 +2154,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           nextFields.vitrinePrice = isUnavailableForVitrine ? '' : vitPrice;
           nextFields.vitrineStatus = isUnavailableForVitrine ? 'Vendido' : vitStat;
           nextFields.observacoes = cleanObs;
-          return { ...b, ...nextFields };
+
+          const mergedBird = { ...b, ...nextFields };
+          finalObsForDb = formatBirdObservacoesWithVitrine(cleanObs, isVit, vitPrice, vitStat, {
+            valorEstimado: mergedBird.valorEstimado,
+            valorVenda: mergedBird.valorVenda,
+            dataVenda: mergedBird.dataVenda,
+            dataBaixa: mergedBird.dataBaixa,
+            compradorNome: mergedBird.compradorNome,
+            compradorContato: mergedBird.compradorContato,
+            motivoBaixa: mergedBird.motivoBaixa
+          });
+          return mergedBird;
         }
         return b;
       });
@@ -2449,62 +2451,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return next;
     });
 
-    // Remove todos os ovos introduzidos desse casal
-    const eggsToRemove = coupleEggs.filter(e => e.coupleId === id);
-    eggsToRemove.forEach(e => {
-      recordTombstone('couple_eggs', e.id, scope);
-      markPendingDelete('couple_eggs', e.id, scope);
-    });
-    setCoupleEggs(prev => {
-      const next = prev.filter(e => e.coupleId !== id);
-      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
-      if (isSupabaseConfigured && user) {
-        supabase!
-          .from('couple_eggs')
-          .delete()
-          .eq('couple_id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase cascade couple_eggs:', error);
-              } else {
-                eggsToRemove.forEach(e => clearPendingDelete('couple_eggs', e.id, scope));
-              }
-            },
-            () => {}
-          );
-      }
-      return next;
-    });
-
-    // Remove todos os lotes de incubação desse casal
-    const incsToRemove = incubationLots.filter(l => l.coupleId === id);
-    incsToRemove.forEach(l => {
-      recordTombstone('incubation_lots', l.id, scope);
-      markPendingDelete('incubation_lots', l.id, scope);
-    });
-    setIncubationLots(prev => {
-      const next = prev.filter(l => l.coupleId !== id);
-      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
-      if (isSupabaseConfigured && user) {
-        supabase!
-          .from('incubation_lots')
-          .delete()
-          .eq('couple_id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase cascade incubation_lots:', error);
-              } else {
-                incsToRemove.forEach(l => clearPendingDelete('incubation_lots', l.id, scope));
-              }
-            },
-            () => {}
-          );
-      }
-      return next;
-    });
-
     // Remove a associação de casalId em qualquer ave do plantel
     setBirds(prev => {
       const next = prev.map(b => b.casalId === id ? { ...b, casalId: undefined } : b);
@@ -2515,206 +2461,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .update({ casal_id: null })
           .eq('casal_id', id)
           .then(({ error }) => { if (error) console.error('Erro Supabase cascade birds casal_id:', error); });
-      }
-      return next;
-    });
-  };
-
-  /* ── CoupleEgg CRUD ── */
-  const addCoupleEgg = (egg: CoupleEgg) => {
-    const scope = getUserScope();
-    clearTombstone('couple_eggs', egg.id, scope);
-    setCoupleEggs(prev => {
-      const next = [...prev, egg];
-      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
-        const payload = {
-          id: egg.id,
-          user_id: targetUserId,
-          couple_id: egg.coupleId,
-          femea_id: egg.femeaId,
-          status: egg.status,
-          data_introducao: egg.dataIntroducao
-        };
-        supabase!
-          .from('couple_eggs')
-          .insert(payload)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase addCoupleEgg:', error);
-                enqueueMutation('couple_eggs', 'insert', payload);
-              }
-            },
-            () => { enqueueMutation('couple_eggs', 'insert', payload); }
-          );
-      }
-      return next;
-    });
-  };
-
-  const editCoupleEgg = (id: string, updated: Partial<CoupleEgg>) => {
-    setCoupleEggs(prev => {
-      const next = prev.map(e => e.id === id ? { ...e, ...updated } : e);
-      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        const dbUpdate: any = {};
-        if (updated.coupleId !== undefined) dbUpdate.couple_id = updated.coupleId;
-        if (updated.femeaId !== undefined) dbUpdate.femea_id = updated.femeaId;
-        if (updated.status !== undefined) dbUpdate.status = updated.status;
-        if (updated.dataIntroducao !== undefined) dbUpdate.data_introducao = updated.dataIntroducao;
-
-        supabase!
-          .from('couple_eggs')
-          .update(dbUpdate)
-          .eq('id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase editCoupleEgg:', error);
-                enqueueMutation('couple_eggs', 'update', dbUpdate, { column: 'id', value: id });
-              }
-            },
-            () => { enqueueMutation('couple_eggs', 'update', dbUpdate, { column: 'id', value: id }); }
-          );
-      }
-      return next;
-    });
-  };
-
-  const removeCoupleEgg = (id: string) => {
-    const scope = getUserScope();
-    recordTombstone('couple_eggs', id, scope);
-    markPendingDelete('couple_eggs', id, scope);
-    setCoupleEggs(prev => {
-      const next = prev.filter(e => e.id !== id);
-      localforage.setItem(getStorageKey('couple-eggs'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        supabase!
-          .from('couple_eggs')
-          .delete()
-          .eq('id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase removeCoupleEgg:', error);
-                enqueueMutation('couple_eggs', 'delete', null, { column: 'id', value: id });
-              } else {
-                clearPendingDelete('couple_eggs', id, scope);
-              }
-            },
-            () => { enqueueMutation('couple_eggs', 'delete', null, { column: 'id', value: id }); }
-          );
-      }
-      return next;
-    });
-  };
-
-  /* ── IncubationLot CRUD ── */
-  const addIncubationLot = (lot: IncubationLot) => {
-    const scope = getUserScope();
-    clearTombstone('incubation_lots', lot.id, scope);
-    setIncubationLots(prev => {
-      const next = [...prev, lot];
-      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
-        const payload = {
-          id: lot.id,
-          user_id: targetUserId,
-          couple_id: lot.coupleId,
-          numero_lote: lot.numeroLote,
-          quantidade_ovos: lot.quantidadeOvos,
-          data_inicio: lot.dataInicio,
-          baia: lot.baia,
-          ovoscopia1_realizada: lot.ovoscopia1Realizada || false,
-          ovoscopia2_realizada: lot.ovoscopia2Realizada || false,
-          ovos_descartados1: lot.ovosDescartados1 || 0,
-          ovos_descartados2: lot.ovosDescartados2 || 0,
-          eclodido: lot.eclodido || false
-        };
-        supabase!
-          .from('incubation_lots')
-          .insert(payload)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase addIncubationLot:', error);
-                enqueueMutation('incubation_lots', 'insert', payload);
-              }
-            },
-            () => { enqueueMutation('incubation_lots', 'insert', payload); }
-          );
-      }
-      return next;
-    });
-  };
-
-  const editIncubationLot = (id: string, updatedLot: Partial<IncubationLot>) => {
-    setIncubationLots(prev => {
-      const next = prev.map(l => l.id === id ? { ...l, ...updatedLot } : l);
-      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        const dbUpdate: any = {};
-        if (updatedLot.coupleId !== undefined) dbUpdate.couple_id = updatedLot.coupleId;
-        if (updatedLot.numeroLote !== undefined) dbUpdate.numero_lote = updatedLot.numeroLote;
-        if (updatedLot.quantidadeOvos !== undefined) dbUpdate.quantidade_ovos = updatedLot.quantidadeOvos;
-        if (updatedLot.dataInicio !== undefined) dbUpdate.data_inicio = updatedLot.dataInicio;
-        if (updatedLot.baia !== undefined) dbUpdate.baia = updatedLot.baia;
-        if (updatedLot.ovoscopia1Realizada !== undefined) dbUpdate.ovoscopia1_realizada = updatedLot.ovoscopia1Realizada;
-        if (updatedLot.ovoscopia2Realizada !== undefined) dbUpdate.ovoscopia2_realizada = updatedLot.ovoscopia2Realizada;
-        if (updatedLot.ovosDescartados1 !== undefined) dbUpdate.ovos_descartados1 = updatedLot.ovosDescartados1;
-        if (updatedLot.ovosDescartados2 !== undefined) dbUpdate.ovos_descartados2 = updatedLot.ovosDescartados2;
-        if (updatedLot.eclodido !== undefined) dbUpdate.eclodido = updatedLot.eclodido;
-
-        supabase!
-          .from('incubation_lots')
-          .update(dbUpdate)
-          .eq('id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase editIncubationLot:', error);
-                enqueueMutation('incubation_lots', 'update', dbUpdate, { column: 'id', value: id });
-              }
-            },
-            () => { enqueueMutation('incubation_lots', 'update', dbUpdate, { column: 'id', value: id }); }
-          );
-      }
-      return next;
-    });
-  };
-
-  const removeIncubationLot = (id: string) => {
-    const scope = getUserScope();
-    recordTombstone('incubation_lots', id, scope);
-    markPendingDelete('incubation_lots', id, scope);
-    setIncubationLots(prev => {
-      const next = prev.filter(l => l.id !== id);
-      localforage.setItem(getStorageKey('incubation-lots'), next).catch(console.error);
-      
-      if (isSupabaseConfigured && user) {
-        supabase!
-          .from('incubation_lots')
-          .delete()
-          .eq('id', id)
-          .then(
-            ({ error }) => { 
-              if (error) {
-                console.error('Erro Supabase removeIncubationLot:', error);
-                enqueueMutation('incubation_lots', 'delete', null, { column: 'id', value: id });
-              } else {
-                clearPendingDelete('incubation_lots', id, scope);
-              }
-            },
-            () => { enqueueMutation('incubation_lots', 'delete', null, { column: 'id', value: id }); }
-          );
       }
       return next;
     });
@@ -2807,7 +2553,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           data_nascimento: b.dataNascimento,
           peso: b.peso,
           imagens: b.imagens || [],
-          observacoes: b.observacoes || ''
+          observacoes: formatBirdObservacoesWithVitrine(
+            parseBirdVitrine(b.observacoes).cleanObservacoes,
+            Boolean(b.inVitrine),
+            b.vitrinePrice,
+            b.vitrineStatus,
+            {
+              valorEstimado: b.valorEstimado,
+              valorVenda: b.valorVenda,
+              dataVenda: b.dataVenda,
+              dataBaixa: b.dataBaixa,
+              compradorNome: b.compradorNome,
+              compradorContato: b.compradorContato,
+              motivoBaixa: b.motivoBaixa
+            }
+          )
         }));
         await supabase!.from('birds').insert(toInsert);
       }
@@ -2827,44 +2587,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: c.status
         }));
         await supabase!.from('couples').insert(toInsert);
-      }
-    }
-    if (backupData.coupleEggs) {
-      setCoupleEggs(backupData.coupleEggs);
-      await localforage.setItem(getStorageKey('couple-eggs'), backupData.coupleEggs);
-      if (isSupabaseConfigured && user) {
-        await supabase!.from('couple_eggs').delete().eq('user_id', targetUserId);
-        const toInsert = backupData.coupleEggs.map((e: any) => ({
-          id: e.id,
-          user_id: targetUserId,
-          couple_id: e.coupleId,
-          femea_id: e.femeaId,
-          status: e.status,
-          data_introducao: e.dataIntroducao
-        }));
-        await supabase!.from('couple_eggs').insert(toInsert);
-      }
-    }
-    if (backupData.incubationLots) {
-      setIncubationLots(backupData.incubationLots);
-      await localforage.setItem(getStorageKey('incubation-lots'), backupData.incubationLots);
-      if (isSupabaseConfigured && user) {
-        await supabase!.from('incubation_lots').delete().eq('user_id', targetUserId);
-        const toInsert = backupData.incubationLots.map((l: any) => ({
-          id: l.id,
-          user_id: targetUserId,
-          couple_id: l.coupleId,
-          numero_lote: l.numeroLote,
-          quantidade_ovos: l.quantidadeOvos,
-          data_inicio: l.dataInicio,
-          baia: l.baia,
-          ovoscopia1_realizada: l.ovoscopia1Realizada || false,
-          ovoscopia2_realizada: l.ovoscopia2Realizada || false,
-          ovos_descartados1: l.ovosDescartados1 || 0,
-          ovos_descartados2: l.ovosDescartados2 || 0,
-          eclodido: l.eclodido || false
-        }));
-        await supabase!.from('incubation_lots').insert(toInsert);
       }
     }
     if (backupData.movements) {
@@ -3211,11 +2933,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       if (isSupabaseConfigured && user) {
-        supabase!.from('bird_movements').update({
+        const updatePayload = {
           estornado: true,
-          motivo_estorno: motivo,
+          motivo_estorno: motivo || 'Estornado pelo usuário',
           updated_at: new Date(outcome.movement.updatedAt).toISOString()
-        }).eq('id', movementId).then(() => {});
+        };
+        supabase!.from('bird_movements').update(updatePayload).eq('id', movementId).then(
+          ({ error }) => {
+            if (error) enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+          },
+          () => {
+            enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+          }
+        );
       }
 
       showToast('Estorno realizado e ave retornada ao plantel ativo!', 'info');
@@ -3244,11 +2974,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       safeStorageSet(getStorageKey('bird-movements'), nextMovements);
 
       if (isSupabaseConfigured && user) {
-        supabase!.from('bird_movements').update({
+        const updatePayload = {
           status_pagamento: 'pago',
           data_pagamento: outcome.movement.dataRecebimento,
           updated_at: new Date(outcome.movement.updatedAt).toISOString()
-        }).eq('id', movementId).then(() => {});
+        };
+        supabase!.from('bird_movements').update(updatePayload).eq('id', movementId).then(
+          ({ error }) => {
+            if (error) enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+          },
+          () => {
+            enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+          }
+        );
       }
 
       showToast('Pagamento confirmado com sucesso!', 'success');
@@ -3293,13 +3031,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured && user) {
         const pMethod = formaPagamento || target.pagamento;
         const validP = pMethod && ['pix', 'dinheiro', 'cartao', 'a_prazo'].includes(pMethod) ? pMethod : 'outros';
-        supabase!.from('bird_movements').update({
+        const updatePayload = {
           valor_centavos: valorCentavos,
           forma_pagamento: validP,
           updated_at: new Date(updatedMovement.updatedAt).toISOString()
-        }).eq('id', movementId).then(({ error }) => {
-          if (error) console.error('Erro ao atualizar valor da movimentação no Supabase:', error);
-        });
+        };
+        supabase!.from('bird_movements').update(updatePayload).eq('id', movementId).then(
+          ({ error }) => {
+            if (error) {
+              console.error('Erro ao atualizar valor da movimentação no Supabase:', error);
+              enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+            }
+          },
+          () => {
+            enqueueMutation('bird_movements', 'update', updatePayload, { column: 'id', value: movementId });
+          }
+        );
       }
 
       showToast(`Valor da venda atualizado para ${formatBRL(valorCentavos)} com sucesso!`, 'success');
@@ -3317,14 +3064,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     breeds, addBreed, editBreed, removeBreed,
     birds, addBird, editBird, removeBird,
     couples, addCouple, editCouple, removeCouple,
-    coupleEggs, addCoupleEgg, editCoupleEgg, removeCoupleEgg,
     farmSettings, setFarmSettings, updateFarmSettings,
     importBackup,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
     openAddBirdModal, openBirdProfile, closeModals,
     isTutorialOpen, openTutorial, closeTutorial,
     activeBreed, setActiveBreed,
-    incubationLots, addIncubationLot, editIncubationLot, removeIncubationLot,
     showToast,
     recoverAllBirds,
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
@@ -3337,9 +3082,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed,
     movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived, updateBirdMovementValue
   }), [
-    isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, farmSettings,
+    isReady, isInitialSyncDone, breeds, birds, couples, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
-    isTutorialOpen, activeBreed, incubationLots, showToast, recoverAllBirds, isProfileSetupOpen,
+    isTutorialOpen, activeBreed, showToast, recoverAllBirds, isProfileSetupOpen,
     isVitrineUnlocked, vitrineBirds, vitrineConfig, toggleBirdVitrine,
     trialSharedBirdIds, trialSharesCount, maxTrialShares,
     canShareBird, registerBirdShare,

@@ -9,6 +9,7 @@ import {
 } from './ledger';
 import { summarize, monthlySeries, pendingReceivables, filterHistory, rangeForPeriod, csvCell, movementsToCSV, buildDynamicChartSeries } from './aggregate';
 import { normalizeDateToISO } from '../dates';
+import { parseBirdVitrine, formatBirdObservacoesWithVitrine } from '../AppContext';
 import type { BirdLike, BirdMovement, LedgerContext, NewMovementInput } from './types';
 
 const ctx: LedgerContext = { now: 1_700_000_000_000, deviceId: 'dev-A', today: '2026-10-26' };
@@ -455,5 +456,35 @@ describe('sincronização, ontem e visibilidade do gráfico', () => {
     expect(normalizeDateToISO('05-08-2026')).toBe('2026-08-05');
     expect(normalizeDateToISO('2026-10-27T14:30:00.000Z')).toBe('2026-10-27');
     expect(normalizeDateToISO('2026-10-27')).toBe('2026-10-27');
+  });
+
+  it('persiste e restaura valorEstimado, valorVenda e comprador na nuvem mesmo fora da vitrine', () => {
+    const serialized = formatBirdObservacoesWithVitrine(
+      'Ave campeã de genética',
+      false,
+      '',
+      'Disponível',
+      {
+        valorEstimado: 1500,
+        valorVenda: 1800,
+        dataVenda: '2026-10-27',
+        compradorNome: 'Carlos Silva',
+        compradorContato: '(11) 99999-8888'
+      }
+    );
+    expect(serialized).toContain('[[VITRINE:');
+    const parsed = parseBirdVitrine(serialized);
+    expect(parsed.cleanObservacoes).toBe('Ave campeã de genética');
+    expect(parsed.inVitrine).toBe(false);
+    expect(parsed.valorEstimado).toBe(1500);
+    expect(parsed.valorVenda).toBe(1800);
+    expect(parsed.dataVenda).toBe('2026-10-27');
+    expect(parsed.compradorNome).toBe('Carlos Silva');
+    expect(parsed.compradorContato).toBe('(11) 99999-8888');
+  });
+
+  it('não adiciona tag VITRINE quando fora da vitrine e sem metadados financeiros', () => {
+    const plain = formatBirdObservacoesWithVitrine('Apenas observação simples', false);
+    expect(plain).toBe('Apenas observação simples');
   });
 });

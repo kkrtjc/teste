@@ -60,6 +60,7 @@ export interface BirdSnapshot {
   nome: string;
   raca: string;
   sexo: string;
+  imagem?: string;
   valorVenda?: number | string | null;
   valorEstimado?: number | string | null;
   vitrinePrice?: string | null;

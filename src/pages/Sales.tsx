@@ -36,7 +36,7 @@ import {
 } from '../lib/sales/types';
 import { RegisterSaleModal } from '../components/modals/RegisterSaleModal';
 import { ReverseMovementModal } from '../components/modals/ReverseMovementModal';
-import { todayLocalISO } from '../lib/dates';
+import { todayLocalISO, formatDateBR } from '../lib/dates';
 
 export function Sales() {
   const { 
@@ -695,10 +695,8 @@ export function Sales() {
                     {/* Lado Esquerdo: Identificação da Ave & Tipo */}
                     <div 
                       onClick={() => {
-                        if (item.birdId) {
-                          triggerLight();
-                          openBirdProfile(item.birdId);
-                        }
+                        triggerLight();
+                        openBirdProfile(item.birdId || item.id);
                       }}
                       className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer group"
                       title="Clique para abrir a ficha da ave"
@@ -749,7 +747,7 @@ export function Sales() {
                         </div>
 
                         <div className="flex items-center gap-3 text-[11px] text-theme-text-muted mt-1 flex-wrap">
-                          <span>{item.data}</span>
+                          <span>{formatDateBR(item.data)}</span>
                           {item.comprador?.nome && (
                             <span>• Comprador: <strong className="text-white">{item.comprador.nome}</strong></span>
                           )}
@@ -824,20 +822,18 @@ export function Sales() {
 
                       {/* Botões de Ação na Linha */}
                       <div className="flex items-center gap-1.5">
-                        {item.birdId && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              triggerLight();
-                              openBirdProfile(item.birdId);
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg bg-theme-base hover:bg-theme-border text-theme-text-muted hover:text-white border border-theme-border/60 transition-colors cursor-pointer touch-manipulation flex items-center gap-1 text-[11px] font-bold"
-                            title="Ver ficha completa da ave"
-                          >
-                            <Eye size={13} className="text-theme-primary" />
-                            <span className="hidden sm:inline">Ficha da Ave</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerLight();
+                            openBirdProfile(item.birdId || item.id);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-theme-base hover:bg-theme-border text-theme-text-muted hover:text-white border border-theme-border/60 transition-colors cursor-pointer touch-manipulation flex items-center gap-1 text-[11px] font-bold"
+                          title="Ver ficha completa da ave"
+                        >
+                          <Eye size={13} className="text-theme-primary" />
+                          <span className="hidden sm:inline">Ficha da Ave</span>
+                        </button>
 
                         {isPendente && !item.estornado && (
                           <button
@@ -956,9 +952,9 @@ export function Sales() {
                 >
                   <option value="pix">PIX</option>
                   <option value="dinheiro">Dinheiro em Espécie</option>
-                  <option value="cartao_credito">Cartão de Crédito</option>
-                  <option value="cartao_debito">Cartão de Débito</option>
+                  <option value="cartao">Cartão</option>
                   <option value="transferencia">Transferência Bancária</option>
+                  <option value="a_prazo">A Prazo (Fiado)</option>
                   <option value="outro">Outro</option>
                 </select>
               </div>
