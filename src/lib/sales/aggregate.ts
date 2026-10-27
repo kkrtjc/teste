@@ -2,7 +2,7 @@
  * Agregações do livro-razão. Tudo em UMA passada, sem arrays intermediários — barato em celular fraco.
  */
 import { isCounted } from './ledger';
-import { getMovementCents, formatBRL } from './money';
+import { getMovementCents, getMovementCentsWithFallback, formatBRL } from './money';
 import { normalizeDateToISO } from '../dates';
 import {
   REASON_LABELS,
@@ -13,6 +13,7 @@ import {
   type MovementType,
   type Range,
   type SalesSummary,
+  type BirdLike,
 } from './types';
 
 const inRange = (data: string, range: Range) => {
@@ -35,7 +36,12 @@ export function costByBird(ledger: readonly BirdMovement[]): Map<string, number>
   return map;
 }
 
-export function summarize(ledger: readonly BirdMovement[], range: Range = {}): SalesSummary {
+export function summarize(
+  ledger: readonly BirdMovement[], 
+  range: Range = {}, 
+  birds?: readonly BirdLike[]
+): SalesSummary {
+  const birdsList = Array.isArray(birds) ? birds : undefined;
   const cost = costByBird(ledger);
   const s: SalesSummary = {
     receita: 0, recebido: 0, aReceber: 0, custoVendidas: 0, lucro: 0,
@@ -45,7 +51,7 @@ export function summarize(ledger: readonly BirdMovement[], range: Range = {}): S
   for (let i = 0; i < ledger.length; i++) {
     const m = ledger[i];
     if (!isCounted(m) || !inRange(m.data, range)) continue;
-    const cents = getMovementCents(m);
+    const cents = getMovementCentsWithFallback(m, birdsList);
     switch (m.tipo) {
       case 'venda': {
         s.vendasCount++;
@@ -68,7 +74,13 @@ export function summarize(ledger: readonly BirdMovement[], range: Range = {}): S
 }
 
 /** Série mensal dos últimos `months` meses (inclui o mês de `today`), do mais antigo ao mais novo. */
-export function monthlySeries(ledger: readonly BirdMovement[], today: string, months = 6): MonthPoint[] {
+export function monthlySeries(
+  ledger: readonly BirdMovement[], 
+  today: string, 
+  months = 6, 
+  birds?: readonly BirdLike[]
+): MonthPoint[] {
+  const birdsList = Array.isArray(birds) ? birds : undefined;
   const [ty, tm] = today.split('-').map(Number);
   const points: MonthPoint[] = [];
   const index = new Map<string, MonthPoint>();
@@ -86,7 +98,7 @@ export function monthlySeries(ledger: readonly BirdMovement[], today: string, mo
     const monthKey = cleanData ? cleanData.slice(0, 7) : '';
     const p = index.get(monthKey);
     if (!p) continue;
-    const cents = getMovementCents(m);
+    const cents = getMovementCentsWithFallback(m, birdsList);
     if (m.tipo === 'venda') { p.receita += cents; p.vendas++; }
     else if (m.tipo === 'perda') p.perdas++;
   }
@@ -121,19 +133,22 @@ export function buildDynamicChartSeries(
   movements: readonly BirdMovement[],
   period: PeriodKey,
   today: string,
-  customRange?: Range
+  customRange?: Range,
+  birds?: readonly BirdLike[]
 ): DynamicChartReport {
+  const birdsList = Array.isArray(birds) ? birds : undefined;
   const countedSales = movements.filter(m => m.tipo === 'venda' && isCounted(m));
   const getCleanDay = (d: string | undefined | null) => (d ? normalizeDateToISO(d) : '');
+  const getCents = (m: BirdMovement) => getMovementCentsWithFallback(m, birdsList);
 
   const [ty, tm, td] = today.split('-').map(Number);
   const yesterdayDt = new Date(Date.UTC(ty, tm - 1, td - 1));
   const yesterdayIso = `${yesterdayDt.getUTCFullYear()}-${String(yesterdayDt.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterdayDt.getUTCDate()).padStart(2, '0')}`;
 
   const todaySales = countedSales.filter(m => getCleanDay(m.data) === today);
-  const todayTotal = todaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
+  const todayTotal = todaySales.reduce((acc, m) => acc + getCents(m), 0);
   const yesterdaySales = countedSales.filter(m => getCleanDay(m.data) === yesterdayIso);
-  const yesterdayTotal = yesterdaySales.reduce((acc, m) => acc + getMovementCents(m), 0);
+  const yesterdayTotal = yesterdaySales.reduce((acc, m) => acc + getCents(m), 0);
 
   if (period === 'hoje') {
     const bars: ChartBarData[] = [];
@@ -149,7 +164,7 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        receita: daySales.reduce((acc, m) => acc + getCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
@@ -176,7 +191,7 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        receita: daySales.reduce((acc, m) => acc + getCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
@@ -206,7 +221,7 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        receita: daySales.reduce((acc, m) => acc + getCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
@@ -218,7 +233,7 @@ export function buildDynamicChartSeries(
         const iso30 = `${dt30.getUTCFullYear()}-${String(dt30.getUTCMonth() + 1).padStart(2, '0')}-${String(dt30.getUTCDate()).padStart(2, '0')}`;
         return d >= iso30 && d <= today;
       })
-      .reduce((acc, m) => acc + getMovementCents(m), 0);
+      .reduce((acc, m) => acc + getCents(m), 0);
 
     return {
       title: 'Vendas dos Últimos 30 Dias (Diário Recente)',
@@ -250,7 +265,7 @@ export function buildDynamicChartSeries(
           key: iso,
           label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayMonth,
           sublabel: isToday || isYesterday ? dayMonth : undefined,
-          receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+          receita: daySales.reduce((acc, m) => acc + getCents(m), 0),
           vendas: daySales.length,
           isHighlight: isToday
         });
@@ -266,7 +281,7 @@ export function buildDynamicChartSeries(
       };
     }
 
-    const monthly = monthlySeries(movements, to, Math.min(12, Math.max(2, Math.ceil(diffDays / 30))));
+    const monthly = monthlySeries(movements, to, Math.min(12, Math.max(2, Math.ceil(diffDays / 30))), birdsList);
     const bars: ChartBarData[] = monthly.map(m => {
       const label = m.key.slice(5) + '/' + m.key.slice(2, 4);
       return {
@@ -311,12 +326,12 @@ export function buildDynamicChartSeries(
         key: iso,
         label: isToday ? 'Hoje' : isYesterday ? 'Ontem' : dayName,
         sublabel: dayMonth,
-        receita: daySales.reduce((acc, m) => acc + getMovementCents(m), 0),
+        receita: daySales.reduce((acc, m) => acc + getCents(m), 0),
         vendas: daySales.length,
         isHighlight: isToday
       });
     }
-    const totalAll = countedSales.reduce((acc, m) => acc + getMovementCents(m), 0);
+    const totalAll = countedSales.reduce((acc, m) => acc + getCents(m), 0);
     return {
       title: 'Histórico Geral de Vendas (Diário Recente)',
       subtitle: `${countedSales.length} venda(s) registrada(s) • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,
@@ -325,7 +340,7 @@ export function buildDynamicChartSeries(
     };
   }
 
-  const monthly = monthlySeries(movements, today, 6);
+  const monthly = monthlySeries(movements, today, 6, birdsList);
   const bars: ChartBarData[] = monthly.map(m => {
     const label = m.key.slice(5) + '/' + m.key.slice(2, 4);
     return {
@@ -336,7 +351,7 @@ export function buildDynamicChartSeries(
       isHighlight: m.key === today.slice(0, 7)
     };
   });
-  const totalAll = countedSales.reduce((acc, m) => acc + getMovementCents(m), 0);
+  const totalAll = countedSales.reduce((acc, m) => acc + getCents(m), 0);
   return {
     title: 'Histórico Geral de Vendas (Últimos Meses)',
     subtitle: `${countedSales.length} venda(s) no total • Ontem: ${formatBRL(yesterdayTotal)} • Hoje: ${formatBRL(todayTotal)}`,

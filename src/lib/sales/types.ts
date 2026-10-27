@@ -60,6 +60,9 @@ export interface BirdSnapshot {
   nome: string;
   raca: string;
   sexo: string;
+  valorVenda?: number | string | null;
+  valorEstimado?: number | string | null;
+  vitrinePrice?: string | null;
 }
 
 export interface BirdMovement {
@@ -107,7 +110,18 @@ export interface BirdLike {
   compradorNome?: string;
   compradorContato?: string;
   motivoBaixa?: string;
+  observacoes?: string | null;
 }
+
+export type MovementLike = Partial<BirdMovement> & {
+  valor_centavos?: number | string | null;
+  valor?: number | string | null;
+  valorVenda?: number | string | null;
+  valor_venda?: number | string | null;
+  preco?: number | string | null;
+  price?: number | string | null;
+  snapshot?: Partial<BirdSnapshot> | null;
+};
 
 export interface NewMovementInput {
   id: string;

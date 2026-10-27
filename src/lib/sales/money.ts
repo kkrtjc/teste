@@ -2,6 +2,8 @@
  * Dinheiro em CENTAVOS INTEIROS. Nunca use float para somar valores: 0.1 + 0.2 !== 0.3.
  */
 
+import type { MovementLike, BirdLike } from './types';
+
 /** Teto de segurança por movimentação: R$ 10 milhões. Protege contra digitação errada e overflow. */
 export const MAX_CENTS = 1_000_000_000;
 
@@ -154,27 +156,90 @@ export function formatPhoneDigits(raw: string): string {
  * Garante extração segura de centavos de uma movimentação (mesmo legado, string ou objeto antigo).
  * Retorna sempre um número inteiro >= 0, NUNCA NaN ou undefined.
  */
-export function getMovementCents(m: { valorCentavos?: number | string | null; valor_centavos?: number | string | null; valor?: number | string | null; valorVenda?: number | string | null } | null | undefined): number {
+export function getMovementCents(m?: MovementLike | null): number {
   if (!m) return 0;
   if (typeof m.valorCentavos === 'number' && Number.isFinite(m.valorCentavos)) {
-    return Math.max(0, Math.round(m.valorCentavos));
+    const v = Math.max(0, Math.round(m.valorCentavos));
+    if (v > 0) return v;
   }
   if (m.valorCentavos !== undefined && m.valorCentavos !== null) {
     const n = Number(m.valorCentavos);
-    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+    if (Number.isFinite(n) && n > 0) return Math.max(0, Math.round(n));
   }
   if (m.valor_centavos !== undefined && m.valor_centavos !== null) {
     const n = Number(m.valor_centavos);
-    if (Number.isFinite(n)) return Math.max(0, Math.round(n));
+    if (Number.isFinite(n) && n > 0) return Math.max(0, Math.round(n));
   }
-  // Fallbacks de migração para registros legados que tinham valor em reais
+  // Fallbacks de migração para registros legados que tinham valor em reais ou outros campos
   if (m.valor !== undefined && m.valor !== null) {
     const c = parseMoneyToCents(m.valor);
-    if (c !== null) return c;
+    if (c !== null && c > 0) return c;
   }
   if (m.valorVenda !== undefined && m.valorVenda !== null) {
     const c = parseMoneyToCents(m.valorVenda);
-    if (c !== null) return c;
+    if (c !== null && c > 0) return c;
   }
+  if (m.valor_venda !== undefined && m.valor_venda !== null) {
+    const c = parseMoneyToCents(m.valor_venda);
+    if (c !== null && c > 0) return c;
+  }
+  if (m.preco !== undefined && m.preco !== null) {
+    const c = parseMoneyToCents(m.preco);
+    if (c !== null && c > 0) return c;
+  }
+  if (m.price !== undefined && m.price !== null) {
+    const c = parseMoneyToCents(m.price);
+    if (c !== null && c > 0) return c;
+  }
+  if (m.snapshot) {
+    if (m.snapshot.valorVenda !== undefined && m.snapshot.valorVenda !== null) {
+      const c = parseMoneyToCents(m.snapshot.valorVenda);
+      if (c !== null && c > 0) return c;
+    }
+    if (m.snapshot.valorEstimado !== undefined && m.snapshot.valorEstimado !== null) {
+      const c = parseMoneyToCents(m.snapshot.valorEstimado);
+      if (c !== null && c > 0) return c;
+    }
+    if (m.snapshot.vitrinePrice !== undefined && m.snapshot.vitrinePrice !== null) {
+      const c = parseMoneyToCents(m.snapshot.vitrinePrice);
+      if (c !== null && c > 0) return c;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Busca centavos da movimentação com resolução automática na ave correspondente,
+ * caso o movimento esteja sem preço definido (valor zerado).
+ */
+export function getMovementCentsWithFallback(
+  m?: MovementLike | null,
+  birds?: readonly BirdLike[] | null
+): number {
+  if (!m) return 0;
+  const direct = getMovementCents(m);
+  if (direct > 0) return direct;
+  if (!birds || !m.birdId) return 0;
+
+  const b = birds.find(item => item.id === m.birdId);
+  if (!b) return 0;
+
+  const raw = b.valorVenda ?? b.valorEstimado ?? b.vitrinePrice;
+  const c = parseMoneyToCents(raw);
+  if (c !== null && c > 0) return c;
+
+  if (b.observacoes) {
+    const match = b.observacoes.match(/\[\[VITRINE:(.*?)\]\]/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        const vitC = parseMoneyToCents(parsed.vitrinePrice || parsed.price);
+        if (vitC !== null && vitC > 0) return vitC;
+      } catch (_err) {
+        void _err;
+      }
+    }
+  }
+
   return 0;
 }

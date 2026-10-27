@@ -1,12 +1,21 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   DollarSign, TrendingUp, AlertTriangle, CheckCircle2, 
   RotateCcw, Download, Plus, Search, Calendar,
-  HeartCrack, ArrowRightLeft, Clock, ShieldCheck, MessageSquare
+  HeartCrack, ArrowRightLeft, Clock, ShieldCheck, MessageSquare,
+  Pencil, X
 } from 'lucide-react';
 import { useAppSlice } from '../lib/AppContext';
 import { useHaptics } from '../hooks/useHaptics';
-import { formatBRL, getMovementCents } from '../lib/sales/money';
+import { 
+  formatBRL, 
+  getMovementCents, 
+  getMovementCentsWithFallback,
+  parseMoneyToCents,
+  sanitizeMoneyInput,
+  formatMoneyOnBlur,
+  centsToInput
+} from '../lib/sales/money';
 import { 
   summarize, 
   buildDynamicChartSeries, 
@@ -22,18 +31,27 @@ import {
   PAYMENT_LABELS,
   type BirdMovement, 
   type MovementType,
-  type Range
+  type Range,
+  type PaymentMethod
 } from '../lib/sales/types';
 import { RegisterSaleModal } from '../components/modals/RegisterSaleModal';
 import { ReverseMovementModal } from '../components/modals/ReverseMovementModal';
 import { todayLocalISO } from '../lib/dates';
 
 export function Sales() {
-  const { movements, reverseBirdMovement, markPaymentReceived, showToast } = useAppSlice(
+  const { 
+    movements, 
+    birds, 
+    reverseBirdMovement, 
+    markPaymentReceived, 
+    updateBirdMovementValue, 
+    showToast 
+  } = useAppSlice(
     'movements',
     'birds',
     'reverseBirdMovement',
     'markPaymentReceived',
+    'updateBirdMovementValue',
     'showToast'
   );
   const { triggerSuccess, triggerLight, triggerWarning } = useHaptics();
@@ -53,6 +71,25 @@ export function Sales() {
   // Estados dos Modais
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [movementToReverse, setMovementToReverse] = useState<BirdMovement | null>(null);
+  const [editingMovement, setEditingMovement] = useState<BirdMovement | null>(null);
+  const [editPriceInput, setEditPriceInput] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState<PaymentMethod>('pix');
+  const [isSavingPrice, setIsSavingPrice] = useState(false);
+
+  // Auto-healing: se existir venda sem valor gravado, mas a ave tiver preço conhecido no cadastro ou vitrine,
+  // grava o valor automaticamente para que o faturamento reflita sem intervenção manual.
+  useEffect(() => {
+    if (!birds || birds.length === 0 || !movements || movements.length === 0) return;
+    for (const m of movements) {
+      if (m.tipo === 'venda' && !m.estornado && getMovementCents(m) === 0 && m.birdId) {
+        const cents = getMovementCentsWithFallback(m, birds);
+        if (cents > 0) {
+          updateBirdMovementValue(m.id, cents, m.pagamento || 'pix');
+          break;
+        }
+      }
+    }
+  }, [movements, birds, updateBirdMovementValue]);
 
   // Range personalizado quando 'custom' estiver ativo
   const customRange: Range = useMemo(() => {
@@ -70,13 +107,13 @@ export function Sales() {
 
   // Computação de Resumo Financeiro (O(n) memoizado, filtrado pelo período ativo)
   const summary = useMemo(() => {
-    return summarize(movements, activeRange);
-  }, [movements, activeRange]);
+    return summarize(movements, activeRange, birds);
+  }, [movements, activeRange, birds]);
 
   // Gráfico dinâmico nativo e inteligente (responde imediatamente à mudança do filtro)
   const chartReport = useMemo(() => {
-    return buildDynamicChartSeries(movements, periodo, today, customRange);
-  }, [movements, periodo, today, customRange]);
+    return buildDynamicChartSeries(movements, periodo, today, customRange, birds);
+  }, [movements, periodo, today, customRange, birds]);
 
   // Vendas pendentes prioritárias (A Receber), filtradas pelo período ativo
   const pendingSales = useMemo(() => {
@@ -113,6 +150,11 @@ export function Sales() {
       includeReversed: includeReversed || activeChip === 'todas'
     });
   }, [movements, activeChip, activeRange, search, pendingSales]);
+
+  // Vendas no período ativo que estão sem valor financeiro informado
+  const unpricedSales = useMemo(() => {
+    return filteredList.filter(m => m.tipo === 'venda' && !m.estornado && getMovementCentsWithFallback(m, birds) === 0);
+  }, [filteredList, birds]);
 
   // Ação de confirmar recebimento de venda pendente
   const handleConfirmPayment = useCallback(async (movementId: string) => {
@@ -386,6 +428,41 @@ export function Sales() {
         </div>
       </div>
 
+      {/* ── ALERTA DE VENDAS SEM VALOR DEFINIDO ── */}
+      {unpricedSales.length > 0 && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 animate-fade-in shadow-lg shadow-amber-950/20">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center shrink-0">
+              <AlertTriangle size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">
+                {unpricedSales.length === 1 
+                  ? 'Existe 1 venda registrada neste período sem valor financeiro informado'
+                  : `Existem ${unpricedSales.length} vendas registradas neste período sem valor financeiro informado`}
+              </p>
+              <p className="text-[11px] text-amber-300/80 mt-0.5">
+                Por isso o faturamento bruto mostra R$ 0,00. Clique no botão ao lado para informar o valor e atualizar as contas na hora.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              triggerLight();
+              const first = unpricedSales[0];
+              setEditingMovement(first);
+              setEditPriceInput('');
+              setEditPaymentMethod(first.pagamento || 'pix');
+            }}
+            className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black shadow-md transition-all shrink-0 cursor-pointer touch-manipulation flex items-center justify-center gap-1.5"
+          >
+            <DollarSign size={14} />
+            <span>Definir Valor Agora</span>
+          </button>
+        </div>
+      )}
+
       {/* ── GRÁFICO SVG NATIVO LEVE (DINÂMICO CONFORME O FILTRO SELECIONADO) ── */}
       <div className="p-4 sm:p-5 bg-theme-surface border border-theme-border rounded-2xl shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
@@ -603,6 +680,7 @@ export function Sales() {
                 const isVenda = item.tipo === 'venda';
                 const isPerda = item.tipo === 'perda';
                 const isPendente = isVenda && item.statusPagamento === 'pendente';
+                const effectiveCents = getMovementCentsWithFallback(item, birds);
 
                 return (
                   <div
@@ -675,14 +753,58 @@ export function Sales() {
 
                     {/* Lado Direito: Valores & Ações */}
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-theme-border/40">
-                      {getMovementCents(item) > 0 && (
-                        <div className="text-left sm:text-right">
-                          <p className={`font-mono text-sm sm:text-base font-bold ${
-                            item.estornado ? 'text-gray-400 line-through' : 'text-emerald-400'
-                          }`}>
-                            {formatBRL(getMovementCents(item))}
-                          </p>
-                        </div>
+                      {isVenda && !item.estornado ? (
+                        effectiveCents > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="text-left sm:text-right">
+                              <p className="font-mono text-sm sm:text-base font-bold text-emerald-400">
+                                {formatBRL(effectiveCents)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                triggerLight();
+                                setEditingMovement(item);
+                                setEditPriceInput(centsToInput(effectiveCents));
+                                setEditPaymentMethod(item.pagamento || 'pix');
+                              }}
+                              className="p-1 rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer touch-manipulation"
+                              title="Editar valor da venda"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              Sem valor informado
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                triggerLight();
+                                setEditingMovement(item);
+                                setEditPriceInput('');
+                                setEditPaymentMethod(item.pagamento || 'pix');
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer touch-manipulation flex items-center gap-1"
+                            >
+                              <DollarSign size={13} />
+                              <span>Definir Valor</span>
+                            </button>
+                          </div>
+                        )
+                      ) : (
+                        effectiveCents > 0 && (
+                          <div className="text-left sm:text-right">
+                            <p className={`font-mono text-sm sm:text-base font-bold ${
+                              item.estornado ? 'text-gray-400 line-through' : 'text-emerald-400'
+                            }`}>
+                              {formatBRL(effectiveCents)}
+                            </p>
+                          </div>
+                        )
                       )}
 
                       {/* Botões de Ação na Linha */}
@@ -741,6 +863,124 @@ export function Sales() {
         onClose={() => setMovementToReverse(null)}
         onConfirm={handleConfirmReverse}
       />
+
+      {/* ── MODAL DEFINIR / EDITAR VALOR DA VENDA ── */}
+      {editingMovement && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => !isSavingPrice && setEditingMovement(null)}
+        >
+          <div 
+            className="w-full max-w-md bg-theme-surface border border-theme-border rounded-2xl shadow-2xl p-5 space-y-4 animate-scale-up"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-theme-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <DollarSign size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {getMovementCentsWithFallback(editingMovement, birds) > 0 ? 'Editar Valor da Venda' : 'Definir Valor da Venda'}
+                  </h3>
+                  <p className="text-[11px] text-theme-text-muted">
+                    {editingMovement.snapshot?.anilha || 'Ave'} {editingMovement.snapshot?.nome ? `• ${editingMovement.snapshot.nome}` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isSavingPrice}
+                onClick={() => setEditingMovement(null)}
+                className="p-1.5 rounded-lg text-theme-text-muted hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-theme-text-muted mb-1">
+                  Valor Negociado (R$) *
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={editPriceInput}
+                  onChange={e => setEditPriceInput(sanitizeMoneyInput(e.target.value))}
+                  onBlur={() => setEditPriceInput(formatMoneyOnBlur(editPriceInput))}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2 text-sm text-white font-mono font-bold outline-none focus:border-emerald-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-theme-text-muted mb-1">
+                  Forma de Pagamento
+                </label>
+                <select
+                  value={editPaymentMethod}
+                  onChange={e => setEditPaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full bg-theme-base border border-theme-border rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                >
+                  <option value="pix">PIX</option>
+                  <option value="dinheiro">Dinheiro em Espécie</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                  <option value="cartao_debito">Cartão de Débito</option>
+                  <option value="transferencia">Transferência Bancária</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
+
+              <p className="text-[11px] text-theme-text-muted bg-white/5 p-2.5 rounded-xl border border-white/5">
+                O valor informado atualizará o Faturamento Bruto, o Total Recebido e as métricas do gráfico em todos os períodos retroativamente.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-theme-border">
+              <button
+                type="button"
+                disabled={isSavingPrice}
+                onClick={() => setEditingMovement(null)}
+                className="px-4 py-2 text-xs font-bold text-theme-text-muted hover:text-white rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isSavingPrice}
+                onClick={async () => {
+                  const cents = parseMoneyToCents(editPriceInput);
+                  if (cents === null || cents <= 0) {
+                    showToast('Informe um valor válido maior que zero (ex: 250,00).', 'error');
+                    triggerWarning();
+                    return;
+                  }
+                  setIsSavingPrice(true);
+                  try {
+                    const res = await updateBirdMovementValue(editingMovement.id, cents, editPaymentMethod);
+                    if (res.success) {
+                      triggerSuccess();
+                      showToast('Valor da venda atualizado com sucesso!', 'success');
+                      setEditingMovement(null);
+                    } else {
+                      triggerWarning();
+                      showToast(res.error || 'Erro ao atualizar valor da venda.', 'error');
+                    }
+                  } finally {
+                    setIsSavingPrice(false);
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer touch-manipulation disabled:opacity-50"
+              >
+                <CheckCircle2 size={14} />
+                <span>{isSavingPrice ? 'Salvando...' : 'Salvar Valor'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

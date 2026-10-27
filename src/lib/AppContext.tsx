@@ -19,7 +19,7 @@ import { enqueueMutation, processSyncQueue } from './syncQueue';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
 import { AtomicStore, shallowEqual } from './appStore';
-import type { BirdMovement, NewMovementInput, BirdLike, MovementType } from './sales/types';
+import type { BirdMovement, NewMovementInput, BirdLike, MovementType, PaymentMethod } from './sales/types';
 import {
   registerMovement,
   reverseMovement,
@@ -27,7 +27,7 @@ import {
   reconcileLedger,
   mergeLedgers
 } from './sales/ledger';
-import { getMovementCents, parseMoneyToCents } from './sales/money';
+import { getMovementCents, parseMoneyToCents, formatBRL } from './sales/money';
 import { 
   type NotificationSettings, 
   DEFAULT_NOTIF_SETTINGS, 
@@ -590,6 +590,7 @@ export type AppContextType = {
   registerBirdMovement: (input: NewMovementInput) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
   reverseBirdMovement: (movementId: string, motivo: string) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
   markPaymentReceived: (movementId: string, dataPagamento?: string) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
+  updateBirdMovementValue: (movementId: string, valorCentavos: number, formaPagamento?: PaymentMethod) => Promise<{ success: boolean; movement?: BirdMovement; error?: string }>;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -811,7 +812,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (cents > 0) return false;
       const b = birds.find(x => x.id === m.birdId);
       if (!b) return false;
-      const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
+      let rawVal = b.valorVenda ?? b.valorEstimado ?? b.vitrinePrice;
+      if (!rawVal && b.observacoes) {
+        const match = b.observacoes.match(/\[\[VITRINE:(.*?)\]\]/);
+        if (match) {
+          try {
+            const parsed = JSON.parse(match[1]);
+            rawVal = parsed.vitrinePrice || parsed.price;
+          } catch {}
+        }
+      }
+      const defined = parseMoneyToCents(rawVal);
       return defined !== null && defined > 0;
     });
 
@@ -836,7 +847,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (updated.tipo === 'venda' && !updated.estornado && getMovementCents(updated) === 0) {
             const b = birds.find(x => x.id === updated.birdId);
             if (b) {
-              const defined = parseMoneyToCents(b.valorVenda ?? b.valorEstimado ?? (b as any).vitrinePrice);
+              let rawVal = b.valorVenda ?? b.valorEstimado ?? b.vitrinePrice;
+              if (!rawVal && b.observacoes) {
+                const match = b.observacoes.match(/\[\[VITRINE:(.*?)\]\]/);
+                if (match) {
+                  try {
+                    const parsed = JSON.parse(match[1]);
+                    rawVal = parsed.vitrinePrice || parsed.price;
+                  } catch {}
+                }
+              }
+              const defined = parseMoneyToCents(rawVal);
               if (defined && defined > 0) {
                 updated = { ...updated, valorCentavos: defined, updatedAt: Date.now() };
               }
@@ -4334,6 +4355,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [movementsRef, safeStorageSet, getStorageKey, user, showToast]);
 
+  const updateBirdMovementValue = useCallback(async (
+    movementId: string, 
+    valorCentavos: number, 
+    formaPagamento?: PaymentMethod
+  ) => {
+    try {
+      const target = movementsRef.current.find(m => m.id === movementId);
+      if (!target) return { success: false, error: 'Movimentação não encontrada' };
+      if (!Number.isSafeInteger(valorCentavos) || valorCentavos <= 0) {
+        return { success: false, error: 'Informe um valor válido maior que zero.' };
+      }
+
+      const updatedMovement: BirdMovement = {
+        ...target,
+        valorCentavos,
+        pagamento: formaPagamento || target.pagamento || 'pix',
+        updatedAt: Date.now()
+      };
+
+      const nextMovements = movementsRef.current.map(m => m.id === movementId ? updatedMovement : m);
+      setMovements(nextMovements);
+      movementsRef.current = nextMovements;
+      safeStorageSet(getStorageKey('bird-movements'), nextMovements);
+
+      if (target.birdId) {
+        editBird(target.birdId, {
+          valorVenda: valorCentavos / 100,
+        });
+      }
+
+      if (isSupabaseConfigured && user) {
+        const pMethod = formaPagamento || target.pagamento;
+        const validP = pMethod && ['pix', 'dinheiro', 'cartao', 'a_prazo'].includes(pMethod) ? pMethod : 'outros';
+        supabase!.from('bird_movements').update({
+          valor_centavos: valorCentavos,
+          forma_pagamento: validP,
+          updated_at: new Date(updatedMovement.updatedAt).toISOString()
+        }).eq('id', movementId).then(({ error }) => {
+          if (error) console.error('Erro ao atualizar valor da movimentação no Supabase:', error);
+        });
+      }
+
+      showToast(`Valor da venda atualizado para ${formatBRL(valorCentavos)} com sucesso!`, 'success');
+      return { success: true, movement: updatedMovement };
+    } catch (err: unknown) {
+      console.error('Erro ao atualizar valor da venda:', err);
+      showToast('Erro ao atualizar valor da venda.', 'error');
+      return { success: false, error: 'Erro inesperado' };
+    }
+  }, [birdsRef, isCurrentUserAdmin, user, safeStorageSet, getStorageKey, editBird, showToast]);
+
   const contextValue = useMemo(() => ({
     isReady,
     isInitialSyncDone,
@@ -4360,7 +4432,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed,
-    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived
+    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived, updateBirdMovementValue
   }), [
     isReady, isInitialSyncDone, breeds, birds, couples, coupleEggs, eggLots, meatLots, farmSettings,
     isAddBirdModalOpen, preSelectedBreedForNewBird, birdToEditId, selectedBirdProfileId,
@@ -4371,7 +4443,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isUpgradeModalOpen, selectedUpgradePlan, openUpgradeModal, closeUpgradeModal,
     notificationSettings, updateNotificationSettings,
     toggleMasterNotifications, dailyFeedStatus, confirmDailyFeed, unconfirmDailyFeed,
-    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived
+    movements, registerBirdMovement, reverseBirdMovement, markPaymentReceived, updateBirdMovementValue
   ]);
 
   // Sincroniza o Store Atômico com a nova referência do estado.
