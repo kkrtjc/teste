@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { 
   Plus, Edit2, Camera, Search, X, ChevronRight, Trash2,
-  DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye
+  DollarSign, TrendingUp, ShoppingBag, Skull, RotateCcw, Eye, Loader2
 } from 'lucide-react';
 import { type Bird, type Breed, useAppSlice } from '../lib/AppContext';
 import { useAuth } from '../lib/AuthContext';
+import { generateId } from '../lib/id';
 import { compressImage } from '../lib/imageCompression';
 import { uploadBreedPhoto } from '../lib/storageService';
 import { ConfirmDialog } from '../components/modals/ConfirmDialog';
@@ -224,6 +225,8 @@ const BreedFormModal = memo(function BreedFormModal({
   const [newBreedGanhoGramasDia, setNewBreedGanhoGramasDia] = useState('30');
   const [newBreedConversaoAlimentar, setNewBreedConversaoAlimentar] = useState('2.5');
   const [showAdvancedBreed, setShowAdvancedBreed] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const applyFocusDefaults = (focus: string) => {
@@ -296,28 +299,36 @@ const BreedFormModal = memo(function BreedFormModal({
   };
 
   const handleSave = async () => {
+    if (isSavingRef.current) return;
     if (!newBreedName.trim()) {
       showToast('Informe o nome da raça.', 'warning');
       return;
     }
-    const ganho = newBreedGanhoGramasDia ? parseFloat(newBreedGanhoGramasDia) : undefined;
-    const conv = newBreedConversaoAlimentar ? parseFloat(newBreedConversaoAlimentar) : undefined;
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      const ganho = newBreedGanhoGramasDia ? parseFloat(newBreedGanhoGramasDia) : undefined;
+      const conv = newBreedConversaoAlimentar ? parseFloat(newBreedConversaoAlimentar) : undefined;
 
-    let finalImage = previewImage || undefined;
-    if (previewImage) {
-      finalImage = await uploadBreedPhoto(previewImage, user?.id || 'default', breedToEdit?.id || Date.now().toString());
+      let finalImage = previewImage || undefined;
+      if (previewImage) {
+        finalImage = await uploadBreedPhoto(previewImage, user?.id || 'default', breedToEdit?.id || generateId());
+      }
+
+      onSave({
+        nome: newBreedName.trim(),
+        descricao: newBreedDesc.trim() || undefined,
+        foco: newBreedFocus,
+        imagem: finalImage,
+        tempoCrescimento: newBreedTempoCrescimento,
+        pesoMedio: newBreedPesoMedio,
+        ganhoGramasDia: ganho,
+        conversaoAlimentar: conv,
+      });
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
-
-    onSave({
-      nome: newBreedName.trim(),
-      descricao: newBreedDesc.trim() || undefined,
-      foco: newBreedFocus,
-      imagem: finalImage,
-      tempoCrescimento: newBreedTempoCrescimento,
-      pesoMedio: newBreedPesoMedio,
-      ganhoGramasDia: ganho,
-      conversaoAlimentar: conv,
-    });
   };
 
   if (!isOpen) return null;
@@ -484,9 +495,10 @@ const BreedFormModal = memo(function BreedFormModal({
         </div>
 
         <div className="p-5 border-t border-theme-border flex justify-end gap-3 bg-theme-base/50 shrink-0">
-          <button onClick={onClose} className="px-5 py-2 text-theme-text-muted hover:text-white">Cancelar</button>
-          <button onClick={handleSave} className="btn-primary">
-            {breedToEdit ? 'Salvar Alterações' : 'Salvar Raça'}
+          <button onClick={onClose} disabled={isSaving} className="px-5 py-2 text-theme-text-muted hover:text-white cursor-pointer">Cancelar</button>
+          <button onClick={handleSave} disabled={!newBreedName.trim() || isSaving} className="btn-primary flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+            {isSaving && <Loader2 size={14} className="animate-spin" />}
+            {isSaving ? 'Salvando...' : (breedToEdit ? 'Salvar Alterações' : 'Salvar Raça')}
           </button>
         </div>
       </div>
@@ -720,7 +732,7 @@ export function Birds() {
       showToast("Raça salva com sucesso!", "success");
     } else {
       addBreed({
-        id: Date.now().toString(),
+        id: generateId(),
         totalAves: 0,
         ...data,
         descricao: data.descricao || '',

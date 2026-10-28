@@ -15,7 +15,13 @@ import localforage from 'localforage';
 import { useAuth, isUserAdmin, ADMIN_CANONICAL_ID, type SubscriptionPlan } from './AuthContext';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { useHaptics } from '../hooks/useHaptics';
-import { enqueueMutation, processSyncQueue } from './syncQueue';
+import {
+  enqueueMutation,
+  processSyncQueue,
+  getPendingMutations,
+  SYNC_MUTATION_SYNCED_EVENT
+} from './syncQueue';
+import { generateId, deterministicUuid, dedupeById } from './id';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
 import { AtomicStore, shallowEqual } from './appStore';
@@ -100,6 +106,8 @@ export type VitrineMeta = {
   compradorNome?: string;
   compradorContato?: string;
   motivoBaixa?: string;
+  dataCadastro?: string;
+  movements?: BirdMovement[];
 };
 
 export function parseBirdVitrine(rawObservacoes?: string): {
@@ -114,6 +122,8 @@ export function parseBirdVitrine(rawObservacoes?: string): {
   compradorNome?: string;
   compradorContato?: string;
   motivoBaixa?: string;
+  dataCadastro?: string;
+  movements?: BirdMovement[];
 } {
   if (!rawObservacoes) {
     return { cleanObservacoes: '', inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
@@ -136,7 +146,9 @@ export function parseBirdVitrine(rawObservacoes?: string): {
       dataBaixa: meta.dataBaixa,
       compradorNome: meta.compradorNome,
       compradorContato: meta.compradorContato,
-      motivoBaixa: meta.motivoBaixa
+      motivoBaixa: meta.motivoBaixa,
+      dataCadastro: meta.dataCadastro,
+      movements: Array.isArray(meta.movements) ? meta.movements : undefined
     };
   } catch {
     return { cleanObservacoes: rawObservacoes, inVitrine: false, vitrinePrice: '', vitrineStatus: 'Disponível' };
@@ -156,6 +168,8 @@ export function formatBirdObservacoesWithVitrine(
     compradorNome?: string;
     compradorContato?: string;
     motivoBaixa?: string;
+    dataCadastro?: string;
+    movements?: BirdMovement[];
   }
 ): string {
   const base = (cleanObservacoes || '').replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
@@ -167,7 +181,9 @@ export function formatBirdObservacoesWithVitrine(
       extraMeta.dataBaixa ||
       extraMeta.compradorNome ||
       extraMeta.compradorContato ||
-      extraMeta.motivoBaixa
+      extraMeta.motivoBaixa ||
+      extraMeta.dataCadastro ||
+      (Array.isArray(extraMeta.movements) && extraMeta.movements.length > 0)
     )
   );
   if (!inVitrine && !hasExtraMeta) {
@@ -185,9 +201,146 @@ export function formatBirdObservacoesWithVitrine(
     ...(extraMeta?.dataBaixa ? { dataBaixa: extraMeta.dataBaixa } : {}),
     ...(extraMeta?.compradorNome ? { compradorNome: extraMeta.compradorNome } : {}),
     ...(extraMeta?.compradorContato ? { compradorContato: extraMeta.compradorContato } : {}),
-    ...(extraMeta?.motivoBaixa ? { motivoBaixa: extraMeta.motivoBaixa } : {})
+    ...(extraMeta?.motivoBaixa ? { motivoBaixa: extraMeta.motivoBaixa } : {}),
+    ...(extraMeta?.dataCadastro ? { dataCadastro: extraMeta.dataCadastro } : {}),
+    ...(Array.isArray(extraMeta?.movements) && extraMeta!.movements.length > 0 ? { movements: extraMeta!.movements } : {})
   };
   return base ? `${base}\n[[VITRINE:${JSON.stringify(meta)}]]` : `[[VITRINE:${JSON.stringify(meta)}]]`;
+}
+
+// ── ENVELOPES DE METADADOS PARA RESILIÊNCIA TOTAL DE SCHEMA ──
+
+export type BreedMeta = {
+  ganhoGramasDia?: number;
+  conversaoAlimentar?: number;
+};
+
+export function parseBreedMeta(rawDescricao?: string): {
+  cleanDescricao: string;
+  meta: BreedMeta;
+} {
+  if (!rawDescricao) return { cleanDescricao: '', meta: {} };
+  const match = rawDescricao.match(/\[\[BREED_META:(.*?)\]\]/);
+  if (!match) return { cleanDescricao: rawDescricao, meta: {} };
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanDescricao = rawDescricao.replace(/\n?\[\[BREED_META:.*?\]\]/g, '').trim();
+    return {
+      cleanDescricao,
+      meta: {
+        ganhoGramasDia: typeof meta.ganhoGramasDia === 'number' ? meta.ganhoGramasDia : undefined,
+        conversaoAlimentar: typeof meta.conversaoAlimentar === 'number' ? meta.conversaoAlimentar : undefined
+      }
+    };
+  } catch {
+    return { cleanDescricao: rawDescricao, meta: {} };
+  }
+}
+
+export function formatBreedDescricaoWithMeta(
+  cleanDescricao: string | undefined,
+  meta?: BreedMeta
+): string {
+  const base = (cleanDescricao || '').replace(/\n?\[\[BREED_META:.*?\]\]/g, '').trim();
+  const hasMeta = Boolean(
+    meta && (meta.ganhoGramasDia !== undefined || meta.conversaoAlimentar !== undefined)
+  );
+  if (!hasMeta) return base;
+  return base ? `${base}\n[[BREED_META:${JSON.stringify(meta)}]]` : `[[BREED_META:${JSON.stringify(meta)}]]`;
+}
+
+export type CoupleMeta = {
+  femeaIds?: string[];
+  cageName?: string;
+  raca?: string;
+  isHibrido?: boolean;
+  racaFemea?: string;
+};
+
+export function parseCoupleMeta(rawObjetivo?: string): {
+  cleanObjetivo: string;
+  meta: CoupleMeta;
+} {
+  if (!rawObjetivo) return { cleanObjetivo: '', meta: {} };
+  const match = rawObjetivo.match(/\[\[COUPLE_META:(.*?)\]\]/);
+  if (!match) return { cleanObjetivo: rawObjetivo, meta: {} };
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanObjetivo = rawObjetivo.replace(/\n?\[\[COUPLE_META:.*?\]\]/g, '').trim();
+    return {
+      cleanObjetivo,
+      meta: {
+        femeaIds: Array.isArray(meta.femeaIds) ? meta.femeaIds : undefined,
+        cageName: meta.cageName,
+        raca: meta.raca,
+        isHibrido: typeof meta.isHibrido === 'boolean' ? meta.isHibrido : undefined,
+        racaFemea: meta.racaFemea
+      }
+    };
+  } catch {
+    return { cleanObjetivo: rawObjetivo, meta: {} };
+  }
+}
+
+export function formatCoupleObjetivoWithMeta(
+  cleanObjetivo: string | undefined,
+  meta?: CoupleMeta
+): string {
+  const base = (cleanObjetivo || '').replace(/\n?\[\[COUPLE_META:.*?\]\]/g, '').trim();
+  const hasMeta = Boolean(
+    meta && (
+      (Array.isArray(meta.femeaIds) && meta.femeaIds.length > 0) ||
+      meta.cageName ||
+      meta.raca ||
+      meta.isHibrido !== undefined ||
+      meta.racaFemea
+    )
+  );
+  if (!hasMeta) return base;
+  return base ? `${base}\n[[COUPLE_META:${JSON.stringify(meta)}]]` : `[[COUPLE_META:${JSON.stringify(meta)}]]`;
+}
+
+export type ProfileMeta = {
+  city?: string;
+  state?: string;
+  responsible?: string;
+  whatsapp?: string;
+};
+
+export function parseProfilePhoneMeta(rawPhone?: string): {
+  cleanPhone: string;
+  meta: ProfileMeta;
+} {
+  if (!rawPhone) return { cleanPhone: '', meta: {} };
+  const match = rawPhone.match(/\[\[PROFILE_META:(.*?)\]\]/);
+  if (!match) return { cleanPhone: rawPhone, meta: {} };
+  try {
+    const meta = JSON.parse(match[1]);
+    const cleanPhone = rawPhone.replace(/\n?\[\[PROFILE_META:.*?\]\]/g, '').trim();
+    return {
+      cleanPhone,
+      meta: {
+        city: meta.city,
+        state: meta.state,
+        responsible: meta.responsible,
+        whatsapp: meta.whatsapp
+      }
+    };
+  } catch {
+    return { cleanPhone: rawPhone, meta: {} };
+  }
+}
+
+export function formatProfilePhoneWithMeta(
+  cleanPhone: string | undefined,
+  meta?: ProfileMeta
+): string {
+  const base = (cleanPhone || '').replace(/\n?\[\[PROFILE_META:.*?\]\]/g, '').trim();
+  const hasMeta = Boolean(
+    meta && (meta.city || meta.state || meta.responsible || meta.whatsapp)
+  );
+  if (!hasMeta) return base;
+  return base ? `${base}\n[[PROFILE_META:${JSON.stringify(meta)}]]` : `[[PROFILE_META:${JSON.stringify(meta)}]]`;
 }
 
 export type Couple = {
@@ -393,6 +546,16 @@ export const DEFAULT_BREEDS: Breed[] = [
   }
 ];
 
+export function getDefaultBreedsForUser(targetUserId: string, isAdmin: boolean): Breed[] {
+  if (isAdmin) {
+    return DEFAULT_BREEDS;
+  }
+  return DEFAULT_BREEDS.map(db => ({
+    ...db,
+    id: deterministicUuid(`default-breed:${targetUserId}:${db.nome.toLowerCase()}`)
+  }));
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const { user, cpf, isAdmin: isAuthAdmin, trialInfo } = useAuth();
   const isCurrentUserAdmin = Boolean(
@@ -480,6 +643,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isInitialSyncDone, setIsInitialSyncDone] = useState(false);
 
   const [breeds, setBreeds] = useState<Breed[]>([]);
+  const breedsRef = useRef<Breed[]>([]);
+  useEffect(() => { breedsRef.current = breeds; }, [breeds]);
+
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef<Bird[]>([]);
   useEffect(() => { birdsRef.current = birds; }, [birds]);
@@ -493,6 +659,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const recentVitrineChangesRef = useRef<Map<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any; timestamp: number }>>(new Map());
   const [couples, setCouples] = useState<Couple[]>([]);
+  const couplesRef = useRef<Couple[]>([]);
+  useEffect(() => { couplesRef.current = couples; }, [couples]);
   const [movements, setMovements] = useState<BirdMovement[]>([]);
   const movementsRef = useRef<BirdMovement[]>([]);
   useEffect(() => { movementsRef.current = movements; }, [movements]);
@@ -846,6 +1014,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const deletedBirdIds = await getDeletedBirdIdsAsync();
     let loadedBirdsCount = 0;
 
+    const defaultBreeds = getDefaultBreedsForUser(user?.id || 'guest', isCurrentUserAdmin);
     const storageItems = [
       {
         suffix: 'breeds',
@@ -857,10 +1026,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const key = (b.nome || '').trim().toLowerCase();
             if (key && !seen.has(key)) {
               seen.add(key);
-              deduped.push(b);
+              const metaParsed = parseBreedMeta(b.descricao);
+              deduped.push({
+                ...b,
+                descricao: metaParsed.cleanDescricao,
+                ganhoGramasDia: b.ganhoGramasDia ?? metaParsed.meta.ganhoGramasDia,
+                conversaoAlimentar: b.conversaoAlimentar ?? metaParsed.meta.conversaoAlimentar
+              });
             }
           }
-          for (const db of DEFAULT_BREEDS) {
+          for (const db of defaultBreeds) {
             const key = db.nome.trim().toLowerCase();
             if (!seen.has(key)) {
               seen.add(key);
@@ -868,6 +1043,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           }
           setBreeds(deduped);
+          breedsRef.current = deduped;
         }
       },
       {
@@ -891,10 +1067,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               compradorNome: b.compradorNome ?? parsed.compradorNome,
               compradorContato: b.compradorContato ?? parsed.compradorContato,
               motivoBaixa: b.motivoBaixa ?? parsed.motivoBaixa,
+              dataCadastro: b.dataCadastro ?? parsed.dataCadastro,
               observacoes: parsed.cleanObservacoes
             };
           });
           setBirds(mapped);
+          birdsRef.current = mapped;
           // Sincroniza vitrineConfig em paralelo (apenas aves ativas na vitrine)
           const vMap: Record<string, any> = {};
           mapped.forEach(b => {
@@ -909,21 +1087,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
         suffix: 'couples',
         setter: (d: any) => {
           const list = Array.isArray(d) ? d : [];
-          const migrated = list.map((c: any) => ({
-            ...c,
-            femeaIds: c.femeaIds || (c.femeaId ? [c.femeaId] : []),
-          }));
+          const migrated = list.map((c: any) => {
+            const parsedMeta = parseCoupleMeta(c.objetivo);
+            const femeaIds = parsedMeta.meta.femeaIds || c.femeaIds || (c.femeaId ? [c.femeaId] : []);
+            return {
+              ...c,
+              objetivo: parsedMeta.cleanObjetivo || c.objetivo || '',
+              femeaIds,
+              femeaId: femeaIds[0] || c.femeaId || '',
+              cageName: parsedMeta.meta.cageName || c.cageName,
+              raca: parsedMeta.meta.raca || c.raca,
+              isHibrido: parsedMeta.meta.isHibrido !== undefined ? parsedMeta.meta.isHibrido : c.isHibrido,
+              racaFemea: parsedMeta.meta.racaFemea || c.racaFemea
+            };
+          });
           setCouples(migrated);
+          couplesRef.current = migrated;
         }
       },
       {
         suffix: 'settings',
         setter: (d: any) => {
           if (d) {
-            setFarmSettings(d);
+            const parsedPhone = parseProfilePhoneMeta(d.phone);
+            const hydratedSettings: FarmSettings = {
+              ...d,
+              phone: parsedPhone.cleanPhone || d.phone || '',
+              city: d.city || parsedPhone.meta.city || '',
+              state: d.state || parsedPhone.meta.state || '',
+              responsible: d.responsible || parsedPhone.meta.responsible || '',
+              whatsapp: d.whatsapp || parsedPhone.meta.whatsapp || ''
+            };
+            setFarmSettings(hydratedSettings);
             try {
-              localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(d));
-              if (user?.id) localStorage.setItem(`@mura-manager:cached-farm-settings:${user.id}`, JSON.stringify(d));
+              localStorage.setItem('@mura-manager:cached-farm-settings', JSON.stringify(hydratedSettings));
+              if (user?.id) localStorage.setItem(`@mura-manager:cached-farm-settings:${user.id}`, JSON.stringify(hydratedSettings));
             } catch {}
           }
         }
@@ -972,14 +1170,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           item.setter(data);
         } else if (user && !isCurrentUserAdmin) {
           // Garante estado limpo e seguro para a conta comum
-          item.setter(item.suffix === 'breeds' ? DEFAULT_BREEDS : (item.suffix === 'settings' ? DEFAULT_FARM_SETTINGS : (item.suffix === 'vitrine-config' ? {} : [])));
+          item.setter(item.suffix === 'breeds' ? defaultBreeds : (item.suffix === 'settings' ? DEFAULT_FARM_SETTINGS : (item.suffix === 'vitrine-config' ? {} : [])));
         }
       } catch (error) {
         console.error(`Erro ao carregar do localforage (${item.suffix}):`, error);
       }
     }));
     return loadedBirdsCount;
-  }, [isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync]);
+  }, [isCurrentUserAdmin, getStorageKey, getDeletedBirdIdsAsync, user?.id]);
 
   const isSyncingRef = useRef(false);
   const lastSyncTimeRef = useRef(0);
@@ -995,6 +1193,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isSyncingRef.current = true;
     lastSyncTimeRef.current = now;
     try {
+      // 0. Processa primeiro qualquer mutação pendente na fila offline Write-Ahead
+      await processSyncQueue().catch(() => {});
+
       const isAdmin = Boolean(
         user
           ? (isUserAdmin(user.email) || isUserAdmin(user.id))
@@ -1134,25 +1335,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const localCouples = (couples && couples.length > 0) ? couples : (rawLocalCouples || []);
       const localSettings = rawLocalSettings;
 
-      if (sbCouples.length === 0 && localCouples.length > 0) {
-        try {
-          const couplesToInsert = localCouples.map((c: any) => ({
-            id: c.id,
-            user_id: targetUserId,
-            macho_id: c.machoId,
-            femea_id: c.femeaIds?.[0] || c.femeaId || '',
-            objetivo: c.objetivo,
-            data_inicio: c.dataInicio,
-            status: c.status
-          }));
-          await supabase!.from('couples').upsert(couplesToInsert, { onConflict: 'id' });
-          sbCouples = couplesToInsert;
-        } catch (mErr) {
-          console.error('Erro ao subir casais para o Supabase:', mErr);
-        }
-      }
-
       // ── RAÇAS: Mapeamento e preservação com DEDUPLICAÇÃO RIGOROSA POR NOME ──
+      const userDefaultBreeds = getDefaultBreedsForUser(targetUserId, isAdmin);
       const seenBreedNames = new Set<string>();
       let uniqueBreeds: Breed[] = [];
 
@@ -1162,18 +1346,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (nameLower && !seenBreedNames.has(nameLower)) {
           seenBreedNames.add(nameLower);
           const localBreed = (localBreeds || []).find((x: any) => (x.nome || '').trim().toLowerCase() === nameLower);
-          const seedMatch = DEFAULT_BREEDS.find(db => db.nome.toLowerCase() === nameLower);
+          const seedMatch = userDefaultBreeds.find(db => db.nome.toLowerCase() === nameLower);
+          const metaParsed = parseBreedMeta(b.descricao);
           uniqueBreeds.push({
             id: b.id,
             nome: b.nome || '',
             foco: b.foco || seedMatch?.foco || '',
-            descricao: b.descricao || seedMatch?.descricao || '',
+            descricao: metaParsed.cleanDescricao || seedMatch?.descricao || '',
             imagem: b.imagem || seedMatch?.imagem,
             totalAves: b.total_aves || b.totalAves || 0,
             tempoCrescimento: b.tempo_crescimento !== undefined ? b.tempo_crescimento : (localBreed?.tempoCrescimento || seedMatch?.tempoCrescimento || 0),
             pesoMedio: b.peso_medio !== undefined ? b.peso_medio : (localBreed?.pesoMedio || seedMatch?.pesoMedio || ''),
-            ganhoGramasDia: b.ganho_gramas_dia !== undefined ? b.ganho_gramas_dia : (localBreed?.ganhoGramasDia || seedMatch?.ganhoGramasDia || undefined),
-            conversaoAlimentar: b.conversao_alimentar !== undefined ? b.conversao_alimentar : (localBreed?.conversaoAlimentar || seedMatch?.conversaoAlimentar || undefined)
+            ganhoGramasDia: b.ganho_gramas_dia !== undefined ? b.ganho_gramas_dia : (metaParsed.meta.ganhoGramasDia ?? localBreed?.ganhoGramasDia ?? seedMatch?.ganhoGramasDia),
+            conversaoAlimentar: b.conversao_alimentar !== undefined ? b.conversao_alimentar : (metaParsed.meta.conversaoAlimentar ?? localBreed?.conversaoAlimentar ?? seedMatch?.conversaoAlimentar)
           });
         }
       }
@@ -1192,7 +1377,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // 3. Adiciona raças padrão do sistema caso alguma falte
       const missingDefaultToPush: Breed[] = [];
-      for (const db of DEFAULT_BREEDS) {
+      for (const db of userDefaultBreeds) {
         if (breedTombstones.has(db.id)) continue;
         const nameLower = db.nome.trim().toLowerCase();
         if (!seenBreedNames.has(nameLower)) {
@@ -1202,24 +1387,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // 4. Se houver raças a subir para o Supabase, faz upsert
+      // 4. Se houver raças a subir para o Supabase, faz upsert com metadata envelope seguro
       if (isSupabaseConfigured && user) {
         const breedsToUpsert = [...unsyncedBreedsToPush, ...missingDefaultToPush].map(b => ({
           id: b.id,
           user_id: targetUserId,
           nome: b.nome,
-          foco: b.foco,
-          descricao: b.descricao,
-          imagem: b.imagem,
+          foco: b.foco || '',
+          descricao: formatBreedDescricaoWithMeta(b.descricao, {
+            ganhoGramasDia: b.ganhoGramasDia,
+            conversaoAlimentar: b.conversaoAlimentar
+          }),
+          imagem: b.imagem || null,
           tempo_crescimento: b.tempoCrescimento || 0,
           peso_medio: b.pesoMedio || ''
         }));
         if (breedsToUpsert.length > 0) {
+          for (const bu of breedsToUpsert) {
+            enqueueMutation('breeds', 'upsert', bu, { column: 'id', value: bu.id });
+          }
           supabase!.from('breeds').upsert(breedsToUpsert, { onConflict: 'id' }).then(() => {}, () => {});
         }
       }
 
       setBreeds(uniqueBreeds);
+      breedsRef.current = uniqueBreeds;
       safeStorageSet(getStorageKey('breeds'), uniqueBreeds);
 
       // ── AVES: Sincronização Cloud-Authoritative & Prevenção Rigorosa de Fantasmas ──
@@ -1230,42 +1422,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const birdsToPush = (localBirds || []).filter((b: any) => b && b.id && offlinePendingIds.has(b.id));
         if (birdsToPush.length > 0) {
           console.log(`[Sync] Enviando ${birdsToPush.length} ave(s) criadas offline para o Supabase...`);
-          const payloads = birdsToPush.map((b: any) => ({
-            id: b.id,
-            user_id: targetUserId,
-            anilha: b.anilha,
-            nome: b.nome || null,
-            sexo: b.sexo,
-            raca: b.raca,
-            baia: b.baia || 'ND',
-            status: b.status,
-            imagem: b.imagens?.[0] || b.imagem || null,
-            vacinas: b.vacinas || null,
-            origem: b.origem || 'Criatório',
-            casal_id: b.casalId || null,
-            pai_id: b.paiId || null,
-            mae_id: b.maeId || null,
-            is_pai_externo: !!b.isPaiExterno,
-            is_mae_externo: !!b.isMaeExterno,
-            data_nascimento: b.dataNascimento || null,
-            peso: b.peso || null,
-            imagens: b.imagens || [],
-            observacoes: formatBirdObservacoesWithVitrine(
-              parseBirdVitrine(b.observacoes).cleanObservacoes,
-              Boolean(b.inVitrine),
-              b.vitrinePrice,
-              b.vitrineStatus,
-              {
-                valorEstimado: b.valorEstimado,
-                valorVenda: b.valorVenda,
-                dataVenda: b.dataVenda,
-                dataBaixa: b.dataBaixa,
-                compradorNome: b.compradorNome,
-                compradorContato: b.compradorContato,
-                motivoBaixa: b.motivoBaixa
-              }
-            )
-          }));
+          const payloads = birdsToPush.map((b: any) => {
+            const birdMovements = (movementsRef.current || []).filter(m => m.birdId === b.id);
+            return {
+              id: b.id,
+              user_id: targetUserId,
+              anilha: b.anilha,
+              nome: b.nome || null,
+              sexo: b.sexo,
+              raca: b.raca,
+              baia: b.baia || 'ND',
+              status: b.status,
+              imagem: b.imagens?.[0] || b.imagem || null,
+              vacinas: b.vacinas || null,
+              origem: b.origem || 'Criatório',
+              casal_id: b.casalId || null,
+              pai_id: b.paiId || null,
+              mae_id: b.maeId || null,
+              is_pai_externo: !!b.isPaiExterno,
+              is_mae_externo: !!b.isMaeExterno,
+              data_nascimento: b.dataNascimento || null,
+              peso: b.peso || null,
+              imagens: b.imagens || [],
+              observacoes: formatBirdObservacoesWithVitrine(
+                parseBirdVitrine(b.observacoes).cleanObservacoes,
+                Boolean(b.inVitrine),
+                b.vitrinePrice,
+                b.vitrineStatus,
+                {
+                  valorEstimado: b.valorEstimado,
+                  valorVenda: b.valorVenda,
+                  dataVenda: b.dataVenda,
+                  dataBaixa: b.dataBaixa,
+                  compradorNome: b.compradorNome,
+                  compradorContato: b.compradorContato,
+                  motivoBaixa: b.motivoBaixa,
+                  dataCadastro: b.dataCadastro,
+                  movements: birdMovements
+                }
+              )
+            };
+          });
           for (let i = 0; i < payloads.length; i += 5) {
             const chunk = payloads.slice(i, i + 5);
             try {
@@ -1282,6 +1479,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      const cloudEmbeddedMovements: BirdMovement[] = [];
       let finalBirds: Bird[] = [];
       if (sbBirdsFromCloud !== null) {
         const nextVitrineMap: Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }> = {};
@@ -1301,6 +1499,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const parsedLocalVitrine = parseBirdVitrine(localBird?.observacoes);
           const recentChange = recentVitrineChangesRef.current.get(b.id);
           const isRecentChangeActive = recentChange && (Date.now() - recentChange.timestamp < 30000);
+
+          // Extrai movimentações forenses gravadas atomicamente no registro cloud da ave
+          if (parsedCloudVitrine.movements && Array.isArray(parsedCloudVitrine.movements)) {
+            for (const cm of parsedCloudVitrine.movements) {
+              if (cm && cm.id) cloudEmbeddedMovements.push(cm);
+            }
+          }
 
           let isBirdInVitrine: boolean;
           let birdVitrinePrice: string;
@@ -1369,7 +1574,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataVenda: parsedCloudVitrine.dataVenda ?? localBird?.dataVenda ?? parsedLocalVitrine.dataVenda,
             compradorNome: parsedCloudVitrine.compradorNome ?? localBird?.compradorNome ?? parsedLocalVitrine.compradorNome,
             compradorContato: parsedCloudVitrine.compradorContato ?? localBird?.compradorContato ?? parsedLocalVitrine.compradorContato,
-            motivoBaixa: parsedCloudVitrine.motivoBaixa ?? localBird?.motivoBaixa ?? parsedLocalVitrine.motivoBaixa
+            motivoBaixa: parsedCloudVitrine.motivoBaixa ?? localBird?.motivoBaixa ?? parsedLocalVitrine.motivoBaixa,
+            dataCadastro: parsedCloudVitrine.dataCadastro ?? localBird?.dataCadastro
           };
         });
 
@@ -1388,10 +1594,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           !sbBirdsFromCloud.some((cb: any) => cb.id === b.id)
         );
 
-        finalBirds = [...cloudMapped, ...unconfirmedOffline];
+        finalBirds = dedupeById([...cloudMapped, ...unconfirmedOffline]);
       } else {
         // Nuvem inacessível no momento: preserva dados em cache local
-        finalBirds = localBirds;
+        finalBirds = dedupeById(localBirds);
+      }
+
+      // Sobrepõe mutações pendentes na outbox sobre finalBirds para evitar sobrescrita transitória
+      const pendingMutations = await getPendingMutations();
+      for (const mut of pendingMutations) {
+        if (mut.table === 'birds' && mut.filter?.value) {
+          const birdId = mut.filter.value;
+          if (mut.action === 'delete') {
+            finalBirds = finalBirds.filter(b => b.id !== birdId);
+          } else if (mut.action === 'upsert' || mut.action === 'update') {
+            const local = birdsRef.current.find(b => b.id === birdId);
+            if (local && !finalBirds.some(b => b.id === birdId)) {
+              finalBirds.push(local);
+            }
+          }
+        }
       }
 
       setBirds(finalBirds);
@@ -1399,7 +1621,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       safeStorageSet(getStorageKey('birds'), finalBirds);
 
       // ── CARREGAMENTO DE FOTOS EM SEGUNDO PLANO (NON-BLOCKING) ──
-      // Busca fotos de alta resolução da nuvem sem atrasar a inicialização do app
       if (isSupabaseConfigured && sbBirdsFromCloud && sbBirdsFromCloud.length > 0) {
         const cloudBirdIds = sbBirdsFromCloud.map((b: any) => b.id);
         (async () => {
@@ -1440,23 +1661,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })();
       }
 
-
-      // ── CASAIS: Mapeamento e preservação de não sincronizados ──
+      // ── CASAIS: Mapeamento e preservação com metadata envelope ──
       const mappedCouples = sbCouples.map((c: any) => {
-        const mapped = {
+        const parsedMeta = parseCoupleMeta(c.objetivo);
+        const femeaIds = parsedMeta.meta.femeaIds || c.femeaIds || (c.femea_id ? [c.femea_id] : []);
+        return {
           id: c.id,
           machoId: c.macho_id || c.machoId || '',
-          femeaId: c.femea_id || c.femeaId || '',
-          objetivo: c.objetivo || '',
+          femeaId: femeaIds[0] || c.femea_id || c.femeaId || '',
+          objetivo: parsedMeta.cleanObjetivo || c.objetivo || '',
           dataInicio: c.data_inicio || c.dataInicio || '',
           status: c.status || 'Ativo',
-          femeaIds: c.femeaIds || []
+          femeaIds,
+          cageName: parsedMeta.meta.cageName || c.cageName,
+          raca: parsedMeta.meta.raca || c.raca,
+          isHibrido: parsedMeta.meta.isHibrido !== undefined ? parsedMeta.meta.isHibrido : c.isHibrido,
+          racaFemea: parsedMeta.meta.racaFemea || c.racaFemea
         };
-        mapped.femeaIds = mapped.femeaIds.length > 0 ? mapped.femeaIds : (mapped.femeaId ? [mapped.femeaId] : []);
-        return mapped;
       });
 
-      // ── Cloud é autoridade para casais ──
       const sbCoupleIds = new Set<string>(sbCouples.map((c: any) => c.id));
       const pendingCouples = (localCouples || []).filter((lc: any) => lc && lc.id && !sbCoupleIds.has(lc.id) && !coupleTombstones.has(lc.id));
       if (pendingCouples.length > 0 && isSupabaseConfigured && user) {
@@ -1465,20 +1688,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           user_id: targetUserId,
           macho_id: c.machoId,
           femea_id: c.femeaIds?.[0] || c.femeaId || '',
-          objetivo: c.objetivo,
+          objetivo: formatCoupleObjetivoWithMeta(c.objetivo, {
+            femeaIds: c.femeaIds,
+            cageName: c.cageName,
+            raca: c.raca,
+            isHibrido: c.isHibrido,
+            racaFemea: c.racaFemea
+          }),
           data_inicio: c.dataInicio,
           status: c.status
         }));
+        for (const cp of couplesToPush) {
+          enqueueMutation('couples', 'insert', cp);
+        }
         supabase!.from('couples').upsert(couplesToPush, { onConflict: 'id' }).then(({ error }) => {
           if (error) console.error('Erro ao subir casais pendentes:', error);
         });
       }
 
-      // UI exibe APENAS o que veio da nuvem (cloud-authoritative)
-      setCouples(mappedCouples);
-      safeStorageSet(getStorageKey('couples'), mappedCouples);
+      const finalCouples = dedupeById([...mappedCouples, ...pendingCouples]);
+      setCouples(finalCouples);
+      couplesRef.current = finalCouples;
+      safeStorageSet(getStorageKey('couples'), finalCouples);
 
-      // ── MOVIMENTAÇÕES & VENDAS DE AVES (LEDGER IMUTÁVEL) ──
+      // ── MOVIMENTAÇÕES & VENDAS DE AVES (LEDGER IMUTÁVEL DUAL-CHANNEL) ──
       const rawCloudMovements = (resBirdMovements && Array.isArray(resBirdMovements.data)) ? resBirdMovements.data : [];
       const mappedCloudMovements: BirdMovement[] = rawCloudMovements.map((m: any) => {
         const rawTipo = m.tipo;
@@ -1509,25 +1742,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
 
+      const allCloudMovements = [...mappedCloudMovements, ...cloudEmbeddedMovements];
       const localMovements = (Array.isArray(rawLocalMovements) ? rawLocalMovements : (movementsRef.current || [])) as BirdMovement[];
-      const mergedMovements = mergeLedgers(localMovements, mappedCloudMovements);
+      const mergedMovements = mergeLedgers(localMovements, allCloudMovements);
       const reconciled = reconcileLedger(mergedMovements, finalBirds, { today: todayLocalISO(), now: Date.now(), deviceId: 'sync' });
       setMovements(reconciled.ledger);
       movementsRef.current = reconciled.ledger;
       safeStorageSet(getStorageKey('bird-movements'), reconciled.ledger);
 
+      // Auto-backfill: se o ledger reconciliado contiver movimentações que a nuvem ainda não tem no observacoes da ave
+      if (isSupabaseConfigured && user && sbBirdsFromCloud) {
+        for (const cb of sbBirdsFromCloud) {
+          const birdMovs = reconciled.ledger.filter(m => m.birdId === cb.id);
+          if (birdMovs.length > 0) {
+            const parsedCloud = parseBirdVitrine(cb.observacoes);
+            const cloudMovCount = parsedCloud.movements?.length || 0;
+            if (cloudMovCount < birdMovs.length) {
+              const updatedObs = formatBirdObservacoesWithVitrine(
+                parsedCloud.cleanObservacoes,
+                parsedCloud.inVitrine,
+                parsedCloud.vitrinePrice,
+                parsedCloud.vitrineStatus,
+                {
+                  valorEstimado: parsedCloud.valorEstimado,
+                  valorVenda: parsedCloud.valorVenda,
+                  dataVenda: parsedCloud.dataVenda,
+                  dataBaixa: parsedCloud.dataBaixa,
+                  compradorNome: parsedCloud.compradorNome,
+                  compradorContato: parsedCloud.compradorContato,
+                  motivoBaixa: parsedCloud.motivoBaixa,
+                  dataCadastro: parsedCloud.dataCadastro,
+                  movements: birdMovs
+                }
+              );
+              supabase!.from('birds').update({ observacoes: updatedObs }).eq('id', cb.id).then(() => {});
+            }
+          }
+        }
+      }
+
       // ── CONFIGURAÇÕES DA FAZENDA ──
-      const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo));
+      const hasSbProfile = sbSettings && (Boolean(sbSettings.name) || Boolean(sbSettings.photo) || Boolean(sbSettings.phone));
       const hasLocalProfile = localSettings && (Boolean(localSettings.name) || Boolean(localSettings.photo) || Boolean(localSettings.phone));
 
       if (hasSbProfile) {
-        const settingsData = {
+        const parsedPhone = parseProfilePhoneMeta(sbSettings.phone);
+        const settingsData: FarmSettings = {
           name: sbSettings.name || localSettings?.name || '',
           photo: sbSettings.photo || localSettings?.photo || '',
           email: sbSettings.email || localSettings?.email || '',
-          phone: sbSettings.phone || localSettings?.phone || '',
-          city: sbSettings.city || localSettings?.city || '',
-          state: sbSettings.state || localSettings?.state || ''
+          phone: parsedPhone.cleanPhone || localSettings?.phone || '',
+          city: parsedPhone.meta.city || localSettings?.city || '',
+          state: parsedPhone.meta.state || localSettings?.state || '',
+          responsible: parsedPhone.meta.responsible || localSettings?.responsible || '',
+          whatsapp: parsedPhone.meta.whatsapp || localSettings?.whatsapp || ''
         };
         setFarmSettings(settingsData);
         safeStorageSet(getStorageKey('settings'), settingsData);
@@ -1542,15 +1810,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(`@mura-manager:cached-farm-settings:${targetUserId}`, JSON.stringify(localSettings));
         } catch {}
         if (isSupabaseConfigured) {
-          await supabase!.from('profiles').upsert({
+          const phoneWithMeta = formatProfilePhoneWithMeta(localSettings.phone, {
+            city: localSettings.city,
+            state: localSettings.state,
+            responsible: localSettings.responsible,
+            whatsapp: localSettings.whatsapp
+          });
+          const profilePayload = {
             id: targetUserId,
             name: localSettings.name || '',
             photo: localSettings.photo || '',
             email: localSettings.email || '',
-            phone: localSettings.phone || '',
-            city: localSettings.city || '',
-            state: localSettings.state || ''
-          });
+            phone: phoneWithMeta
+          };
+          enqueueMutation('profiles', 'upsert', profilePayload, { column: 'id', value: targetUserId });
+          supabase!.from('profiles').upsert(profilePayload).then(() => {});
         }
       } else {
         let recoveredSettings: any = null;
@@ -1696,14 +1970,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
-        if (now - lastSyncTimeRef.current >= 20000 && !isSyncingRef.current) {
+        if (now - lastSyncTimeRef.current >= 4000 && !isSyncingRef.current) {
           processSyncQueue().catch(() => {});
           syncWithSupabaseBackground(false);
         }
       }
     };
 
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastSyncTimeRef.current >= 4000 && !isSyncingRef.current) {
+        processSyncQueue().catch(() => {});
+        syncWithSupabaseBackground(false);
+      }
+    };
+
+    const handleMutationSynced = () => {
+      triggerRemoteSync();
+    };
+
     window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener(SYNC_MUTATION_SYNCED_EVENT, handleMutationSynced);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Canal Realtime do Supabase: escuta mudanças nas tabelas e broadcast instantâneo entre abas/aparelhos
@@ -1722,6 +2010,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }, 400);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'couples' }, () => {
+        if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
+        realtimeDebounceTimerRef.current = setTimeout(() => {
+          syncWithSupabaseBackground(true);
+        }, 400);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
         realtimeDebounceTimerRef.current = setTimeout(() => {
           syncWithSupabaseBackground(true);
@@ -1747,6 +2041,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => {
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener(SYNC_MUTATION_SYNCED_EVENT, handleMutationSynced);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (realtimeDebounceTimerRef.current) clearTimeout(realtimeDebounceTimerRef.current);
       clearInterval(syncInterval);
@@ -1841,39 +2137,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [isReady]);
 
   const addBreed = (breed: Breed) => {
+    const breedId = breed.id || generateId();
+    const breedWithId: Breed = { ...breed, id: breedId };
     const scope = getUserScope();
-    clearTombstone('breeds', breed.id, scope);
+    clearTombstone('breeds', breedId, scope);
     setBreeds(prev => {
-      const next = [...prev, breed];
+      const next = dedupeById([...prev, breedWithId]);
+      breedsRef.current = next;
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
         const payload = {
-          id: breed.id,
+          id: breedId,
           user_id: targetUserId,
-          nome: breed.nome,
-          foco: breed.foco,
-          descricao: breed.descricao,
-          imagem: breed.imagem,
-          tempo_crescimento: breed.tempoCrescimento || 0,
-          peso_medio: breed.pesoMedio || '',
-          ganho_gramas_dia: breed.ganhoGramasDia || null,
-          conversao_alimentar: breed.conversaoAlimentar || null
+          nome: breedWithId.nome,
+          foco: breedWithId.foco || '',
+          descricao: formatBreedDescricaoWithMeta(breedWithId.descricao, {
+            ganhoGramasDia: breedWithId.ganhoGramasDia,
+            conversaoAlimentar: breedWithId.conversaoAlimentar
+          }),
+          imagem: breedWithId.imagem || null,
+          tempo_crescimento: breedWithId.tempoCrescimento || 0,
+          peso_medio: breedWithId.pesoMedio || ''
         };
+        enqueueMutation('breeds', 'upsert', payload, { column: 'id', value: breedId });
         supabase!
           .from('breeds')
-          .insert(payload)
+          .upsert(payload, { onConflict: 'id' })
           .then(
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase addBreed:', error);
-                enqueueMutation('breeds', 'insert', payload);
               } else {
                 triggerRemoteSync('breeds');
               }
             },
-            () => { enqueueMutation('breeds', 'insert', payload); }
+            () => {}
           );
       }
       return next;
@@ -1882,20 +2182,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const editBreed = (id: string, updatedBreed: Partial<Breed>) => {
     setBreeds(prev => {
-      const next = prev.map(b => b.id === id ? { ...b, ...updatedBreed } : b);
+      const existing = prev.find(b => b.id === id);
+      const merged: Breed = { ...(existing || { id, nome: '', foco: '', descricao: '', totalAves: 0 }), ...updatedBreed };
+      const next = prev.map(b => b.id === id ? merged : b);
+      breedsRef.current = next;
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
         const dbUpdate: any = {};
         if (updatedBreed.nome !== undefined) dbUpdate.nome = updatedBreed.nome;
         if (updatedBreed.foco !== undefined) dbUpdate.foco = updatedBreed.foco;
-        if (updatedBreed.descricao !== undefined) dbUpdate.descricao = updatedBreed.descricao;
+        if (
+          updatedBreed.descricao !== undefined ||
+          updatedBreed.ganhoGramasDia !== undefined ||
+          updatedBreed.conversaoAlimentar !== undefined
+        ) {
+          dbUpdate.descricao = formatBreedDescricaoWithMeta(
+            updatedBreed.descricao !== undefined ? updatedBreed.descricao : existing?.descricao,
+            {
+              ganhoGramasDia: merged.ganhoGramasDia,
+              conversaoAlimentar: merged.conversaoAlimentar
+            }
+          );
+        }
         if (updatedBreed.imagem !== undefined) dbUpdate.imagem = updatedBreed.imagem;
         if (updatedBreed.tempoCrescimento !== undefined) dbUpdate.tempo_crescimento = updatedBreed.tempoCrescimento;
         if (updatedBreed.pesoMedio !== undefined) dbUpdate.peso_medio = updatedBreed.pesoMedio;
-        if (updatedBreed.ganhoGramasDia !== undefined) dbUpdate.ganho_gramas_dia = updatedBreed.ganhoGramasDia;
-        if (updatedBreed.conversaoAlimentar !== undefined) dbUpdate.conversao_alimentar = updatedBreed.conversaoAlimentar;
 
+        enqueueMutation('breeds', 'update', dbUpdate, { column: 'id', value: id });
         supabase!
           .from('breeds')
           .update(dbUpdate)
@@ -1904,12 +2218,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase editBreed:', error);
-                enqueueMutation('breeds', 'update', dbUpdate, { column: 'id', value: id });
               } else {
                 triggerRemoteSync('breeds');
               }
             },
-            () => { enqueueMutation('breeds', 'update', dbUpdate, { column: 'id', value: id }); }
+            () => {}
           );
       }
       return next;
@@ -1920,12 +2233,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const scope = getUserScope();
     recordTombstone('breeds', id, scope);
     markPendingDelete('breeds', id, scope);
-    const breedToDelete = breeds.find(b => b.id === id);
+    const breedToDelete = breedsRef.current.find(b => b.id === id);
     setBreeds(prev => {
       const next = prev.filter(b => b.id !== id);
+      breedsRef.current = next;
       localforage.setItem(getStorageKey('breeds'), next).catch(err => console.error(err));
       
       if (isSupabaseConfigured && user) {
+        enqueueMutation('breeds', 'delete', null, { column: 'id', value: id });
         supabase!
           .from('breeds')
           .delete()
@@ -1934,13 +2249,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase removeBreed:', error);
-                enqueueMutation('breeds', 'delete', null, { column: 'id', value: id });
               } else {
                 clearPendingDelete('breeds', id, scope);
                 triggerRemoteSync('breeds');
               }
             },
-            () => { enqueueMutation('breeds', 'delete', null, { column: 'id', value: id }); }
+            () => {}
           );
       }
       return next;
@@ -1949,6 +2263,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (breedToDelete) {
       setBirds(prev => {
         const next = prev.map(b => b.raca === breedToDelete.nome ? { ...b, raca: '' } : b);
+        birdsRef.current = next;
         localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
         
         if (isSupabaseConfigured && user) {
@@ -1964,11 +2279,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addBird = (bird: Bird) => {
+    const birdId = bird.id || generateId();
     const scope = getUserScope();
-    clearTombstone('birds', bird.id, scope);
-    clearDeletedBirdId(bird.id);
-    markPendingOfflineBird(bird.id);
+    clearTombstone('birds', birdId, scope);
+    clearDeletedBirdId(birdId);
+    markPendingOfflineBird(birdId);
     const cleanObs = parseBirdVitrine(bird.observacoes).cleanObservacoes;
+    const birdMovements = (movementsRef.current || []).filter(m => m.birdId === birdId);
     const finalObsForDb = formatBirdObservacoesWithVitrine(
       cleanObs,
       Boolean(bird.inVitrine),
@@ -1981,16 +2298,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dataBaixa: bird.dataBaixa,
         compradorNome: bird.compradorNome,
         compradorContato: bird.compradorContato,
-        motivoBaixa: bird.motivoBaixa
+        motivoBaixa: bird.motivoBaixa,
+        dataCadastro: bird.dataCadastro || todayLocalISO(),
+        movements: birdMovements
       }
     );
     const birdWithDate: Bird = {
       ...bird,
+      id: birdId,
       observacoes: cleanObs,
       dataCadastro: bird.dataCadastro || todayLocalISO()
     };
     setBirds(prev => {
-      const next = [...prev, birdWithDate];
+      const next = dedupeById([...prev, birdWithDate]);
+      birdsRef.current = next;
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
@@ -2000,7 +2321,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setVitrineConfig(vPrev => {
           const vNext = {
             ...vPrev,
-            [bird.id]: {
+            [birdId]: {
               inVitrine: true,
               vitrinePrice: bird.vitrinePrice || '',
               vitrineStatus: bird.vitrineStatus || 'Disponível'
@@ -2017,7 +2338,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
         const payload = {
-          id: bird.id,
+          id: birdId,
           user_id: targetUserId,
           anilha: bird.anilha,
           nome: bird.nome || null,
@@ -2038,22 +2359,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           imagens: bird.imagens || [],
           observacoes: finalObsForDb
         };
+        enqueueMutation('birds', 'upsert', payload, { column: 'id', value: birdId });
         supabase!
           .from('birds')
           .upsert(payload, { onConflict: 'id' })
           .then(
             ({ error }) => {
               if (error) {
-                console.warn('Erro Supabase addBird, enfileirando offline:', error);
-                enqueueMutation('birds', 'upsert', payload, { column: 'id', value: bird.id });
+                console.warn('Erro Supabase addBird:', error);
               } else {
-                clearPendingOfflineBird(bird.id);
+                clearPendingOfflineBird(birdId);
                 triggerRemoteSync('birds');
               }
             },
-            () => {
-              enqueueMutation('birds', 'upsert', payload, { column: 'id', value: bird.id });
-            }
+            () => {}
           );
       }
       return next;
@@ -2119,14 +2438,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   motivo_estorno: 'Ave reativada no plantel',
                   updated_at: new Date(revRes.value.movement.updatedAt).toISOString()
                 };
-                supabase!.from('bird_movements').update(revPayload).eq('id', activeMov.id).then(
-                  ({ error }) => {
-                    if (error) enqueueMutation('bird_movements', 'update', revPayload, { column: 'id', value: activeMov.id });
-                  },
-                  () => {
-                    enqueueMutation('bird_movements', 'update', revPayload, { column: 'id', value: activeMov.id });
-                  }
-                );
+                enqueueMutation('bird_movements', 'update', revPayload, { column: 'id', value: activeMov.id });
+                supabase!.from('bird_movements').update(revPayload).eq('id', activeMov.id).then(() => {}, () => {});
               }
             }
           }
@@ -2135,6 +2448,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           safeStorageSet(getStorageKey('bird-movements'), nextLedger);
         }
       }
+
+      const birdMovements = (movementsRef.current || []).filter(m => m.birdId === id);
 
       const next = prev.map(b => {
         if (b.id === id) {
@@ -2163,12 +2478,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dataBaixa: mergedBird.dataBaixa,
             compradorNome: mergedBird.compradorNome,
             compradorContato: mergedBird.compradorContato,
-            motivoBaixa: mergedBird.motivoBaixa
+            motivoBaixa: mergedBird.motivoBaixa,
+            dataCadastro: mergedBird.dataCadastro,
+            movements: birdMovements
           });
           return mergedBird;
         }
         return b;
       });
+      birdsRef.current = next;
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
@@ -2228,25 +2546,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dbUpdate.imagem = updatedBird.imagem || null;
       }
 
+      enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
       supabase!
         .from('birds')
         .update(dbUpdate)
         .eq('id', id)
-          .then(
-            ({ error }) => {
-              if (error) {
-                console.warn('Erro Supabase editBird, enfileirando offline:', error);
-                enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
-              } else {
-                triggerRemoteSync('birds');
-              }
-            },
-            () => {
-              enqueueMutation('birds', 'update', dbUpdate, { column: 'id', value: id });
+        .then(
+          ({ error }) => {
+            if (error) {
+              console.warn('Erro Supabase editBird:', error);
+            } else {
+              triggerRemoteSync('birds');
             }
-          );
-      }
-    };
+          },
+          () => {}
+        );
+    }
+  };
 
   const removeBird = (id: string) => {
     const scope = getUserScope();
@@ -2260,6 +2576,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // 2. Remove da lista primária e dos espelhos de storage
     setBirds(prev => {
       const next = prev.filter(b => b.id !== id);
+      birdsRef.current = next;
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
@@ -2291,6 +2608,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
       
       if (isSupabaseConfigured && user) {
+        enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
         supabase!
           .from('birds')
           .delete()
@@ -2298,16 +2616,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .then(
             ({ error }) => {
               if (error) {
-                enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
+                console.warn('Erro Supabase removeBird:', error);
               } else {
                 clearPendingDeleteBird(id);
                 clearPendingDelete('birds', id, scope);
                 triggerRemoteSync('birds');
               }
             },
-            () => {
-              enqueueMutation('birds', 'delete', null, { column: 'id', value: id });
-            }
+            () => {}
           );
       }
       return next;
@@ -2322,6 +2638,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (b.maeId === id) { updated.maeId = ''; changed = true; }
         return changed ? updated : b;
       });
+      birdsRef.current = next;
       localforage.setItem(getStorageKey('birds'), next).catch(err => console.error(err));
       if (isCurrentUserAdmin) {
         localforage.setItem('@mura-manager:admin:birds', next).catch(() => {});
@@ -2344,44 +2661,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     // 4. Deleta casais associados à ave removida (machos e fêmeas) em cascata
-    const couplesToRemove = couples.filter(c => c.machoId === id || c.femeaId === id || c.femeaIds?.includes(id));
+    const couplesToRemove = couplesRef.current.filter(c => c.machoId === id || c.femeaId === id || c.femeaIds?.includes(id));
     couplesToRemove.forEach(c => {
       removeCouple(c.id);
     });
   };
 
-
   const addCouple = (couple: Couple) => {
+    const coupleId = couple.id || generateId();
     const scope = getUserScope();
-    clearTombstone('couples', couple.id, scope);
+    clearTombstone('couples', coupleId, scope);
+    const femeaIds = couple.femeaIds || (couple.femeaId ? [couple.femeaId] : []);
+    const coupleWithId: Couple = {
+      ...couple,
+      id: coupleId,
+      femeaIds,
+      femeaId: femeaIds[0] || ''
+    };
+
     setCouples(prev => {
-      const next = [...prev, couple];
+      const next = dedupeById([...prev, coupleWithId]);
+      couplesRef.current = next;
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
 
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const finalObjetivo = formatCoupleObjetivoWithMeta(coupleWithId.objetivo, {
+          femeaIds,
+          cageName: coupleWithId.cageName,
+          raca: coupleWithId.raca,
+          isHibrido: coupleWithId.isHibrido,
+          racaFemea: coupleWithId.racaFemea
+        });
         const payload = {
-          id: couple.id,
+          id: coupleId,
           user_id: targetUserId,
-          macho_id: couple.machoId,
-          femea_id: couple.femeaIds?.[0] || couple.femeaId || '',
-          objetivo: couple.objetivo,
-          data_inicio: couple.dataInicio,
-          status: couple.status
+          macho_id: coupleWithId.machoId,
+          femea_id: femeaIds[0] || '',
+          objetivo: finalObjetivo,
+          data_inicio: coupleWithId.dataInicio,
+          status: coupleWithId.status
         };
+        enqueueMutation('couples', 'upsert', payload, { column: 'id', value: coupleId });
         supabase!
           .from('couples')
-          .insert(payload)
+          .upsert(payload, { onConflict: 'id' })
           .then(
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase addCouple:', error);
-                enqueueMutation('couples', 'insert', payload);
               } else {
                 triggerRemoteSync('couples');
               }
             },
-            () => { enqueueMutation('couples', 'insert', payload); }
+            () => {}
           );
       }
       return next;
@@ -2390,18 +2723,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const editCouple = (id: string, updatedCouple: Partial<Couple>) => {
     setCouples(prev => {
-      const next = prev.map(c => c.id === id ? { ...c, ...updatedCouple } : c);
+      const current = prev.find(c => c.id === id);
+      const merged: Couple = { ...(current || { id, machoId: '', femeaId: '', objetivo: '', dataInicio: '', status: 'Ativo' }), ...updatedCouple };
+      const femeaIds = merged.femeaIds || (merged.femeaId ? [merged.femeaId] : []);
+      merged.femeaIds = femeaIds;
+      merged.femeaId = femeaIds[0] || '';
+
+      const next = prev.map(c => c.id === id ? merged : c);
+      couplesRef.current = next;
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
 
       if (isSupabaseConfigured && user) {
+        const finalObjetivo = formatCoupleObjetivoWithMeta(
+          updatedCouple.objetivo !== undefined ? updatedCouple.objetivo : current?.objetivo,
+          {
+            femeaIds,
+            cageName: merged.cageName,
+            raca: merged.raca,
+            isHibrido: merged.isHibrido,
+            racaFemea: merged.racaFemea
+          }
+        );
         const dbUpdate: any = {};
         if (updatedCouple.machoId !== undefined) dbUpdate.macho_id = updatedCouple.machoId;
-        if (updatedCouple.femeaId !== undefined) dbUpdate.femea_id = updatedCouple.femeaId;
-        if (updatedCouple.femeaIds !== undefined) dbUpdate.femea_id = updatedCouple.femeaIds[0];
+        if (updatedCouple.femeaId !== undefined || updatedCouple.femeaIds !== undefined) {
+          dbUpdate.femea_id = femeaIds[0] || '';
+        }
         if (updatedCouple.dataInicio !== undefined) dbUpdate.data_inicio = updatedCouple.dataInicio;
-        if (updatedCouple.objetivo !== undefined) dbUpdate.objetivo = updatedCouple.objetivo;
+        dbUpdate.objetivo = finalObjetivo;
         if (updatedCouple.status !== undefined) dbUpdate.status = updatedCouple.status;
 
+        enqueueMutation('couples', 'update', dbUpdate, { column: 'id', value: id });
         supabase!
           .from('couples')
           .update(dbUpdate)
@@ -2410,12 +2762,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase editCouple:', error);
-                enqueueMutation('couples', 'update', dbUpdate, { column: 'id', value: id });
               } else {
                 triggerRemoteSync('couples');
               }
             },
-            () => { enqueueMutation('couples', 'update', dbUpdate, { column: 'id', value: id }); }
+            () => {}
           );
       }
       return next;
@@ -2428,9 +2779,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     markPendingDelete('couples', id, scope);
     setCouples(prev => {
       const next = prev.filter(c => c.id !== id);
+      couplesRef.current = next;
       localforage.setItem(getStorageKey('couples'), next).catch(err => console.error(err));
  
       if (isSupabaseConfigured && user) {
+        enqueueMutation('couples', 'delete', null, { column: 'id', value: id });
         supabase!
           .from('couples')
           .delete()
@@ -2439,13 +2792,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ({ error }) => { 
               if (error) {
                 console.error('Erro Supabase removeCouple:', error);
-                enqueueMutation('couples', 'delete', null, { column: 'id', value: id });
               } else {
                 clearPendingDelete('couples', id, scope);
                 triggerRemoteSync('couples');
               }
             },
-            () => { enqueueMutation('couples', 'delete', null, { column: 'id', value: id }); }
+            () => {}
           );
       }
       return next;
@@ -2454,6 +2806,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Remove a associação de casalId em qualquer ave do plantel
     setBirds(prev => {
       const next = prev.map(b => b.casalId === id ? { ...b, casalId: undefined } : b);
+      birdsRef.current = next;
       localforage.setItem(getStorageKey('birds'), next).catch(console.error);
       if (isSupabaseConfigured && user) {
         supabase!
@@ -2481,18 +2834,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       if (isSupabaseConfigured && user) {
         const targetUserId = isCurrentUserAdmin ? ADMIN_CANONICAL_ID : user.id;
+        const phoneWithMeta = formatProfilePhoneWithMeta(next.phone, {
+          city: next.city,
+          state: next.state,
+          responsible: next.responsible,
+          whatsapp: next.whatsapp
+        });
+        const profilePayload = {
+          id: targetUserId,
+          name: next.name || '',
+          photo: next.photo || '',
+          email: next.email || '',
+          phone: phoneWithMeta
+        };
+        enqueueMutation('profiles', 'upsert', profilePayload, { column: 'id', value: targetUserId });
         supabase!
           .from('profiles')
-          .upsert({
-            id: targetUserId,
-            name: next.name,
-            photo: next.photo,
-            email: next.email,
-            phone: next.phone,
-            city: next.city,
-            state: next.state
-          })
-          .then(({ error }) => { if (error) console.error('Erro Supabase updateFarmSettings:', error); });
+          .upsert(profilePayload)
+          .then(
+            ({ error }) => { 
+              if (error) {
+                console.error('Erro Supabase updateFarmSettings:', error);
+              } else {
+                triggerRemoteSync('profiles');
+              }
+            },
+            () => {}
+          );
       }
       return next;
     });

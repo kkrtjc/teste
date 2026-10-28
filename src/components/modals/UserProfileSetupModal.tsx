@@ -14,7 +14,7 @@ export function UserProfileSetupModal({
   onClose?: () => void;
   onComplete: () => void;
 }) {
-  const { farmSettings, setFarmSettings } = useAppSlice('farmSettings', 'setFarmSettings');
+  const { farmSettings, updateFarmSettings } = useAppSlice('farmSettings', 'updateFarmSettings');
   
   let authUser: any = null;
   let auth: any = null;
@@ -69,8 +69,7 @@ export function UserProfileSetupModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFarmSettings({
-      ...farmSettings,
+    updateFarmSettings({
       name: nomeCriatorio.trim() || 'Criatório Galos Mura',
       photo: fotoUrl || farmSettings?.photo || '',
       email: email.trim() || authUser?.email || farmSettings?.email || '',

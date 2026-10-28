@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, DollarSign, Calendar, User, Phone, CheckCircle2, 
@@ -9,6 +9,7 @@ import { useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 import { todayLocalISO } from '../../lib/dates';
+import { generateId } from '../../lib/id';
 import { 
   parseMoneyToCents, 
   sanitizeMoneyInput, 
@@ -209,6 +210,7 @@ export function RegisterSaleModal({
   const [motivoSaida, setMotivoSaida] = useState('doacao');
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Quando o usuário seleciona ou altera a ave, preenche automaticamente o preço definido no cadastro
   const handleSelectBird = useCallback((id: string) => {
@@ -242,7 +244,7 @@ export function RegisterSaleModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (submittingRef.current || isSubmitting) return;
 
     if (!selectedBird) {
       showToast('Selecione uma ave para registrar o movimento.', 'warning');
@@ -262,10 +264,11 @@ export function RegisterSaleModal({
 
     const motivoFinal = tipo === 'venda' ? 'venda' : tipo === 'perda' ? motivoPerda : motivoSaida;
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       const res = await registerBirdMovement({
-        id: crypto.randomUUID(),
+        id: generateId(),
         birdId: selectedBird.id,
         tipo,
         motivo: motivoFinal,
@@ -292,6 +295,7 @@ export function RegisterSaleModal({
       console.error('Erro ao submeter movimento:', err);
       showToast('Erro interno ao registrar.', 'error');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

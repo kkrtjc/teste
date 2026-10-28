@@ -1,9 +1,10 @@
 import { todayLocalISO } from '../../lib/dates';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search } from 'lucide-react';
+import { Camera, CheckCircle, X, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Home, Eye, Search, Loader2 } from 'lucide-react';
 import { useAppSlice, type Bird } from '../../lib/AppContext';
 import { useAuth } from '../../lib/AuthContext';
+import { generateId, deterministicUuid } from '../../lib/id';
 import { compressImage } from '../../lib/imageCompression';
 import { uploadBirdPhoto } from '../../lib/storageService';
 import { calculateExactAge } from '../../lib/utils';
@@ -243,6 +244,8 @@ export function AddBirdModal() {
   const [showBaiaDetail, setShowBaiaDetail] = useState(false);
   const [showQuickBreedModal, setShowQuickBreedModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -352,6 +355,7 @@ export function AddBirdModal() {
   };
 
   const handleSave = async () => {
+    if (isSavingRef.current) return;
     try {
       if (!anilha.trim()) {
         showToast('Informe a anilha da ave.', 'warning');
@@ -361,6 +365,9 @@ export function AddBirdModal() {
         showToast('Informe a raça da ave.', 'warning');
         return;
       }
+
+      isSavingRef.current = true;
+      setIsSaving(true);
 
       const isPaiExternoVal = !paiId && !!paiExterno;
       const isMaeExternoVal = !maeId && !!maeExterno;
@@ -376,7 +383,7 @@ export function AddBirdModal() {
       const finalVacinas = vacList.join(', ');
 
       const imagesToSave = previewImages.slice(0, 3);
-      const targetBirdId = birdToEditId || Date.now().toString();
+      const targetBirdId = birdToEditId || generateId();
 
       // Upload de fotos para o Supabase Storage em paralelo (com fallback automático e defensivo para base64)
       const uploadedImages = await Promise.all(
@@ -425,7 +432,7 @@ export function AddBirdModal() {
           );
           if (!alreadyExists) {
             addCouple({
-              id: `auto-${Date.now()}`,
+              id: deterministicUuid(`auto-couple:${paiId}:${maeId}`),
               machoId: paiId,
               femeaId: maeId,
               objetivo: 'Genealogia (gerado automaticamente)',
@@ -444,6 +451,9 @@ export function AddBirdModal() {
     } catch (err) {
       console.error("Erro ao salvar ave:", err);
       showToast('Ocorreu um erro ao salvar a ave. Por favor, tente novamente.', 'error');
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -1114,10 +1124,11 @@ export function AddBirdModal() {
           ) : (
             <button
               onClick={handleSave}
-              disabled={!anilha || !raca}
-              className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!anilha || !raca || isSaving}
+              className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
-              <CheckCircle size={16} /> {birdToEditId ? 'Salvar Alterações' : 'Salvar Ave'}
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+              {isSaving ? 'Salvando...' : (birdToEditId ? 'Salvar Alterações' : 'Salvar Ave')}
             </button>
           )}
         </div>

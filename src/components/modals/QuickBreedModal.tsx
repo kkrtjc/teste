@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, X } from 'lucide-react';
+import { Sparkles, X, Loader2 } from 'lucide-react';
 import { type Breed, useAppSlice } from '../../lib/AppContext';
+import { generateId } from '../../lib/id';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
 
 interface QuickBreedModalProps {
@@ -26,6 +27,8 @@ export function QuickBreedModal({
   const [conversao, setConversao] = useState('2.5');
   const [pesoMedio, setPesoMedio] = useState('2.8 kg');
   const [descricao, setDescricao] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   const handleFocoChange = (newFoco: string) => {
     setFoco(newFoco);
@@ -52,33 +55,42 @@ export function QuickBreedModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingRef.current) return;
     if (!nome.trim()) {
       showToast('Informe o nome da raça.', 'warning');
       return;
     }
 
-    const newId = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    const ganhoNum = parseFloat(ganho) || undefined;
-    const convNum = parseFloat(conversao) || undefined;
+    isSavingRef.current = true;
+    setIsSaving(true);
 
-    const newBreed: Breed = {
-      id: newId,
-      nome: nome.trim(),
-      foco,
-      descricao: descricao.trim() || 'Raça cadastrada no criatório.',
-      totalAves: 0,
-      tempoCrescimento: 180,
-      pesoMedio: pesoMedio.trim() || '3.5 kg',
-      ganhoGramasDia: ganhoNum,
-      conversaoAlimentar: convNum
-    };
+    try {
+      const newId = generateId();
+      const ganhoNum = parseFloat(ganho) || undefined;
+      const convNum = parseFloat(conversao) || undefined;
 
-    addBreed(newBreed);
-    showToast(`Raça "${nome.trim()}" cadastrada com sucesso!`, 'success');
-    onBreedSaved?.(newBreed);
-    onClose();
-    setNome('');
-    setDescricao('');
+      const newBreed: Breed = {
+        id: newId,
+        nome: nome.trim(),
+        foco,
+        descricao: descricao.trim() || 'Raça cadastrada no criatório.',
+        totalAves: 0,
+        tempoCrescimento: 180,
+        pesoMedio: pesoMedio.trim() || '3.5 kg',
+        ganhoGramasDia: ganhoNum,
+        conversaoAlimentar: convNum
+      };
+
+      addBreed(newBreed);
+      showToast(`Raça "${nome.trim()}" cadastrada com sucesso!`, 'success');
+      onBreedSaved?.(newBreed);
+      onClose();
+      setNome('');
+      setDescricao('');
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
   };
 
   const inputCls = "w-full bg-theme-base border border-theme-border rounded-xl p-3 text-sm text-white focus:border-theme-primary outline-none transition-colors placeholder-theme-text-muted";
@@ -207,10 +219,11 @@ export function QuickBreedModal({
             </button>
             <button
               type="submit"
-              disabled={!nome.trim()}
-              className="flex-1 py-2.5 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+              disabled={!nome.trim() || isSaving}
+              className="flex-1 py-2.5 bg-theme-primary disabled:opacity-50 text-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
             >
-              Salvar e Vincular
+              {isSaving && <Loader2 size={14} className="animate-spin" />}
+              {isSaving ? 'Salvando...' : 'Salvar e Vincular'}
             </button>
           </div>
         </form>

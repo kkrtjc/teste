@@ -1,13 +1,14 @@
 import { todayLocalISO } from '../../lib/dates';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, DollarSign, Calendar, User, Phone, CheckCircle, 
-  CreditCard, CheckCircle2, AlertTriangle 
+  CreditCard, CheckCircle2, AlertTriangle, Loader2 
 } from 'lucide-react';
 import { type Bird, useAppSlice } from '../../lib/AppContext';
 import { useHaptics } from '../../hooks/useHaptics';
 import { useModalScrollLock } from '../../hooks/useModalScrollLock';
+import { generateId } from '../../lib/id';
 import { 
   parseMoneyToCents, 
   sanitizeMoneyInput, 
@@ -40,12 +41,13 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
   const [compradorContato, setCompradorContato] = useState('');
   const [obsVenda, setObsVenda] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (submittingRef.current || isSubmitting) return;
 
     const valorCentavos = parseMoneyToCents(valorVenda);
     if (!valorVenda.trim() || valorCentavos === null || valorCentavos <= 0) {
@@ -54,10 +56,11 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       const res = await registerBirdMovement({
-        id: crypto.randomUUID(),
+        id: generateId(),
         birdId: bird.id,
         tipo: 'venda',
         motivo: 'venda',
@@ -84,6 +87,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
       console.error('Erro ao registrar venda da ave:', err);
       showToast('Erro ao registrar venda. Tente novamente.', 'error');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -329,7 +333,7 @@ export function SellBirdModal({ bird, isOpen, onClose, onSuccess }: SellBirdModa
               disabled={isSubmitting}
               className="flex-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 touch-manipulation"
             >
-              <CheckCircle size={16} />
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
               <span>{isSubmitting ? 'Salvando...' : 'Confirmar Venda'}</span>
             </button>
           </div>
