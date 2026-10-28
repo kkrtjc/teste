@@ -2,6 +2,7 @@ import localforage from 'localforage';
 import { supabase } from './supabaseClient';
 import type { Bird } from './AppContext';
 import { ADMIN_CPF, ADMIN_CANONICAL_ID, isUserAdmin, ADMIN_AUTH_EMAIL, ADMIN_AUTH_PASS } from './AuthContext';
+import { generateId } from './id';
 
 function isBirdLike(item: any): boolean {
   if (!item || typeof item !== 'object') return false;
@@ -12,7 +13,7 @@ function isBirdLike(item: any): boolean {
 
 function normalizeBird(raw: any): Bird {
   return {
-    id: String(raw.id || `recovered-${Date.now()}-${Math.random().toString(36).slice(2)}`),
+    id: String(raw.id || generateId()),
     anilha: String(raw.anilha || ''),
     nome: raw.nome || '',
     sexo: raw.sexo === 'Fêmea' ? 'Fêmea' : 'Macho',

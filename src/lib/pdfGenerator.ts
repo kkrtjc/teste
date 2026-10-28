@@ -82,13 +82,21 @@ export async function generateBirdPdf({
   // Informações de Contato do Criador (à direita no cabeçalho)
   doc.setFontSize(8);
   doc.setTextColor(180, 185, 195);
-  const phoneText = farmSettings.phone ? `Contato: ${farmSettings.phone}` : '';
+  const rawPhone = farmSettings.phone || '';
+  const cleanPhone = rawPhone.replace(/\n?\[\[PROFILE_META:.*?\]\]/g, '').trim();
+  const locationText = [farmSettings.city, farmSettings.state].filter(Boolean).join(' - ');
+  const phoneText = cleanPhone ? `Contato: ${cleanPhone}` : '';
   const emailText = farmSettings.email ? `E-mail: ${farmSettings.email}` : '';
+  const locText = locationText ? `Local: ${locationText}` : '';
 
-  let contactY = 14;
+  let contactY = 12;
+  if (locText) {
+    doc.text(locText, pageWidth - margin, contactY, { align: 'right' });
+    contactY += 4.2;
+  }
   if (phoneText) {
     doc.text(phoneText, pageWidth - margin, contactY, { align: 'right' });
-    contactY += 4.5;
+    contactY += 4.2;
   }
   if (emailText) {
     doc.text(emailText, pageWidth - margin, contactY, { align: 'right' });
@@ -293,7 +301,8 @@ export async function generateBirdPdf({
   currentY += 28;
 
   // 5. OBSERVAÇÕES ZOOTÉCNICAS / CARACTERÍSTICAS
-  if (bird.observacoes?.trim()) {
+  const cleanObservacoes = (bird.observacoes || '').replace(/\n?\[\[VITRINE:.*?\]\]/g, '').trim();
+  if (cleanObservacoes) {
     drawSectionHeader(doc, 'ANOTAÇÕES GENÉTICAS & OBSERVAÇÕES ZOOTÉCNICAS', margin, currentY, contentWidth);
     currentY += 8;
 
@@ -305,7 +314,7 @@ export async function generateBirdPdf({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(50, 55, 65);
-    const obsLines = doc.splitTextToSize(bird.observacoes.trim(), contentWidth - 8);
+    const obsLines = doc.splitTextToSize(cleanObservacoes, contentWidth - 8);
     doc.text(obsLines, margin + 4, currentY + 6);
 
     currentY += 32;

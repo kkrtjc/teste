@@ -27,6 +27,7 @@ type MiniCardState = {
   node: TreeNode | null;
   anchorX: number;
   anchorY: number;
+  containerWidth: number;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -306,12 +307,10 @@ function TreeNodeCard({
 // ─── Mini Card (floating detail popup) ───────────────────────────────────────
 function MiniCard({
   state, onClose, onOpenProfile,
-  containerRef,
 }: {
   state: MiniCardState;
   onClose: () => void;
   onOpenProfile: (birdId: string) => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   if (!state.visible || !state.node) return null;
 
@@ -319,7 +318,7 @@ function MiniCard({
   const isMacho = b?.sexo === 'Macho';
 
   // Position: prefer showing to the right, clamp to container
-  const containerW = containerRef.current?.clientWidth || 320;
+  const containerW = state.containerWidth || 320;
   const cardW = 180;
   let left = state.anchorX + NODE_W / 2 + 8;
   if (left + cardW > containerW - 8) left = state.anchorX - cardW - 8;
@@ -409,7 +408,7 @@ export function GenealogyTree({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [miniCard, setMiniCard] = useState<MiniCardState>({
-    visible: false, node: null, anchorX: 0, anchorY: 0,
+    visible: false, node: null, anchorX: 0, anchorY: 0, containerWidth: 320,
   });
   const [scrollHint, setScrollHint] = useState(true);
 
@@ -429,11 +428,13 @@ export function GenealogyTree({
   const handleNodeClick = useCallback((pos: NodePos, el: HTMLDivElement) => {
     if (pos.node.isEmpty) return;
     const rect = el.getBoundingClientRect();
+    const containerW = containerRef.current?.clientWidth || window.innerWidth || 320;
     setMiniCard({
       visible: true,
       node: pos.node,
       anchorX: rect.left,
       anchorY: rect.top,
+      containerWidth: containerW,
     });
   }, []);
 
@@ -526,7 +527,6 @@ export function GenealogyTree({
         state={miniCard}
         onClose={closeMiniCard}
         onOpenProfile={onOpenProfile}
-        containerRef={containerRef}
       />
     </div>
   );

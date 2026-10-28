@@ -113,7 +113,6 @@ export function Dashboard() {
       const isAdm = isAdmin || isUserAdmin(user.email) || isUserAdmin(user.id);
       const cacheKey = isAdm ? '@mura-manager:admin:dashboard-stats' : `@mura-manager:dashboard-stats:${user.id}`;
       localStorage.setItem(cacheKey, JSON.stringify(stats));
-      setCachedStats(stats);
     } catch {}
   }, [stats, user?.id, user?.email, isAdmin]);
 

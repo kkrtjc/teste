@@ -125,6 +125,7 @@ export function BirdProfileModal() {
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [reactivateConfirmOpen, setReactivateConfirmOpen] = useState(false);
+  const isProcessingRef = useRef(false);
 
   // ── States para modal interativo de vínculo direto na árvore ──
   const [linkingTarget, setLinkingTarget] = useState<{
@@ -1113,9 +1114,15 @@ export function BirdProfileModal() {
           confirmLabel="Excluir Definitivamente"
           confirmVariant="danger"
           onConfirm={() => {
-            removeBird(bird.id);
-            setDeleteConfirmOpen(false);
-            closeModals();
+            if (isProcessingRef.current) return;
+            isProcessingRef.current = true;
+            try {
+              removeBird(bird.id);
+              setDeleteConfirmOpen(false);
+              closeModals();
+            } finally {
+              setTimeout(() => { isProcessingRef.current = false; }, 500);
+            }
           }}
           onCancel={() => setDeleteConfirmOpen(false)}
         />
@@ -1130,14 +1137,20 @@ export function BirdProfileModal() {
           confirmLabel="Reativar no Plantel"
           confirmVariant="info"
           onConfirm={() => {
-            editBird(bird.id, {
-              status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
-              dataBaixa: undefined,
-              dataVenda: undefined,
-              valorVenda: undefined,
-            });
-            showToast(`Ave ${bird.anilha} reativada e movimentação estornada com sucesso!`, 'success');
-            setReactivateConfirmOpen(false);
+            if (isProcessingRef.current) return;
+            isProcessingRef.current = true;
+            try {
+              editBird(bird.id, {
+                status: bird.sexo === 'Macho' ? 'Reprodutor' : 'Matriz',
+                dataBaixa: undefined,
+                dataVenda: undefined,
+                valorVenda: undefined,
+              });
+              showToast(`Ave ${bird.anilha} reativada e movimentação estornada com sucesso!`, 'success');
+              setReactivateConfirmOpen(false);
+            } finally {
+              setTimeout(() => { isProcessingRef.current = false; }, 500);
+            }
           }}
           onCancel={() => setReactivateConfirmOpen(false)}
         />

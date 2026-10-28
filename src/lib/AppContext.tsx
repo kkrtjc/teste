@@ -22,6 +22,7 @@ import {
   SYNC_MUTATION_SYNCED_EVENT
 } from './syncQueue';
 import { generateId, deterministicUuid, dedupeById } from './id';
+import { clearGenealogyCache } from './genealogy';
 import { deepScanAllStorage } from './dataRecovery';
 import { preloadBirdImagesInBackground } from './birdImageCache';
 import { AtomicStore, shallowEqual } from './appStore';
@@ -648,7 +649,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef<Bird[]>([]);
-  useEffect(() => { birdsRef.current = birds; }, [birds]);
+  useEffect(() => {
+    birdsRef.current = birds;
+    clearGenealogyCache();
+  }, [birds]);
   const [vitrineConfig, setVitrineConfig] = useState<Record<string, { inVitrine: boolean; vitrinePrice?: string; vitrineStatus?: any }>>(() => {
     try {
       const raw = localStorage.getItem('@mura-manager:vitrine-config');

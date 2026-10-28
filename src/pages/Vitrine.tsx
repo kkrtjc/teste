@@ -59,10 +59,12 @@ export function Vitrine() {
 
   const PAGE_SIZE = 30;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  useEffect(() => {
+  const [prevFilterKey, setPrevFilterKey] = useState('');
+  const currentFilterKey = `${searchQuery}:${filterMode}`;
+  if (prevFilterKey !== currentFilterKey) {
+    setPrevFilterKey(currentFilterKey);
     setVisibleCount(PAGE_SIZE);
-  }, [searchQuery, filterMode]);
+  }
 
   const visibleBirds = useMemo(() => {
     return filteredBirds.slice(0, visibleCount);

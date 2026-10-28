@@ -43,27 +43,35 @@ function getAncestorsWithDistances(
 ): Map<string, number[]> {
   const ancestorDistances = new Map<string, number[]>();
 
-  function traverse(currentId: string, depth: number) {
+  function traverse(currentId: string, depth: number, path: Set<string>) {
     if (depth > maxDepth) return;
     const b = birdsMap.get(currentId);
     if (!b) return;
 
     if (b.paiId && !b.isPaiExterno && birdsMap.has(b.paiId)) {
       const pId = b.paiId;
-      if (!ancestorDistances.has(pId)) ancestorDistances.set(pId, []);
-      ancestorDistances.get(pId)!.push(depth + 1);
-      traverse(pId, depth + 1);
+      if (!path.has(pId)) {
+        if (!ancestorDistances.has(pId)) ancestorDistances.set(pId, []);
+        ancestorDistances.get(pId)!.push(depth + 1);
+        const nextPath = new Set(path);
+        nextPath.add(pId);
+        traverse(pId, depth + 1, nextPath);
+      }
     }
 
     if (b.maeId && !b.isMaeExterno && birdsMap.has(b.maeId)) {
       const mId = b.maeId;
-      if (!ancestorDistances.has(mId)) ancestorDistances.set(mId, []);
-      ancestorDistances.get(mId)!.push(depth + 1);
-      traverse(mId, depth + 1);
+      if (!path.has(mId)) {
+        if (!ancestorDistances.has(mId)) ancestorDistances.set(mId, []);
+        ancestorDistances.get(mId)!.push(depth + 1);
+        const nextPath = new Set(path);
+        nextPath.add(mId);
+        traverse(mId, depth + 1, nextPath);
+      }
     }
   }
 
-  traverse(startBirdId, 0);
+  traverse(startBirdId, 0, new Set([startBirdId]));
   return ancestorDistances;
 }
 
@@ -160,16 +168,17 @@ function computeInbreedingInternal(
   let inbreedingF = 0;
 
   // 1. Caso o pai seja ancestral da mãe ou a mãe seja ancestral do pai
+  // n1 = 0, n2 = d -> expoente é n1 + n2 + 1 = d + 1 (Fórmula canônica de Wright)
   if (motherAncestors.has(fatherId)) {
     for (const d of motherAncestors.get(fatherId)!) {
       const faF = computeInbreedingInternal(fatherId, birds, new Set(visited)) / 100;
-      inbreedingF += Math.pow(0.5, d) * (1 + faF);
+      inbreedingF += Math.pow(0.5, d + 1) * (1 + faF);
     }
   }
   if (fatherAncestors.has(motherId)) {
     for (const d of fatherAncestors.get(motherId)!) {
       const moF = computeInbreedingInternal(motherId, birds, new Set(visited)) / 100;
-      inbreedingF += Math.pow(0.5, d) * (1 + moF);
+      inbreedingF += Math.pow(0.5, d + 1) * (1 + moF);
     }
   }
 

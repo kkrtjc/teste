@@ -21,6 +21,10 @@ function AppContent() {
   const { isReady, isInitialSyncDone } = useAppSlice('isReady', 'isInitialSyncDone');
   const { user, loading: authLoading, isExpired, trialInfo, isAdmin } = useAuth();
 
+  // ── Estado do popup de trial: determinado sincronicamente para evitar sobreposição ──
+  const [trialDismissed, setTrialDismissed] = useState(false);
+  const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
+
   // ── Rota Pública de Compartilhamento (Visualização da Ave / Vitrine externa sem exigir login) ──
   if (location.pathname.startsWith('/p/')) {
     return (
@@ -30,10 +34,6 @@ function AppContent() {
       </Routes>
     );
   }
-
-  // ── Estado do popup de trial: determinado sincronicamente para evitar sobreposição ──
-  const [trialDismissed, setTrialDismissed] = useState(false);
-  const [showUpgradeFromPopup, setShowUpgradeFromPopup] = useState(false);
 
   // Computado de forma 100% síncrona: se for elegível, já inicia como true imediatamente (zero delay/flicker)
   const showTrialPopup = Boolean(

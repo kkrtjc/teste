@@ -640,10 +640,12 @@ export function Birds() {
   }, [birds, historyFilter, historySearch]);
 
   const [visibleHistoryCount, setVisibleHistoryCount] = useState(PAGE_SIZE);
-
-  useEffect(() => {
+  const [prevHistoryFilterKey, setPrevHistoryFilterKey] = useState('');
+  const currentHistoryFilterKey = `${historyFilter}:${historySearch}`;
+  if (prevHistoryFilterKey !== currentHistoryFilterKey) {
+    setPrevHistoryFilterKey(currentHistoryFilterKey);
     setVisibleHistoryCount(PAGE_SIZE);
-  }, [historyFilter, historySearch]);
+  }
 
   const visibleHistoryBirds = useMemo(() => {
     return historyBirds.slice(0, visibleHistoryCount);
@@ -791,10 +793,13 @@ export function Birds() {
     );
   }, [currentBirds, debouncedSearch]);
 
-  // Reseta a paginação ao mudar os filtros ou busca
-  useEffect(() => {
+  // Reseta a paginação ao mudar os filtros ou busca (sem cascading renders)
+  const [prevBirdsFilterKey, setPrevBirdsFilterKey] = useState('');
+  const currentBirdsFilterKey = `${debouncedSearch}:${activeBreed}:${sexFilter}:${statusFilter}`;
+  if (prevBirdsFilterKey !== currentBirdsFilterKey) {
+    setPrevBirdsFilterKey(currentBirdsFilterKey);
     setVisibleCount(PAGE_SIZE);
-  }, [debouncedSearch, activeBreed, sexFilter, statusFilter]);
+  }
 
   // Lista fatiada para renderização ultra-rápida no celular
   const visibleBirds = useMemo(() => {
